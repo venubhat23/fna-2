@@ -1,0 +1,236 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Health Insurance Policies</h2>
+    <p class="text-muted mb-0">Manage health insurance policies and view policy details</p>
+  </div>
+  <div class="d-flex gap-2">
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-download me-1"></i>
+        Export
+      </button>
+      <ul class="dropdown-menu">
+        <li><%= link_to "Export as CSV", admin_health_insurances_path(format: :csv), class: "dropdown-item" %></li>
+      </ul>
+    </div>
+    <%= link_to new_admin_health_insurance_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add New Health Policy
+    <% end %>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Health Policies</h6>
+            <h3 class="mb-0 text-primary"><%= number_with_delimiter(@health_insurances.count) %></h3>
+          </div>
+          <div class="bg-primary bg-opacity-10 rounded p-3">
+            <i class="bi bi-hospital text-primary fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Premium</h6>
+            <h3 class="mb-0 text-success">₹<%= number_with_delimiter(@health_insurances.sum(&:total_premium).to_i) %></h3>
+          </div>
+          <div class="bg-success bg-opacity-10 rounded p-3">
+            <i class="bi bi-currency-rupee text-success fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Coverage</h6>
+            <h3 class="mb-0 text-info">₹<%= number_with_delimiter(@health_insurances.sum(&:sum_insured).to_i) %></h3>
+          </div>
+          <div class="bg-info bg-opacity-10 rounded p-3">
+            <i class="bi bi-shield-check text-info fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Expiring Soon</h6>
+            <h3 class="mb-0 text-warning"><%= number_with_delimiter(@health_insurances.where('policy_end_date <= ?', 30.days.from_now).count) %></h3>
+          </div>
+          <div class="bg-warning bg-opacity-10 rounded p-3">
+            <i class="bi bi-clock-history text-warning fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <%= form_with url: admin_health_insurances_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-4">
+        <%= form.text_field :search, placeholder: "Search policies...", value: params[:search], class: "form-control" %>
+      </div>
+      <div class="col-md-3">
+        <%= form.select :insurance_type, options_for_select([
+          ['All Types', ''],
+          ['Individual', 'Individual'],
+          ['Family', 'Family'],
+          ['Group', 'Group']
+        ], params[:insurance_type]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.select :payment_mode, options_for_select([
+          ['All Payment Modes', ''],
+          ['Yearly', 'yearly'],
+          ['Half Yearly', 'half_yearly'],
+          ['Quarterly', 'quarterly'],
+          ['Monthly', 'monthly']
+        ], params[:payment_mode]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.submit "Filter", class: "btn btn-outline-primary w-100" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Health Insurance Policies List -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <h5 class="mb-0">Health Insurance Policies</h5>
+  </div>
+  <div class="card-body p-0">
+    <% if @health_insurances.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="border-0">Policy</th>
+              <th class="border-0">Customer</th>
+              <th class="border-0">Company</th>
+              <th class="border-0">Coverage</th>
+              <th class="border-0">Premium</th>
+              <th class="border-0">Status</th>
+              <th class="border-0">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @health_insurances.each do |policy| %>
+              <tr>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.policy_number %></h6>
+                    <small class="text-muted"><%= policy.policy_type&.humanize %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.customer&.display_name %></h6>
+                    <small class="text-muted"><%= policy.customer&.email %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.insurance_company_name %></h6>
+                    <small class="text-muted"><%= policy.insurance_type %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <div class="fw-bold">₹<%= number_with_delimiter(policy.sum_insured) %></div>
+                    <small class="text-muted">Sum Insured</small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <div class="fw-bold">₹<%= number_with_delimiter(policy.total_premium) %></div>
+                    <small class="text-muted"><%= policy.payment_mode&.humanize %></small>
+                  </div>
+                </td>
+                <td>
+                  <% if policy.active? %>
+                    <span class="badge bg-success">Active</span>
+                  <% elsif policy.expired? %>
+                    <span class="badge bg-danger">Expired</span>
+                  <% elsif policy.expiring_soon? %>
+                    <span class="badge bg-warning">Expiring Soon</span>
+                  <% else %>
+                    <span class="badge bg-info">Active</span>
+                  <% end %>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_health_insurance_path(policy), class: "btn btn-sm btn-outline-primary", title: "View" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    <%= link_to edit_admin_health_insurance_path(policy), class: "btn btn-sm btn-outline-warning", title: "Edit" do %>
+                      <i class="bi bi-pencil"></i>
+                    <% end %>
+                    <%= link_to admin_health_insurance_path(policy), method: :delete,
+                        class: "btn btn-sm btn-outline-danger",
+                        title: "Delete",
+                        data: {
+                          confirm: "Are you sure you want to delete this health insurance policy?",
+                          turbo_method: :delete
+                        } do %>
+                      <i class="bi bi-trash"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @health_insurances.respond_to?(:current_page) %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @health_insurances %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="bi bi-hospital fs-1 text-muted d-block mb-3"></i>
+        <h5 class="text-muted">No health insurance policies found</h5>
+        <p class="text-muted mb-3">
+          <% if params[:search].present? || params[:insurance_type].present? || params[:payment_mode].present? %>
+            Try adjusting your search criteria or
+            <%= link_to "view all policies", admin_health_insurances_path, class: "text-decoration-none" %>.
+          <% else %>
+            Start by adding your first health insurance policy to the system.
+          <% end %>
+        </p>
+        <%= link_to new_admin_health_insurance_path, class: "btn btn-primary" do %>
+          <i class="bi bi-plus-lg me-1"></i>
+          Add First Health Policy
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,698 @@
+<% content_for :page_title, "Commission Calculator - #{@life_insurance.policy_number}" %>
+
+<div class="page-header">
+  <div class="page-title-wrapper">
+    <h1 class="page-title">
+      <i class="bi bi-calculator me-2"></i>
+      Commission Calculator
+    </h1>
+    <p class="page-subtitle">Policy: <%= @life_insurance.policy_number %> - <%= @life_insurance.customer&.display_name %></p>
+  </div>
+  <div class="page-actions">
+    <%= link_to admin_life_insurances_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Life Insurances
+    <% end %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Policy Overview Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          Policy Overview
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="info-group">
+              <label class="info-label">Policy Number</label>
+              <div class="info-value"><%= @life_insurance.policy_number %></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-group">
+              <label class="info-label">Insurance Company</label>
+              <div class="info-value"><%= @life_insurance.insurance_company_name %></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-group">
+              <label class="info-label">Sum Insured</label>
+              <div class="info-value">₹<%= number_with_delimiter(@life_insurance.sum_insured) %></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-group">
+              <label class="info-label">Net Premium</label>
+              <div class="info-value fw-bold text-primary">₹<%= number_with_delimiter(@life_insurance.net_premium) %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commission Calculator Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-sliders me-2"></i>
+          Commission Calculator
+        </h5>
+        <small class="text-muted">Adjust percentages to see real-time calculations</small>
+      </div>
+      <div class="card-body">
+
+        <!-- Main Income Configuration -->
+        <div class="commission-section mb-4">
+          <h6 class="commission-title">
+            <i class="bi bi-cash-coin me-2"></i>
+            Main Income Configuration
+          </h6>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Main Income Percentage</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="mainIncomePercentage"
+                       value="<%= @life_insurance.main_income_percentage || 10.0 %>"
+                       min="0" max="100" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Main Income Amount</label>
+              <div class="form-control-static">
+                <strong class="text-primary">₹<span id="mainIncomeAmount">0</span></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Affiliate Commission -->
+        <div class="commission-section mb-4">
+          <h6 class="commission-title">
+            <i class="bi bi-person me-2"></i>
+            Affiliate Commission
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Percentage (%)</label>
+              <input type="number" class="form-control commission-input" id="subAgentPercentage"
+                     value="<%= @life_insurance.sub_agent_commission_percentage || 2.0 %>"
+                     min="0" max="100" step="0.1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Amount</label>
+              <div class="form-control-static">
+                <strong>₹<span id="subAgentAmount">0</span></strong>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">TDS (%)</label>
+              <input type="number" class="form-control tds-input" id="subAgentTds"
+                     value="<%= @life_insurance.sub_agent_tds_percentage || 5.0 %>"
+                     min="0" max="100" step="0.1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">After TDS</label>
+              <div class="form-control-static">
+                <strong class="text-success">₹<span id="subAgentAfterTds">0</span></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Ambassador Commission -->
+        <div class="commission-section mb-4">
+          <h6 class="commission-title">
+            <i class="bi bi-truck me-2"></i>
+            Ambassador Commission
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Percentage (%)</label>
+              <input type="number" class="form-control commission-input" id="distributorPercentage"
+                     value="<%= @life_insurance.distributor_commission_percentage || 1.0 %>"
+                     min="0" max="100" step="0.1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Amount</label>
+              <div class="form-control-static">
+                <strong>₹<span id="distributorAmount">0</span></strong>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">TDS (%)</label>
+              <input type="number" class="form-control tds-input" id="distributorTds"
+                     value="<%= @life_insurance.distributor_tds_percentage || 5.0 %>"
+                     min="0" max="100" step="0.1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">After TDS</label>
+              <div class="form-control-static">
+                <strong class="text-success">₹<span id="distributorAfterTds">0</span></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Investor Commission -->
+        <div class="commission-section mb-4">
+          <h6 class="commission-title">
+            <i class="bi bi-graph-up me-2"></i>
+            Investor Portion
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Percentage (%)</label>
+              <input type="number" class="form-control commission-input" id="investorPercentage"
+                     value="<%= @life_insurance.investor_commission_percentage || 2.0 %>"
+                     min="0" max="100" step="0.1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Amount</label>
+              <div class="form-control-static">
+                <strong>₹<span id="investorAmount">0</span></strong>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">TDS (%)</label>
+              <input type="number" class="form-control tds-input" id="investorTds"
+                     value="<%= @life_insurance.investor_tds_percentage || 5.0 %>"
+                     min="0" max="100" step="0.1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">After TDS</label>
+              <div class="form-control-static">
+                <strong class="text-success">₹<span id="investorAfterTds">0</span></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Company Expenses -->
+        <div class="commission-section mb-4">
+          <h6 class="commission-title">
+            <i class="bi bi-building me-2"></i>
+            Company Expenses
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Company Expenses Percentage</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="companyExpensesPercentage"
+                       value="<%= @life_insurance.company_expenses_percentage || 2.0 %>"
+                       min="0" max="100" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Company Expenses Amount</label>
+              <div class="form-control-static">
+                <strong class="text-danger">₹<span id="companyExpensesAmount">0</span></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Live Profit Calculation Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-pie-chart me-2"></i>
+          Live Profit Calculation
+        </h5>
+        <small class="text-muted">Updates automatically as you change percentages</small>
+      </div>
+      <div class="card-body">
+        <div class="calculation-step">
+          <div class="step-label">Main Income</div>
+          <div class="step-value text-primary">₹<span id="mainIncomeDisplay">0</span></div>
+          <div class="step-formula">
+            <span id="mainIncomePercentageDisplay">10.0</span>% of ₹<%= number_with_delimiter(@life_insurance.net_premium) %>
+          </div>
+        </div>
+
+        <div class="calculation-step">
+          <div class="step-label">Total Distribution</div>
+          <div class="step-value text-warning">
+            -₹<span id="totalDistributionAmount">0</span>
+          </div>
+          <div class="step-formula">
+            <span id="totalDistributionPercentage">5.0</span>%
+            (Sub: <span id="subAgentPercentageDisplay">2.0</span>% +
+            Dist: <span id="distributorPercentageDisplay">1.0</span>% +
+            Inv: <span id="investorPercentageDisplay">2.0</span>%)
+          </div>
+        </div>
+
+        <div class="calculation-step">
+          <div class="step-label">Company Expenses</div>
+          <div class="step-value text-danger">
+            -₹<span id="companyExpensesDisplay">0</span>
+          </div>
+          <div class="step-formula">
+            <span id="companyExpensesPercentageDisplay">2.0</span>% of Net Premium
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="calculation-result">
+          <div class="result-label">Final Profit</div>
+          <div class="result-value" id="finalProfitAmount">
+            ₹0
+          </div>
+          <div class="result-percentage">
+            <span id="finalProfitPercentage">0</span>% of Net Premium
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Profit = Main Income - Total Distribution - Company Expenses
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commission Calculation Summary Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-clipboard-data me-2"></i>
+          Commission Calculation Summary
+        </h5>
+        <small class="text-muted">Dynamic summary based on your input</small>
+      </div>
+      <div class="card-body">
+        <div class="summary-item">
+          <div class="summary-label">
+            <i class="bi bi-cash-stack me-1 text-success"></i>
+            Main Income:
+          </div>
+          <div class="summary-value">
+            <span id="summaryMainIncomePercentage">10.0</span>% of Net Premium =
+            <strong class="text-success">₹<span id="summaryMainIncomeAmount">0</span></strong>
+          </div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">
+            <i class="bi bi-people me-1 text-warning"></i>
+            Distribution:
+          </div>
+          <div class="summary-value">
+            Sub-agent + Ambassador + Investor portions =
+            <strong class="text-warning">₹<span id="summaryTotalDistribution">0</span></strong>
+          </div>
+          <div class="summary-breakdown">
+            <small class="text-muted">
+              Sub-agent: <span id="summarySubAgentPercentage">2.0</span>% (₹<span id="summarySubAgentAmount">0</span>) +
+              Ambassador: <span id="summaryDistributorPercentage">1.0</span>% (₹<span id="summaryDistributorAmount">0</span>) +
+              Investor: <span id="summaryInvestorPercentage">2.0</span>% (₹<span id="summaryInvestorAmount">0</span>)
+            </small>
+          </div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">
+            <i class="bi bi-building me-1 text-danger"></i>
+            Company Expenses:
+          </div>
+          <div class="summary-value">
+            <span id="summaryCompanyExpensesPercentage">2.0</span>% of Net Premium =
+            <strong class="text-danger">₹<span id="summaryCompanyExpensesAmount">0</span></strong>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="summary-profit">
+          <div class="summary-label profit-label">
+            <i class="bi bi-graph-up me-1"></i>
+            Profit:
+          </div>
+          <div class="summary-value profit-value">
+            Main Income - Total Distribution - Company Expenses =
+            <strong id="summaryFinalProfit" class="profit-amount">₹0</strong>
+          </div>
+          <div class="profit-formula">
+            <small class="text-muted">
+              ₹<span id="summaryProfitMainIncome">0</span> - ₹<span id="summaryProfitDistribution">0</span> - ₹<span id="summaryProfitExpenses">0</span> =
+              <span id="summaryProfitPercentage">0</span>% of Net Premium
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Information Card -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-people me-2"></i>
+          Team Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="team-member mb-3">
+          <div class="team-role">Affiliate</div>
+          <div class="team-name">
+            <%= @life_insurance.sub_agent ? @life_insurance.sub_agent.display_name : 'Self' %>
+          </div>
+        </div>
+
+        <div class="team-member mb-3">
+          <div class="team-role">Ambassador</div>
+          <div class="team-name">
+            <%= @life_insurance.distributor ? @life_insurance.distributor.display_name : 'Not Assigned' %>
+          </div>
+        </div>
+
+        <div class="team-member">
+          <div class="team-role">Investor</div>
+          <div class="team-name">
+            <%= @life_insurance.investor ? @life_insurance.investor.display_name : 'Not Assigned' %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .info-group {
+    margin-bottom: 1rem;
+  }
+
+  .info-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+
+  .info-value {
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .commission-section {
+    border-left: 4px solid #007bff;
+    padding-left: 1rem;
+  }
+
+  .commission-title {
+    color: #007bff;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .form-control-static {
+    padding: 0.375rem 0;
+    line-height: 1.5;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .calculation-step {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .calculation-step:last-child {
+    border-bottom: none;
+  }
+
+  .step-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+  }
+
+  .step-value {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .step-formula {
+    font-size: 0.85rem;
+    color: #6c757d;
+  }
+
+  .calculation-result {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .result-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-value {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .result-percentage {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-top: 0.5rem;
+  }
+
+  .team-member {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+  }
+
+  .team-role {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+
+  .team-name {
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .commission-input, .tds-input {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+  }
+
+  .commission-input:focus, .tds-input:focus {
+    background-color: #fff;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  .summary-item {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+  }
+
+  .summary-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+  }
+
+  .summary-value {
+    font-size: 1rem;
+    color: #212529;
+    margin-bottom: 0.25rem;
+  }
+
+  .summary-breakdown {
+    margin-top: 0.5rem;
+  }
+
+  .summary-profit {
+    margin-bottom: 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    border-radius: 8px;
+    border-left: 4px solid #2196f3;
+  }
+
+  .profit-label {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1976d2;
+    margin-bottom: 0.5rem;
+  }
+
+  .profit-value {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .profit-amount {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .profit-formula {
+    margin-top: 0.5rem;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const netPremium = <%= @life_insurance.net_premium %>;
+
+  // Format number with commas
+  function formatNumber(num) {
+    return new Intl.NumberFormat('en-IN').format(Math.round(num * 100) / 100);
+  }
+
+  // Calculate and update all values
+  function calculateCommissions() {
+    // Get input values
+    const mainIncomePercentage = parseFloat(document.getElementById('mainIncomePercentage').value) || 0;
+    const subAgentPercentage = parseFloat(document.getElementById('subAgentPercentage').value) || 0;
+    const distributorPercentage = parseFloat(document.getElementById('distributorPercentage').value) || 0;
+    const investorPercentage = parseFloat(document.getElementById('investorPercentage').value) || 0;
+    const companyExpensesPercentage = parseFloat(document.getElementById('companyExpensesPercentage').value) || 0;
+
+    const subAgentTds = parseFloat(document.getElementById('subAgentTds').value) || 0;
+    const distributorTds = parseFloat(document.getElementById('distributorTds').value) || 0;
+    const investorTds = parseFloat(document.getElementById('investorTds').value) || 0;
+
+    // Calculate amounts
+    const mainIncomeAmount = (netPremium * mainIncomePercentage) / 100;
+    const subAgentAmount = (netPremium * subAgentPercentage) / 100;
+    const distributorAmount = (netPremium * distributorPercentage) / 100;
+    const investorAmount = (netPremium * investorPercentage) / 100;
+    const companyExpensesAmount = (netPremium * companyExpensesPercentage) / 100;
+
+    // Calculate after TDS amounts
+    const subAgentAfterTds = subAgentAmount * (100 - subAgentTds) / 100;
+    const distributorAfterTds = distributorAmount * (100 - distributorTds) / 100;
+    const investorAfterTds = investorAmount * (100 - investorTds) / 100;
+
+    // Calculate totals
+    const totalDistributionAmount = subAgentAmount + distributorAmount + investorAmount;
+    const totalDistributionPercentage = subAgentPercentage + distributorPercentage + investorPercentage;
+
+    // Calculate profit
+    const finalProfitAmount = mainIncomeAmount - totalDistributionAmount - companyExpensesAmount;
+    const finalProfitPercentage = (finalProfitAmount / netPremium) * 100;
+
+    // Update main income display
+    document.getElementById('mainIncomeAmount').textContent = formatNumber(mainIncomeAmount);
+    document.getElementById('mainIncomeDisplay').textContent = formatNumber(mainIncomeAmount);
+    document.getElementById('mainIncomePercentageDisplay').textContent = mainIncomePercentage.toFixed(1);
+
+    // Update commission amounts
+    document.getElementById('subAgentAmount').textContent = formatNumber(subAgentAmount);
+    document.getElementById('subAgentAfterTds').textContent = formatNumber(subAgentAfterTds);
+    document.getElementById('distributorAmount').textContent = formatNumber(distributorAmount);
+    document.getElementById('distributorAfterTds').textContent = formatNumber(distributorAfterTds);
+    document.getElementById('investorAmount').textContent = formatNumber(investorAmount);
+    document.getElementById('investorAfterTds').textContent = formatNumber(investorAfterTds);
+
+    // Update company expenses
+    document.getElementById('companyExpensesAmount').textContent = formatNumber(companyExpensesAmount);
+    document.getElementById('companyExpensesDisplay').textContent = formatNumber(companyExpensesAmount);
+    document.getElementById('companyExpensesPercentageDisplay').textContent = companyExpensesPercentage.toFixed(1);
+
+    // Update total distribution
+    document.getElementById('totalDistributionAmount').textContent = formatNumber(totalDistributionAmount);
+    document.getElementById('totalDistributionPercentage').textContent = totalDistributionPercentage.toFixed(1);
+    document.getElementById('subAgentPercentageDisplay').textContent = subAgentPercentage.toFixed(1);
+    document.getElementById('distributorPercentageDisplay').textContent = distributorPercentage.toFixed(1);
+    document.getElementById('investorPercentageDisplay').textContent = investorPercentage.toFixed(1);
+
+    // Update final profit
+    document.getElementById('finalProfitAmount').textContent = '₹' + formatNumber(finalProfitAmount);
+    document.getElementById('finalProfitPercentage').textContent = finalProfitPercentage.toFixed(2);
+
+    // Update profit color based on positive/negative
+    const profitElement = document.getElementById('finalProfitAmount');
+    const resultElement = document.querySelector('.calculation-result');
+    if (finalProfitAmount >= 0) {
+      resultElement.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+    } else {
+      resultElement.style.background = 'linear-gradient(135deg, #dc3545, #e74c3c)';
+    }
+
+    // Update Commission Calculation Summary
+    document.getElementById('summaryMainIncomePercentage').textContent = mainIncomePercentage.toFixed(1);
+    document.getElementById('summaryMainIncomeAmount').textContent = formatNumber(mainIncomeAmount);
+
+    document.getElementById('summarySubAgentPercentage').textContent = subAgentPercentage.toFixed(1);
+    document.getElementById('summarySubAgentAmount').textContent = formatNumber(subAgentAmount);
+    document.getElementById('summaryDistributorPercentage').textContent = distributorPercentage.toFixed(1);
+    document.getElementById('summaryDistributorAmount').textContent = formatNumber(distributorAmount);
+    document.getElementById('summaryInvestorPercentage').textContent = investorPercentage.toFixed(1);
+    document.getElementById('summaryInvestorAmount').textContent = formatNumber(investorAmount);
+    document.getElementById('summaryTotalDistribution').textContent = formatNumber(totalDistributionAmount);
+
+    document.getElementById('summaryCompanyExpensesPercentage').textContent = companyExpensesPercentage.toFixed(1);
+    document.getElementById('summaryCompanyExpensesAmount').textContent = formatNumber(companyExpensesAmount);
+
+    // Update profit summary
+    document.getElementById('summaryFinalProfit').textContent = '₹' + formatNumber(finalProfitAmount);
+    document.getElementById('summaryProfitMainIncome').textContent = formatNumber(mainIncomeAmount);
+    document.getElementById('summaryProfitDistribution').textContent = formatNumber(totalDistributionAmount);
+    document.getElementById('summaryProfitExpenses').textContent = formatNumber(companyExpensesAmount);
+    document.getElementById('summaryProfitPercentage').textContent = finalProfitPercentage.toFixed(2);
+
+    // Update profit amount color
+    const summaryProfitElement = document.getElementById('summaryFinalProfit');
+    if (finalProfitAmount >= 0) {
+      summaryProfitElement.style.color = '#28a745';
+    } else {
+      summaryProfitElement.style.color = '#dc3545';
+    }
+  }
+
+  // Add event listeners to all input fields
+  document.getElementById('mainIncomePercentage').addEventListener('input', calculateCommissions);
+  document.getElementById('subAgentPercentage').addEventListener('input', calculateCommissions);
+  document.getElementById('distributorPercentage').addEventListener('input', calculateCommissions);
+  document.getElementById('investorPercentage').addEventListener('input', calculateCommissions);
+  document.getElementById('companyExpensesPercentage').addEventListener('input', calculateCommissions);
+  document.getElementById('subAgentTds').addEventListener('input', calculateCommissions);
+  document.getElementById('distributorTds').addEventListener('input', calculateCommissions);
+  document.getElementById('investorTds').addEventListener('input', calculateCommissions);
+
+  // Initial calculation
+  calculateCommissions();
+});
+</script>

@@ -1,0 +1,237 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Insurance Companies</h2>
+    <p class="text-muted mb-0">Manage insurance company information and partnerships</p>
+  </div>
+  <div>
+    <%= link_to new_admin_insurance_company_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add Insurance Company
+    <% end %>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Companies</h6>
+            <h4 class="mb-0"><%= @insurance_companies.count %></h4>
+          </div>
+          <div class="text-primary">
+            <i class="bi bi-building fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Companies</h6>
+            <h4 class="mb-0"><%= @insurance_companies.where(status: true).count %></h4>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-check-circle fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Partnership Since</h6>
+            <h4 class="mb-0"><%= Date.current.year %></h4>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-calendar fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Partnerships</h6>
+            <h4 class="mb-0"><%= @insurance_companies.where(status: true).count %></h4>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-handshake fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Insurance Companies Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Insurance Companies List</h5>
+      <div class="d-flex gap-2">
+        <div class="position-relative">
+          <input type="text" class="form-control" placeholder="Search companies..." id="searchInput">
+          <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <% if @insurance_companies.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0 fw-semibold">Company Name</th>
+              <th class="border-0 fw-semibold">Code</th>
+              <th class="border-0 fw-semibold">Contact Person</th>
+              <th class="border-0 fw-semibold">Contact Info</th>
+              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @insurance_companies.each do |company| %>
+              <tr>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-building text-primary"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0"><%= company.name %></h6>
+                      <small class="text-muted">ID: #<%= company.id %></small>
+                    </div>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <span class="badge bg-secondary-subtle text-secondary"><%= company.code || 'N/A' %></span>
+                </td>
+                <td class="align-middle">
+                  <%= company.contact_person || 'Not specified' %>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <% if company.email.present? %>
+                      <div class="small">
+                        <i class="bi bi-envelope text-muted me-1"></i>
+                        <%= company.email %>
+                      </div>
+                    <% end %>
+                    <% if company.mobile.present? %>
+                      <div class="small">
+                        <i class="bi bi-telephone text-muted me-1"></i>
+                        <%= company.mobile %>
+                      </div>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <% if company.status %>
+                    <span class="badge bg-success-subtle text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Active
+                    </span>
+                  <% else %>
+                    <span class="badge bg-danger-subtle text-danger">
+                      <i class="bi bi-x-circle me-1"></i>
+                      Inactive
+                    </span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                      <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <%= link_to admin_insurance_company_path(company), class: "dropdown-item" do %>
+                          <i class="bi bi-eye me-2"></i>
+                          View Details
+                        <% end %>
+                      </li>
+                      <li>
+                        <%= link_to edit_admin_insurance_company_path(company), class: "dropdown-item" do %>
+                          <i class="bi bi-pencil me-2"></i>
+                          Edit Company
+                        <% end %>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <%= link_to admin_insurance_company_path(company), method: :delete,
+                            class: "dropdown-item text-danger",
+                            confirm: "Are you sure you want to delete this insurance company?",
+                            data: {
+                              confirm: "Are you sure you want to delete #{company.name}? This action cannot be undone."
+                            } do %>
+                          <i class="bi bi-trash me-2"></i>
+                          Delete Company
+                        <% end %>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @insurance_companies %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-building fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Insurance Companies Found</h5>
+        <p class="text-muted mb-4">Start by adding your first insurance company to manage partnerships and policies.</p>
+        <%= link_to "Add Insurance Company", new_admin_insurance_company_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Search functionality
+  const searchInput = document.getElementById('searchInput');
+  const tableRows = document.querySelectorAll('tbody tr');
+
+  searchInput?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+
+    tableRows.forEach(row => {
+      const companyName = row.cells[0]?.textContent.toLowerCase() || '';
+      const code = row.cells[1]?.textContent.toLowerCase() || '';
+      const contactPerson = row.cells[2]?.textContent.toLowerCase() || '';
+
+      if (companyName.includes(searchTerm) ||
+          code.includes(searchTerm) ||
+          contactPerson.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+});
+</script>

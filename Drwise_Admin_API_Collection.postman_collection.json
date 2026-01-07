@@ -1,0 +1,735 @@
+{
+  "info": {
+    "name": "InsureBook Admin API Collection",
+    "description": "Complete API collection for InsureBook Admin system with all endpoints for authentication, customers, sub agents, health insurance, and life insurance management.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "insurebook-admin-api"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set('auth_token', response.data.token);",
+                  "        pm.test('Token saved to collection variable', function () {",
+                  "            pm.expect(response.data.token).to.be.a('string');",
+                  "        });",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success field', function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@insurebook.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with email and password to get authentication token"
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"mobile\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/forgot_password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "forgot_password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset_token_here\",\n  \"password\": \"new_password123\",\n  \"password_confirmation\": \"new_password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/reset_password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "reset_password"]
+            }
+          }
+        },
+        {
+          "name": "Agent Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Agent\",\n  \"last_name\": \"Smith\",\n  \"email\": \"agent.smith@insurebook.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"mobile\": \"9876543210\",\n  \"company_name\": \"Insurance Agency Ltd\",\n  \"pan_no\": \"AGENT1234P\",\n  \"address\": \"123 Agent Street, Business District\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/agent_register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "agent_register"]
+            },
+            "description": "Register a new agent with required details including company information"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Customers",
+      "item": [
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["customers"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"customer_type\": \"Individual\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"mobile\": \"9876543210\",\n    \"address\": \"123 Main Street\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"400001\",\n    \"birth_date\": \"1990-01-01\",\n    \"gender\": \"Male\",\n    \"pan_number\": \"ABCDE1234F\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": ["{{base_url}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/1",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"first_name\": \"John Updated\",\n    \"mobile\": \"9876543211\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/1",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/1",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Customer Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/1/toggle_status",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "1", "toggle_status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Sub Agents",
+      "item": [
+        {
+          "name": "List Sub Agents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sub_agents",
+              "host": ["{{base_url}}"],
+              "path": ["sub_agents"]
+            }
+          }
+        },
+        {
+          "name": "Create Sub Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sub_agent\": {\n    \"first_name\": \"Agent\",\n    \"last_name\": \"Smith\",\n    \"email\": \"agent.smith@example.com\",\n    \"mobile\": \"9876543210\",\n    \"role_id\": 1,\n    \"company_name\": \"Agent Company Ltd\",\n    \"pan_no\": \"AGENT1234P\",\n    \"address\": \"456 Agent Street\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sub_agents",
+              "host": ["{{base_url}}"],
+              "path": ["sub_agents"]
+            }
+          }
+        },
+        {
+          "name": "Get Sub Agent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sub_agents/1",
+              "host": ["{{base_url}}"],
+              "path": ["sub_agents", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Sub Agent",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sub_agent\": {\n    \"company_name\": \"Updated Agent Company\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sub_agents/1",
+              "host": ["{{base_url}}"],
+              "path": ["sub_agents", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Sub Agent",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sub_agents/1",
+              "host": ["{{base_url}}"],
+              "path": ["sub_agents", "1"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Sub Agent Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sub_agents/1/toggle_status",
+              "host": ["{{base_url}}"],
+              "path": ["sub_agents", "1", "toggle_status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health Insurance",
+      "item": [
+        {
+          "name": "List Health Insurances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health_insurances?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "insurance_type",
+                  "value": "Individual",
+                  "disabled": true
+                },
+                {
+                  "key": "company",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Health Insurance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"health_insurance\": {\n    \"customer_id\": 1,\n    \"policy_holder\": \"Self\",\n    \"insurance_company_name\": \"Bajaj Allianz General Insurance Company Limited\",\n    \"policy_type\": \"New\",\n    \"insurance_type\": \"Individual\",\n    \"policy_number\": \"HI001\",\n    \"policy_booking_date\": \"2025-12-08\",\n    \"policy_start_date\": \"2025-01-01\",\n    \"policy_end_date\": \"2026-01-01\",\n    \"payment_mode\": \"Yearly\",\n    \"sum_insured\": 500000,\n    \"net_premium\": 15000,\n    \"gst_percentage\": 18,\n    \"total_premium\": 17700,\n    \"plan_name\": \"Health Guard Plus\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/health_insurances",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances"]
+            }
+          }
+        },
+        {
+          "name": "Get Health Insurance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health_insurances/1",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Health Insurance",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"health_insurance\": {\n    \"sum_insured\": 600000,\n    \"net_premium\": 18000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/health_insurances/1",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Health Insurance",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health_insurances/1",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances", "1"]
+            }
+          }
+        },
+        {
+          "name": "Health Insurance Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health_insurances/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Health Insurance Form Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health_insurances/form_data",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances", "form_data"]
+            }
+          }
+        },
+        {
+          "name": "Policy Holder Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health_insurances/policy_holder_options?customer_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["health_insurances", "policy_holder_options"],
+              "query": [
+                {
+                  "key": "customer_id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "❤️ Life Insurance",
+      "item": [
+        {
+          "name": "List Life Insurances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/life_insurances?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "policy_type",
+                  "value": "New",
+                  "disabled": true
+                },
+                {
+                  "key": "company",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Life Insurance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"life_insurance\": {\n    \"customer_id\": 1,\n    \"policy_holder\": \"Self\",\n    \"insured_name\": \"John Doe\",\n    \"insurance_company_name\": \"Acko General Insurance Limited\",\n    \"policy_type\": \"New\",\n    \"payment_mode\": \"Yearly\",\n    \"policy_number\": \"LI001\",\n    \"policy_booking_date\": \"2025-12-08\",\n    \"policy_start_date\": \"2025-01-01\",\n    \"policy_end_date\": \"2040-01-01\",\n    \"policy_term\": 15,\n    \"premium_payment_term\": 10,\n    \"plan_name\": \"Term Life Plus\",\n    \"sum_insured\": 1000000,\n    \"net_premium\": 25000,\n    \"first_year_gst_percentage\": 18,\n    \"total_premium\": 29500,\n    \"nominee_name\": \"Jane Doe\",\n    \"nominee_relationship\": \"Spouse\",\n    \"nominee_age\": 30,\n    \"main_agent_commission_percentage\": 25,\n    \"tds_percentage\": 10\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/life_insurances",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances"]
+            }
+          }
+        },
+        {
+          "name": "Create Life Insurance with Riders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"life_insurance\": {\n    \"customer_id\": 1,\n    \"policy_holder\": \"Self\",\n    \"insured_name\": \"John Doe\",\n    \"insurance_company_name\": \"Bajaj Allianz General Insurance Company Limited\",\n    \"policy_type\": \"New\",\n    \"payment_mode\": \"Half-Yearly\",\n    \"policy_number\": \"LI002\",\n    \"policy_booking_date\": \"2025-12-08\",\n    \"policy_start_date\": \"2025-01-01\",\n    \"policy_end_date\": \"2045-01-01\",\n    \"policy_term\": 20,\n    \"premium_payment_term\": 15,\n    \"plan_name\": \"Comprehensive Life Plan\",\n    \"sum_insured\": 2000000,\n    \"net_premium\": 45000,\n    \"first_year_gst_percentage\": 18,\n    \"total_premium\": 53100,\n    \"term_rider_amount\": 500000,\n    \"term_rider_note\": \"Additional term coverage\",\n    \"critical_illness_rider_amount\": 200000,\n    \"critical_illness_rider_note\": \"CI coverage\",\n    \"accident_rider_amount\": 300000,\n    \"accident_rider_note\": \"Accident benefit\",\n    \"nominee_name\": \"Jane Doe\",\n    \"nominee_relationship\": \"Spouse\",\n    \"nominee_age\": 30,\n    \"bank_name\": \"HDFC Bank\",\n    \"account_type\": \"Savings\",\n    \"account_number\": \"12345678901234\",\n    \"ifsc_code\": \"HDFC0001234\",\n    \"account_holder_name\": \"John Doe\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/life_insurances",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances"]
+            }
+          }
+        },
+        {
+          "name": "Get Life Insurance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/life_insurances/1",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Life Insurance",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"life_insurance\": {\n    \"sum_insured\": 1200000,\n    \"nominee_name\": \"Updated Nominee Name\",\n    \"bank_name\": \"Updated Bank Name\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/life_insurances/1",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Life Insurance",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/life_insurances/1",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances", "1"]
+            }
+          }
+        },
+        {
+          "name": "Life Insurance Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/life_insurances/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Life Insurance Form Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/life_insurances/form_data",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances", "form_data"]
+            }
+          }
+        },
+        {
+          "name": "Policy Holder Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/life_insurances/policy_holder_options?customer_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["life_insurances", "policy_holder_options"],
+              "query": [
+                {
+                  "key": "customer_id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('Making request to:', pm.request.url);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response is JSON', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});"
+        ]
+      }
+    }
+  ]
+}

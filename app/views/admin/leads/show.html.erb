@@ -1,0 +1,911 @@
+<!-- Lead Details Header -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <h2 class="mb-0">Lead Details</h2>
+      <span class="badge bg-primary fs-6"><%= @lead.lead_id %></span>
+    </div>
+    <p class="text-muted mb-0"><%= @lead.name %> - Complete lead information and management actions</p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_leads_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Leads
+    <% end %>
+
+    <!-- Conversion Action Button -->
+    <% if @lead.can_convert_to_customer? %>
+      <%= link_to new_admin_customer_path(lead_id: @lead.id), class: "btn btn-success", title: "Convert this lead to customer" do %>
+        <i class="bi bi-person-plus-fill me-1"></i>Convert to Customer
+      <% end %>
+    <% elsif @lead.converted_customer.present? %>
+      <%= link_to admin_customer_path(@lead.converted_customer), class: "btn btn-info customer-link",
+          title: "View Customer: #{@lead.converted_customer.display_name}" do %>
+        <i class="bi bi-person-check-fill me-1"></i>View Customer
+      <% end %>
+    <% end %>
+
+    <div class="dropdown">
+      <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-gear me-1"></i>
+        Actions
+      </button>
+      <ul class="dropdown-menu">
+        <li><%= link_to "Edit Lead", edit_admin_lead_path(@lead), class: "dropdown-item" %></li>
+        <li><a href="#" class="dropdown-item">Add Notes</a></li>
+        <li><a href="#" class="dropdown-item">Send Email</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><%= link_to "Delete Lead", admin_lead_path(@lead), method: :delete, class: "dropdown-item text-danger", data: { confirm: "Are you sure?" } %></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Lead Status Timeline -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-4">
+      <i class="bi bi-diagram-3 me-2 text-primary"></i>
+      Lead Progress Timeline
+    </h5>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="timeline-container">
+          <%
+            # Define timeline stages with their order
+            timeline_stages = [
+              { key: 'lead_generated', title: '🟢 Lead Generated', description: 'Initial lead entry into the system' },
+              { key: 'consultation_scheduled', title: '📅 Consultation Scheduled', description: 'First contact and consultation setup' },
+              { key: 'one_on_one', title: '🤝 One-on-One Discussion', description: 'Detailed discussion about insurance needs' },
+              { key: 'follow_up', title: '🔁 Follow-Up', description: 'Follow-up to gauge customer interest' },
+              {
+                key: 'follow_up_decision',
+                title: '🔄 Follow-Up Decision',
+                description: 'Determine follow-up outcome',
+                is_branching: true,
+                branches: [
+                  { key: 'follow_up_successful', title: '✅ Successful', description: 'Customer shows interest' },
+                  { key: 'follow_up_unsuccessful', title: '❌ Not Successful', description: 'Customer not interested' }
+                ]
+              },
+              { key: 'converted', title: '👤 Converted to Customer', description: 'Lead successfully converted to customer' },
+              { key: 're_follow_up', title: '🔄 Re-Follow Up', description: 'Additional follow-up attempt', is_alt_path: true }
+            ]
+
+            # Determine current stage index and flow path
+            stage_mapping = {
+              'lead_generated' => 0,
+              'consultation_scheduled' => 1,
+              'one_on_one' => 2,
+              'follow_up' => 3,
+              'follow_up_successful' => 4,
+              'follow_up_unsuccessful' => 4,
+              'converted' => 5,
+              're_follow_up' => 6
+            }
+
+            current_stage_index = stage_mapping[@lead.current_stage] || 0
+
+            # Define helper functions for stage logic
+            stage_order = ['lead_generated', 'consultation_scheduled', 'one_on_one', 'follow_up', 'follow_up_successful', 'converted']
+            alt_order = ['lead_generated', 'consultation_scheduled', 'one_on_one', 'follow_up', 'follow_up_unsuccessful', 're_follow_up']
+
+            # Helper function to check if stage came before current stage
+            stage_came_before_proc = lambda do |stage_key, current_stage|
+              if alt_order.include?(current_stage)
+                current_index = alt_order.index(current_stage)
+                stage_index = alt_order.index(stage_key)
+              else
+                current_index = stage_order.index(current_stage)
+                stage_index = stage_order.index(stage_key)
+              end
+              stage_index && current_index && stage_index < current_index
+            end
+
+            # Helper function to determine completion date
+            determine_completion_date_proc = lambda do |stage_key|
+              case stage_key
+              when 'lead_generated'
+                @lead.created_date || @lead.created_at
+              when 'consultation_scheduled', 'one_on_one'
+                @lead.created_at # Assume same day progression initially
+              else
+                @lead.stage_updated_at || @lead.created_at
+              end
+            end
+          %>
+
+          <% timeline_stages.each_with_index do |stage, index| %>
+            <%
+              # Skip re-follow-up unless it's in the current path
+              next if stage[:is_alt_path] && !['re_follow_up'].include?(@lead.current_stage)
+
+              # Determine status and date for each stage
+              if stage[:is_branching]
+                # Handle branching stage (follow-up decision)
+                status = if @lead.in_follow_up_cycle? then 'active' else 'pending' end
+                date_text = if @lead.in_follow_up_cycle? then 'Decision Point' else 'Pending' end
+                status_class = if @lead.in_follow_up_cycle? then 'text-warning' else 'text-muted' end
+              elsif stage[:key] == @lead.current_stage
+                # Current active stage
+                status = 'active'
+                if @lead.stage_updated_at.present?
+                  date_text = "Started on #{@lead.stage_updated_at.strftime('%b %d, %Y')}"
+                else
+                  date_text = "In Progress"
+                end
+                status_class = 'text-warning'
+              elsif stage_came_before_proc.call(stage[:key], @lead.current_stage)
+                # Completed stages
+                status = 'completed'
+                date = determine_completion_date_proc.call(stage[:key])
+                date_text = "Completed on #{date.strftime('%b %d, %Y')}"
+                status_class = 'text-success'
+              else
+                # Future/pending stages
+                status = 'pending'
+                date_text = 'Pending'
+                status_class = 'text-muted'
+              end
+
+              # Special handling for unsuccessful follow-up path
+              if stage[:key] == 're_follow_up' && ['follow_up_unsuccessful', 're_follow_up'].include?(@lead.current_stage)
+                status = @lead.current_stage == 're_follow_up' ? 'active' : 'pending'
+                status_class = @lead.current_stage == 're_follow_up' ? 'text-warning' : 'text-danger'
+                date_text = @lead.current_stage == 're_follow_up' ? 'In Progress' : 'Alternative Path'
+              end
+            %>
+
+            <% if stage[:is_branching] %>
+              <!-- Branching Decision Point -->
+              <div class="timeline-item <%= status %>">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <h6><%= stage[:title] %></h6>
+                  <p class="text-muted mb-1"><%= stage[:description] %></p>
+                  <small class="<%= status_class %>"><%= date_text %></small>
+
+                  <!-- Show branch outcomes -->
+                  <div class="mt-2 ms-3">
+                    <% stage[:branches].each do |branch| %>
+                      <%
+                        branch_status = if branch[:key] == @lead.current_stage then 'text-warning'
+                                       elsif branch[:key] == 'follow_up_successful' && @lead.converted? then 'text-success'
+                                       elsif branch[:key] == 'follow_up_unsuccessful' && ['re_follow_up', 'follow_up_unsuccessful'].include?(@lead.current_stage) then 'text-danger'
+                                       else 'text-muted' end
+                        branch_icon = branch[:key] == 'follow_up_successful' ? '→ 👤' : '→ 🔄'
+                      %>
+                      <div class="d-flex align-items-center mb-1">
+                        <small class="<%= branch_status %>">
+                          <%= branch[:title] %> <%= branch_icon %>
+                        </small>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% else %>
+              <!-- Regular Stage -->
+              <div class="timeline-item <%= status %> <%= 'alternative-path' if stage[:is_alt_path] %>">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <h6><%= stage[:title] %></h6>
+                  <p class="text-muted mb-1"><%= stage[:description] %></p>
+                  <small class="<%= status_class %>"><%= date_text %></small>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+  <!-- Lead Information -->
+  <div class="col-md-8">
+    <!-- Customer Type Information -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-person-check me-2 text-primary"></i>
+          Customer Type & Basic Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Lead ID</label>
+            <div class="fw-bold"><%= @lead.lead_id %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Customer Type</label>
+            <div>
+              <% if @lead.customer_type.present? %>
+                <span class="badge bg-info"><%= @lead.customer_type.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Contact Number</label>
+            <div>
+              <% if @lead.contact_number.present? %>
+                <a href="tel:<%= @lead.contact_number %>" class="text-decoration-none">
+                  <%= @lead.contact_number %>
+                </a>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Email Address</label>
+            <div>
+              <% if @lead.email.present? %>
+                <a href="mailto:<%= @lead.email %>" class="text-decoration-none">
+                  <%= @lead.email %>
+                </a>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Individual Customer Details -->
+    <% if @lead.individual? %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-person me-2 text-primary"></i>
+          Individual Customer Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label text-muted">First Name</label>
+            <div class="fw-bold"><%= @lead.first_name.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label text-muted">Middle Name</label>
+            <div><%= @lead.middle_name.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label text-muted">Last Name</label>
+            <div class="fw-bold"><%= @lead.last_name.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Date of Birth</label>
+            <div>
+              <% if @lead.birth_date.present? %>
+                <%= @lead.birth_date.strftime('%B %d, %Y') %>
+                <small class="text-muted">(<%= ((Date.current - @lead.birth_date) / 365).to_i %> years old)</small>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Gender</label>
+            <div>
+              <% if @lead.gender.present? %>
+                <span class="badge bg-secondary"><%= @lead.gender.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Marital Status</label>
+            <div>
+              <% if @lead.marital_status.present? %>
+                <span class="badge bg-info"><%= @lead.marital_status.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">PAN Number</label>
+            <div><%= @lead.pan_no.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Birth Place</label>
+            <div><%= @lead.birth_place.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Physical Details</label>
+            <div>
+              <% if @lead.height.present? || @lead.weight.present? %>
+                <% if @lead.height.present? %>
+                  Height: <strong><%= @lead.height %> ft</strong>
+                <% end %>
+                <% if @lead.weight.present? %>
+                  <%= ', ' if @lead.height.present? %>Weight: <strong><%= @lead.weight %> kg</strong>
+                <% end %>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Professional Details -->
+        <% if [@lead.education, @lead.business_job, @lead.business_name, @lead.job_name, @lead.occupation, @lead.type_of_duty, @lead.annual_income].any?(&:present?) %>
+        <hr class="my-4">
+        <h6 class="text-secondary mb-3">Professional Details</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Education</label>
+            <div><%= @lead.education.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Business/Job Type</label>
+            <div>
+              <% if @lead.business_job.present? %>
+                <span class="badge bg-primary"><%= @lead.business_job.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Business Name</label>
+            <div><%= @lead.business_name.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Job Name</label>
+            <div><%= @lead.job_name.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Occupation</label>
+            <div><%= @lead.occupation.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Type of Duty</label>
+            <div><%= @lead.type_of_duty.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-12 mb-3">
+            <label class="form-label text-muted">Annual Income</label>
+            <div>
+              <% if @lead.annual_income.present? %>
+                <span class="fw-bold text-success">₹<%= number_with_delimiter(@lead.annual_income) %></span>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <% end %>
+      </div>
+    </div>
+    <% end %>
+
+    <!-- Corporate Customer Details -->
+    <% if @lead.corporate? %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-building me-2 text-primary"></i>
+          Corporate Customer Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Company Name</label>
+            <div class="fw-bold"><%= @lead.company_name.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Company Email</label>
+            <div>
+              <% if @lead.email.present? %>
+                <a href="mailto:<%= @lead.email %>" class="text-decoration-none">
+                  <%= @lead.email %>
+                </a>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">PAN Number</label>
+            <div><%= @lead.pan_no.presence || 'Not provided' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">GST Number</label>
+            <div><%= @lead.gst_no.presence || 'Not provided' %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% end %>
+
+    <!-- Product Information -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-briefcase me-2 text-primary"></i>
+          Product Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Product Category</label>
+            <div>
+              <% if @lead.product_category.present? %>
+                <span class="badge bg-info"><%= @lead.product_category.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Product Type</label>
+            <div>
+              <% if @lead.product_subcategory.present? %>
+                <span class="badge bg-secondary"><%= @lead.product_subcategory.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Address Information -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-geo-alt me-2 text-primary"></i>
+          Address Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label text-muted">Complete Address</label>
+            <div>
+              <% if @lead.address.present? %>
+                <%= @lead.address %>
+              <% else %>
+                <span class="text-muted">Not provided</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">State</label>
+            <div>
+              <% if @lead.state.present? %>
+                <span class="badge bg-primary"><%= @lead.state %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">City</label>
+            <div>
+              <% if @lead.city.present? %>
+                <span class="badge bg-secondary"><%= @lead.city %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lead Management Details -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-info-circle me-2 text-primary"></i>
+          Lead Management Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Lead Source</label>
+            <div>
+              <% if @lead.lead_source.present? %>
+                <span class="badge bg-secondary"><%= @lead.lead_source.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Current Stage</label>
+            <div>
+              <span class="badge <%= @lead.stage_badge_class %>"><%= @lead.stage_display_name %></span>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Call Disposition</label>
+            <div>
+              <% if @lead.call_disposition.present? %>
+                <span class="badge bg-info"><%= @lead.call_disposition.humanize %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Referral Amount</label>
+            <div>
+              <% if @lead.referral_amount.present? && @lead.referral_amount > 0 %>
+                <span class="fw-bold text-success">₹<%= number_with_delimiter(@lead.referral_amount) %></span>
+              <% else %>
+                <span class="text-muted">No referral amount</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-12 mb-3">
+            <label class="form-label text-muted">Affiliate/Referrer Information</label>
+            <div>
+              <% if @lead.is_direct %>
+                <span class="badge bg-primary">Direct Lead</span>
+              <% elsif @lead.affiliate.present? %>
+                <span class="badge bg-success">Agent - <%= @lead.affiliate.display_name %></span>
+              <% elsif @lead.referred_by.present? %>
+                <span class="badge bg-info">Referred by - <%= @lead.referred_by %></span>
+              <% else %>
+                <span class="text-muted">Not specified</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Created Date</label>
+            <div>
+              <%= @lead.created_date&.strftime('%b %d, %Y') || @lead.created_at&.strftime('%b %d, %Y') %>
+              <small class="text-muted">(<%= time_ago_in_words(@lead.created_at) %> ago)</small>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Last Updated</label>
+            <div>
+              <%= @lead.updated_at.strftime('%b %d, %Y at %I:%M %p') %>
+              <small class="text-muted">(<%= time_ago_in_words(@lead.updated_at) %> ago)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Information -->
+    <% if [@lead.additional_information, @lead.notes].any?(&:present?) %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-journal-text me-2 text-primary"></i>
+          Additional Information & Notes
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if @lead.additional_information.present? %>
+        <div class="mb-3">
+          <label class="form-label text-muted">Additional Information</label>
+          <div class="p-3 bg-light rounded">
+            <%= simple_format(@lead.additional_information) %>
+          </div>
+        </div>
+        <% end %>
+        <% if @lead.notes.present? %>
+        <div class="mb-3">
+          <label class="form-label text-muted">Notes</label>
+          <div class="p-3 bg-light rounded">
+            <%= simple_format(@lead.notes) %>
+          </div>
+        </div>
+        <% end %>
+      </div>
+    </div>
+    <% end %>
+
+    <!-- Conversion Status -->
+    <% if @lead.converted_customer.present? %>
+    <div class="card border-0 shadow-sm mb-4 border-success">
+      <div class="card-header bg-success text-white border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          Conversion Status
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-success d-flex align-items-center mb-0">
+          <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+          <div class="flex-grow-1">
+            <h6 class="mb-1">Successfully Converted to Customer</h6>
+            <p class="mb-2">This lead has been converted to a customer account.</p>
+            <%= link_to @lead.converted_customer.display_name, admin_customer_path(@lead.converted_customer), class: "btn btn-outline-success btn-sm" %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% end %>
+
+
+  </div>
+
+  <!-- Actions Sidebar -->
+  <div class="col-md-4">
+    <!-- Stage Management Card -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-gear me-2 text-primary"></i>
+          Stage Management
+        </h5>
+      </div>
+      <div class="card-body">
+        <!-- Current Stage Display -->
+        <div class="mb-3">
+          <label class="form-label text-muted">Current Stage</label>
+          <div>
+            <span class="badge <%= @lead.stage_badge_class %> fs-6">
+              <%= @lead.stage_display_name %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Stage Transition Controls -->
+        <% unless @lead.cannot_change_stage? %>
+          <% next_options = @lead.next_stage_options %>
+          <% if next_options.any? %>
+            <div class="mb-3">
+              <label class="form-label text-muted">Move to Next Stage</label>
+              <% next_options.each do |next_stage| %>
+                <%= form_with url: update_stage_admin_lead_path(@lead), method: :patch, local: true, class: "d-inline" do |form| %>
+                  <%= form.hidden_field :new_stage, value: next_stage %>
+                  <%= form.submit get_stage_display_name(next_stage),
+                      class: "btn #{ get_stage_button_class(next_stage) } btn-sm w-100 mb-2",
+                      data: {
+                        confirm: "Are you sure you want to move this lead to #{get_stage_display_name(next_stage)}?",
+                        turbo: false
+                      } %>
+                <% end %>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              <small>Lead has reached final stage or requires manual intervention.</small>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            <small>Lead successfully converted! No further stage changes allowed.</small>
+          </div>
+        <% end %>
+
+        <!-- Quick Actions -->
+        <div class="mb-3">
+          <label class="form-label text-muted">Quick Actions</label>
+          <div class="d-grid gap-2">
+            <!-- Add Notes -->
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addNotesModal">
+              <i class="bi bi-journal-text me-1"></i>Add Notes
+            </button>
+
+            <!-- Send Email -->
+            <button type="button" class="btn btn-outline-info btn-sm">
+              <i class="bi bi-envelope me-1"></i>Send Email
+            </button>
+
+            <!-- Schedule Follow-up -->
+            <% if @lead.in_follow_up_cycle? %>
+              <button type="button" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-calendar-plus me-1"></i>Schedule Follow-up
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Stage History -->
+        <div class="mb-3">
+          <label class="form-label text-muted">Stage Information</label>
+          <div class="small text-muted">
+            <div><strong>Created:</strong> <%= @lead.created_at.strftime('%b %d, %Y at %I:%M %p') %></div>
+            <% if @lead.stage_updated_at.present? %>
+              <div><strong>Last Updated:</strong> <%= @lead.stage_updated_at.strftime('%b %d, %Y at %I:%M %p') %></div>
+            <% end %>
+            <div><strong>Days in Pipeline:</strong> <%= (@lead.created_at.to_date...Date.current).count %> days</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lead Statistics Card -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-light border-0">
+        <h6 class="mb-0">
+          <i class="bi bi-graph-up me-2 text-primary"></i>
+          Lead Statistics
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6">
+            <div class="border-end">
+              <h4 class="text-primary mb-0"><%= @lead.in_follow_up_cycle? ? '🔄' : '📈' %></h4>
+              <small class="text-muted">Status</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <h4 class="text-success mb-0"><%= @lead.converted? ? '✅' : '⏳' %></h4>
+            <small class="text-muted">Conversion</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals and Scripts -->
+<%
+  # Helper methods for stage management
+  def get_stage_display_name(stage_key)
+    case stage_key
+    when 'consultation_scheduled' then '📅 Schedule Consultation'
+    when 'one_on_one' then '🤝 Start One-on-One'
+    when 'follow_up' then '🔁 Begin Follow-Up'
+    when 'follow_up_successful' then '✅ Mark Successful'
+    when 'follow_up_unsuccessful' then '❌ Mark Unsuccessful'
+    when 'not_interested' then '🚫 Mark Not Interested'
+    when 're_follow_up' then '🔄 Re-Follow Up'
+    when 'converted' then '👤 Convert to Customer'
+    when 'policy_created' then '📄 Mark Policy Created'
+    when 'lead_closed' then '📁 Close Lead'
+    else stage_key.humanize
+    end
+  end
+
+  def get_stage_button_class(stage_key)
+    case stage_key
+    when 'consultation_scheduled' then 'btn-info'
+    when 'one_on_one' then 'btn-warning'
+    when 'follow_up' then 'btn-primary'
+    when 'follow_up_successful' then 'btn-success'
+    when 'follow_up_unsuccessful' then 'btn-danger'
+    when 'not_interested' then 'btn-dark'
+    when 're_follow_up' then 'btn-warning'
+    when 'converted' then 'btn-success'
+    when 'policy_created' then 'btn-primary'
+    when 'lead_closed' then 'btn-secondary'
+    else 'btn-secondary'
+    end
+  end
+%>
+
+<style>
+.timeline-container {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 2rem;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 12px;
+  bottom: -2rem;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -30px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-item.completed .timeline-marker {
+  background: #10b981;
+}
+
+.timeline-item.active .timeline-marker {
+  background: #f59e0b;
+  animation: pulse 2s infinite;
+}
+
+.timeline-item.pending .timeline-marker {
+  background: #e2e8f0;
+}
+
+.timeline-item.alternative-path {
+  margin-left: 20px;
+  opacity: 0.8;
+}
+
+.timeline-item.alternative-path .timeline-marker {
+  background: #fbbf24;
+  border: 3px solid #f59e0b;
+}
+
+.timeline-item.alternative-path::before {
+  border-left: 2px dashed #f59e0b;
+}
+
+.timeline-branching {
+  position: relative;
+}
+
+.timeline-branching::after {
+  content: '';
+  position: absolute;
+  left: -22px;
+  bottom: -10px;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(to right, #10b981, #f59e0b);
+}
+
+
+
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+</style>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
+</script>
+
+<!-- Custom CSS for customer link button -->
+<style>
+.customer-link {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8);
+  border: none;
+  color: white;
+  font-weight: 500;
+}
+
+.customer-link:hover {
+  background: linear-gradient(45deg, #17a2b8, #0dcaf0);
+  color: white;
+  box-shadow: 0 4px 12px rgba(13, 202, 240, 0.3);
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+</style>

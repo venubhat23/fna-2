@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "Drwise - Admin Dashboard" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="browser-extension-disable" content="true">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= javascript_importmap_tags %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <!-- Enhanced Bootstrap & Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Enhanced Stylesheets -->
+    <%= stylesheet_link_tag "sidebar_fallback", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "layout_fix", "data-turbo-track": "reload" %>
+
+    <% if Rails.env.development? %>
+      <link rel="stylesheet" href="/application.css" data-turbo-track="reload">
+    <% else %>
+      <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <% end %>
+    <%= stylesheet_link_tag "auth", "data-turbo-track": "reload" if !user_signed_in? %>
+    <%= javascript_importmap_tags %>
+
+    <!-- Force cache refresh -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+  </head>
+
+  <body class="insurance-app">
+    <% if user_signed_in? %>
+      <!-- Enhanced Insurance-themed Header -->
+      <header class="header">
+        <div class="container-fluid h-100">
+          <div class="d-flex align-items-center justify-content-between h-100 px-3">
+            <!-- Mobile Toggle -->
+            <button class="mobile-toggle d-md-none" type="button" data-bs-toggle="sidebar">
+              <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- Header Brand -->
+            <div class="d-flex align-items-center">
+              <div class="brand-icon">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <h1 class="brand-text ms-3 mb-0 d-none d-md-block">Drwise Admin</h1>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="d-flex align-items-center gap-3">
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  <i class="fas fa-user-circle me-2"></i>
+                  <span class="d-none d-sm-inline">Admin</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                  <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><%= link_to destroy_user_session_path, class: "dropdown-item", data: { turbo_method: :delete } do %>
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                  <% end %></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Enhanced Insurance-themed Sidebar -->
+      <%= render 'layouts/sidebar' %>
+
+      <!-- Main Application Layout -->
+      <main class="main-content">
+        <div class="container-fluid">
+          <!-- Flash Messages - Slide-in Toast Notifications -->
+          <% if notice %>
+            <div id="toast-notification" class="toast-notification toast-success" style="position: fixed; top: 80px; right: 20px; z-index: 9999; width: 350px; background: #d1edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); transform: translateX(100%); transition: transform 0.3s ease-in-out;">
+              <div class="toast-notification-content" style="padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-check-circle me-2" style="color: #155724;"></i>
+                  <span><%= notice %></span>
+                </div>
+                <button type="button" class="btn-close ms-3" onclick="closeToast()" style="background: none; border: none; color: #155724; cursor: pointer; font-size: 1.2rem;">&times;</button>
+              </div>
+            </div>
+          <% end %>
+
+          <% if alert %>
+            <div id="toast-notification" class="toast-notification toast-danger" style="position: fixed; top: 80px; right: 20px; z-index: 9999; width: 350px; background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); transform: translateX(100%); transition: transform 0.3s ease-in-out;">
+              <div class="toast-notification-content" style="padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-exclamation-triangle me-2" style="color: #721c24;"></i>
+                  <span><%= alert %></span>
+                </div>
+                <button type="button" class="btn-close ms-3" onclick="closeToast()" style="background: none; border: none; color: #721c24; cursor: pointer; font-size: 1.2rem;">&times;</button>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Main Content Area -->
+          <div class="content-area">
+            <%= yield %>
+          </div>
+
+        </div>
+      </main>
+    <% else %>
+      <!-- Authentication Layout -->
+      <div class="auth-wrapper">
+        <!-- Background pattern overlay -->
+        <div class="auth-pattern"></div>
+
+        <!-- Large floating shapes -->
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+
+        <% if notice %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 90%; width: 400px;">
+            <i class="bi bi-check-circle me-2"></i>
+            <%= notice %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% end %>
+
+        <% if alert %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 90%; width: 400px;">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <%= alert %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% end %>
+
+        <%= yield %>
+      </div>
+    <% end %>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Global Modal Fix Script & Toast Notifications -->
+    <script>
+      // Sidebar Scroll Position Management
+      function saveSidebarScrollPosition() {
+        const sidebar = document.querySelector('.modern-sidebar, .sidebar, #sidebar');
+        if (sidebar) {
+          const scrollPosition = sidebar.scrollTop;
+          sessionStorage.setItem('sidebarScrollPosition', scrollPosition.toString());
+        }
+      }
+
+      function restoreSidebarScrollPosition() {
+        const sidebar = document.querySelector('.modern-sidebar, .sidebar, #sidebar');
+        const savedScrollPosition = sessionStorage.getItem('sidebarScrollPosition');
+
+        if (sidebar && savedScrollPosition) {
+          // Use setTimeout to ensure DOM is fully rendered
+          setTimeout(() => {
+            sidebar.scrollTop = parseInt(savedScrollPosition, 10);
+          }, 100);
+        }
+      }
+
+      function setupSidebarScrollTracking() {
+        const sidebar = document.querySelector('.modern-sidebar, .sidebar, #sidebar');
+        if (!sidebar) return;
+
+        // Save scroll position on scroll
+        sidebar.addEventListener('scroll', saveSidebarScrollPosition);
+
+        // Save scroll position when clicking navigation links
+        const navLinks = sidebar.querySelectorAll('a');
+        navLinks.forEach(link => {
+          link.addEventListener('click', saveSidebarScrollPosition);
+        });
+      }
+
+      // Global modal fix to ensure all modals work properly
+      document.addEventListener('DOMContentLoaded', function() {
+        // Configure default Bootstrap modal options
+        const defaultModalOptions = {
+          backdrop: true,
+          keyboard: true,
+          focus: true
+        };
+
+        // Fix any existing modals on page load
+        document.querySelectorAll('.modal').forEach(function(modalElement) {
+          // Clear any existing backdrop
+          const existingBackdrop = document.querySelector('.modal-backdrop');
+          if (existingBackdrop) {
+            existingBackdrop.remove();
+          }
+
+          // Ensure modal is properly initialized
+          let modalInstance = bootstrap.Modal.getInstance(modalElement);
+          if (!modalInstance) {
+            modalInstance = new bootstrap.Modal(modalElement, defaultModalOptions);
+          }
+        });
+
+        // Initialize toast notifications
+        initToastNotifications();
+
+        // Setup sidebar scroll tracking and restore position
+        setupSidebarScrollTracking();
+        restoreSidebarScrollPosition();
+      });
+
+      // Fix modals after Turbo navigation
+      document.addEventListener('turbo:load', function() {
+        // Clear any stray backdrops
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+          backdrop.remove();
+        });
+
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+
+        // Re-initialize modals
+        document.querySelectorAll('.modal').forEach(function(modalElement) {
+          let modalInstance = bootstrap.Modal.getInstance(modalElement);
+          if (modalInstance) {
+            modalInstance.dispose();
+          }
+          modalInstance = new bootstrap.Modal(modalElement, defaultModalOptions);
+        });
+
+        // Initialize toast notifications
+        initToastNotifications();
+
+        // Restore sidebar scroll position after Turbo navigation
+        restoreSidebarScrollPosition();
+        setupSidebarScrollTracking();
+      });
+
+      // Save sidebar position before navigation and page unload
+      document.addEventListener('turbo:before-visit', saveSidebarScrollPosition);
+      window.addEventListener('beforeunload', saveSidebarScrollPosition);
+
+      // Toast notification functions
+      function initToastNotifications() {
+        const toast = document.getElementById('toast-notification');
+        if (toast) {
+          // Slide in from right
+          setTimeout(function() {
+            toast.style.transform = 'translateX(0)';
+          }, 100);
+
+          // Auto-hide after 5 seconds
+          setTimeout(function() {
+            closeToast();
+          }, 5000);
+        }
+      }
+
+      function closeToast() {
+        const toast = document.getElementById('toast-notification');
+        if (toast) {
+          // Slide out to right
+          toast.style.transform = 'translateX(100%)';
+
+          // Remove from DOM after animation
+          setTimeout(function() {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }
+      }
+
+      // Allow closing with Escape key
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          closeToast();
+        }
+      });
+    </script>
+
+    <!-- Global Form Enhancement Script -->
+    <script>
+<%= File.read(Rails.root.join('app/assets/javascripts/form_enhancements.js')).html_safe %>
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1121 @@
+
+<!-- Leads Management Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Leads Management</h2>
+  </div>
+  <div>
+    <%= link_to new_admin_lead_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add New Lead
+    <% end %>
+  </div>
+</div>
+
+<!-- Lead Statistics Dashboard -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Leads</h6>
+            <h3 class="mb-0 text-primary"><%= @total_leads %></h3>
+          </div>
+          <div class="bg-primary bg-opacity-10 rounded p-3">
+            <i class="bi bi-funnel-fill text-primary fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">In Consultation</h6>
+            <h3 class="mb-0 text-info"><%= @consultation_leads %></h3>
+          </div>
+          <div class="bg-info bg-opacity-10 rounded p-3">
+            <i class="bi bi-chat-dots text-info fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Converted</h6>
+            <h3 class="mb-0 text-success"><%= @converted_leads %></h3>
+          </div>
+          <div class="bg-success bg-opacity-10 rounded p-3">
+            <i class="bi bi-check-circle text-success fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Conversion Rate</h6>
+            <h3 class="mb-0 text-warning"><%= @conversion_rate %>%</h3>
+          </div>
+          <div class="bg-warning bg-opacity-10 rounded p-3">
+            <i class="bi bi-graph-up text-warning fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Search and Filters -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <%= form_with url: admin_leads_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-3">
+        <%= form.text_field :search, placeholder: "Search leads...", value: params[:search], class: "form-control" %>
+      </div>
+      <div class="col-md-2">
+        <%= form.select :current_stage, options_for_select([
+          ['All Stages', ''],
+          ['Consultation', 'consultation'],
+          ['One-on-One', 'one_on_one'],
+          ['Converted', 'converted'],
+          ['Policy Created', 'policy_created'],
+          ['Referral Settled', 'referral_settled']
+        ], params[:current_stage]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.select :product_category, options_for_select([
+          ['All Categories', ''],
+          ['Insurance', 'insurance'],
+          ['Investments', 'investments'],
+          ['Loans', 'loans'],
+          ['Taxation', 'taxation']
+        ], params[:product_category]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.select :referred_by, options_for_select([
+          ['All Sources', ''],
+          ['Agent Referral', 'agent'],
+          ['Online Campaign', 'online'],
+          ['Walk-in', 'walkin'],
+          ['Tele-calling', 'telecalling']
+        ], params[:referred_by]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.submit "Filter", class: "btn btn-outline-primary w-100" %>
+      </div>
+      <div class="col-md-1">
+        <%= link_to admin_leads_path, class: "btn btn-outline-secondary w-100", title: "Clear filters" do %>
+          <i class="bi bi-x-lg"></i>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Leads Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Leads</h5>
+    <div class="d-flex gap-2">
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="border-0">Lead Details</th>
+            <th class="border-0">Contact Information</th>
+            <th class="border-0">Referred By / Product Interest</th>
+            <th class="border-0">Current Stage</th>
+            <th class="border-0">Created Date</th>
+            <th class="border-0">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @leads.any? %>
+            <% @leads.each do |lead| %>
+              <tr class="lead-row" data-id="<%= lead.id %>">
+                <td>
+                  <div>
+                    <span class="badge bg-primary mb-1 d-block"><%= lead.lead_id.presence || "LEAD-#{lead.id}" %></span>
+                    <h6 class="mb-1"><%= lead.name %></h6>
+                    <small class="text-muted"><%= lead.email %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <div class="mb-1"><%= lead.contact_number %></div>
+                    <small class="text-muted"><%= lead.full_address.presence || 'Address not provided' %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <span class="badge <%= lead.source_badge_class %> me-1">
+                      <%= lead.referred_by.presence || lead.lead_source&.humanize || 'Unknown' %>
+                    </span>
+                    <br>
+                    <span class="badge <%= lead.product_badge_class %> mt-1">
+                      <%= lead.product_display_name || 'Not specified' %>
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <%= lead.current_stage&.humanize || 'Unknown' %>
+                </td>
+                <td>
+                  <div>
+                    <div><%= lead.created_date&.strftime('%d/%m/%Y') || lead.created_at&.strftime('%d/%m/%Y') %></div>
+                    <small class="text-muted"><%= time_ago_in_words(lead.created_at) %> ago</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_lead_path(lead), class: "btn btn-sm btn-outline-primary", title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+
+                    <%= link_to edit_admin_lead_path(lead), class: "btn btn-sm btn-outline-warning", title: "Edit Lead" do %>
+                      <i class="bi bi-pencil"></i>
+                    <% end %>
+
+                    <% if lead.can_convert_to_customer? %>
+                      <%= link_to new_admin_customer_path(lead_id: lead.id), class: "btn btn-sm btn-success convert-btn", title: "Convert to Customer", data: { bs_toggle: "tooltip", bs_placement: "top" } do %>
+                        <i class="bi bi-person-plus-fill me-1"></i>Convert
+                      <% end %>
+                    <% elsif lead.converted_customer.present? %>
+                      <%= link_to admin_customer_path(lead.converted_customer), class: "btn btn-sm btn-info customer-link",
+                          title: "View Customer: #{lead.converted_customer.display_name}",
+                          data: { bs_toggle: "tooltip", bs_placement: "top" } do %>
+                        <i class="bi bi-person-check-fill me-1"></i>Customer
+                      <% end %>
+                    <% else %>
+                      <span class="btn btn-sm btn-outline-secondary disabled" title="Conversion not available for this stage">
+                        <i class="bi bi-person-dash"></i>
+                      </span>
+                    <% end %>
+
+                    <!-- Lead Stage Conversion Dropdown -->
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-warning dropdown-toggle stage-convert-btn" data-bs-toggle="dropdown" title="Convert to Stage">
+                        <i class="bi bi-arrow-repeat me-1"></i>Convert Stage
+                      </button>
+                      <ul class="dropdown-menu stage-conversion-menu" style="max-height: 450px; overflow-y: auto;">
+                        <li class="dropdown-header">
+                          <i class="bi bi-funnel me-1"></i>Lead Stage Conversion
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+
+                        <!-- Current Stage Display -->
+                        <li class="dropdown-item-text current-stage-display bg-light px-3 py-2">
+                          <small class="text-muted d-block">Current Stage:</small>
+                          <span class="badge bg-primary mt-1"><%= lead.current_stage&.humanize || 'Unknown' %></span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">Convert to:</li>
+
+                        <!-- All Available Stages -->
+                        <% all_stages = [
+                             { key: 'lead_generated', name: 'Lead Generated', icon: '🟢', color: 'secondary', desc: 'Initial stage' },
+                             { key: 'consultation_scheduled', name: 'Consultation Scheduled', icon: '📅', color: 'info', desc: 'Meeting scheduled' },
+                             { key: 'one_on_one', name: 'One-on-One', icon: '🤝', color: 'warning', desc: 'Personal meeting' },
+                             { key: 'follow_up', name: 'Follow-Up', icon: '🔁', color: 'primary', desc: 'Following up' },
+                             { key: 'follow_up_successful', name: 'Follow-Up Successful', icon: '✅', color: 'success', desc: 'Successful follow-up' },
+                             { key: 'follow_up_unsuccessful', name: 'Follow-Up Unsuccessful', icon: '❌', color: 'danger', desc: 'Unsuccessful follow-up' },
+                             { key: 'not_interested', name: 'Not Interested', icon: '🚫', color: 'dark', desc: 'Lead not interested' },
+                             { key: 're_follow_up', name: 'Re-Follow Up', icon: '🔄', color: 'warning', desc: 'Re-attempting follow-up' },
+                             { key: 'policy_created', name: 'Policy Created', icon: '📄', color: 'primary', desc: 'Policy created' },
+                             { key: 'lead_closed', name: 'Lead Closed', icon: '📁', color: 'secondary', desc: 'Lead closed' }
+                           ] %>
+
+                        <% all_stages.each_with_index do |stage, index| %>
+                          <% if stage[:key] == lead.current_stage %>
+                            <!-- Current stage - disabled -->
+                            <li>
+                              <button class="dropdown-item disabled" style="opacity: 0.6;">
+                                <div class="d-flex align-items-center">
+                                  <span style="font-size: 1.2rem; width: 30px;"><%= stage[:icon] %></span>
+                                  <div class="ms-2">
+                                    <div class="fw-medium" style="font-size: 0.9rem;"><%= stage[:name] %> <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">CURRENT</span></div>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;"><%= stage[:desc] %></small>
+                                  </div>
+                                </div>
+                              </button>
+                            </li>
+                          <% else %>
+                            <!-- Other stages - clickable -->
+                            <li>
+                              <%= form_with url: convert_stage_admin_lead_path(lead, stage: stage[:key]), method: :patch, local: true,
+                                  style: "margin: 0; padding: 0; display: contents;",
+                                  onsubmit: "return confirm('Convert lead to \"#{stage[:name]}\" stage?')" do |f| %>
+                                <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start stage-option"
+                                        style="cursor: pointer;"
+                                        data-stage="<%= stage[:key] %>">
+                                  <div class="d-flex align-items-center">
+                                    <span style="font-size: 1.2rem; width: 30px;"><%= stage[:icon] %></span>
+                                    <div class="ms-2">
+                                      <div class="fw-medium" style="font-size: 0.9rem;">
+                                        <%= "#{index + 1}. #{stage[:name]}" %>
+                                      </div>
+                                      <small class="text-muted d-block" style="font-size: 0.75rem;"><%= stage[:desc] %></small>
+                                    </div>
+                                  </div>
+                                </button>
+                              <% end %>
+                            </li>
+                          <% end %>
+                          <% if index < all_stages.length - 1 && [2, 6, 8].include?(index) %>
+                            <li><hr class="dropdown-divider my-1"></li>
+                          <% end %>
+                        <% end %>
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">Quick Actions</li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <%= link_to "#",
+                              class: "dropdown-item text-danger delete-lead-btn",
+                              data: {
+                                "lead-id": lead.id,
+                                "lead-name": lead.name,
+                                "delete-url": admin_lead_path(lead)
+                              } do %>
+                            <i class="bi bi-trash me-2"></i>Delete Lead
+                          <% end %>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-funnel fs-1 mb-3 d-block"></i>
+                  <h5>No leads found</h5>
+                  <p>Start by creating your first lead or adjust your search filters.</p>
+                  <%= link_to "Add New Lead", new_admin_lead_path, class: "btn btn-primary" %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Lead Details Modal -->
+<div class="modal fade" id="leadModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Lead Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="leadModalContent">
+        <!-- Content loaded dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+
+.lead-row:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.badge.bg-purple {
+  background-color: #6f42c1 !important;
+}
+
+.table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.lead-row {
+  transition: all 0.3s ease;
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Convert to Customer Button Styling */
+.convert-btn {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+  border: none !important;
+  color: white !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+.convert-btn:hover {
+  background: linear-gradient(135deg, #218838 0%, #1a9f7f 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4) !important;
+  color: white !important;
+}
+
+/* Stage Conversion Dropdown Styling */
+.stage-conversion-menu {
+  width: 280px !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.stage-option:hover {
+  background-color: rgba(13, 110, 253, 0.05) !important;
+  border-left: 3px solid #0d6efd;
+  transform: translateX(2px);
+  transition: all 0.2s ease;
+}
+
+.stage-option:active {
+  background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.stage-convert-btn {
+  border-color: #ffc107 !important;
+  color: #856404 !important;
+  font-weight: 500;
+}
+
+.stage-convert-btn:hover {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: white !important;
+}
+
+.convert-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3) !important;
+}
+
+.convert-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.convert-btn:hover::before {
+  left: 100%;
+}
+
+/* Icon animation */
+.convert-btn i {
+  transition: transform 0.3s ease;
+}
+
+.convert-btn:hover i {
+  transform: scale(1.1) rotate(5deg);
+}
+</style>
+
+<!-- JavaScript for Lead Management -->
+<script>
+function toggleSelectAll() {
+  const selectAll = document.getElementById('selectAllCheckbox');
+  const checkboxes = document.querySelectorAll('.lead-checkbox');
+
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAll.checked;
+  });
+
+  updateBulkActionsButton();
+}
+
+function selectAll() {
+  const selectAll = document.getElementById('selectAllCheckbox');
+  selectAll.checked = true;
+  toggleSelectAll();
+}
+
+function updateBulkActionsButton() {
+  const checkboxes = document.querySelectorAll('.lead-checkbox:checked');
+  const bulkActionsBtn = document.getElementById('bulkActionsBtn');
+  const selectedCount = document.getElementById('selectedCount');
+
+  selectedCount.textContent = checkboxes.length;
+  bulkActionsBtn.disabled = checkboxes.length === 0;
+}
+
+function getSelectedLeadIds() {
+  const checkboxes = document.querySelectorAll('.lead-checkbox:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function bulkUpdateStage(stage) {
+  const selectedIds = getSelectedLeadIds();
+
+  if (selectedIds.length === 0) {
+    alert('Please select at least one lead');
+    return;
+  }
+
+  const stageNames = {
+    'consultation': 'Consultation',
+    'one_on_one': 'One-on-One',
+    'converted': 'Converted',
+    'policy_created': 'Policy Created',
+    'referral_settled': 'Referral Settled'
+  };
+
+  if (confirm(`Move ${selectedIds.length} leads to ${stageNames[stage]} stage?`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '<%= bulk_update_stage_admin_leads_path %>';
+
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'authenticity_token';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+
+    // Add method override
+    const methodInput = document.createElement('input');
+    methodInput.type = 'hidden';
+    methodInput.name = '_method';
+    methodInput.value = 'PATCH';
+    form.appendChild(methodInput);
+
+    // Add stage
+    const stageInput = document.createElement('input');
+    stageInput.type = 'hidden';
+    stageInput.name = 'stage';
+    stageInput.value = stage;
+    form.appendChild(stageInput);
+
+    // Add lead IDs
+    selectedIds.forEach(id => {
+      const idInput = document.createElement('input');
+      idInput.type = 'hidden';
+      idInput.name = 'lead_ids[]';
+      idInput.value = id;
+      form.appendChild(idInput);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+function bulkAdvanceStage() {
+  const selectedIds = getSelectedLeadIds();
+
+  if (selectedIds.length === 0) {
+    alert('Please select at least one lead');
+    return;
+  }
+
+  if (confirm(`Advance ${selectedIds.length} leads to their next stage? This will move each lead forward in their pipeline.`)) {
+    // For now, we'll advance each individually since different leads may be at different stages
+    alert('Bulk advance feature will process each lead individually based on their current stage.');
+
+    // You could implement this by calling individual advance_stage actions
+    // or modify the controller to handle bulk advancement logic
+  }
+}
+
+function bulkExport() {
+  const selectedIds = getSelectedLeadIds();
+
+  if (selectedIds.length === 0) {
+    alert('Please select at least one lead');
+    return;
+  }
+
+  // Create export URL with selected IDs
+  const exportUrl = '/admin/leads/export?lead_ids=' + selectedIds.join(',');
+  window.open(exportUrl, '_blank');
+}
+
+function bulkDelete() {
+  const selectedIds = getSelectedLeadIds();
+
+  if (selectedIds.length === 0) {
+    alert('Please select at least one lead');
+    return;
+  }
+
+  if (confirm(`Are you sure you want to delete ${selectedIds.length} leads? This action cannot be undone.`)) {
+    alert('Bulk delete functionality would be implemented here');
+    // Implementation would involve multiple delete requests or a new bulk_delete action
+  }
+}
+
+// Add event listeners to checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Leads page loaded successfully');
+
+  try {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', updateBulkActionsButton);
+    });
+
+    console.log(`Found ${checkboxes.length} lead checkboxes`);
+  } catch (error) {
+    console.error('Error setting up lead checkboxes:', error);
+  }
+
+  // Delete confirmation functionality
+  const deleteButtons = document.querySelectorAll('.delete-lead-btn');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      const leadId = this.dataset.leadId;
+      const leadName = this.dataset.leadName;
+      const deleteUrl = this.dataset.deleteUrl;
+
+      showDeleteConfirmation(leadName, deleteUrl);
+    });
+  });
+
+  function showDeleteConfirmation(leadName, deleteUrl) {
+    // Create modal HTML
+    const modalHtml = `
+      <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header border-bottom-0">
+              <h5 class="modal-title text-danger" id="deleteConfirmationModalLabel">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Delete Lead
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+              <div class="mb-4">
+                <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+              </div>
+              <h6 class="mb-3">Are you sure you want to delete this lead?</h6>
+              <p class="text-muted mb-0">
+                <strong>${leadName}</strong> will be permanently removed from the system.
+              </p>
+              <p class="text-danger small mt-2 mb-0">
+                <i class="bi bi-exclamation-circle me-1"></i>
+                This action cannot be undone.
+              </p>
+            </div>
+            <div class="modal-footer border-top-0 justify-content-center">
+              <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                <i class="bi bi-x-lg me-1"></i>Cancel
+              </button>
+              <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                <i class="bi bi-trash me-1"></i>Delete Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Remove any existing modal
+    const existingModal = document.getElementById('deleteConfirmationModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+    modal.show();
+
+    // Handle confirmation
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+      // Create and submit delete form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = deleteUrl;
+
+      // Add CSRF token
+      const csrfToken = document.querySelector('meta[name="csrf-token"]');
+      if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'authenticity_token';
+        csrfInput.value = csrfToken.getAttribute('content');
+        form.appendChild(csrfInput);
+      }
+
+      // Add method override for DELETE
+      const methodInput = document.createElement('input');
+      methodInput.type = 'hidden';
+      methodInput.name = '_method';
+      methodInput.value = 'DELETE';
+      form.appendChild(methodInput);
+
+      document.body.appendChild(form);
+      form.submit();
+
+      modal.hide();
+    });
+
+    // Clean up modal when hidden
+    document.getElementById('deleteConfirmationModal').addEventListener('hidden.bs.modal', function () {
+      this.remove();
+    });
+  }
+});
+
+function showLeadModal(leadId) {
+  try {
+    const modalElement = document.getElementById('leadModal');
+    if (!modalElement) {
+      console.error('Lead modal element not found');
+      return;
+    }
+
+    const modal = new bootstrap.Modal(modalElement);
+    const content = document.getElementById('leadModalContent');
+
+    if (!content) {
+      console.error('Lead modal content element not found');
+      return;
+    }
+
+  // Sample lead data
+  const leads = {
+    1: {
+      id: 'LEAD-001',
+      name: 'Rajesh Kumar',
+      email: 'rajesh.kumar@email.com',
+      phone: '+91 98765 43210',
+      address: 'Mumbai, Maharashtra',
+      referredBy: 'Agent - Amit Shah',
+      productInterest: 'Health Insurance',
+      currentStage: 'One-on-One',
+      notes: 'Interested in family health insurance. Has existing life insurance policy.',
+      createdDate: 'Dec 08, 2024'
+    },
+    2: {
+      id: 'LEAD-002',
+      name: 'Priya Sharma',
+      email: 'priya.sharma@email.com',
+      phone: '+91 87654 32109',
+      address: 'Delhi, Delhi',
+      referredBy: 'Online Campaign',
+      productInterest: 'Life Insurance',
+      currentStage: 'Consultation',
+      notes: 'Young professional looking for term life insurance.',
+      createdDate: 'Dec 07, 2024'
+    }
+  };
+
+  const lead = leads[leadId] || leads[1];
+
+  content.innerHTML = `
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card border-0">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">Lead Information</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Lead ID</label>
+                <div class="fw-bold">${lead.id}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Lead Name</label>
+                <div class="fw-bold">${lead.name}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Email</label>
+                <div>${lead.email}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Phone</label>
+                <div>${lead.phone}</div>
+              </div>
+              <div class="col-md-12 mb-3">
+                <label class="form-label text-muted">Address</label>
+                <div>${lead.address}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Referred By</label>
+                <div><span class="badge bg-success">${lead.referredBy}</span></div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Product Interest</label>
+                <div><span class="badge bg-info">${lead.productInterest}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 mt-3">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">Notes & Attachments</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label text-muted">Notes</label>
+              <div>${lead.notes}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card border-0">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">Lead Status</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label text-muted">Current Stage</label>
+              <select class="form-select">
+                <option ${lead.currentStage === 'Consultation' ? 'selected' : ''}>Consultation</option>
+                <option ${lead.currentStage === 'One-on-One' ? 'selected' : ''}>One-on-One</option>
+                <option ${lead.currentStage === 'Converted' ? 'selected' : ''}>Converted</option>
+                <option ${lead.currentStage === 'Policy Created' ? 'selected' : ''}>Policy Created</option>
+                <option ${lead.currentStage === 'Referral Settled' ? 'selected' : ''}>Referral Settled</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted">Created Date</label>
+              <div>${lead.createdDate}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 mt-3">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">Actions Panel</h6>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              <button class="btn btn-success">
+                <i class="bi bi-person-plus me-2"></i>
+                Convert to Customer
+              </button>
+              <button class="btn btn-primary">
+                <i class="bi bi-file-earmark-plus me-2"></i>
+                Create Policy
+              </button>
+              <button class="btn btn-info">
+                <i class="bi bi-cash-coin me-2"></i>
+                Transfer Referral Amount
+              </button>
+              <button class="btn btn-outline-warning">
+                <i class="bi bi-pencil me-2"></i>
+                Edit Lead
+              </button>
+              <button class="btn btn-outline-danger">
+                <i class="bi bi-trash me-2"></i>
+                Delete Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+    modal.show();
+  } catch (error) {
+    console.error('Error showing lead modal:', error);
+  }
+}
+
+// Initialize tooltips for convert/customer buttons
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Bootstrap tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  // Add custom styling for customer links
+  const customerLinks = document.querySelectorAll('.customer-link');
+  customerLinks.forEach(link => {
+    link.addEventListener('mouseenter', function() {
+      this.style.transform = 'scale(1.05)';
+      this.style.transition = 'all 0.2s ease';
+    });
+
+    link.addEventListener('mouseleave', function() {
+      this.style.transform = 'scale(1)';
+    });
+  });
+
+  // Add hover effect for convert buttons
+  const convertButtons = document.querySelectorAll('.convert-btn');
+  convertButtons.forEach(button => {
+    button.addEventListener('mouseenter', function() {
+      this.style.transform = 'scale(1.05)';
+      this.style.transition = 'all 0.2s ease';
+    });
+
+    button.addEventListener('mouseleave', function() {
+      this.style.transform = 'scale(1)';
+    });
+  });
+});
+</script>
+
+<!-- Custom CSS for improved action buttons -->
+<style>
+.convert-btn {
+  animation: subtle-pulse 3s infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(25, 135, 84, 0.1);
+  }
+}
+
+.customer-link {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8);
+  border: none;
+  color: white;
+  font-weight: 500;
+}
+
+.customer-link:hover {
+  background: linear-gradient(45deg, #17a2b8, #0dcaf0);
+  color: white;
+  box-shadow: 0 4px 12px rgba(13, 202, 240, 0.3);
+}
+
+.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tooltip styling */
+.tooltip .tooltip-inner {
+  background-color: #212529;
+  color: #fff;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  max-width: 250px;
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+  border-top-color: #212529;
+}
+
+/* Stage Conversion Button Styling */
+.stage-convert-btn {
+  background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%) !important;
+  border: none !important;
+  color: white !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3) !important;
+}
+
+.stage-convert-btn:hover {
+  background: linear-gradient(135deg, #e06605 0%, #e6ac00 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(253, 126, 20, 0.4) !important;
+  color: white !important;
+}
+
+.stage-convert-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(253, 126, 20, 0.3) !important;
+}
+
+/* Stage Conversion Menu Styling */
+.stage-conversion-menu {
+  min-width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+  border: none !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+  border-radius: 12px !important;
+}
+
+.stage-conversion-menu .dropdown-header {
+  background: linear-gradient(135deg, #fd7e14, #ffc107);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  border-radius: 12px 12px 0 0;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.stage-conversion-menu .current-stage-display {
+  background: rgba(13, 110, 253, 0.1);
+  padding: 0.75rem 1rem;
+  margin: 0;
+  text-align: center;
+}
+
+.stage-conversion-menu .stage-option {
+  transition: all 0.2s ease;
+  margin: 0.1rem 0.5rem;
+  border-radius: 8px;
+}
+
+.stage-conversion-menu .stage-option:hover {
+  background: linear-gradient(135deg, rgba(253, 126, 20, 0.1), rgba(255, 193, 7, 0.1)) !important;
+  transform: translateX(5px);
+  border-radius: 8px;
+}
+
+.stage-conversion-menu .stage-option .badge {
+  transition: transform 0.2s ease;
+}
+
+.stage-conversion-menu .stage-option:hover .badge {
+  transform: scale(1.1);
+}
+
+/* Stage option animations */
+.stage-option[data-stage="converted"] {
+  background: linear-gradient(90deg, rgba(25, 135, 84, 0.1), transparent);
+}
+
+.stage-option[data-stage="policy_created"] {
+  background: linear-gradient(90deg, rgba(13, 110, 253, 0.1), transparent);
+}
+
+.stage-option[data-stage="not_interested"] {
+  background: linear-gradient(90deg, rgba(108, 117, 125, 0.1), transparent);
+}
+
+.stage-option[data-stage="lead_closed"] {
+  background: linear-gradient(90deg, rgba(108, 117, 125, 0.1), transparent);
+}
+</style>
+
+<!-- Edit Lead Modal -->
+<div class="modal fade" id="editLeadModal" tabindex="-1" aria-labelledby="editLeadModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editLeadModalLabel">
+          <i class="bi bi-pencil-square me-2"></i>Edit Lead
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <%= form_with id: "editLeadForm", method: :patch, local: true, class: "needs-validation", novalidate: true do |form| %>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :name, "Name", class: "form-label" %>
+              <%= form.text_field :name, class: "form-control", placeholder: "Enter lead name", required: true %>
+              <div class="invalid-feedback">Please provide a valid name.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :contact_number, "Contact Number", class: "form-label" %>
+              <%= form.text_field :contact_number, class: "form-control", placeholder: "Enter contact number", required: true %>
+              <div class="invalid-feedback">Please provide a valid contact number.</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :email, "Email", class: "form-label" %>
+              <%= form.email_field :email, class: "form-control", placeholder: "Enter email address" %>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :address, "Address", class: "form-label" %>
+              <%= form.text_area :address, class: "form-control", rows: 2, placeholder: "Enter address" %>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :city, "City", class: "form-label" %>
+              <%= form.text_field :city, class: "form-control", placeholder: "Enter city" %>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :state, "State", class: "form-label" %>
+              <%= form.text_field :state, class: "form-control", placeholder: "Enter state" %>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Lead</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditModal(leadId, name, contactNumber, email, address, city, state) {
+  // Set form action URL
+  const form = document.getElementById('editLeadForm');
+  form.action = `/admin/leads/${leadId}`;
+
+  // Populate form fields
+  form.elements['name'].value = name || '';
+  form.elements['contact_number'].value = contactNumber || '';
+  form.elements['email'].value = email || '';
+  form.elements['address'].value = address || '';
+  form.elements['city'].value = city || '';
+  form.elements['state'].value = state || '';
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('editLeadModal'));
+  modal.show();
+}
+
+// Form validation for modal
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('editLeadForm');
+  if (form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  }
+});
+</script>

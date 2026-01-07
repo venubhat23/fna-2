@@ -1,0 +1,512 @@
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Edit Ambassador</h2>
+    <p class="text-muted mb-0">Update ambassador details: <%= @distributor.display_name %></p>
+  </div>
+  <div>
+    <%= link_to admin_distributors_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Ambassadors
+    <% end %>
+  </div>
+</div>
+
+<%= form_with model: [:admin, @distributor], local: true, multipart: true, class: "needs-validation", novalidate: true, data: { turbo: false } do |form| %>
+  <% if @distributor.errors.any? %>
+    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <h6>Please correct the following errors:</h6>
+      <ul class="mb-0">
+        <% @distributor.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% end %>
+
+  <!-- 1. Personal Details -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 d-flex align-items-center">
+      <i class="bi bi-person-circle me-2 text-primary"></i>
+      <h5 class="mb-0">Personal Details</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <%= form.label :first_name, class: "form-label" do %>
+            First Name <span class="text-danger">*</span>
+          <% end %>
+          <%= form.text_field :first_name, class: "form-control", placeholder: "Enter first name", required: true %>
+        </div>
+        <div class="col-md-4">
+          <%= form.label :middle_name, "Middle Name", class: "form-label" %>
+          <%= form.text_field :middle_name, class: "form-control", placeholder: "Enter middle name" %>
+        </div>
+        <div class="col-md-4">
+          <%= form.label :last_name, class: "form-label" do %>
+            Last Name <span class="text-danger">*</span>
+          <% end %>
+          <%= form.text_field :last_name, class: "form-control", placeholder: "Enter last name", required: true %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <%= form.label :mobile, class: "form-label" do %>
+            Mobile <span class="text-danger">*</span>
+          <% end %>
+          <%= form.telephone_field :mobile, class: "form-control", placeholder: "Enter mobile number", required: true %>
+        </div>
+        <div class="col-md-6">
+          <%= form.label :email, class: "form-label" do %>
+            Email <span class="text-danger">*</span>
+          <% end %>
+          <%= form.email_field :email, class: "form-control", placeholder: "Enter email address", required: true %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <%= form.label :role_id, class: "form-label" do %>
+            Role <span class="text-danger">*</span>
+          <% end %>
+          <%= form.text_field :role_id, class: "form-control", value: 'distributor', readonly: true %>
+        </div>
+        <div class="col-md-6">
+          <%= form.label :birth_date, "Birth Date", class: "form-label" %>
+          <%= form.date_field :birth_date, class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-4">
+          <%= form.label :state_id, "State", class: "form-label" %>
+          <%= form.select :state_id,
+              options_for_select(LocationData.states_for_select, @distributor.state_id),
+              { prompt: 'Search and select state...' },
+              { class: "form-select searchable-select", id: "distributor_state", data: { placeholder: "Type to search states..." } } %>
+        </div>
+        <div class="col-md-4">
+          <%= form.label :city_id, "City", class: "form-label" %>
+          <%= form.select :city_id,
+              options_for_select([], @distributor.city_id),
+              { prompt: 'Search and select city...' },
+              { class: "form-select searchable-select", id: "distributor_city", data: { placeholder: "Type to search cities..." } } %>
+        </div>
+        <div class="col-md-4">
+          <%= form.label :gender, "Gender", class: "form-label" %>
+          <%= form.select :gender,
+              options_for_select([
+                ['Male', 'Male'], ['Female', 'Female'], ['Other', 'Other']
+              ], @distributor.gender),
+              { prompt: 'Select Gender' },
+              { class: "form-select" } %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-4">
+          <%= form.label :pan_no, "PAN No", class: "form-label" %>
+          <%= form.text_field :pan_no, class: "form-control", placeholder: "Enter PAN number" %>
+        </div>
+        <div class="col-md-4">
+          <%= form.label :gst_no, "GST No", class: "form-label" %>
+          <%= form.text_field :gst_no, class: "form-control", placeholder: "Enter GST number" %>
+        </div>
+        <div class="col-md-4">
+          <%= form.label :company_name, "Company Name", class: "form-label" %>
+          <%= form.text_field :company_name, class: "form-control", placeholder: "Enter company name" %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-12">
+          <%= form.label :address, "Address", class: "form-label" %>
+          <%= form.text_area :address, class: "form-control", rows: 3, placeholder: "Enter full address" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Bank Details -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 d-flex align-items-center">
+      <i class="bi bi-bank me-2 text-success"></i>
+      <h5 class="mb-0">Bank Details</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <%= form.label :bank_name, "Bank Name", class: "form-label" %>
+          <%= form.text_field :bank_name, class: "form-control", placeholder: "Enter bank name" %>
+        </div>
+        <div class="col-md-6">
+          <%= form.label :account_no, "Account Number", class: "form-label" %>
+          <%= form.text_field :account_no, class: "form-control", placeholder: "Enter account number" %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <%= form.label :ifsc_code, "IFSC Code", class: "form-label" %>
+          <%= form.text_field :ifsc_code, class: "form-control", placeholder: "Enter IFSC code" %>
+        </div>
+        <div class="col-md-6">
+          <%= form.label :account_holder_name, "Account Holder Name", class: "form-label" %>
+          <%= form.text_field :account_holder_name, class: "form-control", placeholder: "Enter account holder name" %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <%= form.label :account_type, "Account Type", class: "form-label" %>
+          <%= form.select :account_type,
+              options_for_select([
+                ['Savings', 'Savings'], ['Current', 'Current'], ['Salary', 'Salary']
+              ], @distributor.account_type),
+              { prompt: 'Select Account Type' },
+              { class: "form-select" } %>
+        </div>
+        <div class="col-md-6">
+          <%= form.label :upi_id, "UPI ID", class: "form-label" %>
+          <%= form.text_field :upi_id, class: "form-control", placeholder: "Enter UPI ID" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Affiliate Assignment -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 d-flex align-items-center">
+      <i class="bi bi-people me-2 text-info"></i>
+      <h5 class="mb-0">Affiliate Assignment</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-12">
+          <%= form.label :assigned_affiliate_ids, "Manage Assigned Affiliates", class: "form-label" %>
+          <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+            <% SubAgent.where(status: :active).each do |sub_agent| %>
+              <% is_assigned = @distributor.assigned_sub_agents.include?(sub_agent) %>
+              <div class="form-check mb-2">
+                <%= check_box_tag "distributor[assigned_affiliate_ids][]", sub_agent.id, is_assigned,
+                    class: "form-check-input", id: "affiliate_#{sub_agent.id}" %>
+                <%= label_tag "affiliate_#{sub_agent.id}", class: "form-check-label ms-2" do %>
+                  <strong><%= sub_agent.display_name %></strong>
+                  <% if is_assigned %>
+                    <span class="badge bg-success ms-2">Assigned</span>
+                  <% end %>
+                  <small class="text-muted d-block">
+                    <i class="bi bi-envelope"></i> <%= sub_agent.email %> |
+                    <i class="bi bi-telephone"></i> <%= sub_agent.mobile %>
+                  </small>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <small class="form-text text-muted mt-1">
+            Update affiliate assignments for this distributor. Changes will be saved when you update the distributor.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Documents & QR Code -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 d-flex align-items-center">
+      <i class="bi bi-file-earmark-arrow-up me-2 text-warning"></i>
+      <h5 class="mb-0">Documents & QR Code</h5>
+    </div>
+    <div class="card-body">
+      <!-- Main Document Upload -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <%= form.label :upload_main_document, "Upload Main Document", class: "form-label" %>
+          <% if @distributor.upload_main_document.attached? %>
+            <div class="mb-2">
+              <small class="text-muted">Current file: <%= @distributor.upload_main_document.filename %></small>
+            </div>
+          <% end %>
+          <%= form.file_field :upload_main_document, class: "form-control", accept: "image/*,application/pdf" %>
+          <small class="form-text text-muted">Upload main identification document (JPG, PNG, PDF) - leave empty to keep existing</small>
+        </div>
+      </div>
+
+      <!-- Existing Documents -->
+      <% if @distributor.distributor_documents.any? %>
+        <div class="border-bottom pb-4 mb-4">
+          <h6 class="mb-3">Existing Documents</h6>
+          <div class="row">
+            <% @distributor.distributor_documents.each do |document| %>
+              <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h6 class="card-title"><%= document.document_type %></h6>
+                    <p class="card-text">
+                      <small class="text-muted">
+                        <%= document.document_name %><br>
+                        Uploaded: <%= document.created_at ? time_ago_in_words(document.created_at) + ' ago' : 'Date not available' %>
+                      </small>
+                    </p>
+                    <div class="d-flex gap-2">
+                      <% if document.document_file.attached? %>
+                        <%= link_to document.document_url, target: '_blank', class: "btn btn-sm btn-outline-primary" do %>
+                          <i class="bi bi-eye me-1"></i>View
+                        <% end %>
+                      <% end %>
+                      <button type="button" class="btn btn-sm btn-outline-danger"
+                              onclick="markForDeletion(<%= document.id %>)">
+                        <i class="bi bi-trash me-1"></i>Delete
+                      </button>
+                      <!-- Hidden field for deletion marking -->
+                      <%= hidden_field_tag "distributor[distributor_documents_attributes][#{document.id}][id]", document.id %>
+                      <%= hidden_field_tag "distributor[distributor_documents_attributes][#{document.id}][_destroy]", false,
+                                          id: "document_destroy_#{document.id}" %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Add New Documents Section -->
+      <div class="border-top pt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">Add New Documents</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="add_document">
+            <i class="bi bi-plus-lg me-1"></i>
+            Add Document
+          </button>
+        </div>
+
+        <div id="documents_container">
+          <!-- Dynamic documents will be added here -->
+        </div>
+
+        <p class="text-muted mb-0 mt-2">
+          <small>Document types: Aadhaar Card, Pancard, Driving License, Mediclaim, RC Book, Other File</small>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-end gap-2">
+        <%= link_to "Cancel", admin_distributors_path, class: "btn btn-outline-secondary" %>
+        <%= form.submit "Update Ambassador", class: "btn btn-primary" %>
+      </div>
+    </div>
+  </div>
+
+<% end %>
+
+<style>
+.document-entry {
+  background: #f8f9fa;
+  border-radius: 8px;
+  position: relative;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+</style>
+
+<!-- jQuery and Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Include Location Data -->
+<script>
+<%= File.read(Rails.root.join('app/assets/javascripts/location_data.js')).html_safe %>
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize searchable state-city dropdowns
+  const stateSelect = document.getElementById('distributor_state');
+  const citySelect = document.getElementById('distributor_city');
+  const currentCityId = '<%= @distributor.city_id %>';
+
+  // Use global location data
+  let citiesData = {};
+  if (window.LocationData && window.LocationData.states) {
+    citiesData = Object.keys(window.LocationData.states).reduce((acc, key) => {
+      acc[key] = window.LocationData.states[key].cities;
+      return acc;
+    }, {});
+  }
+
+  function loadCitiesForState(stateValue, selectedCityValue = null) {
+    console.log('Loading cities for distributor state:', stateValue);
+    if (!stateValue) {
+      populateCityDropdown([], selectedCityValue);
+      citySelect.disabled = true;
+      return;
+    }
+
+    // Get cities for this state from local data
+    let cities = citiesData[stateValue] || [];
+    populateCityDropdown(cities, selectedCityValue);
+  }
+
+  function populateCityDropdown(cities, selectedCityValue = null) {
+    // First destroy Select2 if it exists
+    const $citySelect = $(citySelect);
+    if ($citySelect.hasClass('select2-hidden-accessible')) {
+      $citySelect.select2('destroy');
+    }
+
+    // Clear dropdown and add cities
+    citySelect.innerHTML = '<option value="">Select City</option>';
+    cities.forEach(city => {
+      const option = document.createElement('option');
+      option.value = city;
+      option.textContent = city;
+      if (city === selectedCityValue) {
+        option.selected = true;
+      }
+      citySelect.appendChild(option);
+    });
+
+    citySelect.disabled = false;
+    console.log(`Loaded ${cities.length} cities for distributor`);
+
+    // Reinitialize Select2
+    setTimeout(() => {
+      $citySelect.select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Search and select city...',
+        allowClear: true,
+        width: '100%',
+        minimumResultsForSearch: 0
+      });
+
+      // Set the selected value after Select2 initialization
+      if (selectedCityValue) {
+        $citySelect.val(selectedCityValue).trigger('change');
+      }
+    }, 50);
+  }
+
+  // Initialize Select2 for state and city dropdowns
+  if (typeof $ !== 'undefined' && $.fn.select2) {
+    $(stateSelect).select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select state...',
+      allowClear: true,
+      width: '100%',
+      minimumResultsForSearch: 0
+    });
+
+    $(citySelect).select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select city...',
+      allowClear: true,
+      width: '100%',
+      minimumResultsForSearch: 0
+    });
+  }
+
+  // Handle state change
+  stateSelect.addEventListener('change', function() {
+    loadCitiesForState(this.value);
+  });
+
+  // Handle Select2 change event specifically
+  $('#distributor_state').on('select2:select', function (e) {
+    const selectedValue = e.params.data.id;
+    loadCitiesForState(selectedValue);
+  });
+
+  // Load cities if state is pre-selected (for edit page auto-fill)
+  if (stateSelect.value) {
+    // Get current city text value based on city_id for auto-selection
+    const currentCityText = citySelect.querySelector(`option[value="${currentCityId}"]`)?.textContent;
+    loadCitiesForState(stateSelect.value, currentCityText);
+  }
+
+  // Document management
+  let documentIndex = <%= @distributor.distributor_documents.size %>;
+  const addDocumentBtn = document.getElementById('add_document');
+  const documentsContainer = document.getElementById('documents_container');
+
+  addDocumentBtn?.addEventListener('click', function() {
+    const documentHtml = `
+      <div class="document-entry p-3 mb-3 border rounded position-relative" data-index="${documentIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-document">
+          <i class="bi bi-trash"></i>
+        </button>
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Document Type <span class="text-danger">*</span></label>
+            <select name="distributor[distributor_documents_attributes][${documentIndex}][document_type]" class="form-select" required>
+              <option value="">Select Document Type</option>
+              <option value="Aadhaar Card">Aadhaar Card</option>
+              <option value="Pancard">Pancard</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Mediclaim">Mediclaim</option>
+              <option value="RC Book">RC Book</option>
+              <option value="Other File">Other File</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Document File <span class="text-danger">*</span></label>
+            <input type="file" name="distributor[distributor_documents_attributes][${documentIndex}][document_file]" class="form-control" accept="image/*,application/pdf" required>
+          </div>
+        </div>
+      </div>
+    `;
+    documentsContainer.insertAdjacentHTML('beforeend', documentHtml);
+    documentIndex++;
+  });
+
+  // Event delegation for remove buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-document')) {
+      e.target.closest('.document-entry').remove();
+    }
+  });
+});
+
+// Function to mark existing documents for deletion
+function markForDeletion(documentId) {
+  if (confirm('Are you sure you want to delete this document?')) {
+    const destroyField = document.getElementById('document_destroy_' + documentId);
+    const documentCard = destroyField.closest('.card');
+
+    if (destroyField && documentCard) {
+      destroyField.value = '1'; // Mark for deletion
+      documentCard.style.opacity = '0.5';
+      documentCard.style.pointerEvents = 'none';
+
+      // Add a visual indicator
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-danger position-absolute top-0 end-0 m-2';
+      badge.textContent = 'Will be deleted';
+      badge.style.zIndex = '10';
+      documentCard.style.position = 'relative';
+      documentCard.appendChild(badge);
+
+      // Find and disable the delete button
+      const deleteBtn = documentCard.querySelector('button[onclick*="markForDeletion"]');
+      if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Marked for deletion';
+      }
+    }
+  }
+}
+</script>

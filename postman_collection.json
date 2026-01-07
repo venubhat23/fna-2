@@ -1,0 +1,276 @@
+{
+	"info": {
+		"_postman_id": "insurebook-auth-api",
+		"name": "InsureBook Authentication API",
+		"description": "API collection for mobile app authentication endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login endpoint for user authentication"
+					},
+					"response": [
+						{
+							"name": "Login Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiJ9...\",\n        \"exp\": \"11-18-2025 12:30\",\n        \"user\": {\n            \"id\": 1,\n            \"first_name\": \"John\",\n            \"last_name\": \"Doe\",\n            \"full_name\": \"John Doe\",\n            \"email\": \"user@example.com\",\n            \"mobile\": \"+1234567890\",\n            \"user_type\": \"agent\",\n            \"role\": \"agent_role\",\n            \"status\": true,\n            \"address\": \"123 Main St\",\n            \"city\": \"New York\",\n            \"state\": \"NY\",\n            \"pan_number\": \"ABCDE1234F\",\n            \"gst_number\": \"12ABCDE1234F1Z5\",\n            \"date_of_birth\": \"1990-01-01\",\n            \"gender\": \"male\",\n            \"occupation\": \"Insurance Agent\",\n            \"annual_income\": \"50000\",\n            \"created_at\": \"2025-01-01T00:00:00.000Z\",\n            \"updated_at\": \"2025-01-01T00:00:00.000Z\"\n        }\n    }\n}"
+						},
+						{
+							"name": "Login Failed",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"wrongpassword\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"message\": \"Invalid credentials\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"newuser@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"mobile\": \"+1234567890\",\n    \"user_type\": \"agent\",\n    \"role\": \"agent_role\",\n    \"address\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"pan_number\": \"ABCDE1234F\",\n    \"gst_number\": \"12ABCDE1234F1Z5\",\n    \"date_of_birth\": \"1990-01-01\",\n    \"gender\": \"male\",\n    \"occupation\": \"Insurance Agent\",\n    \"annual_income\": \"50000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "User registration endpoint"
+					},
+					"response": [
+						{
+							"name": "Registration Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"newuser@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"mobile\": \"+1234567890\",\n    \"user_type\": \"agent\",\n    \"role\": \"agent_role\",\n    \"address\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"pan_number\": \"ABCDE1234F\",\n    \"gst_number\": \"12ABCDE1234F1Z5\",\n    \"date_of_birth\": \"1990-01-01\",\n    \"gender\": \"male\",\n    \"occupation\": \"Insurance Agent\",\n    \"annual_income\": \"50000\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/register",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"register"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Account created successfully\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiJ9...\",\n        \"exp\": \"11-18-2025 12:30\",\n        \"user\": {\n            \"id\": 2,\n            \"first_name\": \"John\",\n            \"last_name\": \"Doe\",\n            \"full_name\": \"John Doe\",\n            \"email\": \"newuser@example.com\",\n            \"mobile\": \"+1234567890\",\n            \"user_type\": \"agent\",\n            \"role\": \"agent_role\",\n            \"status\": true,\n            \"address\": \"123 Main Street\",\n            \"city\": \"New York\",\n            \"state\": \"NY\",\n            \"pan_number\": \"ABCDE1234F\",\n            \"gst_number\": \"12ABCDE1234F1Z5\",\n            \"date_of_birth\": \"1990-01-01\",\n            \"gender\": \"male\",\n            \"occupation\": \"Insurance Agent\",\n            \"annual_income\": \"50000\",\n            \"created_at\": \"2025-11-17T12:30:00.000Z\",\n            \"updated_at\": \"2025-11-17T12:30:00.000Z\"\n        }\n    }\n}"
+						},
+						{
+							"name": "Registration Failed - Validation Error",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"first_name\": \"John\",\n    \"email\": \"invalid-email\",\n    \"password\": \"123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/register",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"register"
+									]
+								}
+							},
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        \"Email is invalid\",\n        \"Password is too short (minimum is 6 characters)\",\n        \"Last name can't be blank\"\n    ]\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}

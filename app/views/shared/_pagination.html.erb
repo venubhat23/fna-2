@@ -1,0 +1,41 @@
+<%#
+  Conditional Pagination Partial
+  Usage: <%= render 'shared/pagination', records: @your_records %>
+
+  This partial will only show pagination controls if the total number of records
+  exceeds the items_per_page setting from SystemSettings
+%>
+
+<% if local_assigns[:records] && should_show_pagination?(records) %>
+  <div class="d-flex justify-content-between align-items-center mt-4">
+    <div class="text-muted">
+      <% if records.respond_to?(:total_count) %>
+        Showing
+        <strong><%= records.offset_value + 1 %></strong> -
+        <strong><%= [records.offset_value + records.limit_value, records.total_count].min %></strong>
+        of <strong><%= records.total_count %></strong> records
+      <% end %>
+
+      <% if @items_per_page.present? %>
+        <small class="ms-2 text-muted">
+          (Items per page: <%= @items_per_page %>)
+        </small>
+      <% end %>
+    </div>
+
+    <div class="pagination-wrapper">
+      <%= paginate records %>
+    </div>
+  </div>
+<% elsif local_assigns[:records] %>
+  <%# Show record count even when pagination is not needed %>
+  <div class="text-muted mt-3">
+    <% total = records.respond_to?(:total_count) ? records.total_count : records.count %>
+    Showing all <strong><%= total %></strong> <%= 'record'.pluralize(total) %>
+    <% if @items_per_page.present? && total <= @items_per_page %>
+      <small class="ms-2 text-muted">
+        (Pagination appears when exceeding <%= @items_per_page %> records)
+      </small>
+    <% end %>
+  </div>
+<% end %>

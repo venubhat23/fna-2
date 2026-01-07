@@ -1,0 +1,334 @@
+<!-- Insurance Summary Dashboard -->
+<div class="dashboard-container">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1 text-primary fw-bold">Commission Dashboard</h2>
+      <p class="text-muted mb-0">Comprehensive overview of commission tracking and payouts</p>
+    </div>
+    <div class="d-flex gap-2">
+      <%= link_to admin_commission_tracking_index_path, class: "btn btn-outline-primary" do %>
+        <i class="bi bi-list-ul me-1"></i>
+        View All Policies
+      <% end %>
+      <%= link_to summary_admin_commission_tracking_index_path, class: "btn btn-outline-secondary" do %>
+        <i class="bi bi-file-earmark-text me-1"></i>
+        Summary Report
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Commission Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card h-100 border-0 shadow-sm stat-card" style="--card-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%); --text-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center">
+          <div class="bg-primary bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-currency-rupee text-primary fs-4"></i>
+          </div>
+          <h6 class="text-muted mb-2 stat-label">Total Commission Generated</h6>
+          <h3 class="mb-0 stat-value">₹<%= number_with_delimiter((@commission_summary&.[](:total_generated) || 0).to_i) %></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card h-100 border-0 shadow-sm stat-card" style="--card-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); --text-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="card-body text-center">
+          <div class="bg-success bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-arrow-right-circle text-success fs-4"></i>
+          </div>
+          <h6 class="text-muted mb-2 stat-label">Total Transferred</h6>
+          <h3 class="mb-0 stat-value">₹<%= number_with_delimiter(@commission_summary[:total_transferred].to_i) %></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card h-100 border-0 shadow-sm stat-card" style="--card-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); --text-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="card-body text-center">
+          <div class="bg-warning bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-clock text-warning fs-4"></i>
+          </div>
+          <h6 class="text-muted mb-2 stat-label">Pending Transfers</h6>
+          <h3 class="mb-0 stat-value">₹<%= number_with_delimiter(@commission_summary[:pending_transfers].to_i) %></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card h-100 border-0 shadow-sm stat-card" style="--card-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); --text-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-center">
+          <div class="bg-info bg-opacity-10 rounded-circle mx-auto mb-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-building text-info fs-4"></i>
+          </div>
+          <h6 class="text-muted mb-2 stat-label">Company Expenses</h6>
+          <h3 class="mb-0 stat-value">₹<%= number_with_delimiter(@commission_summary[:company_expenses].to_i) %></h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer Summary by Category -->
+  <div class="row mb-4">
+    <div class="col-lg-8">
+      <div class="card dashboard-card">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-pie-chart me-2 text-primary"></i>
+            Transfer Summary by Category
+          </h5>
+          <p class="text-muted mb-0 small">Commission distribution Dr WISE different payout categories</p>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <% @transfer_summary.each do |category, amounts| %>
+              <div class="col-md-6 mb-3">
+                <div class="border rounded p-3">
+                  <h6 class="text-capitalize mb-2">
+                    <i class="bi bi-dot text-primary fs-3 me-1" style="line-height: 1;"></i>
+                    <%= category.to_s.humanize %>
+                  </h6>
+                  <div class="d-flex justify-content-between mb-1">
+                    <small class="text-muted">Paid:</small>
+                    <small class="fw-bold text-success">₹<%= number_with_delimiter((amounts['paid'] || 0).to_i) %></small>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <small class="text-muted">Pending:</small>
+                    <small class="fw-bold text-warning">₹<%= number_with_delimiter((amounts['pending'] || 0).to_i) %></small>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card dashboard-card">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-speedometer2 me-2 text-primary"></i>
+            Quick Stats
+          </h5>
+        </div>
+        <div class="card-body">
+          <%
+            total_generated = @commission_summary[:total_generated].to_f
+            total_transferred = @commission_summary[:total_transferred].to_f
+            transfer_rate = total_generated > 0 ? (total_transferred / total_generated * 100).round(1) : 0
+          %>
+
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted">Transfer Rate</span>
+              <span class="fw-bold"><%= transfer_rate %>%</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-success" style="width: <%= transfer_rate %>%;"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Recent Policies</span>
+              <span class="badge bg-primary"><%= @recent_policies.count %></span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Processing Status</span>
+              <span class="badge bg-warning text-dark">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Policies with Commission -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card dashboard-card">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="card-title mb-0">
+                <i class="bi bi-clock-history me-2 text-primary"></i>
+                Recent Policies with Commission
+              </h5>
+              <p class="text-muted mb-0 small">Latest insurance policies with calculated commissions</p>
+            </div>
+            <%= link_to "View All", admin_commission_tracking_index_path, class: "btn btn-outline-primary btn-sm" %>
+          </div>
+        </div>
+        <div class="card-body">
+          <% if @recent_policies.present? %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Policy Details</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Premium</th>
+                    <th>Commission</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @recent_policies.each do |item| %>
+                    <% policy = item[:policy] %>
+                    <% type = item[:type] %>
+                    <% commission_data = item[:commission_data] %>
+                    <tr>
+                      <td>
+                        <div>
+                          <div class="fw-bold text-dark"><%= policy.policy_number %></div>
+                          <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>
+                            <%= policy.policy_start_date&.strftime("%d %b %Y") || 'N/A' %>
+                          </small>
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <div class="fw-bold"><%= policy.customer.display_name %></div>
+                          <small class="text-muted"><%= policy.customer.email %></small>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge bg-<%=
+                          case type
+                          when 'health' then 'success'
+                          when 'life' then 'primary'
+                          when 'motor' then 'warning text-dark'
+                          else 'info'
+                          end
+                        %>"><%= type.capitalize %></span>
+                      </td>
+                      <td>
+                        <span class="fw-bold">₹<%= number_with_delimiter(policy.total_premium.to_i) %></span>
+                      </td>
+                      <td>
+                        <span class="fw-bold text-success">
+                          ₹<%= number_with_delimiter((commission_data.dig(:summary, :total_commission_generated) || 0).to_i) %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge bg-info">Ready</span>
+                      </td>
+                      <td>
+                        <%= link_to admin_commission_tracking_path(policy.id, policy_type: type),
+                            class: "btn btn-outline-primary btn-sm" do %>
+                          <i class="bi bi-eye"></i>
+                        <% end %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+              <p class="text-muted mt-2">No recent policies with commission found</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dashboard-container {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e9ecef 100%);
+    min-height: 100vh;
+  }
+
+  .dashboard-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    transition: all 0.4s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-gradient);
+    border-radius: 15px 15px 0 0;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0.5rem 0;
+    background: var(--text-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .progress {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    border-radius: 10px;
+  }
+</style>

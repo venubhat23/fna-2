@@ -1,0 +1,274 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Create New User</h2>
+    <p class="text-muted mb-0">Add a new user to the system with role-based permissions</p>
+  </div>
+  <div>
+    <%= link_to admin_settings_user_roles_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Users
+    <% end %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">User Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: @user, url: admin_settings_user_roles_path, local: true, class: "needs-validation", novalidate: true do |form| %>
+          <% if @user.errors.any? %>
+            <div class="alert alert-danger" role="alert">
+              <h6 class="alert-heading">Please fix the following errors:</h6>
+              <ul class="mb-0">
+                <% @user.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="row">
+            <!-- First Name -->
+            <div class="col-md-6 mb-3">
+              <%= form.label :first_name, class: "form-label" do %>
+                Name <span class="text-danger">*</span>
+              <% end %>
+              <%= form.text_field :first_name, class: "form-control", placeholder: "Enter first name", required: true %>
+              <div class="invalid-feedback">
+                Please provide a valid first name.
+              </div>
+            </div>
+
+            <!-- Last Name -->
+            <div class="col-md-6 mb-3">
+              <%= form.label :last_name, class: "form-label" do %>
+                Last Name
+              <% end %>
+              <%= form.text_field :last_name, class: "form-control", placeholder: "Enter last name" %>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Email -->
+            <div class="col-md-6 mb-3">
+              <%= form.label :email, class: "form-label" do %>
+                Email <span class="text-danger">*</span>
+              <% end %>
+              <%= form.email_field :email, class: "form-control", placeholder: "Enter email address", required: true %>
+              <div class="invalid-feedback">
+                Please provide a valid email address.
+              </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="col-md-6 mb-3">
+              <%= form.label :mobile, "Phone Number", class: "form-label" do %>
+                Phone Number <span class="text-danger">*</span>
+              <% end %>
+              <%= form.text_field :mobile, type: "tel", class: "form-control", placeholder: "Enter phone number", required: true %>
+              <div class="invalid-feedback">
+                Please provide a valid phone number.
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Password -->
+            <div class="col-md-6 mb-3">
+              <%= form.label :password, class: "form-label" do %>
+                Password <span class="text-danger">*</span>
+              <% end %>
+              <%= form.password_field :password, class: "form-control", placeholder: "Enter password", required: true, minlength: 6 %>
+              <div class="form-text">Password must be at least 6 characters long.</div>
+              <div class="invalid-feedback">
+                Password must be at least 6 characters long.
+              </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="col-md-6 mb-3">
+              <%= form.label :password_confirmation, "Confirm Password", class: "form-label" do %>
+                Confirm Password <span class="text-danger">*</span>
+              <% end %>
+              <%= form.password_field :password_confirmation, class: "form-control", placeholder: "Confirm password", required: true %>
+              <div class="invalid-feedback">
+                Password confirmation must match password.
+              </div>
+            </div>
+          </div>
+
+          <!-- Role -->
+          <div class="mb-4">
+            <%= form.label :role_name, "Role", class: "form-label" do %>
+              Role <span class="text-danger">*</span>
+            <% end %>
+            <%= form.select :role_name,
+                [
+                  ['Data Entry', 'Data entry'],
+                  ['Tele Calling', 'Tele calling'],
+                  ['Accounts', 'Accounts']
+                ],
+                { prompt: 'Select a role' },
+                { class: "form-select", required: true } %>
+            <div class="invalid-feedback">
+              Please select a role.
+            </div>
+          </div>
+
+          <!-- Sidebar Permissions -->
+          <div class="mb-4">
+            <h6 class="mb-3">Sidebar Permissions</h6>
+            <p class="text-muted mb-3">Select which sidebar sections this user can access</p>
+
+            <div class="row">
+              <% @sidebar_options.each_with_index do |(section_name, options), section_index| %>
+                <div class="col-lg-6 mb-4">
+                  <div class="card h-100">
+                    <div class="card-header bg-light">
+                      <div class="form-check">
+                        <input class="form-check-input section-checkbox" type="checkbox"
+                               id="section_<%= section_index %>"
+                               data-section="<%= section_index %>">
+                        <label class="form-check-label fw-bold" for="section_<%= section_index %>">
+                          <%= section_name %>
+                        </label>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <% options.each do |option| %>
+                        <div class="form-check mb-2">
+                          <%= check_box_tag "user[sidebar_permissions][]", option[:key], false,
+                              class: "form-check-input permission-checkbox",
+                              id: "permission_#{option[:key]}",
+                              data: { section: section_index } %>
+                          <label class="form-check-label" for="permission_<%= option[:key] %>">
+                            <%= option[:name] %>
+                          </label>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="d-flex gap-2 justify-content-end">
+            <%= link_to "Cancel", admin_settings_user_roles_path, class: "btn btn-outline-secondary" %>
+            <%= form.submit "Add User", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="mb-0">Quick Guide</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <h6 class="text-primary">Roles Explained</h6>
+          <ul class="list-unstyled">
+            <li class="mb-2">
+              <strong>Data Entry:</strong> Access to add and modify customer and policy data
+            </li>
+            <li class="mb-2">
+              <strong>Tele Calling:</strong> Access to leads and customer communication features
+            </li>
+            <li class="mb-2">
+              <strong>Accounts:</strong> Access to financial reports and commission management
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-3">
+          <h6 class="text-primary">Security Tips</h6>
+          <ul class="list-unstyled text-muted">
+            <li class="mb-1">• Use strong passwords</li>
+            <li class="mb-1">• Grant minimum necessary permissions</li>
+            <li class="mb-1">• Review permissions regularly</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.permission-checkbox:indeterminate {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Form validation
+  const forms = document.querySelectorAll('.needs-validation');
+  Array.from(forms).forEach(function(form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+
+  // Password confirmation validation
+  const password = document.getElementById('user_password');
+  const passwordConfirmation = document.getElementById('user_password_confirmation');
+
+  function validatePasswordMatch() {
+    if (password.value !== passwordConfirmation.value) {
+      passwordConfirmation.setCustomValidity("Passwords don't match");
+    } else {
+      passwordConfirmation.setCustomValidity('');
+    }
+  }
+
+  if (password && passwordConfirmation) {
+    password.addEventListener('change', validatePasswordMatch);
+    passwordConfirmation.addEventListener('input', validatePasswordMatch);
+  }
+
+  // Section checkbox functionality
+  document.querySelectorAll('.section-checkbox').forEach(function(sectionCheckbox) {
+    const sectionIndex = sectionCheckbox.dataset.section;
+    const permissionCheckboxes = document.querySelectorAll(`input[data-section="${sectionIndex}"].permission-checkbox`);
+
+    sectionCheckbox.addEventListener('change', function() {
+      permissionCheckboxes.forEach(function(checkbox) {
+        checkbox.checked = sectionCheckbox.checked;
+      });
+    });
+
+    // Update section checkbox based on permission checkboxes
+    function updateSectionCheckbox() {
+      const checkedPermissions = Array.from(permissionCheckboxes).filter(cb => cb.checked);
+
+      if (checkedPermissions.length === 0) {
+        sectionCheckbox.checked = false;
+        sectionCheckbox.indeterminate = false;
+      } else if (checkedPermissions.length === permissionCheckboxes.length) {
+        sectionCheckbox.checked = true;
+        sectionCheckbox.indeterminate = false;
+      } else {
+        sectionCheckbox.checked = false;
+        sectionCheckbox.indeterminate = true;
+      }
+    }
+
+    permissionCheckboxes.forEach(function(checkbox) {
+      checkbox.addEventListener('change', updateSectionCheckbox);
+    });
+  });
+});
+</script>

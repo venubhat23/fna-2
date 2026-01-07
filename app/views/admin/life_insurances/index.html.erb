@@ -1,0 +1,362 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Life Insurance Policies</h2>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to new_admin_life_insurance_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add New Life Policy
+    <% end %>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Life Policies</h6>
+            <h3 class="mb-0 text-primary" data-stat="total-policies"><%= number_with_delimiter(@total_policies_count) %></h3>
+          </div>
+          <div class="bg-primary bg-opacity-10 rounded p-3">
+            <i class="bi bi-heart text-primary fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Premium</h6>
+            <h3 class="mb-0 text-success" data-stat="total-premium">₹<%= number_with_delimiter(@total_premium_amount.to_i) %></h3>
+          </div>
+          <div class="bg-success bg-opacity-10 rounded p-3">
+            <i class="bi bi-currency-rupee text-success fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Coverage</h6>
+            <h3 class="mb-0 text-info" data-stat="total-coverage">₹<%= number_with_delimiter(@total_coverage_amount.to_i) %></h3>
+          </div>
+          <div class="bg-info bg-opacity-10 rounded p-3">
+            <i class="bi bi-shield-check text-info fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Covered Lives</h6>
+            <h3 class="mb-0 text-warning" data-stat="covered-lives"><%= number_with_delimiter(@covered_lives_count) %></h3>
+          </div>
+          <div class="bg-warning bg-opacity-10 rounded p-3">
+            <i class="bi bi-people text-warning fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs for DrWise vs Non-DrWise -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-0">
+    <ul class="nav nav-tabs border-0" role="tablist">
+      <li class="nav-item" role="presentation">
+        <%= link_to admin_life_insurances_path(tab: 'drwise', search: params[:search], status: params[:status], payment_mode: params[:payment_mode]),
+            class: "nav-link #{'active' if @current_tab == 'drwise'}",
+            role: "tab" do %>
+          <i class="bi bi-check-circle me-2"></i>
+          DrWise Policies
+          <span class="badge bg-success ms-2"><%= @drwise_count %></span>
+        <% end %>
+      </li>
+      <li class="nav-item" role="presentation">
+        <%= link_to admin_life_insurances_path(tab: 'non_drwise', search: params[:search], status: params[:status], payment_mode: params[:payment_mode]),
+            class: "nav-link #{'active' if @current_tab == 'non_drwise'}",
+            role: "tab" do %>
+          <i class="bi bi-x-circle me-2"></i>
+          Non-DrWise Policies
+          <span class="badge bg-warning ms-2"><%= @non_drwise_count %></span>
+        <% end %>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <%= form_with url: admin_life_insurances_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <%= form.hidden_field :tab, value: params[:tab] %>
+      <div class="col-md-4">
+        <%= form.text_field :search, placeholder: "Search policies...", value: params[:search], class: "form-control" %>
+      </div>
+      <div class="col-md-3">
+        <%= form.select :status, options_for_select([
+          ['All Status', ''],
+          ['Active', 'active'],
+          ['Expired', 'expired']
+        ], params[:status]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.select :payment_mode, options_for_select([
+          ['All Payment Modes', ''],
+          ['Yearly', 'yearly'],
+          ['Half Yearly', 'half_yearly'],
+          ['Quarterly', 'quarterly'],
+          ['Monthly', 'monthly']
+        ], params[:payment_mode]), {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.submit "Filter", class: "btn btn-outline-primary w-100" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Life Insurance Policies List -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <h5 class="mb-0">
+      <% if @current_tab == 'drwise' %>
+        <i class="bi bi-check-circle text-success me-2"></i>DrWise Life Insurance Policies
+      <% else %>
+        <i class="bi bi-x-circle text-warning me-2"></i>Non-DrWise Life Insurance Policies
+      <% end %>
+    </h5>
+  </div>
+  <div class="card-body p-0">
+    <% if @life_insurances.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="border-0">Policy</th>
+              <th class="border-0">Customer</th>
+              <th class="border-0">Company</th>
+              <th class="border-0">Source & Type</th>
+              <th class="border-0">Coverage</th>
+              <th class="border-0">Premium</th>
+              <th class="border-0">Status</th>
+              <th class="border-0">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @life_insurances.each do |policy| %>
+              <tr>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.policy_number %></h6>
+                    <small class="text-muted"><%= policy.policy_type&.humanize %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.customer&.display_name %></h6>
+                    <small class="text-muted"><%= policy.customer&.email %></small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.insurance_company_name %></h6>
+                    <small class="text-muted">Life Insurance</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-column gap-1">
+                    <!-- Source Badge -->
+                    <div>
+                      <% if policy.is_customer_added? %>
+                        <span class="badge bg-info-subtle text-info">
+                          <i class="bi bi-person-check me-1"></i>Customer
+                        </span>
+                      <% elsif policy.is_agent_added? %>
+                        <span class="badge bg-success-subtle text-success">
+                          <i class="bi bi-person-badge me-1"></i>Agent
+                        </span>
+                      <% elsif policy.is_admin_added? %>
+                        <span class="badge bg-primary-subtle text-primary">
+                          <i class="bi bi-shield-check me-1"></i>Admin
+                        </span>
+                      <% else %>
+                        <span class="badge bg-secondary-subtle text-secondary">
+                          <i class="bi bi-question-circle me-1"></i>Unknown
+                        </span>
+                      <% end %>
+                    </div>
+                    <!-- Type Badge -->
+                    <div>
+                      <span class="badge <%= policy.policy_classification_badge_class %>">
+                        <% if policy.drwise_policy? %>
+                          <i class="bi bi-check-circle me-1"></i>
+                        <% elsif policy.non_drwise_policy? %>
+                          <i class="bi bi-x-circle me-1"></i>
+                        <% else %>
+                          <i class="bi bi-question-circle me-1"></i>
+                        <% end %>
+                        <%= policy.policy_classification %>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <div class="fw-bold">₹<%= number_with_delimiter(policy.sum_insured) %></div>
+                    <small class="text-muted">Sum Assured</small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <div class="fw-bold">₹<%= number_with_delimiter(policy.total_premium) %></div>
+                    <small class="text-muted"><%= policy.payment_mode&.humanize %></small>
+                  </div>
+                </td>
+                <td>
+                  <% if policy.status == 'active' %>
+                    <span class="badge bg-success">Active</span>
+                  <% elsif policy.status == 'expired' %>
+                    <span class="badge bg-danger">Expired</span>
+                  <% else %>
+                    <span class="badge bg-warning"><%= policy.status&.humanize || 'Pending' %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_life_insurance_path(policy), class: "btn btn-sm btn-outline-primary", title: "View" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    <%= link_to commission_details_admin_life_insurance_path(policy), class: "btn btn-sm btn-outline-info", title: "Commission Details" do %>
+                      <i class="bi bi-percent"></i>
+                    <% end %>
+                    <%= link_to edit_admin_life_insurance_path(policy), class: "btn btn-sm btn-outline-warning", title: "Edit" do %>
+                      <i class="bi bi-pencil"></i>
+                    <% end %>
+                    <%= link_to admin_life_insurance_path(policy), method: :delete,
+                        class: "btn btn-sm btn-outline-danger",
+                        title: "Delete",
+                        data: {
+                          confirm: "Are you sure you want to delete this life insurance policy?",
+                          turbo_method: :delete
+                        } do %>
+                      <i class="bi bi-trash"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @life_insurances.respond_to?(:current_page) %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @life_insurances %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <% if @current_tab == 'drwise' %>
+          <i class="bi bi-check-circle fs-1 text-success d-block mb-3"></i>
+          <h5 class="text-muted">No DrWise life insurance policies found</h5>
+        <% else %>
+          <i class="bi bi-x-circle fs-1 text-warning d-block mb-3"></i>
+          <h5 class="text-muted">No Non-DrWise life insurance policies found</h5>
+        <% end %>
+        <p class="text-muted mb-3">
+          <% if params[:search].present? || params[:status].present? || params[:payment_mode].present? %>
+            Try adjusting your search criteria or
+            <%= link_to "view all #{@current_tab} policies", admin_life_insurances_path(tab: @current_tab), class: "text-decoration-none" %>.
+          <% else %>
+            <% if @current_tab == 'drwise' %>
+              DrWise policies are created from the admin panel.
+            <% else %>
+              Non-DrWise policies are added by customers or agents.
+            <% end %>
+          <% end %>
+        </p>
+        <% if @current_tab == 'drwise' %>
+          <%= link_to new_admin_life_insurance_path, class: "btn btn-primary" do %>
+            <i class="bi bi-plus-lg me-1"></i>
+            Add DrWise Life Policy
+          <% end %>
+        <% else %>
+          <div class="text-muted small">
+            Non-DrWise policies are typically added through customer or agent portals.
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.nav-tabs .nav-link {
+  border: none;
+  color: #6c757d;
+  padding: 1rem 1.5rem;
+  border-radius: 0;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.nav-tabs .nav-link:hover {
+  border-color: transparent;
+  color: #495057;
+  background-color: #f8f9fa;
+  border-bottom-color: #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+  color: #495057;
+  font-weight: 600;
+  border-color: transparent;
+  background-color: #fff;
+  border-bottom-color: #007bff;
+}
+
+.nav-tabs .nav-link .badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.nav-tabs {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.table .badge {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+}
+
+/* Source and Type columns merged - no individual column styling needed */
+
+/* Remove row highlighting - all policies use same styling */
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Source and Type columns merged - no toggle functionality needed
+});
+</script>

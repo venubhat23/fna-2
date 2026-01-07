@@ -1,0 +1,1078 @@
+<style>
+.modern-sidebar {
+  position: fixed !important;
+  top: 70px !important;
+  left: 0 !important;
+  width: 260px !important;
+  height: calc(100vh - 70px) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
+  border-right: 2px solid #e2e8f0 !important;
+  z-index: 1040 !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.nav-link-modern {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 20px !important;
+  margin: 6px 12px !important;
+  border-radius: 16px !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+.nav-link-modern::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6) !important;
+  transform: scaleY(0) !important;
+  transition: transform 0.3s ease !important;
+}
+
+.nav-link-modern:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
+  color: #1e293b !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+.nav-link-modern:hover::before {
+  transform: scaleY(1) !important;
+}
+
+.nav-link-modern:hover .nav-text {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.nav-link-modern.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+}
+
+.nav-link-modern.active::before {
+  transform: scaleY(1) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-link-modern.active .nav-text {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.nav-link-modern.active .icon-bg {
+  background: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-text {
+  color: #64748b !important;
+  font-weight: 500 !important;
+  margin-left: 12px !important;
+  font-size: 14px !important;
+  display: inline-block !important;
+  transition: all 0.3s ease !important;
+}
+
+.nav-section-title {
+  color: #3b82f6 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding: 20px 24px 8px 24px !important;
+  margin-bottom: 8px !important;
+  position: relative !important;
+}
+
+.nav-section-title::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 24px !important;
+  width: 60px !important;
+  height: 3px !important;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6) !important;
+  border-radius: 2px !important;
+}
+
+.icon-bg {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+}
+
+.icon-bg::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 1px !important;
+  border-radius: 9px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.nav-link-modern:hover .icon-bg {
+  transform: scale(1.1) rotate(2deg) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.nav-link-modern:hover .icon-bg::after {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-link-modern.active .icon-bg {
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.nav-link-modern.active .icon-bg::after {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.user-name {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 8px rgba(248, 250, 252, 0.3) !important;
+}
+
+/* Bright & Vibrant Gradient Backgrounds */
+.gradient-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4) !important;
+}
+.gradient-green {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+}
+.gradient-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;
+}
+.gradient-orange {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
+}
+.gradient-violet {
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%) !important;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4) !important;
+}
+.gradient-emerald {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4) !important;
+}
+.gradient-red {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+}
+.gradient-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%) !important;
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
+}
+.gradient-yellow {
+  background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%) !important;
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4) !important;
+}
+.gradient-teal {
+  background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%) !important;
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4) !important;
+}
+.gradient-indigo {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+}
+.gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4) !important;
+}
+.gradient-lime {
+  background: linear-gradient(135deg, #84cc16 0%, #a3e635 100%) !important;
+  box-shadow: 0 6px 20px rgba(132, 204, 22, 0.4) !important;
+}
+.gradient-pink {
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4) !important;
+}
+.gradient-rose {
+  background: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%) !important;
+  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.4) !important;
+}
+.gradient-gray {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%) !important;
+  box-shadow: 0 6px 20px rgba(107, 114, 128, 0.3) !important;
+}
+
+.sidebar-nav {
+  padding: 1rem 0 !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.nav-section {
+  margin-bottom: 1.5rem !important;
+}
+
+.nav-menu {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.nav-item {
+  margin-bottom: 4px !important;
+}
+
+.user-profile-modern {
+  display: flex !important;
+  align-items: center !important;
+  padding: 1.5rem !important;
+  border-bottom: 1px solid #2d3748 !important;
+}
+
+.avatar-circle {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  margin-right: 12px !important;
+}
+
+.role-badge {
+  background: linear-gradient(135deg, #06b6d4, #8b5cf6) !important;
+  color: #ffffff !important;
+  padding: 3px 10px !important;
+  border-radius: 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3) !important;
+}
+
+.sidebar-footer {
+  margin-top: auto !important;
+  padding: 1rem !important;
+  border-top: 1px solid #e2e8f0 !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.sidebar-footer::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 20% !important;
+  width: 60% !important;
+  height: 2px !important;
+  background: linear-gradient(to right, transparent, #06b6d4, #8b5cf6, transparent) !important;
+}
+
+.logout-btn-modern {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 16px !important;
+  border-radius: 12px !important;
+  color: #f87171 !important;
+  text-decoration: none !important;
+  width: 100% !important;
+  transition: all 0.3s ease !important;
+  background: rgba(248, 113, 113, 0.05) !important;
+  border: 1px solid rgba(248, 113, 113, 0.2) !important;
+}
+
+.logout-btn-modern:hover {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(251, 113, 133, 0.15)) !important;
+  color: #ffffff !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 6px 20px rgba(248, 113, 113, 0.3) !important;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+}
+
+.logout-btn-modern .nav-text {
+  margin-left: 12px !important;
+  font-weight: 500 !important;
+}
+
+.main-content {
+  margin-left: 260px !important;
+  margin-top: 70px !important;
+  padding: 2rem !important;
+}
+
+/* Dropdown and Submenu Styles */
+.dropdown-arrow {
+  transition: transform 0.3s ease !important;
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+
+.dropdown-toggle[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(90deg) !important;
+  color: #3b82f6 !important;
+}
+
+.submenu {
+  margin-left: 1rem !important;
+  margin-top: 0.5rem !important;
+  border-left: 2px solid #e2e8f0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.submenu-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.submenu-link {
+  padding: 8px 16px !important;
+  margin: 2px 8px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 13px !important;
+  transition: all 0.2s ease !important;
+}
+
+.submenu-link:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: #3b82f6 !important;
+  transform: translateX(4px) !important;
+}
+
+.submenu-link.active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #3b82f6 !important;
+  font-weight: 600 !important;
+}
+
+.submenu-bullet {
+  margin-right: 8px !important;
+  font-size: 16px !important;
+  color: #64748b !important;
+  transition: color 0.2s ease !important;
+}
+
+.submenu-link:hover .submenu-bullet,
+.submenu-link.active .submenu-bullet {
+  color: #3b82f6 !important;
+}
+
+.submenu-link.disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.submenu-link.disabled:hover {
+  background: transparent !important;
+  transform: none !important;
+}
+
+.dropdown-menu-item .nav-link-modern {
+  position: relative !important;
+}
+
+.dropdown-toggle:hover .dropdown-arrow {
+  color: #3b82f6 !important;
+}
+</style>
+
+<div class="modern-sidebar" id="sidebar" data-controller="sidebar">
+  <!-- Sidebar Toggle Button for Mobile -->
+  <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+    <i class="bi bi-list"></i>
+  </button>
+
+
+
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav">
+    <!-- Main Menu Section -->
+    <% if show_sidebar_section?(['dashboard', 'customers', 'sub_agents', 'distributors', 'leads']) %>
+    <div class="nav-section">
+      <div class="nav-section-title">Main Menu</div>
+      <ul class="nav-menu">
+        <!-- Dashboard -->
+        <% if show_sidebar_item?('dashboard') %>
+          <li class="nav-item">
+            <%= link_to root_path, class: "nav-link-modern #{'active' if current_page?(root_path)}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-blue">
+                  <i class="bi bi-grid-3x3-gap-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Dashboard</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Leads -->
+        <% if show_sidebar_item?('leads') %>
+          <li class="nav-item">
+            <%= link_to admin_leads_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/leads')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-pink">
+                  <i class="bi bi-funnel-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Leads</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Clients (renamed from Customers) -->
+        <% if show_sidebar_item?('customers') %>
+          <li class="nav-item">
+            <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-green">
+                  <i class="bi bi-people-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Clients</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Affiliates (renamed from Affiliate) -->
+        <% if show_sidebar_item?('sub_agents') %>
+          <li class="nav-item">
+            <%= link_to admin_sub_agents_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/affiliates') || request.path.include?('/admin/sub_agents')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-violet">
+                  <i class="bi bi-people"></i>
+                </div>
+              </div>
+              <span class="nav-text">Affiliates</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Ambassadors -->
+        <% if show_sidebar_item?('distributors') %>
+          <li class="nav-item">
+            <%= link_to admin_distributors_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/ambassadors') || request.path.include?('/admin/distributors')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-indigo">
+                  <i class="bi bi-diagram-3"></i>
+                </div>
+              </div>
+              <span class="nav-text">Ambassadors</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+      </ul>
+    </div>
+    <% end %>
+
+    <!-- Services Section -->
+    <% if show_sidebar_section?(['services', 'life_insurance', 'health_insurance', 'motor_insurance', 'other_insurance']) %>
+    <div class="nav-section">
+      <div class="nav-section-title">Services</div>
+      <ul class="nav-menu">
+
+        <!-- Insurance Submenu -->
+        <li class="nav-item dropdown-menu-item">
+          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#insurance-menu" aria-expanded="false" style="cursor: pointer;">
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-cyan">
+                <i class="bi bi-shield-check"></i>
+              </div>
+            </div>
+            <span class="nav-text">Insurance</span>
+            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
+          </div>
+          <div class="collapse submenu" id="insurance-menu">
+            <ul class="nav-menu submenu-list">
+              <!-- Life Insurance -->
+              <% if show_sidebar_item?('life_insurance') %>
+                <li class="nav-item">
+                  <%= link_to admin_life_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/life_insurances')}" do %>
+                    <span class="submenu-bullet">•</span>
+                    <span class="nav-text">Life</span>
+                  <% end %>
+                </li>
+              <% end %>
+
+              <!-- Health Insurance -->
+              <% if show_sidebar_item?('health_insurance') %>
+                <li class="nav-item">
+                  <%= link_to admin_health_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/health_insurances')}" do %>
+                    <span class="submenu-bullet">•</span>
+                    <span class="nav-text">Health</span>
+                  <% end %>
+                </li>
+              <% end %>
+
+              <!-- Motor Insurance -->
+              <% if show_sidebar_item?('motor_insurance') %>
+                <li class="nav-item">
+                  <%= link_to admin_motor_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/motor_insurances')}" do %>
+                    <span class="submenu-bullet">•</span>
+                    <span class="nav-text">Motor</span>
+                  <% end %>
+                </li>
+              <% end %>
+
+              <!-- General Insurance -->
+              <% if show_sidebar_item?('other_insurance') %>
+                <li class="nav-item">
+                  <%= link_to admin_other_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/other_insurances')}" do %>
+                    <span class="submenu-bullet">•</span>
+                    <span class="nav-text">General</span>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Investments Submenu -->
+        <li class="nav-item dropdown-menu-item">
+          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#investments-menu" aria-expanded="false" style="cursor: pointer;">
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-amber">
+                <i class="bi bi-graph-up"></i>
+              </div>
+            </div>
+            <span class="nav-text">Investments</span>
+            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
+          </div>
+          <div class="collapse submenu" id="investments-menu">
+            <ul class="nav-menu submenu-list">
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Mutual Fund</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">FD</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Other</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Taxation Submenu -->
+        <li class="nav-item dropdown-menu-item">
+          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#taxation-menu" aria-expanded="false" style="cursor: pointer;">
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-orange">
+                <i class="bi bi-calculator"></i>
+              </div>
+            </div>
+            <span class="nav-text">Taxation</span>
+            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
+          </div>
+          <div class="collapse submenu" id="taxation-menu">
+            <ul class="nav-menu submenu-list">
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">ITR</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Tax Planning</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Loans Submenu -->
+        <li class="nav-item dropdown-menu-item">
+          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#loans-menu" aria-expanded="false" style="cursor: pointer;">
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-pink">
+                <i class="bi bi-cash-stack"></i>
+              </div>
+            </div>
+            <span class="nav-text">Loans</span>
+            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
+          </div>
+          <div class="collapse submenu" id="loans-menu">
+            <ul class="nav-menu submenu-list">
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Personal</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Home</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Mortgage</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Business</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Travel Submenu -->
+        <li class="nav-item dropdown-menu-item">
+          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#travel-menu" aria-expanded="false" style="cursor: pointer;">
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-emerald">
+                <i class="bi bi-airplane"></i>
+              </div>
+            </div>
+            <span class="nav-text">Travel</span>
+            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
+          </div>
+          <div class="collapse submenu" id="travel-menu">
+            <ul class="nav-menu submenu-list">
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">Domestic</span>
+                </div>
+              </li>
+              <li class="nav-item">
+                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
+                  <span class="submenu-bullet">•</span>
+                  <span class="nav-text">International</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+    <% end %>
+
+    <!-- Vendor Section (renamed from Business Partners) -->
+    <% if show_sidebar_section?(['brokers', 'agency_codes']) %>
+    <div class="nav-section">
+      <div class="nav-section-title">Vendor</div>
+      <ul class="nav-menu">
+        <!-- Brokers -->
+        <% if show_sidebar_item?('brokers') %>
+          <li class="nav-item">
+            <%= link_to admin_brokers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/brokers')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-emerald">
+                  <i class="bi bi-briefcase"></i>
+                </div>
+              </div>
+              <span class="nav-text">Broker</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Agency Code -->
+        <% if show_sidebar_item?('agency_codes') %>
+          <li class="nav-item">
+            <%= link_to admin_agency_codes_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/agency_codes')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-blue">
+                  <i class="bi bi-code-slash"></i>
+                </div>
+              </div>
+              <span class="nav-text">Agency Code</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    <% end %>
+
+    <!-- Payouts Section -->
+    <% if show_sidebar_section?(['payouts']) %>
+    <div class="nav-section">
+      <div class="nav-section-title">Payouts</div>
+      <ul class="nav-menu">
+
+        <!-- Commission Tracking -->
+        <% if show_sidebar_item?('payouts') %>
+          <li class="nav-item">
+            <%= link_to admin_commission_tracking_index_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/commission_tracking')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-purple">
+                  <i class="bi bi-diagram-3"></i>
+                </div>
+              </div>
+              <span class="nav-text">Commissions</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Affiliate Payout -->
+        <% if show_sidebar_item?('payouts') %>
+          <li class="nav-item">
+            <%= link_to admin_affiliate_payouts_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/affiliate_payouts')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-rose">
+                  <i class="bi bi-person-heart"></i>
+                </div>
+              </div>
+              <span class="nav-text">Affiliate Payout</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Ambassador Payout -->
+        <% if show_sidebar_item?('payouts') %>
+          <li class="nav-item">
+            <%= link_to admin_distributor_payouts_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/distributor_payouts')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-lime">
+                  <i class="bi bi-building-check"></i>
+                </div>
+              </div>
+              <span class="nav-text">Ambassador Payout</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+      </ul>
+    </div>
+    <% end %>
+
+    <!-- Transactions Section (renamed from Invoice) -->
+    <% if show_sidebar_section?(['invoices']) %>
+    <div class="nav-section">
+      <div class="nav-section-title">Transactions</div>
+      <ul class="nav-menu">
+        <!-- Invoices -->
+        <% if show_sidebar_item?('invoices') %>
+          <li class="nav-item">
+            <%= link_to admin_invoices_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/invoices')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-orange">
+                  <i class="bi bi-receipt"></i>
+                </div>
+              </div>
+              <span class="nav-text">Invoices</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    <% end %>
+
+
+    <!-- Reports & Analytics Section -->
+    <% if show_sidebar_section?(['reports']) %>
+      <div class="nav-section">
+        <div class="nav-section-title">Reports & Analytics</div>
+        <ul class="nav-menu">
+        <!-- Commission Report -->
+        <% if show_sidebar_item?('reports') %>
+        <li class="nav-item">
+          <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-green">
+                <i class="bi bi-currency-dollar"></i>
+              </div>
+            </div>
+            <span class="nav-text">Commission Report</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Expired Insurance -->
+        <li class="nav-item">
+          <%= link_to admin_reports_expired_insurance_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/expired')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-red">
+                <i class="bi bi-clock-history"></i>
+              </div>
+            </div>
+            <span class="nav-text">Expired Insurance</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Payment Due -->
+        <li class="nav-item">
+          <%= link_to admin_reports_payment_due_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/payment_due')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-orange">
+                <i class="bi bi-exclamation-triangle"></i>
+              </div>
+            </div>
+            <span class="nav-text">Payment Due</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Upcoming Renewal -->
+        <li class="nav-item">
+          <%= link_to admin_reports_upcoming_renewal_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/renewal')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-blue">
+                <i class="bi bi-arrow-repeat"></i>
+              </div>
+            </div>
+            <span class="nav-text">Upcoming Renewal</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Upcoming Payment -->
+        <li class="nav-item">
+          <%= link_to admin_reports_upcoming_payment_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/payment')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-purple">
+                <i class="bi bi-calendar-check"></i>
+              </div>
+            </div>
+            <span class="nav-text">Upcoming Payment</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Leads Report -->
+        <li class="nav-item">
+          <%= link_to admin_reports_leads_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/leads')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-pink">
+                <i class="bi bi-funnel"></i>
+              </div>
+            </div>
+            <span class="nav-text">Leads Report</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Session Report -->
+        <li class="nav-item">
+          <%= link_to admin_reports_sessions_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/sessions')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-cyan">
+                <i class="bi bi-activity"></i>
+              </div>
+            </div>
+            <span class="nav-text">Session Report</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <!-- Management Section -->
+    <% if show_sidebar_section?(['management', 'investors']) %>
+      <div class="nav-section">
+        <div class="nav-section-title">Management</div>
+      <ul class="nav-menu">
+        <% if show_sidebar_item?('management') %>
+
+        <!-- Investors (moved from Main Menu) -->
+        <% if show_sidebar_item?('investors') %>
+          <li class="nav-item">
+            <%= link_to admin_investors_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/investors')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-amber">
+                  <i class="bi bi-bar-chart"></i>
+                </div>
+              </div>
+              <span class="nav-text">Investors</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Client Request -->
+        <li class="nav-item">
+          <%= link_to admin_client_requests_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/client_requests')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-orange">
+                <i class="bi bi-headset"></i>
+              </div>
+            </div>
+            <span class="nav-text">Client Request</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Roles & Permissions (fixed spelling) -->
+        <li class="nav-item">
+          <%= link_to admin_roles_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/roles') || request.path.include?('/admin/permissions')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-cyan">
+                <i class="bi bi-shield-check"></i>
+              </div>
+            </div>
+            <span class="nav-text">Roles & Permissions</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Agency/Broker -->
+        <li class="nav-item">
+          <%= link_to admin_agency_brokers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/agency_brokers')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-rose">
+                <i class="bi bi-briefcase-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Agency/Broker</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Banner Management -->
+        <li class="nav-item">
+          <%= link_to admin_banners_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/banners')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-indigo">
+                <i class="bi bi-image-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Banner Management</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Companies -->
+        <li class="nav-item">
+          <%= link_to admin_insurance_companies_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/insurance_companies')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-emerald">
+                <i class="bi bi-building-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Companies</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Import Data (renamed from Imports) -->
+        <% if show_sidebar_item?('management') || current_user&.user_type == 'admin' %>
+          <li class="nav-item">
+            <%= link_to admin_imports_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/imports')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-amber">
+                  <i class="bi bi-cloud-upload-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Import Data</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+
+    <!-- Settings Section -->
+    <% if show_sidebar_section?(['settings']) %>
+      <div class="nav-section">
+        <div class="nav-section-title">Settings</div>
+      <ul class="nav-menu">
+        <% if show_sidebar_item?('settings') %>
+          <!-- User Roles Configuration -->
+          <li class="nav-item">
+            <%= link_to admin_settings_user_roles_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/user_roles')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-teal">
+                  <i class="bi bi-person-gear"></i>
+                </div>
+              </div>
+              <span class="nav-text">User Roles</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+
+          <!-- System Settings -->
+          <li class="nav-item">
+            <%= link_to admin_settings_system_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/system')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-gray">
+                  <i class="bi bi-gear-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">System Settings</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+        </ul>
+      </div>
+    <% end %>
+  </nav>
+
+  <!-- Logout Section - Moved outside nav to be fixed at bottom -->
+  <div class="sidebar-footer">
+    <%= link_to destroy_user_session_path, method: :delete, class: "logout-btn-modern" do %>
+      <div class="nav-icon-modern">
+        <div class="icon-bg gradient-gray">
+          <i class="bi bi-box-arrow-right"></i>
+        </div>
+      </div>
+      <span class="nav-text">Logout</span>
+    <% end %>
+  </div>
+</div>

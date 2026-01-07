@@ -1,0 +1,368 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1"><%= @distributor.display_name %></h2>
+    <p class="text-muted mb-0">
+      <span class="badge <%= @distributor.active? ? 'bg-success' : 'bg-secondary' %>">
+        <%= @distributor.status.humanize %>
+      </span>
+      <small class="ms-2">Ambassador ID: <%= @distributor.id %></small>
+    </p>
+  </div>
+  <div>
+    <%= link_to edit_admin_distributor_path(@distributor), class: "btn btn-primary me-2" do %>
+      <i class="bi bi-pencil me-1"></i>
+      Edit
+    <% end %>
+    <%= link_to admin_distributors_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Ambassadors
+    <% end %>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Personal Information -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-person-circle me-2 text-primary"></i>
+          Personal Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Full Name</label>
+            <p class="mb-0 fw-medium"><%= @distributor.full_name %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Email</label>
+            <p class="mb-0"><%= @distributor.email %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Mobile</label>
+            <p class="mb-0"><%= @distributor.mobile %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Gender</label>
+            <p class="mb-0"><%= @distributor.gender %></p>
+          </div>
+          <% if @distributor.birth_date.present? %>
+            <div class="col-md-6 mb-3">
+              <label class="form-label text-muted">Birth Date</label>
+              <p class="mb-0"><%= @distributor.birth_date.strftime('%d %B %Y') %></p>
+            </div>
+          <% end %>
+          <% if @distributor.address.present? %>
+            <div class="col-md-12 mb-3">
+              <label class="form-label text-muted">Address</label>
+              <p class="mb-0"><%= @distributor.address %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-bank me-2 text-success"></i>
+          Bank Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Bank Name</label>
+            <p class="mb-0"><%= @distributor.bank_name || 'Not provided' %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Account Number</label>
+            <p class="mb-0"><%= @distributor.account_no || 'Not provided' %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">IFSC Code</label>
+            <p class="mb-0"><%= @distributor.ifsc_code || 'Not provided' %></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Account Holder Name</label>
+            <p class="mb-0"><%= @distributor.account_holder_name || 'Not provided' %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assigned Affiliates -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="bi bi-people me-2 text-info"></i>
+          Assigned Affiliates
+          <span class="badge bg-info ms-2"><%= @distributor.assigned_sub_agents.count %></span>
+        </h5>
+        <%= link_to edit_admin_distributor_path(@distributor), class: "btn btn-sm btn-outline-primary" do %>
+          <i class="bi bi-pencil me-1"></i>
+          Manage Assignments
+        <% end %>
+      </div>
+      <div class="card-body">
+        <% if @assigned_affiliates.any? %>
+          <div class="row">
+            <% @assigned_affiliates.each do |affiliate| %>
+              <% stats = @affiliate_stats[affiliate.id] %>
+              <div class="col-12 mb-4">
+                <div class="card border border-2 border-light">
+                  <div class="card-header bg-light">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
+                          <i class="bi bi-person text-primary fs-5"></i>
+                        </div>
+                        <div>
+                          <h6 class="mb-1"><%= affiliate.display_name %></h6>
+                          <small class="text-muted">
+                            <i class="bi bi-envelope me-1"></i><%= affiliate.email %>
+                            <span class="mx-2">|</span>
+                            <i class="bi bi-telephone me-1"></i><%= affiliate.mobile %>
+                          </small>
+                        </div>
+                      </div>
+                      <div class="text-end">
+                        <span class="badge bg-<%= affiliate.active? ? 'success' : 'secondary' %> fs-6">
+                          <%= affiliate.status.humanize %>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card-body">
+                    <!-- Performance Stats -->
+                    <div class="row mb-3">
+                      <div class="col-3 text-center">
+                        <h6 class="text-primary mb-1"><%= stats[:total_policies] %></h6>
+                        <small class="text-muted">Total Policies</small>
+                      </div>
+                      <div class="col-3 text-center">
+                        <h6 class="text-success mb-1">₹<%= number_with_delimiter(stats[:total_premium].to_i) %></h6>
+                        <small class="text-muted">Total Premium</small>
+                      </div>
+                      <div class="col-3 text-center">
+                        <h6 class="text-info mb-1"><%= stats[:customers_count] %></h6>
+                        <small class="text-muted">Customers</small>
+                      </div>
+                      <div class="col-3 text-center">
+                        <h6 class="text-warning mb-1">₹<%= number_with_delimiter(stats[:total_commission].to_i) %></h6>
+                        <small class="text-muted">Commission</small>
+                      </div>
+                    </div>
+
+                    <!-- Policy Breakdown -->
+                    <div class="row mb-3">
+                      <div class="col-3 text-center">
+                        <span class="badge bg-success rounded-pill">Health: <%= stats[:health_policies] %></span>
+                      </div>
+                      <div class="col-3 text-center">
+                        <span class="badge bg-primary rounded-pill">Life: <%= stats[:life_policies] %></span>
+                      </div>
+                      <div class="col-3 text-center">
+                        <span class="badge bg-warning rounded-pill">Motor: <%= stats[:motor_policies] %></span>
+                      </div>
+                      <div class="col-3 text-center">
+                        <span class="badge bg-info rounded-pill">Other: <%= stats[:other_policies] %></span>
+                      </div>
+                    </div>
+
+                    <!-- Recent Policies -->
+                    <% if stats[:recent_policies].any? %>
+                      <div class="border-top pt-3">
+                        <h6 class="text-muted mb-2">Recent Policies:</h6>
+                        <div class="row">
+                          <% stats[:recent_policies].each do |policy| %>
+                            <div class="col-md-6 mb-2">
+                              <small class="d-block">
+                                <span class="badge bg-<%= policy[:type].downcase == 'health' ? 'success' : policy[:type].downcase == 'life' ? 'primary' : 'warning' %>">
+                                  <%= policy[:type] %>
+                                </span>
+                                <strong class="ms-2"><%= policy[:policy_number] %></strong>
+                              </small>
+                              <small class="text-muted d-block">
+                                <%= policy[:customer] %> - ₹<%= number_with_delimiter(policy[:premium].to_i) %>
+                              </small>
+                              <small class="text-muted">
+                                <%= time_ago_in_words(policy[:created_at]) %> ago
+                              </small>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <!-- Assignment Info -->
+                    <% assignment = affiliate.distributor_assignment %>
+                    <% if assignment && assignment.assigned_at.present? %>
+                      <div class="border-top pt-2 mt-3">
+                        <small class="text-success">
+                          <i class="bi bi-calendar-check me-1"></i>
+                          Assigned <%= time_ago_in_words(assignment.assigned_at) %> ago
+                          (<%= assignment.assigned_at.strftime('%d %b %Y') %>)
+                        </small>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-4">
+            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+            <h6 class="text-muted mt-3">No Affiliates Assigned</h6>
+            <p class="text-muted mb-3">This ambassador doesn't have any affiliates assigned yet.</p>
+            <%= link_to edit_admin_distributor_path(@distributor), class: "btn btn-primary" do %>
+              <i class="bi bi-plus me-1"></i>
+              Assign Affiliates
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <!-- Quick Stats -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="mb-0">
+          <i class="bi bi-graph-up me-2 text-primary"></i>
+          Performance Overview
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6 mb-3">
+            <h5 class="text-info mb-1"><%= @distributor_stats[:total_affiliates] %></h5>
+            <small class="text-muted">Total Affiliates</small>
+          </div>
+          <div class="col-6 mb-3">
+            <h5 class="text-success mb-1"><%= @distributor_stats[:active_affiliates] %></h5>
+            <small class="text-muted">Active Affiliates</small>
+          </div>
+          <div class="col-6 mb-3">
+            <h5 class="text-primary mb-1"><%= @distributor_stats[:total_policies] %></h5>
+            <small class="text-muted">Total Policies</small>
+          </div>
+          <div class="col-6 mb-3">
+            <h5 class="text-warning mb-1"><%= @distributor_stats[:total_customers] %></h5>
+            <small class="text-muted">Total Customers</small>
+          </div>
+          <div class="col-12">
+            <h5 class="text-success mb-1">₹<%= number_with_delimiter(@distributor_stats[:total_premium].to_i) %></h5>
+            <small class="text-muted">Total Premium Generated</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commission Summary -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="mb-0">
+          <i class="bi bi-currency-rupee me-2 text-success"></i>
+          Commission Summary
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-12 mb-3">
+            <h5 class="text-success mb-1">₹<%= number_with_delimiter(@distributor_stats[:total_commission].to_i) %></h5>
+            <small class="text-muted">Total Commission Earned</small>
+          </div>
+          <div class="col-6">
+            <h6 class="text-info mb-1"><%= @distributor_stats[:avg_policies_per_affiliate] %></h6>
+            <small class="text-muted">Avg Policies/Affiliate</small>
+          </div>
+          <div class="col-6">
+            <h6 class="text-warning mb-1"><%= @distributor_stats[:total_affiliates] > 0 ? ((@distributor_stats[:total_commission] / @distributor_stats[:total_affiliates]).round(0)) : 0 %></h6>
+            <small class="text-muted">Avg Commission/Affiliate</small>
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-12">
+            <small class="text-muted d-block mb-1">Performance Calculation</small>
+            <div class="progress" style="height: 8px;">
+              <% if @distributor_stats[:total_premium] > 0 %>
+                <% commission_percentage = ((@distributor_stats[:total_commission] / @distributor_stats[:total_premium]) * 100).round(2) %>
+                <div class="progress-bar bg-success" style="width: <%= [commission_percentage, 100].min %>%"></div>
+              <% end %>
+            </div>
+            <small class="text-muted">
+              Commission Rate: <%= @distributor_stats[:total_premium] > 0 ? ((@distributor_stats[:total_commission] / @distributor_stats[:total_premium]) * 100).round(2) : 0 %>%
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents -->
+    <% if @documents.any? %>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+          <h6 class="mb-0">
+            <i class="bi bi-file-earmark me-2 text-warning"></i>
+            Documents (<%= @documents.count %>)
+          </h6>
+        </div>
+        <div class="card-body">
+          <% @documents.each do |document| %>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div>
+                <small class="fw-medium"><%= document.document_type %></small>
+                <br>
+                <small class="text-muted"><%= document.document_name %></small>
+              </div>
+              <% if document.document_file.attached? %>
+                <%= link_to document.document_url, target: '_blank', class: "btn btn-sm btn-outline-primary" do %>
+                  <i class="bi bi-eye"></i>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Account Details -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="mb-0">
+          <i class="bi bi-info-circle me-2 text-secondary"></i>
+          Account Details
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <small class="text-muted">Created</small>
+          <br>
+          <small><%= @distributor.created_at.strftime('%d %B %Y at %I:%M %p') %></small>
+        </div>
+        <div class="mb-2">
+          <small class="text-muted">Last Updated</small>
+          <br>
+          <small><%= @distributor.updated_at.strftime('%d %B %Y at %I:%M %p') %></small>
+        </div>
+        <% if @distributor.role_id.present? %>
+          <div>
+            <small class="text-muted">Role ID</small>
+            <br>
+            <span class="badge bg-info"><%= @distributor.role_id %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

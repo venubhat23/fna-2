@@ -1,0 +1,395 @@
+<% content_for :page_title, "Edit Health Insurance Policy" %>
+<% content_for :page_subtitle, "Update policy ##{@health_insurance.policy_number}" %>
+
+<!-- Action Buttons -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <%= link_to admin_health_insurance_path(@health_insurance), class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-2"></i>
+      Back to Policy
+    <% end %>
+  </div>
+
+  <div class="trust-seal">
+    <i class="bi bi-shield-check seal-icon"></i>
+    <span>Secure Policy Update</span>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <%= form_with model: [:admin, @health_insurance], local: true, class: "needs-validation", novalidate: true do |form| %>
+
+      <!-- Policy Information Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-hospital me-2 text-success"></i>
+            Health Insurance Details
+          </h5>
+        </div>
+
+        <div class="card-body">
+          <% if @health_insurance.errors.any? %>
+            <div class="alert alert-danger alert-dismissible fade show">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              <strong>Please correct the following errors:</strong>
+              <ul class="mb-0 mt-2">
+                <% @health_insurance.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% end %>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :customer_id, class: "form-label" %>
+              <%= form.select :customer_id,
+                  options_for_select([['Select Customer', '']] + @customers.map { |c| [c.display_name, c.id] }, @health_insurance.customer_id),
+                  {},
+                  { class: "form-control #{'is-invalid' if @health_insurance.errors[:customer_id].any?}", required: true } %>
+              <% if @health_insurance.errors[:customer_id].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:customer_id].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :insurance_company_id, "Insurance Company", class: "form-label" %>
+              <%= form.select :insurance_company_id,
+                  options_from_collection_for_select(InsuranceCompany.all, :id, :name, @health_insurance.insurance_company_id),
+                  { prompt: 'Select Insurance Company' },
+                  { class: "form-control #{'is-invalid' if @health_insurance.errors[:insurance_company_id].any?}", required: true } %>
+              <% if @health_insurance.errors[:insurance_company_id].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:insurance_company_id].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :policy_number, class: "form-label" %>
+              <%= form.text_field :policy_number,
+                  class: "form-control #{'is-invalid' if @health_insurance.errors[:policy_number].any?}",
+                  placeholder: "Enter policy number", required: true %>
+              <% if @health_insurance.errors[:policy_number].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:policy_number].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :policy_type, class: "form-label" %>
+              <%= form.select :policy_type,
+                  options_for_select([
+                    ['Individual Health', 'individual'],
+                    ['Family Floater', 'family_floater'],
+                    ['Group Health', 'group'],
+                    ['Critical Illness', 'critical_illness'],
+                    ['Personal Accident', 'personal_accident']
+                  ], @health_insurance.policy_type),
+                  { prompt: 'Select Policy Type' },
+                  { class: "form-control" } %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :sum_insured, "Sum Insured (₹)", class: "form-label" %>
+              <%= form.number_field :sum_insured,
+                  class: "form-control #{'is-invalid' if @health_insurance.errors[:sum_insured].any?}",
+                  placeholder: "Enter sum insured amount", step: 0.01, required: true %>
+              <% if @health_insurance.errors[:sum_insured].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:sum_insured].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :total_premium, "Total Premium (₹)", class: "form-label" %>
+              <%= form.number_field :total_premium,
+                  class: "form-control #{'is-invalid' if @health_insurance.errors[:total_premium].any?}",
+                  placeholder: "Enter total premium", step: 0.01, required: true %>
+              <% if @health_insurance.errors[:total_premium].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:total_premium].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :premium_frequency, class: "form-label" %>
+              <%= form.select :premium_frequency,
+                  options_for_select([
+                    ['Annual', 'annual'],
+                    ['Semi-Annual', 'semi_annual'],
+                    ['Quarterly', 'quarterly'],
+                    ['Monthly', 'monthly']
+                  ], @health_insurance.premium_frequency),
+                  { prompt: 'Select Frequency' },
+                  { class: "form-control" } %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :status, class: "form-label" %>
+              <%= form.select :status,
+                  options_for_select([
+                    ['Active', 'active'],
+                    ['Pending', 'pending'],
+                    ['Expired', 'expired'],
+                    ['Cancelled', 'cancelled']
+                  ], @health_insurance.status),
+                  { prompt: 'Select Status' },
+                  { class: "form-control" } %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :start_date, class: "form-label" %>
+              <%= form.date_field :start_date,
+                  class: "form-control #{'is-invalid' if @health_insurance.errors[:start_date].any?}",
+                  required: true %>
+              <% if @health_insurance.errors[:start_date].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:start_date].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :end_date, class: "form-label" %>
+              <%= form.date_field :end_date,
+                  class: "form-control #{'is-invalid' if @health_insurance.errors[:end_date].any?}" %>
+              <% if @health_insurance.errors[:end_date].any? %>
+                <div class="invalid-feedback">
+                  <%= @health_insurance.errors[:end_date].first %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="col-12 mb-3">
+              <%= form.label :additional_details, class: "form-label" %>
+              <%= form.text_area :additional_details,
+                  class: "form-control",
+                  rows: 4,
+                  placeholder: "Enter any additional policy details, terms, or conditions..." %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nominee Information Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-person-heart me-2 text-info"></i>
+            Nominee Information
+          </h5>
+        </div>
+
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :nominee_name, class: "form-label" %>
+              <%= form.text_field :nominee_name,
+                  class: "form-control",
+                  placeholder: "Enter nominee name" %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= form.label :nominee_relation, "Relationship", class: "form-label" %>
+              <%= form.select :nominee_relation,
+                  options_for_select([
+                    ['Spouse', 'spouse'],
+                    ['Child', 'child'],
+                    ['Parent', 'parent'],
+                    ['Sibling', 'sibling'],
+                    ['Other', 'other']
+                  ], @health_insurance.nominee_relation),
+                  { prompt: 'Select Relationship' },
+                  { class: "form-control" } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <%= link_to admin_health_insurance_path(@health_insurance), class: "btn btn-outline-secondary" do %>
+                <i class="bi bi-x-lg me-2"></i>
+                Cancel
+              <% end %>
+            </div>
+
+            <div>
+              <%= form.submit "Update Health Policy", class: "btn btn-primary btn-lg" do %>
+                <i class="bi bi-check-lg me-2"></i>
+                Update Health Policy
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <% end %>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Current Policy Info -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-info-circle me-2 text-primary"></i>
+          Current Policy Info
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label text-muted small">Policy Number</label>
+          <h6><%= @health_insurance.policy_number %></h6>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small">Customer</label>
+          <h6><%= @health_insurance.customer.display_name %></h6>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small">Sum Insured</label>
+          <h6 class="text-warning">₹<%= number_with_delimiter(@health_insurance.sum_insured.to_i) %></h6>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small">Current Status</label>
+          <div>
+            <% if @health_insurance.status == 'active' %>
+              <span class="badge bg-success">Active</span>
+            <% elsif @health_insurance.status == 'expired' %>
+              <span class="badge bg-danger">Expired</span>
+            <% else %>
+              <span class="badge bg-warning"><%= @health_insurance.status&.humanize || 'Pending' %></span>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small">Created</label>
+          <div><%= @health_insurance.created_at.strftime("%B %d, %Y at %I:%M %p") %></div>
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label text-muted small">Last Updated</label>
+          <div><%= @health_insurance.updated_at.strftime("%B %d, %Y at %I:%M %p") %></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Guidelines -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-lightbulb me-2 text-warning"></i>
+          Update Guidelines
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <h6>Important Notes:</h6>
+        <ul class="list-unstyled">
+          <li class="mb-2">
+            <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+            Changing policy dates may affect coverage
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-info-circle text-info me-2"></i>
+            Premium changes should be communicated to customer
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-shield-check text-success me-2"></i>
+            Verify all details before saving changes
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-people text-primary me-2"></i>
+            Update nominee information if required
+          </li>
+        </ul>
+
+        <div class="luxury-divider"></div>
+
+        <h6>Quick Actions:</h6>
+        <div class="d-grid gap-2">
+          <%= link_to admin_health_insurance_path(@health_insurance), class: "btn btn-outline-info btn-sm" do %>
+            <i class="bi bi-eye me-2"></i>
+            View Policy Details
+          <% end %>
+
+          <button class="btn btn-outline-success btn-sm">
+            <i class="bi bi-envelope me-2"></i>
+            Notify Customer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+
+// Auto-calculate end date based on start date and frequency
+document.addEventListener('DOMContentLoaded', function() {
+  const startDate = document.querySelector('#policy_start_date');
+  const endDate = document.querySelector('#policy_end_date');
+  const frequency = document.querySelector('#policy_premium_frequency');
+
+  function calculateEndDate() {
+    if (startDate.value && frequency.value && !endDate.value) {
+      const start = new Date(startDate.value);
+      let end = new Date(start);
+
+      switch(frequency.value) {
+        case 'monthly':
+          end.setMonth(end.getMonth() + 1);
+          break;
+        case 'quarterly':
+          end.setMonth(end.getMonth() + 3);
+          break;
+        case 'semi_annual':
+          end.setMonth(end.getMonth() + 6);
+          break;
+        case 'annual':
+        default:
+          end.setFullYear(end.getFullYear() + 1);
+          break;
+      }
+
+      end.setDate(end.getDate() - 1);
+      endDate.value = end.toISOString().split('T')[0];
+    }
+  }
+
+  startDate.addEventListener('change', calculateEndDate);
+  frequency.addEventListener('change', calculateEndDate);
+});
+</script>

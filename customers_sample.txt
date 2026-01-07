@@ -1,0 +1,5 @@
+customer1@example.com
+customer2@example.com
+user@drwise.com
+test.customer@gmail.com
+sample@yahoo.com

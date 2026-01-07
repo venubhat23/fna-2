@@ -1,0 +1,2021 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Add New Customer</h2>
+    <p class="text-muted mb-0">Fill in the details to create a new customer account</p>
+  </div>
+  <div>
+    <%= link_to admin_customers_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Customers
+    <% end %>
+  </div>
+</div>
+
+<!-- Error Display -->
+<% if @customer.errors.any? %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <div>
+        <h6 class="mb-1"><%= pluralize(@customer.errors.count, "error") %> prohibited this customer from being saved:</h6>
+        <ul class="mb-0">
+          <% @customer.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% end %>
+
+<%= form_with model: [:admin, @customer], local: true, multipart: true, class: "needs-validation", novalidate: true, data: { turbo: false } do |form| %>
+
+  <!-- 1. Customer Type Selection -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 d-flex align-items-center">
+      <i class="bi bi-person-gear me-2 text-primary"></i>
+      <h5 class="mb-0">Customer Type</h5>
+    </div>
+    <div class="card-body">
+      <div class="customer-type-selection">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="customer-type-card" data-type="individual">
+              <%= form.radio_button :customer_type, 'individual',
+                  class: "form-check-input d-none",
+                  id: "customer_type_individual",
+                  required: true %>
+              <label for="customer_type_individual" class="customer-type-label">
+                <div class="text-center p-4">
+                  <i class="bi bi-person-circle fs-1 d-block mb-3 text-primary"></i>
+                  <h6 class="fw-bold">Individual</h6>
+                  <p class="text-muted small mb-0">Personal Customer</p>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="customer-type-card" data-type="corporate">
+              <%= form.radio_button :customer_type, 'corporate',
+                  class: "form-check-input d-none",
+                  id: "customer_type_corporate",
+                  required: true %>
+              <label for="customer_type_corporate" class="customer-type-label">
+                <div class="text-center p-4">
+                  <i class="bi bi-building fs-1 d-block mb-3 text-success"></i>
+                  <h6 class="fw-bold">Corporate</h6>
+                  <p class="text-muted small mb-0">Business Customer</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <% if @customer.errors[:customer_type].any? %>
+          <div class="text-danger mt-2">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <%= @customer.errors[:customer_type].first %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Corporate Customer Form -->
+  <div id="corporate_sections" style="display: none;">
+    <!-- Basic Information (Corporate) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <i class="bi bi-info-circle me-2 text-primary"></i>
+        <h5 class="mb-0">Basic Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <%= form.label :profile_image, "Profile Image", class: "form-label" %>
+            <%= form.file_field :profile_image, class: "form-control", accept: "image/*" %>
+            <small class="form-text text-muted">No file chosen</small>
+          </div>
+          <div class="col-md-6">
+            <%= form.label :sub_agent_id, "Affiliate *", class: "form-label" %>
+            <%= form.select :sub_agent_id,
+                options_for_select(@sub_agents.map { |sa| ["#{sa.first_name} #{sa.last_name}", sa.id] }, @customer.sub_agent_id),
+                { prompt: 'Search and select affiliate...' },
+                { class: "form-control #{'is-invalid' if @customer.errors[:sub_agent_id].any?} searchable-select", required: true, id: "corporate_affiliate_select", data: { placeholder: "Type to search affiliates...", search_url: "/admin/customers/search_sub_agents" } } %>
+            <% if @customer.errors[:sub_agent_id].any? %>
+              <div class="invalid-feedback"><%= @customer.errors[:sub_agent_id].first %></div>
+            <% end %>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <%= form.label :company_name, class: "form-label" do %>
+              Company Name <span class="text-danger">*</span>
+            <% end %>
+            <%= form.text_field :company_name, class: "form-control #{'is-invalid' if @customer.errors[:company_name].any?}", placeholder: "Enter Company Name", id: "corporate_company_name", required: true %>
+            <% if @customer.errors[:company_name].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:company_name].first %>
+              </div>
+            <% end %>
+          </div>
+          <div class="col-md-6">
+            <%= form.label :mobile, class: "form-label" do %>
+              Mobile No. <span class="text-danger">*</span>
+            <% end %>
+            <%= form.telephone_field :mobile, class: "form-control #{'is-invalid' if @customer.errors[:mobile].any?}", placeholder: "Enter Mobile", id: "corporate_mobile", required: true %>
+            <% if @customer.errors[:mobile].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:mobile].first %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <%= form.label :email, class: "form-label" do %>
+              Email <span class="text-danger">*</span>
+            <% end %>
+            <%= form.email_field :email, class: "form-control #{'is-invalid' if @customer.errors[:email].any?}", placeholder: "Enter Email", required: true %>
+            <% if @customer.errors[:email].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:email].first %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Login Credentials Section (Corporate) -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-key me-2"></i>Login Credentials
+            </h6>
+            <p class="text-muted small mb-3">Create login account for this corporate customer</p>
+          </div>
+
+          <!-- Password Type Selection -->
+          <div class="col-12 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="corporate_user_enter_password" name="customer[user_enter_password]">
+              <label class="form-check-label" for="corporate_user_enter_password">
+                User Enter Password
+              </label>
+              <small class="form-text text-muted d-block">Check if user wants to enter password manually, otherwise system will generate it</small>
+            </div>
+          </div>
+
+          <!-- Manual Password Fields (hidden by default) -->
+          <div id="corporate_manual_password_fields" style="display: none;">
+            <div class="col-md-6">
+              <label class="form-label" for="corporate_password">Password *</label>
+              <input type="password" class="form-control" id="corporate_password" name="customer[password]" placeholder="Enter password">
+              <small class="form-text text-muted">Minimum 8 characters with letters and numbers</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="corporate_password_confirmation">Confirm Password *</label>
+              <input type="password" class="form-control" id="corporate_password_confirmation" name="customer[password_confirmation]" placeholder="Confirm password">
+              <small class="form-text text-muted">Must match the password above</small>
+            </div>
+          </div>
+
+          <!-- System Generated Password Info -->
+          <div id="corporate_system_password_info" class="col-12">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>System Generated Password:</strong> A secure password will be automatically generated and sent to the customer via email.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advance Details (Corporate) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <i class="bi bi-gear me-2 text-primary"></i>
+        <h5 class="mb-0">Advance Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :state, "State", class: "form-label" %>
+            <%= form.select :state,
+                options_for_select(LocationData.states_for_select, @customer.state),
+                { prompt: 'Search and select state...' },
+                { class: "form-select searchable-select", id: "customer_state_individual", data: { placeholder: "Type to search states..." } } %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :city, "City", class: "form-label" %>
+            <%= form.select :city,
+                options_for_select([], @customer.city),
+                { prompt: 'Search and select city...' },
+                { class: "form-select searchable-select", id: "customer_city_individual", disabled: true, data: { placeholder: "Type to search cities..." } } %>
+          </div>
+          <div class="col-md-3">
+            <%= form.label :address, "Address", class: "form-label" %>
+            <%= form.text_area :address, class: "form-control", rows: 1, placeholder: "Enter Address" %>
+          </div>
+          <div class="col-md-1">
+            <%= form.label :pincode, "Pincode", class: "form-label" %>
+            <%= form.text_field :pincode, class: "form-control", placeholder: "000000", id: "customer_pincode_individual" %>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <%= form.label :annual_income, "Annual Income", class: "form-label" %>
+            <%= form.number_field :annual_income, class: "form-control", placeholder: "Enter Annual Income" %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :pan_no, "PAN No.", class: "form-label" %>
+            <%= form.text_field :pan_no, class: "form-control", placeholder: "Enter PAN number" %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :gst_no, class: "form-label" do %>
+              GST No. <span class="text-danger">*</span>
+            <% end %>
+            <%= form.text_field :gst_no, class: "form-control #{'is-invalid' if @customer.errors[:gst_no].any?}", placeholder: "Enter GST", id: "corporate_gst_no", required: true %>
+            <% if @customer.errors[:gst_no].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:gst_no].first %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <%= form.label :additional_information, "Additional Information", class: "form-label" %>
+            <%= form.text_area :additional_information, class: "form-control", rows: 2, placeholder: "Enter additional information" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Documents (Corporate) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-upload me-2 text-primary"></i>
+          <h5 class="mb-0">Upload Documents</h5>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add_corporate_document">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Document
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="corporate_documents_container">
+          <!-- Corporate documents will be added here dynamically -->
+        </div>
+        <p class="text-muted mb-0">Click "Add Document" button above to add corporate documents. This is a repeatable list.</p>
+      </div>
+    </div>
+
+    <!-- Family Details (Corporate) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-people me-2 text-primary"></i>
+          <h5 class="mb-0">Family Details</h5>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add_corporate_family_member">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Family Member
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="corporate_family_members_container">
+          <!-- Corporate family members will be added here dynamically -->
+        </div>
+        <p class="text-muted mb-0">Each family member is a repeatable group with nested documents.</p>
+      </div>
+    </div>
+
+    <!-- Corporate Members -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-building me-2 text-primary"></i>
+          <h5 class="mb-0">Corporate Members</h5>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add_corporate_member_corp">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Corporate Member
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="corporate_members_corp_container">
+          <!-- Corporate members will be added here dynamically -->
+        </div>
+        <p class="text-muted mb-0">Add corporate members with their respective documents.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Basic Information (Individual Customer) -->
+  <div id="individual_sections" style="display: none;">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <i class="bi bi-info-circle me-2 text-primary"></i>
+        <h5 class="mb-0">Basic Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <%= form.label :profile_image, "Profile Image", class: "form-label" %>
+            <%= form.file_field :profile_image, class: "form-control", accept: "image/*" %>
+            <small class="form-text text-muted">Upload profile photo (optional)</small>
+          </div>
+          <div class="col-md-6">
+            <%= form.label :sub_agent_id, "Affiliate *", class: "form-label" %>
+            <%= form.select :sub_agent_id,
+                options_for_select(@sub_agents.map { |sa| ["#{sa.first_name} #{sa.last_name}", sa.id] }, @customer.sub_agent_id),
+                { prompt: 'Search and select affiliate...' },
+                { class: "form-control #{'is-invalid' if @customer.errors[:sub_agent_id].any?} searchable-select", required: true, id: "individual_affiliate_select", data: { placeholder: "Type to search affiliates...", search_url: "/admin/customers/search_sub_agents" } } %>
+            <% if @customer.errors[:sub_agent_id].any? %>
+              <div class="invalid-feedback"><%= @customer.errors[:sub_agent_id].first %></div>
+            <% end %>
+            <small class="form-text text-muted">Select the affiliate for this customer</small>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <%= form.label :first_name, class: "form-label" do %>
+              First Name <span class="text-danger">*</span>
+            <% end %>
+            <%= form.text_field :first_name, class: "form-control #{'is-invalid' if @customer.errors[:first_name].any?}", placeholder: "Enter first name", id: "individual_first_name" %>
+            <% if @customer.errors[:first_name].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:first_name].first %>
+              </div>
+            <% end %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :middle_name, "Middle Name", class: "form-label" %>
+            <%= form.text_field :middle_name, class: "form-control #{'is-invalid' if @customer.errors[:middle_name].any?}", placeholder: "Enter middle name" %>
+            <% if @customer.errors[:middle_name].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:middle_name].first %>
+              </div>
+            <% end %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :last_name, class: "form-label" do %>
+              Last Name <span class="text-danger">*</span>
+            <% end %>
+            <%= form.text_field :last_name, class: "form-control #{'is-invalid' if @customer.errors[:last_name].any?}", placeholder: "Enter last name", id: "individual_last_name" %>
+            <% if @customer.errors[:last_name].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:last_name].first %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <%= form.label :mobile, class: "form-label" do %>
+              Mobile <span class="text-danger">*</span>
+            <% end %>
+            <%= form.telephone_field :mobile, class: "form-control #{'is-invalid' if @customer.errors[:mobile].any?}", placeholder: "Enter mobile number", id: "individual_mobile" %>
+            <% if @customer.errors[:mobile].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:mobile].first %>
+              </div>
+            <% end %>
+          </div>
+          <div class="col-md-6">
+            <%= form.label :email, class: "form-label" do %>
+              Email <span class="text-danger">*</span>
+            <% end %>
+            <%= form.email_field :email, class: "form-control #{'is-invalid' if @customer.errors[:email].any?}", placeholder: "Enter email ID", required: true %>
+            <% if @customer.errors[:email].any? %>
+              <div class="invalid-feedback">
+                <%= @customer.errors[:email].first %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Login Credentials Section -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-key me-2"></i>Login Credentials
+            </h6>
+            <p class="text-muted small mb-3">Create login account for this customer to access mobile app</p>
+          </div>
+
+          <!-- Password Type Selection -->
+          <div class="col-12 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="user_enter_password" name="customer[user_enter_password]">
+              <label class="form-check-label" for="user_enter_password">
+                User Enter Password
+              </label>
+              <small class="form-text text-muted d-block">Check if user wants to enter password manually, otherwise system will generate it</small>
+            </div>
+          </div>
+
+          <!-- Manual Password Fields (hidden by default) -->
+          <div id="manual_password_fields" style="display: none;">
+            <div class="col-md-6">
+              <label class="form-label" for="customer_password">Password *</label>
+              <input type="password" class="form-control" id="customer_password" name="customer[password]" placeholder="Enter password">
+              <small class="form-text text-muted">Minimum 8 characters with letters and numbers</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="customer_password_confirmation">Confirm Password *</label>
+              <input type="password" class="form-control" id="customer_password_confirmation" name="customer[password_confirmation]" placeholder="Confirm password">
+              <small class="form-text text-muted">Must match the password above</small>
+            </div>
+          </div>
+
+          <!-- System Generated Password Info -->
+          <div id="system_password_info" class="col-12">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>System Generated Password:</strong> A secure password will be automatically generated and sent to the customer via email.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Advance Details (Individual Customer) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <i class="bi bi-gear me-2 text-primary"></i>
+        <h5 class="mb-0">Advance Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :state, "State", class: "form-label" %>
+            <%= form.select :state,
+                options_for_select(LocationData.states_for_select, @customer.state),
+                { prompt: 'Search and select state...' },
+                { class: "form-select searchable-select", id: "customer_state_corporate", data: { placeholder: "Type to search states..." } } %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :city, "City", class: "form-label" %>
+            <%= form.select :city,
+                options_for_select([], @customer.city),
+                { prompt: 'Search and select city...' },
+                { class: "form-select searchable-select", id: "customer_city_corporate", disabled: true, data: { placeholder: "Type to search cities..." } } %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :address, "Address", class: "form-label" %>
+            <%= form.text_area :address, class: "form-control", rows: 1, placeholder: "Enter full address" %>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <%= form.label :birth_place, "Birth Place", class: "form-label" %>
+            <%= form.text_field :birth_place, class: "form-control", placeholder: "Enter birth place" %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :birth_date, "Birth Date", class: "form-label" %>
+            <%= form.date_field :birth_date, class: "form-control" %>
+            <small class="form-text text-muted">Format: DD-MM-YYYY</small>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :age, "Age", class: "form-label" %>
+            <%= form.text_field :age, class: "form-control", readonly: true, placeholder: "Auto calculated from DOB" %>
+            <small class="form-text text-muted">Format: X years, Y days</small>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <%= form.label :gender, "Gender", class: "form-label" %>
+            <%= form.select :gender,
+                options_for_select([
+                  ['Male', 'male'], ['Female', 'female'], ['Other', 'other']
+                ], @customer.gender),
+                { prompt: 'Select Gender' },
+                { class: "form-select" } %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :height_feet, "Height (Feet)", class: "form-label" %>
+            <%= form.number_field :height_feet, class: "form-control", placeholder: "Enter height", step: 0.1, min: 3.5, max: 8.0 %>
+            <small class="form-text text-muted">Range: 3.5 - 8.0 feet</small>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :weight_kg, "Weight (Kg)", class: "form-label" %>
+            <%= form.number_field :weight_kg, class: "form-control", placeholder: "Enter weight in kg", step: 0.1 %>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <%= form.label :education, "Education", class: "form-label" %>
+            <%= form.text_field :education, class: "form-control", placeholder: "Enter education" %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :marital_status, "Marital Status", class: "form-label" %>
+            <%= form.select :marital_status,
+                options_for_select([
+                  ['Single', 'single'], ['Married', 'married'],
+                  ['Divorced', 'divorced'], ['Widowed', 'widowed']
+                ], @customer.marital_status),
+                { prompt: 'Select Marital Status' },
+                { class: "form-select" } %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :business_job, "Business/Job", class: "form-label" %>
+            <%= form.select :business_job,
+                options_for_select([
+                  ['Salaried', 'salaried'],
+                  ['Self Employed', 'self_employed'],
+                  ['Business', 'business'],
+                  ['Professional', 'professional'],
+                  ['Student', 'student'],
+                  ['Retired', 'retired'],
+                  ['Unemployed', 'unemployed'],
+                  ['Other', 'other']
+                ], @customer.business_job),
+                { prompt: 'Select Business/Job' },
+                { class: "form-select" } %>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <%= form.label :business_name, "Name of Business/Job", class: "form-label" %>
+            <%= form.text_field :business_name, class: "form-control", placeholder: "Enter business/job name" %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :type_of_duty, "Type of Duty", class: "form-label" %>
+            <%= form.text_field :type_of_duty, class: "form-control", placeholder: "Enter type of duty" %>
+          </div>
+          <div class="col-md-4">
+            <%= form.label :annual_income, "Annual Income", class: "form-label" %>
+            <%= form.number_field :annual_income, class: "form-control", placeholder: "Enter annual income" %>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <%= form.label :pan_no, "PAN No", class: "form-label" %>
+            <%= form.text_field :pan_no, class: "form-control", placeholder: "Enter PAN number" %>
+          </div>
+          <div class="col-md-6">
+            <%= form.label :additional_information, "Additional Information", class: "form-label" %>
+            <%= form.text_area :additional_information, class: "form-control", rows: 1, placeholder: "Enter additional notes" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Upload Documents (Individual) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-upload me-2 text-primary"></i>
+          <h5 class="mb-0">Upload Documents</h5>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add_document">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Document
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="documents_container">
+          <!-- Documents will be added here dynamically -->
+        </div>
+        <p class="text-muted mb-0">This is a repeatable list. Add multiple documents as needed.</p>
+      </div>
+    </div>
+
+    <!-- 5. Family Details (Repeatable Group) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-people me-2 text-primary"></i>
+          <h5 class="mb-0">Family Details</h5>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add_family_member">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Family Member
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="family_members_container">
+          <!-- Family members will be added here dynamically -->
+        </div>
+        <p class="text-muted mb-0">Each family member is a repeatable group with nested documents.</p>
+      </div>
+    </div>
+
+    <!-- 6. Corporate Members (Repeatable Group) -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-building me-2 text-primary"></i>
+          <h5 class="mb-0">Corporate Members</h5>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add_corporate_member">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Corporate Member
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="corporate_members_container">
+          <!-- Corporate members will be added here dynamically -->
+        </div>
+        <p class="text-muted mb-0">Add corporate members with their respective documents.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status and Form Actions -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            <%= form.check_box :status, { class: "form-check-input", checked: true }, "true", "false" %>
+            <%= form.label :status, "Active Status", class: "form-check-label" %>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2">
+        <%= link_to "Cancel", admin_customers_path, class: "btn btn-outline-secondary" %>
+        <%= form.submit "Create Customer", class: "btn btn-primary" %>
+      </div>
+    </div>
+  </div>
+
+<% end %>
+
+<style>
+.customer-type-selection {
+  margin-bottom: 1rem;
+}
+
+.customer-type-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.customer-type-label {
+  width: 100%;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  display: block;
+  margin: 0;
+}
+
+.customer-type-label:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+}
+
+input[type="radio"]:checked + .customer-type-label {
+  border-color: #007bff;
+  background-color: #e3f2fd;
+  color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,123,255,0.2);
+}
+
+.document-entry, .family-member-entry, .corporate-member-entry {
+  background: #f8f9fa;
+  border-radius: 8px;
+  position: relative;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.nested-documents {
+  background: white;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+</style>
+
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 CSS & JS for searchable dropdown -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Custom styling for enhanced Select2 dropdown -->
+<style>
+  .select2-container--bootstrap-5 .select2-selection--single {
+    height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--single:focus-within {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+
+  .select2-container--bootstrap-5 .select2-selection__rendered {
+    color: #495057;
+    padding-left: 12px;
+    padding-right: 20px;
+    line-height: 36px;
+  }
+
+  .select2-container--bootstrap-5 .select2-results__option {
+    padding: 8px 12px;
+  }
+
+  .select2-container--bootstrap-5 .select2-results__option--highlighted {
+    background-color: #0d6efd;
+    color: white;
+  }
+
+  .select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+
+  .select2-results__options {
+    max-height: 400px !important;
+    min-height: 200px;
+  }
+
+  .select2-dropdown-large .select2-results__options {
+    max-height: 600px !important;
+    min-height: 400px !important;
+    overflow-y: auto;
+  }
+
+  .select2-dropdown-large {
+    min-width: 100% !important;
+  }
+
+  .select2-dropdown-large .select2-results__option {
+    padding: 8px 12px !important;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+  }
+
+  .select2-search__field {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 6px 12px;
+  }
+
+  /* Affiliate option styling */
+  .affiliate-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    min-height: 45px;
+  }
+
+  .affiliate-option-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 10px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .affiliate-option-details {
+    flex: 1;
+  }
+
+  .affiliate-option-name {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 2px;
+  }
+
+  .affiliate-option-id {
+    font-size: 11px;
+    color: #6c757d;
+  }
+
+  /* City option styling */
+  .city-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    min-height: 45px;
+  }
+
+  .city-option-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(45deg, #6f42c1, #e83e8c);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 10px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .city-option-details {
+    flex: 1;
+  }
+
+  .city-option-name {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 2px;
+  }
+
+  .city-option-state {
+    font-size: 11px;
+    color: #6c757d;
+  }
+</style>
+
+<!-- Include Form Enhancements -->
+<script>
+<%= File.read(Rails.root.join('app/assets/javascripts/form_enhancements.js')).html_safe %>
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Customer type selection
+  const customerTypeRadios = document.querySelectorAll('input[name="customer[customer_type]"]');
+  const individualSections = document.getElementById('individual_sections');
+  const corporateSections = document.getElementById('corporate_sections');
+
+  // Initially disable all form validations until customer type is selected
+  const individualRequiredFields = ['individual_first_name', 'individual_last_name', 'individual_mobile'];
+  const corporateRequiredFields = ['corporate_company_name', 'corporate_mobile', 'corporate_gst_no'];
+
+  // Remove required attributes initially
+  individualRequiredFields.concat(corporateRequiredFields).forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) field.removeAttribute('required');
+  });
+
+  function handleCustomerTypeChange(selectedType) {
+    if (selectedType === 'individual') {
+      individualSections.style.display = 'block';
+      corporateSections.style.display = 'none';
+
+      // Enable individual form fields
+      const individualInputs = document.querySelectorAll('#individual_sections input, #individual_sections select, #individual_sections textarea');
+      individualInputs.forEach(input => input.disabled = false);
+
+      // Disable corporate form fields to prevent submission conflicts
+      const corporateInputs = document.querySelectorAll('#corporate_sections input, #corporate_sections select, #corporate_sections textarea');
+      corporateInputs.forEach(input => input.disabled = true);
+
+      // Add required to individual fields
+      individualRequiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) field.setAttribute('required', 'required');
+      });
+
+      // Remove required from corporate fields
+      corporateRequiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) field.removeAttribute('required');
+      });
+
+      // Email is required for individual customers
+      const individualEmailField = document.querySelector('#individual_sections input[name="customer[email]"]');
+      if (individualEmailField) {
+        individualEmailField.setAttribute('required', 'required');
+      }
+    } else if (selectedType === 'corporate') {
+      individualSections.style.display = 'none';
+      corporateSections.style.display = 'block';
+
+      // Enable corporate form fields
+      const corporateInputs = document.querySelectorAll('#corporate_sections input, #corporate_sections select, #corporate_sections textarea');
+      corporateInputs.forEach(input => input.disabled = false);
+
+      // Disable individual form fields to prevent submission conflicts
+      const individualInputs = document.querySelectorAll('#individual_sections input, #individual_sections select, #individual_sections textarea');
+      individualInputs.forEach(input => input.disabled = true);
+
+      // Add required to corporate fields
+      corporateRequiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) field.setAttribute('required', 'required');
+      });
+
+      // Remove required from individual fields
+      individualRequiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) field.removeAttribute('required');
+      });
+
+      // Email is required for corporate customers
+      const corporateEmailField = document.querySelector('#corporate_sections input[name="customer[email]"]');
+      if (corporateEmailField) {
+        corporateEmailField.setAttribute('required', 'required');
+      }
+    } else {
+      individualSections.style.display = 'none';
+      corporateSections.style.display = 'none';
+
+      // Disable all form fields when no type is selected
+      const allInputs = document.querySelectorAll('#individual_sections input, #individual_sections select, #individual_sections textarea, #corporate_sections input, #corporate_sections select, #corporate_sections textarea');
+      allInputs.forEach(input => input.disabled = true);
+
+      // Remove required from all fields
+      individualRequiredFields.concat(corporateRequiredFields).forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) field.removeAttribute('required');
+      });
+
+      // Remove required from email fields
+      const allEmailFields = document.querySelectorAll('input[name="customer[email]"]');
+      allEmailFields.forEach(field => field.removeAttribute('required'));
+    }
+  }
+
+  // Handle initial state based on server-side data (important for validation errors)
+  const checkedRadio = document.querySelector('input[name="customer[customer_type]"]:checked');
+  if (checkedRadio) {
+    handleCustomerTypeChange(checkedRadio.value);
+  }
+
+  customerTypeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      handleCustomerTypeChange(this.value);
+    });
+  });
+
+  // Auto-calculate age from birth date with years and days
+  const birthDateField = document.querySelector('input[name="customer[birth_date]"]');
+  const ageField = document.querySelector('input[name="customer[age]"]');
+
+  function calculateDetailedAge(birthDateString) {
+    if (!birthDateString) return '';
+
+    const birthDate = new Date(birthDateString);
+    const today = new Date();
+
+    // Calculate years
+    let years = today.getFullYear() - birthDate.getFullYear();
+
+    // Calculate if birthday hasn't occurred this year yet
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      years--;
+    }
+
+    if (years === 0) {
+      // If less than a year old, calculate days from birth
+      const timeDiff = today.getTime() - birthDate.getTime();
+      const days = Math.floor(timeDiff / (1000 * 3600 * 24));
+      return `${days} days`;
+    } else {
+      // Calculate days since last birthday
+      let lastBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+      if (lastBirthday > today) {
+        lastBirthday = new Date(today.getFullYear() - 1, birthDate.getMonth(), birthDate.getDate());
+      }
+
+      const timeDiff = today.getTime() - lastBirthday.getTime();
+      const days = Math.floor(timeDiff / (1000 * 3600 * 24));
+
+      if (days === 0) {
+        return `${years} years`;
+      } else {
+        return `${years} years, ${days} days`;
+      }
+    }
+  }
+
+  if (birthDateField && ageField) {
+    birthDateField.addEventListener('change', function() {
+      ageField.value = calculateDetailedAge(this.value);
+    });
+
+    // Calculate age on page load if birth date is already set
+    if (birthDateField.value) {
+      ageField.value = calculateDetailedAge(birthDateField.value);
+    }
+  }
+
+  // Password type toggle functionality
+  const userEnterPasswordCheckbox = document.getElementById('user_enter_password');
+  const corporateUserEnterPasswordCheckbox = document.getElementById('corporate_user_enter_password');
+  const manualPasswordFields = document.getElementById('manual_password_fields');
+  const systemPasswordInfo = document.getElementById('system_password_info');
+  const corporateManualPasswordFields = document.getElementById('corporate_manual_password_fields');
+  const corporateSystemPasswordInfo = document.getElementById('corporate_system_password_info');
+  const customerPasswordField = document.getElementById('customer_password');
+  const customerPasswordConfirmationField = document.getElementById('customer_password_confirmation');
+  const corporatePasswordField = document.getElementById('corporate_password');
+  const corporatePasswordConfirmationField = document.getElementById('corporate_password_confirmation');
+
+  // Individual customer password toggle
+  if (userEnterPasswordCheckbox) {
+    userEnterPasswordCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        // User wants to enter password manually
+        manualPasswordFields.style.display = 'block';
+        systemPasswordInfo.style.display = 'none';
+        customerPasswordField.setAttribute('required', 'required');
+        customerPasswordConfirmationField.setAttribute('required', 'required');
+      } else {
+        // System will generate password
+        manualPasswordFields.style.display = 'none';
+        systemPasswordInfo.style.display = 'block';
+        customerPasswordField.removeAttribute('required');
+        customerPasswordConfirmationField.removeAttribute('required');
+        customerPasswordField.value = '';
+        customerPasswordConfirmationField.value = '';
+      }
+    });
+  }
+
+  // Corporate customer password toggle
+  if (corporateUserEnterPasswordCheckbox) {
+    corporateUserEnterPasswordCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        // User wants to enter password manually
+        corporateManualPasswordFields.style.display = 'block';
+        corporateSystemPasswordInfo.style.display = 'none';
+        corporatePasswordField.setAttribute('required', 'required');
+        corporatePasswordConfirmationField.setAttribute('required', 'required');
+      } else {
+        // System will generate password
+        corporateManualPasswordFields.style.display = 'none';
+        corporateSystemPasswordInfo.style.display = 'block';
+        corporatePasswordField.removeAttribute('required');
+        corporatePasswordConfirmationField.removeAttribute('required');
+        corporatePasswordField.value = '';
+        corporatePasswordConfirmationField.value = '';
+      }
+    });
+  }
+
+  // Password validation for manual entry
+  function validatePasswords(passwordField, confirmationField) {
+    const password = passwordField.value;
+    const confirmation = confirmationField.value;
+
+    if (password && confirmation) {
+      if (password !== confirmation) {
+        confirmationField.setCustomValidity('Passwords do not match');
+      } else if (password.length < 8) {
+        passwordField.setCustomValidity('Password must be at least 8 characters long');
+      } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
+        passwordField.setCustomValidity('Password must contain both letters and numbers');
+      } else {
+        passwordField.setCustomValidity('');
+        confirmationField.setCustomValidity('');
+      }
+    }
+  }
+
+  // Add password validation listeners
+  if (customerPasswordField && customerPasswordConfirmationField) {
+    customerPasswordField.addEventListener('input', function() {
+      validatePasswords(customerPasswordField, customerPasswordConfirmationField);
+    });
+    customerPasswordConfirmationField.addEventListener('input', function() {
+      validatePasswords(customerPasswordField, customerPasswordConfirmationField);
+    });
+  }
+
+  if (corporatePasswordField && corporatePasswordConfirmationField) {
+    corporatePasswordField.addEventListener('input', function() {
+      validatePasswords(corporatePasswordField, corporatePasswordConfirmationField);
+    });
+    corporatePasswordConfirmationField.addEventListener('input', function() {
+      validatePasswords(corporatePasswordField, corporatePasswordConfirmationField);
+    });
+  }
+
+  // Document management
+  let documentIndex = 0;
+  const addDocumentBtn = document.getElementById('add_document');
+  const documentsContainer = document.getElementById('documents_container');
+
+  addDocumentBtn?.addEventListener('click', function() {
+    const documentHtml = `
+      <div class="document-entry p-3 mb-3 border rounded position-relative" data-index="${documentIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-document">
+          <i class="bi bi-trash"></i>
+        </button>
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Document Type <span class="text-danger">*</span></label>
+            <select name="customer[documents_attributes][${documentIndex}][document_type]" class="form-select" required>
+              <option value="">Select Document Type</option>
+              <option value="Aadhaar Card">Aadhaar Card</option>
+              <option value="Pancard">PAN Card</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Mediclaim">Mediclaim</option>
+              <option value="RC Book">RC Book</option>
+              <option value="Other File">Other File</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Document File <span class="text-danger">*</span></label>
+            <input type="file" name="customer[documents_attributes][${documentIndex}][file]" class="form-control" required>
+          </div>
+        </div>
+      </div>
+    `;
+    documentsContainer.insertAdjacentHTML('beforeend', documentHtml);
+    documentIndex++;
+  });
+
+  // Family member management
+  let familyMemberIndex = 0;
+  const addFamilyMemberBtn = document.getElementById('add_family_member');
+  const familyMembersContainer = document.getElementById('family_members_container');
+
+  addFamilyMemberBtn?.addEventListener('click', function() {
+    const familyMemberHtml = `
+      <div class="family-member-entry p-3 mb-3 border rounded position-relative" data-index="${familyMemberIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-family-member">
+          <i class="bi bi-trash"></i>
+        </button>
+        <h6 class="mb-3">Family Member ${familyMemberIndex + 1}</h6>
+
+        <div class="row">
+          <div class="col-md-4">
+            <label class="form-label">First Name <span class="text-danger">*</span></label>
+            <input type="text" name="customer[family_members_attributes][${familyMemberIndex}][first_name]" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Middle Name</label>
+            <input type="text" name="customer[family_members_attributes][${familyMemberIndex}][middle_name]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Last Name <span class="text-danger">*</span></label>
+            <input type="text" name="customer[family_members_attributes][${familyMemberIndex}][last_name]" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Mobile</label>
+            <input type="tel" name="customer[family_members_attributes][${familyMemberIndex}][mobile]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Birth Date</label>
+            <input type="date" name="customer[family_members_attributes][${familyMemberIndex}][birth_date]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Age</label>
+            <input type="text" name="customer[family_members_attributes][${familyMemberIndex}][age]" class="form-control" readonly placeholder="Auto calculated from DOB">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Gender</label>
+            <select name="customer[family_members_attributes][${familyMemberIndex}][gender]" class="form-select">
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Relationship <span class="text-danger">*</span></label>
+            <select name="customer[family_members_attributes][${familyMemberIndex}][relationship]" class="form-select" required>
+              <option value="">Select Relationship</option>
+              <option value="father">Father</option>
+              <option value="mother">Mother</option>
+              <option value="spouse">Spouse</option>
+              <option value="child">Child</option>
+              <option value="sibling">Sibling</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Height (Feet)</label>
+            <input type="number" name="customer[family_members_attributes][${familyMemberIndex}][height_feet]" class="form-control" placeholder="Enter height" step="0.1" min="3.5" max="8.0">
+            <small class="form-text text-muted">Range: 3.5 - 8.0 feet</small>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Weight (Kg)</label>
+            <input type="number" name="customer[family_members_attributes][${familyMemberIndex}][weight_kg]" class="form-control" step="0.1">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">PAN No</label>
+            <input type="text" name="customer[family_members_attributes][${familyMemberIndex}][pan_no]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Additional Information</label>
+            <textarea name="customer[family_members_attributes][${familyMemberIndex}][additional_information]" class="form-control" rows="1"></textarea>
+          </div>
+        </div>
+
+        <div class="nested-documents p-3 mt-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Family Member Documents</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary add-family-document" data-family-index="${familyMemberIndex}">
+              <i class="bi bi-plus-lg me-1"></i>
+              Add Document
+            </button>
+          </div>
+          <div id="family_member_${familyMemberIndex}_documents">
+            <!-- Family member documents will be added here -->
+          </div>
+        </div>
+      </div>
+    `;
+    familyMembersContainer.insertAdjacentHTML('beforeend', familyMemberHtml);
+    familyMemberIndex++;
+  });
+
+  // Corporate document management
+  let corporateDocumentIndex = 0;
+  const addCorporateDocumentBtn = document.getElementById('add_corporate_document');
+  const corporateDocumentsContainer = document.getElementById('corporate_documents_container');
+
+  addCorporateDocumentBtn?.addEventListener('click', function() {
+    const documentHtml = `
+      <div class="document-entry p-3 mb-3 border rounded position-relative" data-index="${corporateDocumentIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-corporate-doc">
+          <i class="bi bi-trash"></i>
+        </button>
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Document Type <span class="text-danger">*</span></label>
+            <select name="customer[corporate_documents_attributes][${corporateDocumentIndex}][document_type]" class="form-select" required>
+              <option value="">Select Document Type</option>
+              <option value="Aadhaar Card">Aadhaar Card</option>
+              <option value="Pancard">PAN Card</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Mediclaim">Mediclaim</option>
+              <option value="RC Book">RC Book</option>
+              <option value="Other File">Other File</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Document File <span class="text-danger">*</span></label>
+            <input type="file" name="customer[corporate_documents_attributes][${corporateDocumentIndex}][file]" class="form-control" required>
+          </div>
+        </div>
+      </div>
+    `;
+    corporateDocumentsContainer.insertAdjacentHTML('beforeend', documentHtml);
+    corporateDocumentIndex++;
+  });
+
+  // Corporate family member management
+  let corporateFamilyMemberIndex = 0;
+  const addCorporateFamilyMemberBtn = document.getElementById('add_corporate_family_member');
+  const corporateFamilyMembersContainer = document.getElementById('corporate_family_members_container');
+
+  addCorporateFamilyMemberBtn?.addEventListener('click', function() {
+    const familyMemberHtml = `
+      <div class="family-member-entry p-3 mb-3 border rounded position-relative" data-index="${corporateFamilyMemberIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-corporate-family-member">
+          <i class="bi bi-trash"></i>
+        </button>
+        <h6 class="mb-3">Family Member ${corporateFamilyMemberIndex + 1}</h6>
+
+        <div class="row">
+          <div class="col-md-4">
+            <label class="form-label">First Name <span class="text-danger">*</span></label>
+            <input type="text" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][first_name]" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Middle Name</label>
+            <input type="text" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][middle_name]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Last Name <span class="text-danger">*</span></label>
+            <input type="text" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][last_name]" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Mobile</label>
+            <input type="tel" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][mobile]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Birth Date</label>
+            <input type="date" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][birth_date]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Age</label>
+            <input type="text" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][age]" class="form-control" readonly placeholder="Auto calculated from DOB">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Gender</label>
+            <select name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][gender]" class="form-select">
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Relationship <span class="text-danger">*</span></label>
+            <select name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][relationship]" class="form-select" required>
+              <option value="">Select Relationship</option>
+              <option value="father">Father</option>
+              <option value="mother">Mother</option>
+              <option value="spouse">Spouse</option>
+              <option value="child">Child</option>
+              <option value="sibling">Sibling</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Height (Feet)</label>
+            <input type="number" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][height_feet]" class="form-control" placeholder="Enter height" step="0.1" min="3.5" max="8.0">
+            <small class="form-text text-muted">Range: 3.5 - 8.0 feet</small>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Weight (Kg)</label>
+            <input type="number" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][weight_kg]" class="form-control" step="0.1">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">PAN No</label>
+            <input type="text" name="customer[corporate_family_members_attributes][${corporateFamilyMemberIndex}][pan_no]" class="form-control">
+          </div>
+        </div>
+      </div>
+    `;
+    corporateFamilyMembersContainer.insertAdjacentHTML('beforeend', familyMemberHtml);
+    corporateFamilyMemberIndex++;
+  });
+
+  // Corporate member management
+  let corporateMemberIndex = 0;
+  const addCorporateMemberBtn = document.getElementById('add_corporate_member');
+  const corporateMembersContainer = document.getElementById('corporate_members_container');
+
+  // Corporate member management for corp section
+  let corporateMemberCorpIndex = 0;
+  const addCorporateMemberCorpBtn = document.getElementById('add_corporate_member_corp');
+  const corporateMembersCorpContainer = document.getElementById('corporate_members_corp_container');
+
+  addCorporateMemberCorpBtn?.addEventListener('click', function() {
+    const corporateMemberHtml = `
+      <div class="corporate-member-entry p-3 mb-3 border rounded position-relative" data-index="${corporateMemberCorpIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-corporate-member-corp">
+          <i class="bi bi-trash"></i>
+        </button>
+        <h6 class="mb-3">Corporate Member ${corporateMemberCorpIndex + 1}</h6>
+
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+            <input type="text" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][company_name]" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Mobile</label>
+            <input type="tel" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][mobile]" class="form-control">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][email]" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">State</label>
+            <input type="text" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][state]" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">City</label>
+            <input type="text" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][city]" class="form-control">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <label class="form-label">Address</label>
+            <textarea name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][address]" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Annual Income</label>
+            <input type="number" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][annual_income]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">PAN No</label>
+            <input type="text" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][pan_no]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">GST No</label>
+            <input type="text" name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][gst_no]" class="form-control">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <label class="form-label">Additional Information</label>
+            <textarea name="customer[corporate_members_corp_attributes][${corporateMemberCorpIndex}][additional_information]" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    `;
+    corporateMembersCorpContainer.insertAdjacentHTML('beforeend', corporateMemberHtml);
+    corporateMemberCorpIndex++;
+  });
+
+  addCorporateMemberBtn?.addEventListener('click', function() {
+    const corporateMemberHtml = `
+      <div class="corporate-member-entry p-3 mb-3 border rounded position-relative" data-index="${corporateMemberIndex}">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn remove-corporate-member">
+          <i class="bi bi-trash"></i>
+        </button>
+        <h6 class="mb-3">Corporate Member ${corporateMemberIndex + 1}</h6>
+
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+            <input type="text" name="customer[corporate_members_attributes][${corporateMemberIndex}][company_name]" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Mobile</label>
+            <input type="tel" name="customer[corporate_members_attributes][${corporateMemberIndex}][mobile]" class="form-control">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" name="customer[corporate_members_attributes][${corporateMemberIndex}][email]" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">State</label>
+            <input type="text" name="customer[corporate_members_attributes][${corporateMemberIndex}][state]" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">City</label>
+            <input type="text" name="customer[corporate_members_attributes][${corporateMemberIndex}][city]" class="form-control">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <label class="form-label">Address</label>
+            <textarea name="customer[corporate_members_attributes][${corporateMemberIndex}][address]" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">Annual Income</label>
+            <input type="number" name="customer[corporate_members_attributes][${corporateMemberIndex}][annual_income]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">PAN No</label>
+            <input type="text" name="customer[corporate_members_attributes][${corporateMemberIndex}][pan_no]" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">GST No</label>
+            <input type="text" name="customer[corporate_members_attributes][${corporateMemberIndex}][gst_no]" class="form-control">
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <label class="form-label">Additional Information</label>
+            <textarea name="customer[corporate_members_attributes][${corporateMemberIndex}][additional_information]" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="nested-documents p-3 mt-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Corporate Member Documents</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary add-corporate-document" data-corporate-index="${corporateMemberIndex}">
+              <i class="bi bi-plus-lg me-1"></i>
+              Add Document
+            </button>
+          </div>
+          <div id="corporate_member_${corporateMemberIndex}_documents">
+            <!-- Corporate member documents will be added here -->
+          </div>
+        </div>
+      </div>
+    `;
+    corporateMembersContainer.insertAdjacentHTML('beforeend', corporateMemberHtml);
+    corporateMemberIndex++;
+  });
+
+  // Event delegation for remove buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-document')) {
+      e.target.closest('.document-entry').remove();
+    }
+    if (e.target.closest('.remove-family-member')) {
+      e.target.closest('.family-member-entry').remove();
+    }
+    if (e.target.closest('.remove-corporate-member')) {
+      e.target.closest('.corporate-member-entry').remove();
+    }
+    if (e.target.closest('.remove-corporate-doc')) {
+      e.target.closest('.document-entry').remove();
+    }
+    if (e.target.closest('.remove-corporate-family-member')) {
+      e.target.closest('.family-member-entry').remove();
+    }
+    if (e.target.closest('.remove-corporate-member-corp')) {
+      e.target.closest('.corporate-member-entry').remove();
+    }
+  });
+
+  // Handle nested document additions
+  let nestedDocumentIndex = 0;
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.add-family-document')) {
+      const button = e.target.closest('.add-family-document');
+      const familyIndex = button.getAttribute('data-family-index');
+      const container = document.getElementById(`family_member_${familyIndex}_documents`);
+
+      const documentHtml = `
+        <div class="nested-document-entry p-2 mb-2 border rounded">
+          <div class="row">
+            <div class="col-md-6">
+              <label class="form-label">Document Type</label>
+              <select name="customer[family_members_attributes][${familyIndex}][documents_attributes][${nestedDocumentIndex}][document_type]" class="form-select">
+                <option value="">Select Document Type</option>
+                <option value="Aadhaar Card">Aadhaar Card</option>
+                <option value="Pancard">PAN Card</option>
+                <option value="Driving License">Driving License</option>
+                <option value="Mediclaim">Mediclaim</option>
+                <option value="RC Book">RC Book</option>
+                <option value="Other File">Other File</option>
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Document File</label>
+              <input type="file" name="customer[family_members_attributes][${familyIndex}][documents_attributes][${nestedDocumentIndex}][file]" class="form-control">
+            </div>
+            <div class="col-md-1">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-sm btn-outline-danger remove-nested-document w-100">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', documentHtml);
+      nestedDocumentIndex++;
+    }
+
+    if (e.target.closest('.add-corporate-document')) {
+      const button = e.target.closest('.add-corporate-document');
+      const corporateIndex = button.getAttribute('data-corporate-index');
+      const container = document.getElementById(`corporate_member_${corporateIndex}_documents`);
+
+      const documentHtml = `
+        <div class="nested-document-entry p-2 mb-2 border rounded">
+          <div class="row">
+            <div class="col-md-6">
+              <label class="form-label">Document Type</label>
+              <select name="customer[corporate_members_attributes][${corporateIndex}][documents_attributes][${nestedDocumentIndex}][document_type]" class="form-select">
+                <option value="">Select Document Type</option>
+                <option value="Aadhaar Card">Aadhaar Card</option>
+                <option value="Pancard">PAN Card</option>
+                <option value="Driving License">Driving License</option>
+                <option value="Mediclaim">Mediclaim</option>
+                <option value="RC Book">RC Book</option>
+                <option value="Other File">Other File</option>
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Document File</label>
+              <input type="file" name="customer[corporate_members_attributes][${corporateIndex}][documents_attributes][${nestedDocumentIndex}][file]" class="form-control">
+            </div>
+            <div class="col-md-1">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-sm btn-outline-danger remove-nested-document w-100">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', documentHtml);
+      nestedDocumentIndex++;
+    }
+
+    if (e.target.closest('.remove-nested-document')) {
+      e.target.closest('.nested-document-entry').remove();
+    }
+  });
+
+  // Auto-calculate family member ages with years and days
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('input[name*="birth_date"]')) {
+      let ageField = e.target.closest('.row').parentNode.querySelector('input[name*="[age]"]');
+      if (!ageField) {
+        ageField = e.target.closest('.family-member-entry')?.querySelector('input[name*="[age]"]');
+      }
+
+      if (ageField) {
+        ageField.value = calculateDetailedAge(e.target.value);
+      }
+    }
+  });
+
+  // Simple State-City Dropdown
+  console.log('Setting up state-city dropdowns...');
+
+  // Use API for city data
+  let citiesData = {};
+
+  function loadCitiesForState(stateValue, cityDropdown, selectedCity = null) {
+    console.log('Loading cities for:', stateValue, 'Selected city:', selectedCity);
+
+    // Clear and disable if no state
+    if (!stateValue) {
+      cityDropdown.innerHTML = '<option value="">Select State First</option>';
+      cityDropdown.disabled = true;
+      return;
+    }
+
+    // Store the currently selected city or use the passed selectedCity
+    const currentSelectedCity = selectedCity || cityDropdown.value;
+
+    // Use API call to get cities
+    fetch(`/api/cities?state=${stateValue}`)
+      .then(response => response.json())
+      .then(data => {
+        const cities = data.cities || [];
+        populateCityDropdown(cities, cityDropdown, currentSelectedCity);
+      })
+      .catch(error => {
+        console.error('Error loading cities:', error);
+        cityDropdown.innerHTML = '<option value="">Error loading cities</option>';
+        cityDropdown.disabled = true;
+      });
+  }
+
+  function populateCityDropdown(cities, cityDropdown, selectedCity = null) {
+    // Clear dropdown and add cities
+    cityDropdown.innerHTML = '<option value="">Select City</option>';
+
+    cities.forEach(city => {
+      const option = document.createElement('option');
+      option.value = city;
+      option.textContent = city;
+
+      // Select the city if it matches the selectedCity
+      if (selectedCity && city === selectedCity) {
+        option.selected = true;
+      }
+
+      cityDropdown.appendChild(option);
+    });
+
+    cityDropdown.disabled = false;
+    console.log(`Loaded ${cities.length} cities`, selectedCity ? `with selected: ${selectedCity}` : '');
+  }
+
+  // Setup for Individual customer
+  const individualState = document.getElementById('customer_state_individual');
+  const individualCity = document.getElementById('customer_city_individual');
+
+  if (individualState && individualCity) {
+    const initialCityValue = individualCity.value; // Store initial city value from server
+
+    // Handle both regular change and Select2 change events
+    individualState.addEventListener('change', function() {
+      loadCitiesForState(this.value, individualCity);
+    });
+
+    // Handle Select2 change event specifically
+    $('#customer_state_individual').on('select2:select', function (e) {
+      const selectedValue = e.params.data.id;
+      loadCitiesForState(selectedValue, individualCity);
+    });
+
+    // Load cities if state already selected and preserve the initial city selection
+    if (individualState.value) {
+      loadCitiesForState(individualState.value, individualCity, initialCityValue);
+    }
+  }
+
+  // Setup for Corporate customer
+  const corporateState = document.getElementById('customer_state_corporate');
+  const corporateCity = document.getElementById('customer_city_corporate');
+
+  if (corporateState && corporateCity) {
+    const initialCorporateCityValue = corporateCity.value; // Store initial city value from server
+
+    // Handle both regular change and Select2 change events
+    corporateState.addEventListener('change', function() {
+      loadCitiesForState(this.value, corporateCity);
+    });
+
+    // Handle Select2 change event specifically
+    $('#customer_state_corporate').on('select2:select', function (e) {
+      const selectedValue = e.params.data.id;
+      loadCitiesForState(selectedValue, corporateCity);
+    });
+
+    // Load cities if state already selected and preserve the initial city selection
+    if (corporateState.value) {
+      loadCitiesForState(corporateState.value, corporateCity, initialCorporateCityValue);
+    }
+  }
+
+  console.log('State-city dropdowns ready!');
+
+  // Initialize Select2 for searchable dropdowns
+  function initializeSelect2Dropdowns() {
+    // Initialize State dropdowns with search
+    $('#customer_state_individual, #customer_state_corporate').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select state...',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('body'),
+      minimumResultsForSearch: 0,
+      closeOnSelect: true
+    });
+
+    // Initialize Affiliate dropdowns with AJAX search
+    $('#corporate_affiliate_select, #individual_affiliate_select').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select affiliate...',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('body'),
+      dropdownCssClass: 'select2-dropdown-large',
+      minimumInputLength: 0, // Allow opening without typing
+      ajax: {
+        url: '/api/v1/public/search_sub_agents',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return {
+            q: params.term || '', // Send empty query to get default results
+            limit: params.term ? 20 : 10 // Show fewer results when no search term
+          };
+        },
+        processResults: function (data) {
+          console.log('Search affiliates response:', data);
+          return {
+            results: data.results || []
+          };
+        },
+        error: function(xhr, status, error) {
+          console.error('Search affiliates AJAX error:', status, error);
+          return {
+            results: [{id: '', text: 'Error loading affiliates - please try again'}]
+          };
+        },
+        cache: true
+      },
+      templateResult: function(option) {
+        if (option.loading) return option.text;
+        if (!option.id || option.id === '') {
+          return option.text;
+        }
+
+        // Generate avatar with initials
+        var initials = option.text.split(' ').map(function(name) {
+          return name.charAt(0).toUpperCase();
+        }).join('').substring(0, 2);
+
+        // Custom template for affiliate options with green avatar
+        var $option = $(
+          '<div class="affiliate-option">' +
+            '<div class="affiliate-option-avatar">' + initials + '</div>' +
+            '<div class="affiliate-option-details">' +
+              '<div class="affiliate-option-name">' + option.text + '</div>' +
+              '<div class="affiliate-option-id">Affiliate ID: #' + option.id + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+        return $option;
+      },
+      templateSelection: function(option) {
+        return option.text || 'Search and select affiliate...';
+      },
+      escapeMarkup: function(markup) {
+        return markup;
+      }
+    });
+
+    // Initialize City dropdowns
+    $('#customer_city_individual, #customer_city_corporate').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select city...',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('body'),
+      dropdownCssClass: 'select2-dropdown-large',
+      minimumResultsForSearch: 0,
+      closeOnSelect: true,
+      templateResult: function(option) {
+        if (!option.id || option.element.value === '') {
+          return option.text;
+        }
+
+        // Generate city initials
+        var initials = option.text.split(' ').map(function(word) {
+          return word.charAt(0).toUpperCase();
+        }).join('').substring(0, 3);
+
+        // Get the state from the state dropdown in the same section
+        var stateDropdown = $(option.element).closest('.card-body').find('select[name*="[state]"]');
+        var stateName = stateDropdown.find('option:selected').text() || 'State';
+
+        // Custom template for city options with purple square avatar
+        var $option = $(
+          '<div class="city-option">' +
+            '<div class="city-option-avatar">' + initials + '</div>' +
+            '<div class="city-option-details">' +
+              '<div class="city-option-name">' + option.text + '</div>' +
+              '<div class="city-option-state">' + stateName + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+        return $option;
+      },
+      templateSelection: function(option) {
+        return option.text || 'Search and select city...';
+      },
+      escapeMarkup: function(markup) {
+        return markup;
+      }
+    });
+  }
+
+  // Initialize Select2 after a short delay to ensure DOM is ready
+  setTimeout(initializeSelect2Dropdowns, 100);
+
+  // Re-initialize Select2 for city dropdowns when cities are loaded
+  function reinitializeCitySelect2(cityDropdown) {
+    // Destroy existing Select2 if it exists
+    if (cityDropdown.hasClass('select2-hidden-accessible')) {
+      cityDropdown.select2('destroy');
+    }
+
+    // Reinitialize with Select2
+    cityDropdown.select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select city...',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('body'),
+      dropdownCssClass: 'select2-dropdown-large',
+      minimumResultsForSearch: 0,
+      closeOnSelect: true,
+      templateResult: function(option) {
+        if (!option.id || option.element.value === '') {
+          return option.text;
+        }
+
+        // Generate city initials
+        var initials = option.text.split(' ').map(function(word) {
+          return word.charAt(0).toUpperCase();
+        }).join('').substring(0, 3);
+
+        // Get the state from the state dropdown in the same section
+        var stateDropdown = $(option.element).closest('.card-body').find('select[name*="[state]"]');
+        var stateName = stateDropdown.find('option:selected').text() || 'State';
+
+        // Custom template for city options with purple square avatar
+        var $option = $(
+          '<div class="city-option">' +
+            '<div class="city-option-avatar">' + initials + '</div>' +
+            '<div class="city-option-details">' +
+              '<div class="city-option-name">' + option.text + '</div>' +
+              '<div class="city-option-state">' + stateName + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+        return $option;
+      },
+      templateSelection: function(option) {
+        return option.text || 'Search and select city...';
+      },
+      escapeMarkup: function(markup) {
+        return markup;
+      }
+    });
+  }
+
+  // Override the existing populateCityDropdown function to include Select2 reinitialization
+  const originalPopulateCityDropdown = window.populateCityDropdown || populateCityDropdown;
+
+  function populateCityDropdown(cities, cityDropdown, selectedCity = null) {
+    // First destroy Select2 if it exists
+    const $cityDropdown = $(cityDropdown);
+    if ($cityDropdown.hasClass('select2-hidden-accessible')) {
+      $cityDropdown.select2('destroy');
+    }
+
+    // Clear dropdown and add cities (original functionality)
+    cityDropdown.innerHTML = '<option value="">Select City</option>';
+
+    cities.forEach(city => {
+      const option = document.createElement('option');
+      option.value = city;
+      option.textContent = city;
+
+      // Select the city if it matches the selectedCity
+      if (selectedCity && city === selectedCity) {
+        option.selected = true;
+      }
+
+      cityDropdown.appendChild(option);
+    });
+
+    cityDropdown.disabled = false;
+    console.log(`Loaded ${cities.length} cities`, selectedCity ? `with selected: ${selectedCity}` : '');
+
+    // Reinitialize Select2 and set the selected value
+    setTimeout(() => {
+      $cityDropdown.select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Search and select city...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('body'),
+        dropdownCssClass: 'select2-dropdown-large',
+        minimumResultsForSearch: 0,
+        closeOnSelect: true,
+        templateResult: function(option) {
+          if (!option.id || option.element.value === '') {
+            return option.text;
+          }
+
+          // Generate city initials
+          var initials = option.text.split(' ').map(function(word) {
+            return word.charAt(0).toUpperCase();
+          }).join('').substring(0, 3);
+
+          // Get the state from the state dropdown in the same section
+          var stateDropdown = $(option.element).closest('.card-body').find('select[name*="[state]"]');
+          var stateName = stateDropdown.find('option:selected').text() || 'State';
+
+          // Custom template for city options with purple square avatar
+          var $option = $(
+            '<div class="city-option">' +
+              '<div class="city-option-avatar">' + initials + '</div>' +
+              '<div class="city-option-details">' +
+                '<div class="city-option-name">' + option.text + '</div>' +
+                '<div class="city-option-state">' + stateName + '</div>' +
+              '</div>' +
+            '</div>'
+          );
+          return $option;
+        },
+        templateSelection: function(option) {
+          return option.text || 'Search and select city...';
+        },
+        escapeMarkup: function(markup) {
+          return markup;
+        }
+      });
+
+      if (selectedCity) {
+        $cityDropdown.val(selectedCity).trigger('change');
+      }
+    }, 50);
+  }
+
+  console.log('Select2 dropdowns initialized!');
+});
+</script>

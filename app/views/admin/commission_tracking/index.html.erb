@@ -1,0 +1,978 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Payout Management</h2>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to summary_admin_commission_tracking_index_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-file-earmark-text me-1"></i>
+      Summary Report
+    <% end %>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Commission Generated</h6>
+            <h3 class="mb-0 text-primary">₹<%= number_with_delimiter(@total_commission_generated.to_i) %></h3>
+          </div>
+          <div class="bg-primary bg-opacity-10 rounded p-3">
+            <i class="bi bi-currency-rupee text-primary fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Total Transferred</h6>
+            <h3 class="mb-0 text-success">₹<%= number_with_delimiter(@total_transferred.to_i) %></h3>
+          </div>
+          <div class="bg-success bg-opacity-10 rounded p-3">
+            <i class="bi bi-arrow-right-circle text-success fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Pending Transfers</h6>
+            <h3 class="mb-0 text-warning">₹<%= number_with_delimiter(@pending_transfers.to_i) %></h3>
+          </div>
+          <div class="bg-warning bg-opacity-10 rounded p-3">
+            <i class="bi bi-clock text-warning fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h6 class="text-muted mb-2">Company Expenses</h6>
+            <h3 class="mb-0 text-info">₹<%= number_with_delimiter(@company_expenses.to_i) %></h3>
+          </div>
+          <div class="bg-info bg-opacity-10 rounded p-3">
+            <i class="bi bi-building text-info fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+      <!-- Search -->
+      <div class="flex-grow-1 min-width-250">
+        <input type="text" class="form-control" placeholder="Search by policy number or customer name..." id="policySearch">
+      </div>
+
+      <!-- Pagination Info -->
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-primary">
+          Page <%= @page %> of <%= @total_pages || 1 %> |
+          Showing <%= @policies_with_commission.count %> of <%= @total_policies_count || 0 %> records
+        </span>
+
+        <!-- Pagination Controls -->
+        <div class="btn-group">
+          <% current_page = @page.to_i %>
+          <% if @has_prev_page %>
+            <%= link_to "Previous", admin_commission_tracking_index_path(page: current_page - 1),
+                class: "btn btn-sm btn-outline-primary" %>
+          <% else %>
+            <span class="btn btn-sm btn-outline-primary disabled">Previous</span>
+          <% end %>
+
+          <span class="btn btn-sm btn-primary"><%= current_page %></span>
+
+          <% if @has_next_page %>
+            <%= link_to "Next", admin_commission_tracking_index_path(page: current_page + 1),
+                class: "btn btn-sm btn-outline-primary" %>
+          <% else %>
+            <span class="btn btn-sm btn-outline-primary disabled">Next</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.min-width-250 {
+  min-width: 250px;
+}
+
+/* Simple Modal Styles - No background overlay */
+.modal-backdrop {
+  display: none !important;
+}
+
+#mainAgentCommissionModal {
+  z-index: 9999 !important;
+  background: transparent !important;
+}
+
+#mainAgentCommissionModal .modal-dialog {
+  max-width: 480px;
+  margin: 8rem auto 2rem auto !important;
+  z-index: 10000 !important;
+  position: relative;
+}
+
+#mainAgentCommissionModal .modal-content {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 10001 !important;
+  background: white !important;
+  overflow: hidden;
+}
+
+#mainAgentCommissionModal .modal-header {
+  border-bottom: 1px solid #e9ecef;
+  background: #198754;
+  color: white;
+  padding: 1rem 1.5rem;
+}
+
+#mainAgentCommissionModal .modal-footer {
+  border-top: 1px solid #e9ecef;
+  background: white;
+  padding: 1rem 1.5rem;
+}
+
+#mainAgentCommissionModal .modal-body {
+  background: white !important;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 10002 !important;
+}
+
+#mainAgentCommissionModal .btn-close {
+  filter: invert(1);
+  opacity: 1;
+}
+
+#mainAgentCommissionModal .btn-close:hover {
+  opacity: 0.8;
+}
+
+/* Ensure modal is properly displayed */
+.modal.show {
+  display: block !important;
+  z-index: 9999 !important;
+}
+
+.modal-backdrop.show {
+  display: none !important;
+}
+
+/* Simple responsive positioning */
+@media (min-width: 576px) {
+  #mainAgentCommissionModal .modal-dialog {
+    margin: 8rem auto 2rem auto !important;
+  }
+}
+
+@media (max-width: 575px) {
+  #mainAgentCommissionModal .modal-dialog {
+    margin: 4rem 1rem 2rem 1rem !important;
+  }
+}
+
+/* Ensure modal appears above everything and is interactive */
+body.modal-open {
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+/* Enhanced modal styling */
+.modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background: transparent !important;
+}
+
+/* Ensure form elements are interactive */
+#mainAgentCommissionModal input,
+#mainAgentCommissionModal textarea,
+#mainAgentCommissionModal button {
+  position: relative;
+  z-index: 10010 !important;
+  pointer-events: auto !important;
+}
+
+/* Simple form styling */
+#mainAgentCommissionModal .form-control {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+}
+
+#mainAgentCommissionModal .form-control:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+#mainAgentCommissionModal .btn {
+  border-radius: 4px;
+}
+</style>
+
+<!-- Policies with Commission Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <h5 class="mb-0">Total Policies (<%= @policies_with_commission.count %>)</h5>
+  </div>
+  <div class="card-body p-0">
+
+    <% if @policies_with_commission.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="border-0">Policy Details</th>
+              <th class="border-0">Customer</th>
+              <th class="border-0">Premium</th>
+              <th class="border-0">Commission Generated</th>
+              <th class="border-0">Main Agent Commission</th>
+              <th class="border-0">Transfer Status</th>
+              <th class="border-0">Commission Breakdown</th>
+              <th class="border-0">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @policies_with_commission.each do |policy_data| %>
+              <% policy = policy_data[:policy] %>
+              <% type = policy_data[:type] %>
+              <% commission_data = policy_data[:commission_data] %>
+              <% transfer_status = policy_data[:transfer_status] %>
+
+              <tr>
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.policy_number %></h6>
+                    <span class="badge bg-<%= case type when 'health' then 'success' when 'life' then 'primary' when 'motor' then 'warning' else 'info' end %>">
+                      <%= type.titleize %>
+                    </span>
+                  </div>
+                </td>
+
+                <td>
+                  <div>
+                    <h6 class="mb-1"><%= policy.customer&.display_name || 'N/A' %></h6>
+                    <small class="text-muted d-block">
+                      <%= policy&.insurance_company_name || 'N/A' %>
+                    </small>
+                    <% if policy&.lead_id.present? %>
+                      <small class="text-primary d-block">
+                        <i class="bi bi-person-plus me-1"></i>Lead: <%= policy.lead_id %>
+                      </small>
+                    <% else %>
+                      <small class="text-muted d-block">
+                        <i class="bi bi-dash-circle me-1"></i>No Lead ID
+                      </small>
+                    <% end %>
+                  </div>
+                </td>
+
+                <td>
+                  <div>
+                    <strong>₹<%= number_with_delimiter(policy.total_premium.to_i) %></strong>
+                  </div>
+                </td>
+
+                <td>
+                  <div>
+                    <span class="badge bg-success">
+                      ₹<%= number_with_delimiter(commission_data.dig(:summary, :total_commission_generated).to_i) %>
+                    </span>
+                    <small class="text-muted d-block mt-1">
+                      Main Agent: ₹<%= number_with_delimiter(commission_data.dig(:main_agent, :total_commission).to_i) %>
+                      <span class="text-muted">(<%= commission_data.dig(:percentages, :main_agent) || commission_data.dig(:main_agent, :percentage) || policy&.main_agent_commission_percentage || '0' %>%)</span>
+                    </small>
+                  </div>
+                </td>
+
+                <td>
+                  <%
+                    # Check CommissionPayout status for main_agent
+                    main_agent_payout = CommissionPayout.find_by(
+                      policy_type: type,
+                      policy_id: policy.id,
+                      payout_to: 'main_agent'
+                    )
+                  %>
+                  <% if main_agent_payout&.status == 'paid' %>
+                    <div>
+                      <span class="text-success">
+                        <i class="bi bi-check-circle me-1"></i>₹<%= number_with_delimiter(main_agent_payout.payout_amount.to_i) %>
+                      </span>
+                      <% if main_agent_payout.payout_date %>
+                        <small class="text-success d-block">
+                          Paid on <%= main_agent_payout.payout_date.strftime('%d %b %Y') %>
+                        </small>
+                      <% end %>
+                    </div>
+                  <% elsif main_agent_payout&.status == 'pending' %>
+                    <a href="#" class="text-primary text-decoration-none"
+                       onclick="openMainAgentCommissionModal(<%= policy.id %>, '<%= type %>', '<%= policy.policy_number %>', <%= commission_data.dig(:main_agent, :total_commission).to_i %>); return false;">
+                      Mark as Paid
+                    </a>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+
+                <td>
+                  <div>
+                    <div class="mb-1">
+                      <small>Paid: </small>
+                      <span class="badge bg-primary">
+                        <%= transfer_status[:paid_payouts] %>/<%= transfer_status[:total_payouts] %>
+                      </span>
+                    </div>
+                    <div>
+                      <small>Amount: </small>
+                      <span class="badge bg-info">
+                        ₹<%= number_with_delimiter(transfer_status[:paid_amount].to_i) %>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <td>
+                  <div>
+                    <small class="d-block">
+                      Affiliate: ₹<%= number_with_delimiter(commission_data.dig(:payouts, :affiliate).to_i) %>
+                      <span class="text-muted">(<%= commission_data.dig(:percentages, :affiliate) || policy&.sub_agent_commission_percentage || '0' %>%)</span>
+                    </small>
+                    <small class="d-block">
+                      Ambassador: ₹<%= number_with_delimiter(commission_data.dig(:payouts, :ambassador).to_i) %>
+                      <span class="text-muted">(<%= commission_data.dig(:percentages, :ambassador) || policy&.ambassador_commission_percentage || '0' %>%)</span>
+                    </small>
+                    <small class="d-block">
+                      Investor: ₹<%= number_with_delimiter(commission_data.dig(:payouts, :investor).to_i) %>
+                      <span class="text-muted">(<%= commission_data.dig(:percentages, :investor) || policy&.investor_commission_percentage || '0' %>%)</span>
+                    </small>
+                    <small class="d-block">
+                      Company: ₹<%= number_with_delimiter(commission_data.dig(:payouts, :company_expense).to_i) %>
+                      <span class="text-muted">(<%= commission_data.dig(:percentages, :company_expense) || policy&.company_expenses_percentage || '0' %>%)</span>
+                    </small>
+                  </div>
+                </td>
+
+                <td>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_commission_tracking_path(policy.id, policy_type: type),
+                        class: "btn btn-sm btn-outline-primary", title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="bi bi-wallet fs-1 text-muted d-block mb-3"></i>
+        <h5 class="text-muted">No Policies with Commission Found</h5>
+        <p class="text-muted mb-3">
+          No insurance policies with commission data are currently available.
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Bottom Pagination -->
+  <% if @policies_with_commission.any? && (@total_pages || 1) > 1 %>
+    <div class="card-footer bg-transparent border-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <small class="text-muted">
+            Showing <%= ((@page.to_i - 1) * @per_page) + 1 %> to <%= [@page.to_i * @per_page, @total_policies_count || 0].min %>
+            of <%= @total_policies_count || 0 %> results
+          </small>
+        </div>
+
+        <nav aria-label="Policies pagination">
+          <ul class="pagination pagination-sm mb-0">
+            <% current_page = @page.to_i %>
+            <% total_pages = @total_pages || 1 %>
+
+            <!-- Previous Button -->
+            <li class="page-item <%= 'disabled' unless @has_prev_page %>">
+              <% if @has_prev_page %>
+                <%= link_to "Previous", admin_commission_tracking_index_path(page: current_page - 1),
+                    class: "page-link" %>
+              <% else %>
+                <span class="page-link">Previous</span>
+              <% end %>
+            </li>
+
+            <!-- Page Numbers -->
+            <% start_page = [1, current_page - 2].max %>
+            <% end_page = [total_pages, current_page + 2].min %>
+
+            <% if start_page > 1 %>
+              <li class="page-item">
+                <%= link_to "1", admin_commission_tracking_index_path(page: 1), class: "page-link" %>
+              </li>
+              <% if start_page > 2 %>
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+              <% end %>
+            <% end %>
+
+            <% (start_page..end_page).each do |page_num| %>
+              <li class="page-item <%= 'active' if page_num == current_page %>">
+                <%= link_to page_num, admin_commission_tracking_index_path(page: page_num),
+                    class: "page-link" %>
+              </li>
+            <% end %>
+
+            <% if end_page < total_pages %>
+              <% if end_page < total_pages - 1 %>
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+              <% end %>
+              <li class="page-item">
+                <%= link_to total_pages, admin_commission_tracking_index_path(page: total_pages), class: "page-link" %>
+              </li>
+            <% end %>
+
+            <!-- Next Button -->
+            <li class="page-item <%= 'disabled' unless @has_next_page %>">
+              <% if @has_next_page %>
+                <%= link_to "Next", admin_commission_tracking_index_path(page: current_page + 1),
+                    class: "page-link" %>
+              <% else %>
+                <span class="page-link">Next</span>
+              <% end %>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Transfer Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Manual Commission Transfer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="transferModalContent">
+          <!-- Content will be loaded dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Agent Commission Modal -->
+<div class="modal" id="mainAgentCommissionModal" tabindex="-1" aria-labelledby="mainAgentCommissionModalLabel" aria-hidden="true" data-bs-backdrop="false" data-bs-keyboard="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="mainAgentCommissionModalLabel">
+          <i class="bi bi-wallet me-2"></i>Mark Main Agent Commission as Received
+        </h5>
+        <button type="button" class="btn-close btn-close-white" onclick="closeMainAgentModal()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="mainAgentCommissionForm">
+          <div class="mb-3">
+            <strong>Policy:</strong> <span id="modalPolicyNumber">Loading...</span>
+            (<span id="modalPolicyType">-</span>)
+          </div>
+
+          <div class="mb-3">
+            <strong>Commission Amount:</strong> ₹<span id="modalCommissionAmount">0</span>
+          </div>
+
+          <form id="commissionReceivedForm">
+            <div class="mb-3">
+              <label for="transactionId" class="form-label">
+                Transaction ID <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control" id="transactionId"
+                     name="transaction_id" required placeholder="Enter transaction ID">
+            </div>
+
+            <div class="mb-3">
+              <label for="paidDate" class="form-label">Date Received</label>
+              <input type="date" class="form-control" id="paidDate"
+                     name="paid_date" value="<%= Date.current.strftime('%Y-%m-%d') %>">
+            </div>
+
+            <div class="mb-3">
+              <label for="commissionNotes" class="form-label">Notes</label>
+              <textarea class="form-control" id="commissionNotes" name="notes" rows="2"
+                        placeholder="Additional notes"></textarea>
+            </div>
+
+            <input type="hidden" id="modalPolicyId" name="policy_id">
+            <input type="hidden" id="modalPolicyTypeField" name="policy_type">
+          </form>
+        </div>
+
+        <!-- Progress Loader -->
+        <div id="paymentProgressLoader" class="d-none" style="padding: 2rem; text-align: center;">
+          <div class="mb-3">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+              <span class="visually-hidden">Processing...</span>
+            </div>
+          </div>
+          <h5 class="text-success mb-3">Processing Payment...</h5>
+          <div class="progress mb-3" style="height: 8px;">
+            <div id="progressBar" class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <p id="progressText" class="text-muted mb-0">Initializing payment process...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeMainAgentModal()" id="cancelBtn">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-success" onclick="markMainAgentCommissionReceived()" id="submitBtn">
+          Mark as Received
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Clean up any existing modal backdrops
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+
+  // Clear any running progress intervals from previous page loads
+  if (window.paymentProgressInterval) {
+    clearInterval(window.paymentProgressInterval);
+    window.paymentProgressInterval = null;
+  }
+
+  // Search functionality
+  const searchInput = document.getElementById('policySearch');
+  let searchTimeout;
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      clearTimeout(searchTimeout);
+      const searchTerm = e.target.value.toLowerCase();
+
+      searchTimeout = setTimeout(() => {
+        const tableRows = document.querySelectorAll('.table tbody tr');
+
+        tableRows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+      }, 300);
+    });
+  }
+
+  // Handle modal cleanup on hidden
+  const mainAgentModal = document.getElementById('mainAgentCommissionModal');
+  if (mainAgentModal) {
+    mainAgentModal.addEventListener('hidden.bs.modal', function () {
+      // Clean up any leftover backdrops and reset body
+      setTimeout(() => {
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.paddingRight = '';
+        document.body.style.overflow = '';
+      }, 100);
+    });
+
+    // Ensure modal is interactive when shown
+    mainAgentModal.addEventListener('shown.bs.modal', function () {
+      // Ensure all form elements are interactive
+      const formElements = mainAgentModal.querySelectorAll('input, textarea, button, select');
+      formElements.forEach(element => {
+        element.style.pointerEvents = 'auto';
+        element.style.zIndex = '1060';
+      });
+
+      // Focus on first input
+      setTimeout(() => {
+        const firstInput = mainAgentModal.querySelector('#transactionId');
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 200);
+    });
+  }
+});
+
+// Transfer modal functionality
+function openTransferModal(policyId, policyType, policyNumber) {
+  const modal = new bootstrap.Modal(document.getElementById('transferModal'));
+
+  // Load policy breakdown and transfer forms
+  fetch(`/admin/commission_tracking/${policyId}/policy_breakdown?policy_type=${policyType}`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('transferModalContent').innerHTML = generateTransferForm(data, policyId, policyType, policyNumber);
+      modal.show();
+    })
+    .catch(error => {
+      console.error('Error loading transfer modal:', error);
+      alert('Failed to load transfer details. Please try again.');
+    });
+}
+
+function generateTransferForm(commissionData, policyId, policyType, policyNumber) {
+  const breakdown = commissionData.commission_breakdown;
+  const payoutStatus = commissionData.payout_status;
+
+  return `
+    <div class="transfer-form-container">
+      <div class="policy-summary mb-4 p-3 bg-light rounded">
+        <h6><strong>Policy:</strong> ${policyNumber} (${policyType.toUpperCase()})</h6>
+        <p><strong>Customer:</strong> ${commissionData.policy.customer}</p>
+        <p><strong>Premium:</strong> ₹${breakdown.premium_amount.toLocaleString()}</p>
+        <p><strong>Total Commission:</strong> ₹${breakdown.main_agent.total_commission.toLocaleString()}</p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <h6>Transfer to Affiliate (₹${breakdown.payouts.affiliate.toLocaleString()})</h6>
+          <div class="transfer-section mb-3">
+            <div class="form-group mb-2">
+              <input type="number" class="form-control" id="affiliate_amount"
+                     value="${breakdown.payouts.affiliate}" readonly>
+            </div>
+            <div class="form-group mb-2">
+              <input type="text" class="form-control" id="affiliate_transaction_id"
+                     placeholder="Transaction ID">
+            </div>
+            <div class="form-group mb-2">
+              <textarea class="form-control" id="affiliate_notes" rows="2"
+                        placeholder="Transfer notes"></textarea>
+            </div>
+            <button class="btn btn-success btn-sm w-100" onclick="processTransfer('affiliate', ${policyId}, '${policyType}')">
+              Complete Transfer
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <h6>Transfer to Ambassador (₹${breakdown.payouts.ambassador.toLocaleString()})</h6>
+          <div class="transfer-section mb-3">
+            <div class="form-group mb-2">
+              <input type="number" class="form-control" id="ambassador_amount"
+                     value="${breakdown.payouts.ambassador}" readonly>
+            </div>
+            <div class="form-group mb-2">
+              <input type="text" class="form-control" id="ambassador_transaction_id"
+                     placeholder="Transaction ID">
+            </div>
+            <div class="form-group mb-2">
+              <textarea class="form-control" id="ambassador_notes" rows="2"
+                        placeholder="Transfer notes"></textarea>
+            </div>
+            <button class="btn btn-success btn-sm w-100" onclick="processTransfer('ambassador', ${policyId}, '${policyType}')">
+              Complete Transfer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <h6>Transfer to Investor (₹${breakdown.payouts.investor.toLocaleString()})</h6>
+          <div class="transfer-section mb-3">
+            <div class="form-group mb-2">
+              <input type="number" class="form-control" id="investor_amount"
+                     value="${breakdown.payouts.investor}" readonly>
+            </div>
+            <div class="form-group mb-2">
+              <input type="text" class="form-control" id="investor_transaction_id"
+                     placeholder="Transaction ID">
+            </div>
+            <div class="form-group mb-2">
+              <textarea class="form-control" id="investor_notes" rows="2"
+                        placeholder="Transfer notes"></textarea>
+            </div>
+            <button class="btn btn-success btn-sm w-100" onclick="processTransfer('investor', ${policyId}, '${policyType}')">
+              Complete Transfer
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <h6>Company Expense (₹${breakdown.payouts.company_expense.toLocaleString()})</h6>
+          <div class="transfer-section mb-3">
+            <div class="form-group mb-2">
+              <input type="number" class="form-control" id="company_expense_amount"
+                     value="${breakdown.payouts.company_expense}" readonly>
+            </div>
+            <div class="form-group mb-2">
+              <input type="text" class="form-control" id="company_expense_transaction_id"
+                     placeholder="Transaction ID">
+            </div>
+            <div class="form-group mb-2">
+              <textarea class="form-control" id="company_expense_notes" rows="2"
+                        placeholder="Expense notes"></textarea>
+            </div>
+            <button class="btn btn-warning btn-sm w-100" onclick="processTransfer('company_expense', ${policyId}, '${policyType}')">
+              Record Expense
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function processTransfer(transferType, policyId, policyType) {
+  const amount = document.getElementById(`${transferType}_amount`).value;
+  const transactionId = document.getElementById(`${transferType}_transaction_id`).value;
+  const notes = document.getElementById(`${transferType}_notes`).value;
+
+  if (!transactionId) {
+    alert('Please enter a transaction ID');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('amount', amount);
+  formData.append('transaction_id', transactionId);
+  formData.append('notes', notes);
+  formData.append('authenticity_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+  const actionMap = {
+    'affiliate': 'transfer_to_affiliate',
+    'ambassador': 'transfer_to_ambassador',
+    'investor': 'transfer_to_investor',
+    'company_expense': 'transfer_company_expense'
+  };
+
+  fetch(`/admin/commission_tracking/${policyId}/${actionMap[transferType]}?policy_type=${policyType}`, {
+    method: 'PATCH',
+    body: formData,
+    headers: {
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      location.reload();
+    } else {
+      alert('Transfer failed: ' + data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Transfer error:', error);
+    alert('Transfer failed. Please try again.');
+  });
+}
+
+// Main Agent Commission Modal Functions
+function openMainAgentCommissionModal(policyId, policyType, policyNumber, commissionAmount) {
+  // Remove any existing modal backdrops and reset body state
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+  document.body.classList.remove('modal-open');
+  document.body.style.paddingRight = '';
+  document.body.style.overflow = '';
+
+  const modalElement = document.getElementById('mainAgentCommissionModal');
+
+  // Destroy any existing modal instance
+  const existingModal = bootstrap.Modal.getInstance(modalElement);
+  if (existingModal) {
+    existingModal.dispose();
+  }
+
+  // Create fresh modal instance
+  const modal = new bootstrap.Modal(modalElement, {
+    backdrop: false,
+    keyboard: true,
+    focus: true
+  });
+
+  // Populate modal fields immediately (no API call needed)
+  document.getElementById('modalPolicyNumber').textContent = policyNumber;
+  document.getElementById('modalPolicyType').textContent = policyType.toUpperCase();
+  document.getElementById('modalCommissionAmount').textContent = (commissionAmount || 0).toLocaleString();
+  document.getElementById('modalPolicyId').value = policyId;
+  document.getElementById('modalPolicyTypeField').value = policyType;
+
+  // Clear form fields
+  document.getElementById('transactionId').value = '';
+  document.getElementById('commissionNotes').value = '';
+
+  // Show modal
+  modal.show();
+
+  // Focus on transaction ID input
+  setTimeout(() => {
+    document.getElementById('transactionId').focus();
+  }, 200);
+}
+
+// Progress loader functions
+function showProgressLoader() {
+  // Hide form and footer buttons
+  document.getElementById('mainAgentCommissionForm').classList.add('d-none');
+  document.getElementById('submitBtn').classList.add('d-none');
+  document.getElementById('cancelBtn').classList.add('d-none');
+
+  // Show progress loader
+  document.getElementById('paymentProgressLoader').classList.remove('d-none');
+
+  // Start progress animation
+  simulateProgress();
+}
+
+function hideProgressLoader() {
+  // Show form and footer buttons
+  document.getElementById('mainAgentCommissionForm').classList.remove('d-none');
+  document.getElementById('submitBtn').classList.remove('d-none');
+  document.getElementById('cancelBtn').classList.remove('d-none');
+
+  // Hide progress loader
+  document.getElementById('paymentProgressLoader').classList.add('d-none');
+
+  // Reset progress
+  document.getElementById('progressBar').style.width = '0%';
+}
+
+function simulateProgress() {
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  let progress = 0;
+
+  const progressSteps = [
+    { percent: 20, text: "Validating transaction details..." },
+    { percent: 40, text: "Updating policy records..." },
+    { percent: 60, text: "Processing commission payout..." },
+    { percent: 80, text: "Updating payment status..." },
+    { percent: 90, text: "Finalizing transaction..." },
+    { percent: 100, text: "Payment completed successfully! 🎉" }
+  ];
+
+  let stepIndex = 0;
+
+  window.paymentProgressInterval = setInterval(() => {
+    if (stepIndex < progressSteps.length) {
+      const step = progressSteps[stepIndex];
+      progress = step.percent;
+      progressBar.style.width = progress + '%';
+      progressBar.setAttribute('aria-valuenow', progress);
+      progressText.textContent = step.text;
+      stepIndex++;
+
+      // If we reached 100%, immediately refresh
+      if (progress === 100) {
+        clearInterval(window.paymentProgressInterval);
+        setTimeout(() => {
+          location.reload();
+        }, 500); // Small delay to show 100% complete
+      }
+    }
+  }, 400); // Faster intervals for quicker progress
+}
+
+// Function to close the modal
+function closeMainAgentModal() {
+  const modalElement = document.getElementById('mainAgentCommissionModal');
+  const modal = bootstrap.Modal.getInstance(modalElement);
+  if (modal) {
+    modal.hide();
+  } else {
+    modalElement.style.display = 'none';
+    modalElement.classList.remove('show');
+  }
+
+  // Clean up any backdrops
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+}
+
+function markMainAgentCommissionReceived() {
+  const transactionId = document.getElementById('transactionId').value;
+  const paidDate = document.getElementById('paidDate').value;
+  const notes = document.getElementById('commissionNotes').value;
+  const policyId = document.getElementById('modalPolicyId').value;
+  const policyType = document.getElementById('modalPolicyTypeField').value;
+
+  if (!transactionId.trim()) {
+    alert('Please enter a transaction ID');
+    return;
+  }
+
+  // Show progress loader and hide form
+  showProgressLoader();
+
+  const formData = new FormData();
+  formData.append('transaction_id', transactionId);
+  formData.append('paid_date', paidDate);
+  formData.append('notes', notes);
+  formData.append('authenticity_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+  fetch(`/admin/commission_tracking/${policyId}/mark_main_agent_commission_received?policy_type=${policyType}`, {
+    method: 'PATCH',
+    body: formData,
+    headers: {
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Let the progress animation handle the reload automatically
+      // Progress will reach 100% and trigger reload
+    } else {
+      hideProgressLoader();
+      clearInterval(window.paymentProgressInterval);
+      alert('Failed to update commission status: ' + data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Commission update error:', error);
+    hideProgressLoader();
+    clearInterval(window.paymentProgressInterval);
+    alert('Failed to update commission status. Please try again.');
+  });
+}
+</script>

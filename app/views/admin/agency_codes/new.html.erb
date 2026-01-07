@@ -1,0 +1,111 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Agency Code Management</h2>
+    <p class="text-muted mb-0">Manage agency codes by insurance type</p>
+  </div>
+  <div>
+    <%= link_to admin_agency_codes_path, class: "btn btn-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Agency Codes
+    <% end %>
+  </div>
+</div>
+
+<!-- Add New Agency Code Form -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center">
+    <i class="bi bi-plus-circle me-2 text-primary fs-5"></i>
+    <div>
+      <h5 class="mb-0">Add Agency Code</h5>
+      <small class="text-muted">Create a new agency code entry</small>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <%= form_with model: [:admin, @agency_code], local: true, class: "row g-4", data: { turbo: false } do |form| %>
+      <div class="col-md-6">
+        <label class="form-label">Type</label>
+        <%= form.select :insurance_type,
+            options_for_select(@insurance_types.map { |type| [type, type] }, @agency_code.insurance_type),
+            { prompt: 'Select Type' },
+            { class: "form-select", required: true } %>
+        <% if @agency_code.errors[:insurance_type].any? %>
+          <div class="text-danger small mt-1"><%= @agency_code.errors[:insurance_type].first %></div>
+        <% end %>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Company Name</label>
+        <%= form.select :company_name,
+            options_for_select(@insurance_companies.map { |company| [company, company] }, @agency_code.company_name),
+            { prompt: 'Select Company' },
+            { class: "form-select", required: true } %>
+        <% if @agency_code.errors[:company_name].any? %>
+          <div class="text-danger small mt-1"><%= @agency_code.errors[:company_name].first %></div>
+        <% end %>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Agent Name</label>
+        <%= form.text_field :agent_name,
+            class: "form-control",
+            placeholder: "Enter agent name",
+            required: true %>
+        <% if @agency_code.errors[:agent_name].any? %>
+          <div class="text-danger small mt-1"><%= @agency_code.errors[:agent_name].first %></div>
+        <% end %>
+      </div>
+
+
+      <div class="col-md-6">
+        <label class="form-label">Agency Code</label>
+        <%= form.text_field :code,
+            class: "form-control",
+            placeholder: "Enter agency code",
+            required: true %>
+        <% if @agency_code.errors[:code].any? %>
+          <div class="text-danger small mt-1"><%= @agency_code.errors[:code].first %></div>
+        <% end %>
+      </div>
+
+      <div class="col-12">
+        <div class="d-flex gap-2">
+          <%= form.submit "Save Agency Code", class: "btn btn-primary" %>
+          <%= link_to "Cancel", admin_agency_codes_path, class: "btn btn-secondary" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.card {
+  border-radius: 12px;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+  border: 1px solid #e0e6ed;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+}
+</style>
