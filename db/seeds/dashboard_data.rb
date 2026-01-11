@@ -128,12 +128,12 @@ booking_statuses = ["draft", "confirmed", "processing", "delivered", "completed"
 payment_methods = ["cash", "card", "upi", "bank_transfer", "online"]
 payment_statuses = ["unpaid", "paid", "partially_paid"]
 
-# Generate bookings for the last 90 days
-90.times do |i|
+# Generate bookings for the last 30 days
+30.times do |i|
   date = Date.today - i.days
 
-  # Create 0-5 bookings per day (more recent days have more bookings)
-  num_bookings = i < 30 ? rand(2..5) : rand(0..3)
+  # Create 1-3 bookings per day (more recent days have more bookings)
+  num_bookings = i < 10 ? rand(2..3) : rand(1..2)
 
   num_bookings.times do
     customer = created_customers.sample
