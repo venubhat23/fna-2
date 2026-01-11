@@ -323,76 +323,153 @@
                   </div>
                 </td>
                 <td class="align-middle">
-                  <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                      <i class="bi bi-three-dots"></i>
-                    </button>
-                    <ul class="dropdown-menu">
-                      <li>
-                        <%= link_to admin_booking_path(booking), class: "dropdown-item" do %>
-                          <i class="bi bi-eye me-2"></i>
-                          View Details
+                  <div class="d-flex gap-2 align-items-center">
+                    <!-- Primary Stage Management Dropdown -->
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-primary dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-gear-fill me-1"></i>
+                        Stage Management
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end" style="min-width: 250px;">
+                        <li class="dropdown-header bg-primary text-white p-3 mb-0" style="margin: -0.5rem -0.5rem 0.5rem -0.5rem; border-radius: 0.375rem 0.375rem 0 0;">
+                          <i class="bi bi-gear-wide-connected me-2"></i>
+                          Stage Management for #<%= booking.booking_number %>
+                        </li>
+
+                        <% if booking.next_possible_statuses.any? %>
+                          <li class="dropdown-header small text-muted">Quick Stage Updates</li>
+                          <% booking.next_possible_statuses.each do |status| %>
+                            <li>
+                              <%= link_to stage_transition_admin_booking_path(booking, target_stage: status),
+                                  class: "dropdown-item d-flex align-items-center py-2" do %>
+                                <div class="stage-icon me-3">
+                                  <i class="bi <%=
+                                    case status
+                                    when 'confirmed' then 'bi-check-circle text-success'
+                                    when 'processing' then 'bi-gear text-warning'
+                                    when 'packed' then 'bi-box text-info'
+                                    when 'shipped' then 'bi-truck text-primary'
+                                    when 'out_for_delivery' then 'bi-geo-alt text-primary'
+                                    when 'delivered' then 'bi-house-check text-success'
+                                    when 'cancelled' then 'bi-x-circle text-danger'
+                                    else 'bi-arrow-right text-secondary'
+                                    end %>"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                  <div class="fw-semibold"><%= status.humanize %></div>
+                                  <small class="text-muted">
+                                    <%= case status
+                                        when 'confirmed' then 'Confirm booking and prepare for processing'
+                                        when 'processing' then 'Start processing the order'
+                                        when 'packed' then 'Mark as packed and ready for shipment'
+                                        when 'shipped' then 'Add tracking details and mark as shipped'
+                                        when 'out_for_delivery' then 'Mark as out for delivery'
+                                        when 'delivered' then 'Mark as successfully delivered'
+                                        when 'cancelled' then 'Cancel this booking'
+                                        else 'Update to this stage'
+                                        end %>
+                                  </small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                              <% end %>
+                            </li>
+                          <% end %>
+                        <% else %>
+                          <li class="dropdown-item-text text-center py-3 text-muted">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No stage transitions available
+                          </li>
                         <% end %>
-                      </li>
-                      <li>
-                        <%= link_to edit_admin_booking_path(booking), class: "dropdown-item" do %>
-                          <i class="bi bi-pencil me-2"></i>
-                          Edit Booking
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header small text-muted">Advanced Actions</li>
+                        <li>
+                          <%= link_to admin_booking_path(booking), class: "dropdown-item" do %>
+                            <i class="bi bi-eye me-2"></i>
+                            View Full Details
+                          <% end %>
+                        </li>
+                        <% if booking.can_return? %>
+                          <li>
+                            <%= link_to stage_transition_admin_booking_path(booking, target_stage: 'returned'),
+                                class: "dropdown-item text-warning" do %>
+                              <i class="bi bi-arrow-return-left me-2"></i>
+                              Process Return
+                            <% end %>
+                          </li>
                         <% end %>
-                      </li>
+                      </ul>
+                    </div>
 
-                      <!-- Invoice Actions -->
-                      <li><hr class="dropdown-divider"></li>
-                      <li class="dropdown-header">
-                        <i class="bi bi-receipt me-1"></i>Invoice Actions
-                      </li>
-
-                      <% if booking.invoice_generated? %>
+                    <!-- Secondary Actions Dropdown -->
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="dropdown-header">
+                          <i class="bi bi-tools me-1"></i>Booking Actions
+                        </li>
                         <li>
-                          <%= link_to invoice_admin_booking_path(booking), class: "dropdown-item", target: "_blank" do %>
-                            <i class="bi bi-file-earmark-pdf me-2 text-primary"></i>
-                            View Invoice
+                          <%= link_to edit_admin_booking_path(booking), class: "dropdown-item" do %>
+                            <i class="bi bi-pencil me-2"></i>
+                            Edit Booking
                           <% end %>
                         </li>
-                      <% else %>
-                        <li>
-                          <%= link_to generate_invoice_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
-                            <i class="bi bi-receipt me-2 text-success"></i>
-                            Generate Invoice
-                          <% end %>
-                        </li>
-                      <% end %>
 
-                      <!-- Order Conversion -->
-                      <% if booking.order.present? %>
-                        <li>
-                          <%= link_to admin_order_path(booking.order), class: "dropdown-item" do %>
-                            <i class="bi bi-box me-2 text-info"></i>
-                            View Order
-                          <% end %>
+                        <!-- Invoice Actions -->
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">
+                          <i class="bi bi-receipt me-1"></i>Invoice Actions
                         </li>
-                      <% elsif booking.payment_status_paid? %>
-                        <li>
-                          <%= link_to convert_to_order_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
-                            <i class="bi bi-arrow-right me-2 text-warning"></i>
-                            Convert to Order
-                          <% end %>
-                        </li>
-                      <% end %>
 
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <%= link_to admin_booking_path(booking), method: :delete,
-                            class: "dropdown-item text-danger",
-                            confirm: "Are you sure you want to delete this booking?",
-                            data: {
-                              confirm: "Are you sure you want to delete booking ##{booking.booking_number}? This action cannot be undone."
-                            } do %>
-                          <i class="bi bi-trash me-2"></i>
-                          Delete Booking
+                        <% if booking.invoice_generated? %>
+                          <li>
+                            <%= link_to invoice_admin_booking_path(booking), class: "dropdown-item", target: "_blank" do %>
+                              <i class="bi bi-file-earmark-pdf me-2 text-primary"></i>
+                              View Invoice
+                            <% end %>
+                          </li>
+                        <% else %>
+                          <li>
+                            <%= link_to generate_invoice_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
+                              <i class="bi bi-receipt me-2 text-success"></i>
+                              Generate Invoice
+                            <% end %>
+                          </li>
                         <% end %>
-                      </li>
-                    </ul>
+
+                        <!-- Order Conversion -->
+                        <% if booking.order.present? %>
+                          <li>
+                            <%= link_to admin_order_path(booking.order), class: "dropdown-item" do %>
+                              <i class="bi bi-box me-2 text-info"></i>
+                              View Order
+                            <% end %>
+                          </li>
+                        <% elsif booking.payment_status_paid? %>
+                          <li>
+                            <%= link_to convert_to_order_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
+                              <i class="bi bi-arrow-right me-2 text-warning"></i>
+                              Convert to Order
+                            <% end %>
+                          </li>
+                        <% end %>
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <%= link_to admin_booking_path(booking), method: :delete,
+                              class: "dropdown-item text-danger",
+                              confirm: "Are you sure you want to delete this booking?",
+                              data: {
+                                confirm: "Are you sure you want to delete booking ##{booking.booking_number}? This action cannot be undone."
+                              } do %>
+                            <i class="bi bi-trash me-2"></i>
+                            Delete Booking
+                          <% end %>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </td>
               </tr>

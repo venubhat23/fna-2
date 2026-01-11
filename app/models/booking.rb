@@ -11,17 +11,17 @@ class Booking < ApplicationRecord
 
   # Enums - Comprehensive status for complete workflow
   enum :status, {
-    draft: 0,           # Initial booking creation
-    ordered_and_delivery_pending: 1, # Order placed, waiting for processing
-    confirmed: 2,       # Booking confirmed, payment received
-    processing: 3,      # Order being prepared
-    packed: 4,          # Items packed and ready
-    shipped: 5,         # Shipped out
-    out_for_delivery: 6, # Out for delivery
-    delivered: 7,       # Successfully delivered
-    completed: 8,       # Transaction completed
-    cancelled: 9,       # Cancelled
-    returned: 10        # Returned
+    draft: 'draft',                                 # Initial booking creation
+    ordered_and_delivery_pending: 'ordered_and_delivery_pending', # Order placed, waiting for processing
+    confirmed: 'confirmed',                         # Booking confirmed, payment received
+    processing: 'processing',                       # Order being prepared
+    packed: 'packed',                               # Items packed and ready
+    shipped: 'shipped',                             # Shipped out
+    out_for_delivery: 'out_for_delivery',          # Out for delivery
+    delivered: 'delivered',                         # Successfully delivered
+    completed: 'completed',                         # Transaction completed
+    cancelled: 'cancelled',                         # Cancelled
+    returned: 'returned'                           # Returned
   }
 
   enum :payment_status, {

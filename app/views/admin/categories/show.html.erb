@@ -121,11 +121,11 @@
                     <td class="align-middle">
                       <% if product.active? %>
                         <span class="badge bg-success-subtle text-success">
-                          <%= product.status.humanize %>
+                          <%= product.status&.humanize || 'Active' %>
                         </span>
                       <% else %>
                         <span class="badge bg-danger-subtle text-danger">
-                          <%= product.status.humanize %>
+                          <%= product.status&.humanize || 'Inactive' %>
                         </span>
                       <% end %>
                     </td>

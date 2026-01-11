@@ -59,6 +59,8 @@ Rails.application.routes.draw do
         patch :cancel_order
         patch :mark_delivered
         patch :mark_completed
+        get :stage_transition
+        patch :process_stage_transition
       end
       collection do
         get :search_products
@@ -611,8 +613,55 @@ Rails.application.routes.draw do
           get :policy_holder_options
         end
       end
+
+      # Client Requests APIs
+      resources :client_requests do
+        member do
+          patch :transition_stage
+          patch :assign_to_user
+          patch :update_priority
+          get :stage_history
+        end
+        collection do
+          get :by_stage
+          get :by_department
+          get :overdue
+          get :unassigned
+          get :stage_statistics
+        end
+      end
     end
 
+  end
+
+  # Franchise routes
+  namespace :franchise do
+    # Authentication routes
+    get '/login', to: 'sessions#new'
+    post '/login', to: 'sessions#create'
+    delete '/logout', to: 'sessions#destroy'
+
+    # Dashboard and main functionality
+    root 'dashboard#index'
+    get '/dashboard', to: 'dashboard#index'
+
+    # Bookings management
+    resources :bookings, only: [:index, :show, :update]
+  end
+
+  # Affiliate routes
+  namespace :affiliate do
+    # Authentication routes
+    get '/login', to: 'sessions#new'
+    post '/login', to: 'sessions#create'
+    delete '/logout', to: 'sessions#destroy'
+
+    # Dashboard and main functionality
+    root 'dashboard#index'
+    get '/dashboard', to: 'dashboard#index'
+
+    # Bookings management
+    resources :bookings, only: [:index, :show, :update]
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

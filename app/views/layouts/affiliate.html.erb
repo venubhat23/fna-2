@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Affiliate Dashboard - Dhanvantari Farm</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+
+  <body class="bg-light">
+    <div class="d-flex">
+      <!-- Sidebar -->
+      <nav class="sidebar bg-dark text-white" style="width: 250px; min-height: 100vh;">
+        <div class="p-3">
+          <h4 class="text-center mb-4">
+            <i class="fas fa-seedling text-success"></i>
+            Dhanvantari Farm
+          </h4>
+          <small class="text-muted">Affiliate Portal</small>
+        </div>
+
+        <ul class="nav nav-pills flex-column">
+          <li class="nav-item">
+            <%= link_to affiliate_dashboard_path, class: "nav-link #{'active' if current_page?(affiliate_dashboard_path)}" do %>
+              <i class="fas fa-tachometer-alt me-2"></i>
+              Dashboard
+            <% end %>
+          </li>
+          <li class="nav-item">
+            <%= link_to affiliate_bookings_path, class: "nav-link #{'active' if current_page?(affiliate_bookings_path) || request.path.include?('bookings')}" do %>
+              <i class="fas fa-shopping-cart me-2"></i>
+              Bookings
+            <% end %>
+          </li>
+        </ul>
+
+        <!-- Affiliate Info -->
+        <div class="mt-auto p-3 border-top border-secondary">
+          <div class="text-center">
+            <small class="text-muted">Logged in as:</small>
+            <div class="fw-bold"><%= current_affiliate&.display_name %></div>
+            <div class="text-muted small"><%= current_affiliate&.email %></div>
+            <%= link_to "Logout", affiliate_logout_path, method: :delete,
+                class: "btn btn-outline-light btn-sm mt-2",
+                data: { confirm: "Are you sure you want to logout?" } %>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="flex-grow-1" style="margin-left: 0;">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+          <div class="container-fluid">
+            <h1 class="h4 mb-0 text-gray-800">
+              <%= yield(:page_title) || "Affiliate Dashboard" %>
+            </h1>
+
+            <div class="navbar-nav ms-auto">
+              <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                  <i class="fas fa-user-circle"></i>
+                  <%= current_affiliate&.display_name %>
+                </a>
+                <ul class="dropdown-menu">
+                  <li><%= link_to "Profile", "#", class: "dropdown-item" %></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><%= link_to "Logout", affiliate_logout_path, method: :delete, class: "dropdown-item" %></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="container-fluid p-4">
+          <!-- Flash Messages -->
+          <% if notice %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <%= notice %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% end %>
+
+          <% if alert %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <%= alert %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% end %>
+
+          <%= yield %>
+        </div>
+      </main>
+    </div>
+
+    <!-- Bootstrap 5 JavaScript Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart.js for dashboard charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </body>
+</html>

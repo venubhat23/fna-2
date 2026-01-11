@@ -217,6 +217,54 @@ class Admin::BookingsController < ApplicationController
     redirect_to admin_booking_path(@booking), notice: 'Order marked as completed!'
   end
 
+  def stage_transition
+    @target_stage = params[:target_stage]
+
+    unless @target_stage.present?
+      redirect_to admin_booking_path(@booking), alert: 'Target stage not specified'
+      return
+    end
+
+    unless @booking.next_possible_statuses.include?(@target_stage) ||
+           (@booking.can_return? && @target_stage == 'returned')
+      redirect_to admin_booking_path(@booking), alert: 'Invalid stage transition'
+      return
+    end
+
+    # Load delivery people for shipped stage
+    @delivery_people = DeliveryPerson.where(status: true).order(:first_name, :last_name) if @target_stage == 'shipped'
+  end
+
+  def process_stage_transition
+    @target_stage = params[:booking][:target_stage]
+
+    unless @target_stage.present?
+      redirect_to admin_booking_path(@booking), alert: 'Target stage not specified'
+      return
+    end
+
+    case @target_stage
+    when 'confirmed'
+      process_confirmed_transition
+    when 'processing'
+      process_processing_transition
+    when 'packed'
+      process_packed_transition
+    when 'shipped'
+      process_shipped_transition
+    when 'out_for_delivery'
+      process_out_for_delivery_transition
+    when 'delivered'
+      process_delivered_transition
+    when 'cancelled'
+      process_cancelled_transition
+    when 'returned'
+      process_returned_transition
+    else
+      process_general_transition
+    end
+  end
+
   # Real-time data endpoint
   def realtime_data
     # Get fresh data for statistics
@@ -311,5 +359,203 @@ class Admin::BookingsController < ApplicationController
       :delivery_address, :cash_received, :change_amount, :status,
       booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
     )
+  end
+
+  # Stage transition processing methods
+  def process_confirmed_transition
+    notes_addition = params[:booking][:notes].present? ?
+      "\nConfirmation Notes: #{params[:booking][:notes]}" : ""
+
+    @booking.update!(
+      status: :confirmed,
+      notes: "#{@booking.notes}#{notes_addition}\nConfirmed at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Booking confirmed successfully!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'confirmed'),
+                alert: "Error confirming booking: #{e.message}"
+  end
+
+  def process_processing_transition
+    processing_notes = params[:booking][:processing_notes] || ""
+    estimated_completion = params[:booking][:estimated_completion]
+
+    notes_addition = "\nProcessing Notes: #{processing_notes}" if processing_notes.present?
+    notes_addition += "\nEstimated Completion: #{estimated_completion}" if estimated_completion.present?
+
+    @booking.update!(
+      status: :processing,
+      notes: "#{@booking.notes}#{notes_addition}\nProcessing started at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Booking moved to processing!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'processing'),
+                alert: "Error processing booking: #{e.message}"
+  end
+
+  def process_packed_transition
+    packaging_notes = params[:booking][:packaging_notes] || ""
+    package_weight = params[:booking][:package_weight]
+    package_dimensions = params[:booking][:package_dimensions]
+
+    notes_addition = ""
+    notes_addition += "\nPackaging Notes: #{packaging_notes}" if packaging_notes.present?
+    notes_addition += "\nPackage Weight: #{package_weight}kg" if package_weight.present?
+    notes_addition += "\nDimensions: #{package_dimensions}" if package_dimensions.present?
+
+    @booking.update!(
+      status: :packed,
+      notes: "#{@booking.notes}#{notes_addition}\nPacked at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Booking marked as packed!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'packed'),
+                alert: "Error packing booking: #{e.message}"
+  end
+
+  def process_shipped_transition
+    shipping_partner = params[:booking][:shipping_partner]
+    partner_id = params[:booking][:partner_id]
+    tracking_number = params[:booking][:tracking_number]
+    delivery_person_id = params[:booking][:delivery_person_id]
+    expected_delivery_date = params[:booking][:expected_delivery_date]
+    shipping_instructions = params[:booking][:shipping_instructions] || ""
+
+    unless shipping_partner.present? && tracking_number.present?
+      redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'shipped'),
+                  alert: 'Shipping partner and tracking number are required'
+      return
+    end
+
+    delivery_person_info = ""
+    if delivery_person_id.present?
+      delivery_person = DeliveryPerson.find_by(id: delivery_person_id)
+      delivery_person_info = "\nDelivery Person: #{delivery_person.first_name} #{delivery_person.last_name} (#{delivery_person.mobile})" if delivery_person
+    end
+
+    notes_addition = "\nShipping Partner: #{shipping_partner.humanize}"
+    notes_addition += "\nPartner ID: #{partner_id}" if partner_id.present?
+    notes_addition += "\nTracking Number: #{tracking_number}"
+    notes_addition += delivery_person_info
+    notes_addition += "\nExpected Delivery: #{expected_delivery_date}" if expected_delivery_date.present?
+    notes_addition += "\nShipping Instructions: #{shipping_instructions}" if shipping_instructions.present?
+
+    @booking.update!(
+      status: :shipped,
+      notes: "#{@booking.notes}#{notes_addition}\nShipped at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Booking marked as shipped with tracking details!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'shipped'),
+                alert: "Error shipping booking: #{e.message}"
+  end
+
+  def process_out_for_delivery_transition
+    delivery_notes = params[:booking][:delivery_notes] || ""
+
+    notes_addition = "\nDelivery Notes: #{delivery_notes}" if delivery_notes.present?
+
+    @booking.update!(
+      status: :out_for_delivery,
+      notes: "#{@booking.notes}#{notes_addition}\nOut for delivery at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Booking marked as out for delivery!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'out_for_delivery'),
+                alert: "Error updating delivery status: #{e.message}"
+  end
+
+  def process_delivered_transition
+    delivery_date = params[:booking][:delivery_date] || Time.current
+    delivered_to = params[:booking][:delivered_to] || ""
+    delivery_confirmation_notes = params[:booking][:delivery_confirmation_notes] || ""
+
+    notes_addition = "\nDelivered to: #{delivered_to}" if delivered_to.present?
+    notes_addition += "\nDelivery Confirmation: #{delivery_confirmation_notes}" if delivery_confirmation_notes.present?
+    notes_addition += "\nDelivered at: #{delivery_date}"
+
+    @booking.update!(
+      status: :delivered,
+      notes: "#{@booking.notes}#{notes_addition}"
+    )
+
+    # Auto-transition to completed as per original logic
+    @booking.mark_as_completed!
+
+    redirect_to admin_bookings_path, notice: 'Booking marked as delivered and completed!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'delivered'),
+                alert: "Error marking as delivered: #{e.message}"
+  end
+
+  def process_cancelled_transition
+    cancellation_reason = params[:booking][:cancellation_reason]
+    cancellation_notes = params[:booking][:cancellation_notes]
+
+    unless cancellation_reason.present? && cancellation_notes.present?
+      redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'cancelled'),
+                  alert: 'Cancellation reason and notes are required'
+      return
+    end
+
+    cancel_reason_text = cancellation_reason.humanize
+    notes_addition = "\nCancellation Reason: #{cancel_reason_text}"
+    notes_addition += "\nCancellation Details: #{cancellation_notes}"
+
+    @booking.update!(
+      status: :cancelled,
+      notes: "#{@booking.notes}#{notes_addition}\nCancelled at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Booking cancelled successfully!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'cancelled'),
+                alert: "Error cancelling booking: #{e.message}"
+  end
+
+  def process_returned_transition
+    return_reason = params[:booking][:return_reason]
+    return_notes = params[:booking][:return_notes]
+
+    unless return_reason.present? && return_notes.present?
+      redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'returned'),
+                  alert: 'Return reason and notes are required'
+      return
+    end
+
+    return_reason_text = return_reason.humanize
+    notes_addition = "\nReturn Reason: #{return_reason_text}"
+    notes_addition += "\nReturn Details: #{return_notes}"
+
+    @booking.update!(
+      status: :returned,
+      notes: "#{@booking.notes}#{notes_addition}\nReturned at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: 'Return processed successfully!'
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'returned'),
+                alert: "Error processing return: #{e.message}"
+  end
+
+  def process_general_transition
+    general_notes = params[:booking][:general_notes] || ""
+
+    notes_addition = "\nUpdate Notes: #{general_notes}" if general_notes.present?
+
+    @booking.update!(
+      status: @target_stage,
+      notes: "#{@booking.notes}#{notes_addition}\nUpdated to #{@target_stage.humanize} at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
+    )
+
+    redirect_to admin_bookings_path, notice: "Booking updated to #{@target_stage.humanize}!"
+  rescue => e
+    redirect_to stage_transition_admin_booking_path(@booking, target_stage: @target_stage),
+                alert: "Error updating booking: #{e.message}"
   end
 end

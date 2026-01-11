@@ -1,0 +1,283 @@
+<% content_for :page_title, "Referral Booking Details" %>
+
+<!-- Page Header -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="fw-bold text-dark mb-1">Referral Booking #<%= @booking.booking_number %></h2>
+        <p class="text-muted mb-0">View details of your referred customer's booking</p>
+      </div>
+      <div>
+        <%= link_to affiliate_bookings_path, class: "btn btn-outline-secondary" do %>
+          <i class="fas fa-arrow-left me-2"></i>Back to Bookings
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Status and Commission Info -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="text-muted fw-semibold">Booking Status</h6>
+            <% case @booking.status %>
+            <% when 'pending' %>
+              <span class="badge bg-warning fs-6 px-3 py-2">Pending</span>
+            <% when 'processing' %>
+              <span class="badge bg-info fs-6 px-3 py-2">Processing</span>
+            <% when 'shipped' %>
+              <span class="badge bg-primary fs-6 px-3 py-2">Shipped</span>
+            <% when 'delivered' %>
+              <span class="badge bg-success fs-6 px-3 py-2">Delivered</span>
+            <% when 'cancelled' %>
+              <span class="badge bg-danger fs-6 px-3 py-2">Cancelled</span>
+            <% else %>
+              <span class="badge bg-secondary fs-6 px-3 py-2"><%= @booking.status&.humanize %></span>
+            <% end %>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-muted fw-semibold">Payment Status</h6>
+            <% case @booking.payment_status %>
+            <% when 'paid' %>
+              <span class="badge bg-success fs-6 px-3 py-2">Paid</span>
+            <% when 'partially_paid' %>
+              <span class="badge bg-warning fs-6 px-3 py-2">Partially Paid</span>
+            <% when 'pending' %>
+              <span class="badge bg-danger fs-6 px-3 py-2">Payment Pending</span>
+            <% else %>
+              <span class="badge bg-secondary fs-6 px-3 py-2"><%= @booking.payment_status&.humanize %></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+      <div class="card-body text-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="text-white-50 fw-semibold mb-1">Your Commission (5%)</h6>
+            <% commission = (@booking.total_amount&.to_f || 0) * 0.05 %>
+            <h3 class="fw-bold mb-0">₹<%= number_with_delimiter(commission, delimiter: ',') %></h3>
+          </div>
+          <div>
+            <i class="fas fa-percent fa-2x opacity-75"></i>
+          </div>
+        </div>
+        <small class="text-white-50">
+          <% if @booking.payment_status == 'paid' %>
+            Commission available for payout
+          <% else %>
+            Commission pending payment completion
+          <% end %>
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Customer and Booking Information -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0">
+        <h5 class="fw-bold text-dark mb-0">
+          <i class="fas fa-user text-primary me-2"></i>
+          Referred Customer
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <h6 class="fw-semibold text-dark"><%= @customer&.display_name %></h6>
+          <p class="text-muted mb-1"><i class="fas fa-envelope me-2"></i><%= @customer&.email %></p>
+          <% if @customer&.mobile %>
+            <p class="text-muted mb-1"><i class="fas fa-phone me-2"></i><%= @customer.mobile %></p>
+          <% end %>
+        </div>
+
+        <% if @booking.delivery_address.present? %>
+          <div>
+            <h6 class="fw-semibold text-dark">Delivery Address</h6>
+            <p class="text-muted mb-0"><%= simple_format(@booking.delivery_address) %></p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0">
+        <h5 class="fw-bold text-dark mb-0">
+          <i class="fas fa-receipt text-info me-2"></i>
+          Booking Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-2">
+          <div class="col-6"><strong>Booking Number:</strong></div>
+          <div class="col-6">#<%= @booking.booking_number %></div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-6"><strong>Booking Date:</strong></div>
+          <div class="col-6"><%= @booking.created_at&.strftime("%d %B, %Y") %></div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-6"><strong>Payment Method:</strong></div>
+          <div class="col-6"><%= @booking.payment_method&.humanize || 'Not specified' %></div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-6"><strong>Total Amount:</strong></div>
+          <div class="col-6 fw-bold text-success">₹<%= number_with_delimiter(@booking.total_amount&.to_f || 0, delimiter: ',') %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Items -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0">
+        <h5 class="fw-bold text-dark mb-0">
+          <i class="fas fa-shopping-bag text-success me-2"></i>
+          Booking Items
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if @booking_items.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th class="text-center">Quantity</th>
+                  <th class="text-end">Unit Price</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-end">Commission</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @booking_items.each do |item| %>
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div>
+                          <div class="fw-semibold"><%= item.product&.name %></div>
+                          <small class="text-muted">
+                            <% if item.product&.category %>
+                              Category: <%= item.product.category.name %>
+                            <% end %>
+                            <% if item.product&.sku %>
+                              | SKU: <%= item.product.sku %>
+                            <% end %>
+                          </small>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-light text-dark fs-6"><%= item.quantity %></span>
+                    </td>
+                    <td class="text-end">
+                      <span class="fw-semibold">₹<%= number_with_delimiter(item.price&.to_f || 0, delimiter: ',') %></span>
+                    </td>
+                    <td class="text-end">
+                      <span class="fw-semibold">₹<%= number_with_delimiter((item.quantity * item.price)&.to_f || 0, delimiter: ',') %></span>
+                    </td>
+                    <td class="text-end">
+                      <% item_commission = ((item.quantity * item.price)&.to_f || 0) * 0.05 %>
+                      <span class="fw-semibold text-success">₹<%= number_with_delimiter(item_commission, delimiter: ',') %></span>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="4" class="text-end fw-bold">Subtotal:</td>
+                  <td class="text-end fw-bold">₹<%= number_with_delimiter(@booking.subtotal&.to_f || 0, delimiter: ',') %></td>
+                </tr>
+                <% if @booking.tax_amount&.to_f > 0 %>
+                  <tr>
+                    <td colspan="4" class="text-end">Tax:</td>
+                    <td class="text-end">₹<%= number_with_delimiter(@booking.tax_amount&.to_f, delimiter: ',') %></td>
+                  </tr>
+                <% end %>
+                <% if @booking.discount_amount&.to_f > 0 %>
+                  <tr>
+                    <td colspan="4" class="text-end text-success">Discount:</td>
+                    <td class="text-end text-success">-₹<%= number_with_delimiter(@booking.discount_amount&.to_f, delimiter: ',') %></td>
+                  </tr>
+                <% end %>
+                <tr>
+                  <td colspan="4" class="text-end fw-bold fs-5">Grand Total:</td>
+                  <td class="text-end fw-bold fs-5 text-success">₹<%= number_with_delimiter(@booking.total_amount&.to_f || 0, delimiter: ',') %></td>
+                </tr>
+                <tr style="background: #e8f5e9;">
+                  <td colspan="4" class="text-end fw-bold text-success">Your Total Commission (5%):</td>
+                  <td class="text-end fw-bold text-success fs-5">₹<%= number_with_delimiter(((@booking.total_amount&.to_f || 0) * 0.05), delimiter: ',') %></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-4">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No items found</h5>
+            <p class="text-muted">This booking doesn't have any items</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Commission Information -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="alert alert-info border-0 shadow-sm">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-info-circle fa-2x text-info me-3"></i>
+        <div>
+          <h6 class="fw-bold mb-1">Commission Information</h6>
+          <p class="mb-1">
+            You earn 5% commission on all orders from your referred customers.
+            <% if @booking.payment_status == 'paid' %>
+              Since this order is paid, your commission is ready for payout.
+            <% else %>
+              Commission will be available for payout once the customer completes payment.
+            <% end %>
+          </p>
+          <small class="text-muted">Commission payments are processed monthly on the 1st of each month.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notes -->
+<% if @booking.notes.present? %>
+<div class="row">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0">
+        <h5 class="fw-bold text-dark mb-0">
+          <i class="fas fa-sticky-note text-warning me-2"></i>
+          Booking Notes
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info mb-0">
+          <%= simple_format(@booking.notes) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>
