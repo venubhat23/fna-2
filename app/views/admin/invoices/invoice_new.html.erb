@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - <%= @invoice.invoice_number %></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .invoice-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            position: relative;
+        }
+
+        .invoice-header .watermark {
+            position: absolute;
+            top: 10px;
+            left: 30px;
+            font-size: 11px;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .company-logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-circle {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo-text {
+            color: #4a90e2;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .company-info h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .company-details {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.95;
+        }
+
+        .invoice-meta {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .meta-item {
+            display: flex;
+            gap: 10px;
+        }
+
+        .meta-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 100px;
+        }
+
+        .meta-value {
+            color: #333;
+        }
+
+        .parties-section {
+            padding: 25px 30px;
+            background: #ffffff;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .parties-row {
+            display: flex;
+            gap: 40px;
+        }
+
+        .party-info {
+            flex: 1;
+        }
+
+        .party-info h3 {
+            color: #495057;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .party-details h4 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .party-details p {
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .items-section {
+            padding: 0;
+        }
+
+        .items-header {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .items-header h3 {
+            color: #495057;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table th {
+            background: #e9ecef;
+            color: #495057;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 15px 20px;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .items-table th:last-child {
+            text-align: right;
+        }
+
+        .items-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 14px;
+        }
+
+        .items-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .items-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .totals-section {
+            background: #ffffff;
+            padding: 25px 30px;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .totals-table {
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+        }
+
+        .totals-table td {
+            padding: 8px 0;
+            font-size: 15px;
+        }
+
+        .totals-table .label {
+            color: #6c757d;
+            text-align: right;
+            padding-right: 20px;
+            font-weight: 500;
+        }
+
+        .totals-table .value {
+            text-align: right;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .total-row {
+            border-top: 2px solid #dee2e6;
+            padding-top: 12px !important;
+            margin-top: 8px;
+        }
+
+        .total-row .label {
+            color: #495057;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .total-row .value {
+            color: #28a745;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .footer-section {
+            background: #f8f9fa;
+            padding: 25px 30px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .payment-section {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 20px;
+        }
+
+        .bank-details, .qr-section {
+            flex: 1;
+        }
+
+        .bank-details h4, .qr-section h4 {
+            color: #495057;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .bank-info {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .bank-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .bank-row .label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 120px;
+        }
+
+        .bank-row .value {
+            color: #333;
+        }
+
+        .qr-code {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .qr-placeholder {
+            width: 120px;
+            height: 120px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: #6c757d;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .terms-section {
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }
+
+        .terms-section h4 {
+            color: #495057;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .terms-list {
+            list-style: none;
+            color: #6c757d;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .terms-list li {
+            margin-bottom: 6px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .terms-list li:before {
+            content: "•";
+            color: #28a745;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .signature-section {
+            text-align: right;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .signature-box {
+            display: inline-block;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .signature-line {
+            height: 50px;
+            border-bottom: 2px solid #333;
+            margin-bottom: 10px;
+        }
+
+        .signature-label {
+            color: #495057;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        @media print {
+            body { background: white; }
+            .invoice-container {
+                box-shadow: none;
+                margin: 0;
+                border-radius: 0;
+            }
+        }
+
+        .amount-words {
+            background: #e3f2fd;
+            padding: 12px 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .amount-words .label {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .amount-words .value {
+            color: #1565c0;
+            font-weight: 500;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="invoice-header">
+            <div class="watermark">BILL OF SUPPLY</div>
+            <div style="position: absolute; top: 10px; right: 30px; font-size: 11px; opacity: 0.7;">ORIGINAL FOR RECIPIENT</div>
+            <div class="header-content">
+                <div class="company-logo">
+                    <div class="logo-circle">
+                        <div class="logo-text">🏪</div>
+                    </div>
+                    <div class="company-info">
+                        <h1>Dhanvantri Ecommerce</h1>
+                        <div class="company-details">
+                            #827 4th main 9th Block 2nd Stage Near Hanumagiri temple Nagarbhavi, Bangalore, Karnataka, 560072<br>
+                            <strong>Mobile:</strong> 9972808044 &nbsp;&nbsp; <strong>GSTIN:</strong> 29AOIPT8113K1ZC &nbsp;&nbsp; <strong>PAN Number:</strong> AOIPT8113K<br>
+                            <strong>Email:</strong> dhanvantri@gmail.com
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Meta Information -->
+        <div class="invoice-meta">
+            <div class="meta-row">
+                <div class="meta-item">
+                    <span class="meta-label">Invoice No:</span>
+                    <span class="meta-value"><%= @invoice.invoice_number %></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Invoice Date:</span>
+                    <span class="meta-value"><%= @invoice.invoice_date.strftime('%d/%m/%Y') %></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Due Date:</span>
+                    <span class="meta-value"><%= @invoice.due_date.strftime('%d/%m/%Y') %></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bill To & Ship To -->
+        <div class="parties-section">
+            <div class="parties-row">
+                <div class="party-info">
+                    <h3>Bill To</h3>
+                    <div class="party-details">
+                        <h4><%= @invoice.customer_name %></h4>
+                        <p><%= @invoice.customer_name %></p>
+                        <p><strong>Mobile:</strong> <%= @invoice.customer_phone %></p>
+                    </div>
+                </div>
+                <div class="party-info">
+                    <h3>Ship To</h3>
+                    <div class="party-details">
+                        <h4><%= @invoice.customer_name %></h4>
+                        <p><%= @invoice.customer_name %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Section -->
+        <div class="items-section">
+            <div class="items-header">
+                <h3>ITEMS</h3>
+            </div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>ITEMS</th>
+                        <th>HSN</th>
+                        <th>QTY.</th>
+                        <th>RATE</th>
+                        <th>TAX</th>
+                        <th>AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% @invoice.parsed_invoice_items.each do |item| %>
+                        <tr>
+                            <td><strong><%= item['product_name'] %></strong></td>
+                            <td></td>
+                            <td><%= item['quantity'] %> liters</td>
+                            <td>₹<%= '%.1f' % item['price'] %></td>
+                            <td>₹0<br><small>(0%)</small></td>
+                            <td>₹<%= '%.1f' % item['total'] %></td>
+                        </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals and Footer Section -->
+        <div class="footer-section">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="vertical-align: top; padding-right: 20px; width: 50%;">
+                        <!-- Bank Details -->
+                        <div class="bank-details">
+                            <h4>BANK DETAILS</h4>
+                            <div class="bank-info">
+                                <div class="bank-row">
+                                    <span class="label">Name:</span>
+                                    <span class="value">Dhanvantri Ecommerce</span>
+                                </div>
+                                <div class="bank-row">
+                                    <span class="label">IFSC Code:</span>
+                                    <span class="value">CNRB0003194</span>
+                                </div>
+                                <div class="bank-row">
+                                    <span class="label">Account No:</span>
+                                    <span class="value">3194201000718</span>
+                                </div>
+                                <div class="bank-row">
+                                    <span class="label">Bank:</span>
+                                    <span class="value">Canara Bank</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- QR Code Section -->
+                        <div style="margin-top: 20px;">
+                            <h4 style="color: #495057; font-size: 16px; margin-bottom: 15px; font-weight: 600;">PAYMENT QR CODE</h4>
+                            <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef; text-align: center;">
+                                <div style="width: 100px; height: 100px; background: #f8f9fa; border: 2px dashed #dee2e6; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; border-radius: 6px;">
+                                    <div style="text-align: center;">
+                                        <i style="font-size: 20px;">📱</i><br>
+                                        <small>UPI ID: 9972808044@ybl</small>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 5px; justify-content: center; margin-top: 10px;">
+                                    <span style="background: #673ab7; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">PhonePe</span>
+                                    <span style="background: #4285f4; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Google Pay</span>
+                                    <span style="background: #00bcd4; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">Paytm</span>
+                                    <span style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 8px;">UPI</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td style="vertical-align: top; width: 50%;">
+                        <!-- Totals Section -->
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="border-bottom: 1px solid #dee2e6;">
+                                <td style="padding: 8px; text-align: right; color: #6c757d;">SUBTOTAL</td>
+                                <td style="padding: 8px; text-align: right; font-weight: 600;">-</td>
+                                <td style="padding: 8px; text-align: right; font-weight: 600; color: #28a745;">₹ <%= '%.1f' % (@invoice.subtotal || 0) %></td>
+                            </tr>
+                        </table>
+
+                        <!-- Amount in Words -->
+                        <div class="amount-words">
+                            <span class="label">Total Amount (in words)</span>
+                            <div class="value"><%= @invoice.booking&.amount_in_words || "Zero Rupees Only" %></div>
+                        </div>
+
+                        <!-- Payment Summary -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: 600; color: #495057;">TAXABLE AMOUNT</span>
+                                <span style="font-size: 14px; color: #6c757d;">₹0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 18px; color: #28a745;">
+                                <span>TOTAL AMOUNT</span>
+                                <span>₹<%= '%.1f' % (@invoice.total_amount || 0) %></span>
+                            </div>
+                        </div>
+
+                        <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; text-align: center;">
+                            <div style="color: #2e7d32; font-weight: 600; margin-bottom: 5px;">Received Amount</div>
+                            <div style="font-size: 18px; color: #1b5e20; font-weight: 700;">₹0</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Terms and Conditions -->
+            <div class="terms-section">
+                <h4>TERMS AND CONDITIONS</h4>
+                <ul class="terms-list">
+                    <li>Kindly Do Make Every Month Payment on or Before the 10th of The Month</li>
+                    <li>Kindly Share the Screenshot Immediately Once the Payment is Done to Confirm Your Payment</li>
+                </ul>
+            </div>
+
+            <!-- Signature -->
+            <div class="signature-section">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">AUTHORISED SIGNATORY FOR<br>Dhanvantri Ecommerce</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,28 +2,32 @@ class Admin::InvoicesController < ApplicationController
   before_action :set_invoice, only: [:show, :show_premium, :download_pdf, :download_premium_pdf, :mark_as_paid]
 
   def index
-    @invoices = Invoice.order(created_at: :desc)
-                      .page(params[:page])
-                      .per(20)
+    @invoices = BookingInvoice.includes(:booking, :customer)
+                              .order(created_at: :desc)
+                              .page(params[:page])
+                              .per(20)
 
-    # Filter by status
+    # Filter by payment status
     if params[:status].present?
-      @invoices = @invoices.where(status: params[:status])
+      @invoices = @invoices.where(payment_status: params[:status])
     end
 
-    # Filter by payout type
-    if params[:payout_type].present?
-      @invoices = @invoices.where(payout_type: params[:payout_type])
+    # Filter by invoice status
+    if params[:invoice_status].present?
+      @invoices = @invoices.where(status: params[:invoice_status])
     end
   end
 
   def show
-    @payout_record = @invoice.payout_record
+    @booking = @invoice.booking
+    @customer = @invoice.customer || @booking.customer
+    render template: 'admin/invoices/invoice_new', layout: false
   end
 
   def show_premium
-    @payout_record = @invoice.payout_record
-    render layout: false
+    @booking = @invoice.booking
+    @customer = @invoice.customer || @booking.customer
+    render template: 'admin/invoices/invoice_new', layout: false
   end
 
   def generate_invoice
@@ -133,7 +137,7 @@ class Admin::InvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = Invoice.find(params[:id])
+    @invoice = BookingInvoice.find(params[:id])
   end
 
   def generate_invoice_number
