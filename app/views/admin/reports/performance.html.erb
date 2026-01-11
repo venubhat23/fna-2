@@ -1,0 +1,135 @@
+<div class="page-header">
+  <h1>Performance Analytics</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Sales</h5>
+        <h2><%= @total_sales %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Avg Order Value</h5>
+        <h2>₹<%= number_with_delimiter(@avg_order_value.to_i || 0, delimiter: ',') %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">New Customers</h5>
+        <h2><%= @new_customers %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Retention Rate</h5>
+        <h2><%= @customer_retention_rate %>%</h2>
+        <small class="text-muted">Repeat customers</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5>Top Performing Agents</h5>
+      </div>
+      <div class="card-body">
+        <% if @top_agents.any? %>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Agent Name</th>
+                <th>Policies Sold</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @top_agents.each do |agent| %>
+                <tr>
+                  <td><%= "#{agent[0]} #{agent[1]}".strip %></td>
+                  <td><%= agent[2] %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p>No agent performance data available.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5>Top Performing Products</h5>
+      </div>
+      <div class="card-body">
+        <% if @top_performing_products.any? %>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @top_performing_products.each do |product| %>
+                <tr>
+                  <td><%= product[0] %></td>
+                  <td>₹<%= number_with_delimiter(product[1].to_i || 0, delimiter: ',') %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p>No product performance data available.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>Customer Metrics Summary</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <h6>New Customers</h6>
+            <h2 class="text-primary"><%= @new_customers %></h2>
+            <small class="text-muted">First-time buyers</small>
+          </div>
+          <div class="col-md-4 text-center">
+            <h6>Repeat Customers</h6>
+            <h2 class="text-success"><%= @repeat_customers %></h2>
+            <small class="text-muted">Multiple purchases</small>
+          </div>
+          <div class="col-md-4 text-center">
+            <h6>Retention Rate</h6>
+            <h2 class="<%= @customer_retention_rate > 50 ? 'text-success' : 'text-warning' %>">
+              <%= @customer_retention_rate %>%
+            </h2>
+            <small class="text-muted">Customer loyalty</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

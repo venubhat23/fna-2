@@ -22,7 +22,7 @@ end
 
 # 1. Create Admin User
 puts "\n1. Creating Admin User..."
-admin = User.find_or_create_by(email: 'admin@drwise.com') do |u|
+admin = User.find_or_create_by(email: 'admin@dhanvantri.com') do |u|
   u.first_name = 'Admin'
   u.last_name = 'User'
   u.password = 'password123'
@@ -57,7 +57,7 @@ last_names = ['Sharma', 'Patel', 'Kumar', 'Singh', 'Gupta', 'Joshi', 'Verma', 'A
   first_name = first_names[i % first_names.length]
   last_name = last_names[i % last_names.length]
 
-  sub_agent = SubAgent.find_or_create_by(email: "subagent#{i+1}@drwise.com") do |sa|
+  sub_agent = SubAgent.find_or_create_by(email: "subagent#{i+1}@dhanvantri.com") do |sa|
     sa.first_name = first_name
     sa.last_name = last_name
     sa.password = 'password123'
@@ -199,7 +199,7 @@ puts "\n5. Creating sample Distributors and Investors..."
 
 # Create sample distributors
 3.times do |i|
-  Distributor.find_or_create_by(email: "distributor#{i+1}@drwise.com") do |d|
+  Distributor.find_or_create_by(email: "distributor#{i+1}@dhanvantri.com") do |d|
     d.first_name = "Distributor"
     d.last_name = "#{i+1}"
     d.mobile = "9#{(100000000 + rand(899999999)).to_s}"
@@ -209,7 +209,7 @@ end
 
 # Create sample investors
 3.times do |i|
-  Investor.find_or_create_by(email: "investor#{i+1}@drwise.com") do |inv|
+  Investor.find_or_create_by(email: "investor#{i+1}@dhanvantri.com") do |inv|
     inv.first_name = "Investor"
     inv.last_name = "#{i+1}"
     inv.mobile = "9#{(100000000 + rand(899999999)).to_s}"
@@ -387,7 +387,7 @@ puts "💳 Commission Payouts: #{CommissionPayout.count}"
 puts "🎯 Leads: #{Lead.count}"
 
 puts "\n🔑 LOGIN CREDENTIALS:"
-puts "Admin Email: admin@drwise.com"
+puts "Admin Email: admin@dhanvantri.com"
 puts "Password: password123"
 
 puts "\n📧 Sub Agent Emails (all with password123):"

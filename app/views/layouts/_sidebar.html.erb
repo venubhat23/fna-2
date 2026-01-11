@@ -191,6 +191,10 @@
   background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%) !important;
   box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
 }
+.gradient-sky {
+  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%) !important;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4) !important;
+}
 .gradient-yellow {
   background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%) !important;
   box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4) !important;
@@ -437,22 +441,38 @@
           </li>
         <% end %>
 
-        <!-- Leads -->
-        <% if show_sidebar_item?('leads') %>
-          <li class="nav-item">
-            <%= link_to admin_leads_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/leads')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-pink">
-                  <i class="bi bi-funnel-fill"></i>
-                </div>
-              </div>
-              <span class="nav-text">Leads</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
 
-        <!-- Clients (renamed from Customers) -->
+
+
+
+      </ul>
+    </div>
+    <% end %>
+
+    <!-- Bookings Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Sales</div>
+      <ul class="nav-menu">
+        <!-- Bookings (merged with Orders) -->
+        <li class="nav-item">
+          <%= link_to admin_bookings_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/bookings') || request.path.include?('/admin/orders')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-teal">
+                <i class="bi bi-cart-check-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Bookings</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Master Data Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Master Data</div>
+      <ul class="nav-menu">
+        <!-- Customers -->
         <% if show_sidebar_item?('customers') %>
           <li class="nav-item">
             <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
@@ -461,19 +481,19 @@
                   <i class="bi bi-people-fill"></i>
                 </div>
               </div>
-              <span class="nav-text">Clients</span>
+              <span class="nav-text">Customers</span>
               <div class="nav-indicator"></div>
             <% end %>
           </li>
         <% end %>
 
-        <!-- Affiliates (renamed from Affiliate) -->
-        <% if show_sidebar_item?('sub_agents') %>
+        <!-- Affiliates -->
+        <% if show_sidebar_item?('affiliates') %>
           <li class="nav-item">
-            <%= link_to admin_sub_agents_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/affiliates') || request.path.include?('/admin/sub_agents')}" do %>
+            <%= link_to admin_sub_agents_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/sub_agents')}" do %>
               <div class="nav-icon-modern">
-                <div class="icon-bg gradient-violet">
-                  <i class="bi bi-people"></i>
+                <div class="icon-bg gradient-pink">
+                  <i class="bi bi-person-badge-fill"></i>
                 </div>
               </div>
               <span class="nav-text">Affiliates</span>
@@ -482,317 +502,92 @@
           </li>
         <% end %>
 
-        <!-- Ambassadors -->
-        <% if show_sidebar_item?('distributors') %>
+        <!-- Categories -->
+        <% if show_sidebar_item?('categories') %>
           <li class="nav-item">
-            <%= link_to admin_distributors_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/ambassadors') || request.path.include?('/admin/distributors')}" do %>
+            <%= link_to admin_categories_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/categories')}" do %>
               <div class="nav-icon-modern">
-                <div class="icon-bg gradient-indigo">
-                  <i class="bi bi-diagram-3"></i>
+                <div class="icon-bg gradient-amber">
+                  <i class="bi bi-tags-fill"></i>
                 </div>
               </div>
-              <span class="nav-text">Ambassadors</span>
+              <span class="nav-text">Categories</span>
               <div class="nav-indicator"></div>
             <% end %>
           </li>
         <% end %>
 
-      </ul>
-    </div>
-    <% end %>
-
-    <!-- Services Section -->
-    <% if show_sidebar_section?(['services', 'life_insurance', 'health_insurance', 'motor_insurance', 'other_insurance']) %>
-    <div class="nav-section">
-      <div class="nav-section-title">Services</div>
-      <ul class="nav-menu">
-
-        <!-- Insurance Submenu -->
-        <li class="nav-item dropdown-menu-item">
-          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#insurance-menu" aria-expanded="false" style="cursor: pointer;">
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-cyan">
-                <i class="bi bi-shield-check"></i>
+        <!-- Products -->
+        <% if show_sidebar_item?('products') %>
+          <li class="nav-item">
+            <%= link_to admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/products') && !request.path.include?('/products_chart')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-sky">
+                  <i class="bi bi-box-seam-fill"></i>
+                </div>
               </div>
-            </div>
-            <span class="nav-text">Insurance</span>
-            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
-          </div>
-          <div class="collapse submenu" id="insurance-menu">
-            <ul class="nav-menu submenu-list">
-              <!-- Life Insurance -->
-              <% if show_sidebar_item?('life_insurance') %>
-                <li class="nav-item">
-                  <%= link_to admin_life_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/life_insurances')}" do %>
-                    <span class="submenu-bullet">•</span>
-                    <span class="nav-text">Life</span>
-                  <% end %>
-                </li>
-              <% end %>
+              <span class="nav-text">Products</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
 
-              <!-- Health Insurance -->
-              <% if show_sidebar_item?('health_insurance') %>
-                <li class="nav-item">
-                  <%= link_to admin_health_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/health_insurances')}" do %>
-                    <span class="submenu-bullet">•</span>
-                    <span class="nav-text">Health</span>
-                  <% end %>
-                </li>
-              <% end %>
-
-              <!-- Motor Insurance -->
-              <% if show_sidebar_item?('motor_insurance') %>
-                <li class="nav-item">
-                  <%= link_to admin_motor_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/motor_insurances')}" do %>
-                    <span class="submenu-bullet">•</span>
-                    <span class="nav-text">Motor</span>
-                  <% end %>
-                </li>
-              <% end %>
-
-              <!-- General Insurance -->
-              <% if show_sidebar_item?('other_insurance') %>
-                <li class="nav-item">
-                  <%= link_to admin_other_insurances_path, class: "nav-link-modern submenu-link #{'active' if request.path.include?('/other_insurances')}" do %>
-                    <span class="submenu-bullet">•</span>
-                    <span class="nav-text">General</span>
-                  <% end %>
-                </li>
-              <% end %>
-            </ul>
-          </div>
-        </li>
-
-        <!-- Investments Submenu -->
-        <li class="nav-item dropdown-menu-item">
-          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#investments-menu" aria-expanded="false" style="cursor: pointer;">
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-amber">
-                <i class="bi bi-graph-up"></i>
+          <!-- Product Chart -->
+          <li class="nav-item">
+            <%= link_to products_chart_admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/products_chart')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-violet">
+                  <i class="bi bi-bar-chart-fill"></i>
+                </div>
               </div>
-            </div>
-            <span class="nav-text">Investments</span>
-            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
-          </div>
-          <div class="collapse submenu" id="investments-menu">
-            <ul class="nav-menu submenu-list">
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Mutual Fund</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">FD</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Other</span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </li>
+              <span class="nav-text">Product Chart</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
 
-        <!-- Taxation Submenu -->
-        <li class="nav-item dropdown-menu-item">
-          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#taxation-menu" aria-expanded="false" style="cursor: pointer;">
+        <!-- Delivery People -->
+        <li class="nav-item">
+          <%= link_to admin_delivery_people_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/delivery_people')}" do %>
             <div class="nav-icon-modern">
               <div class="icon-bg gradient-orange">
-                <i class="bi bi-calculator"></i>
+                <i class="bi bi-truck"></i>
               </div>
             </div>
-            <span class="nav-text">Taxation</span>
-            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
-          </div>
-          <div class="collapse submenu" id="taxation-menu">
-            <ul class="nav-menu submenu-list">
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">ITR</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Tax Planning</span>
-                </div>
-              </li>
-            </ul>
-          </div>
+            <span class="nav-text">Delivery People</span>
+            <div class="nav-indicator"></div>
+          <% end %>
         </li>
 
-        <!-- Loans Submenu -->
-        <li class="nav-item dropdown-menu-item">
-          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#loans-menu" aria-expanded="false" style="cursor: pointer;">
+        <!-- Coupons -->
+        <li class="nav-item">
+          <%= link_to admin_coupons_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/coupons')}" do %>
             <div class="nav-icon-modern">
-              <div class="icon-bg gradient-pink">
-                <i class="bi bi-cash-stack"></i>
+              <div class="icon-bg gradient-purple">
+                <i class="bi bi-ticket-perforated-fill"></i>
               </div>
             </div>
-            <span class="nav-text">Loans</span>
-            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
-          </div>
-          <div class="collapse submenu" id="loans-menu">
-            <ul class="nav-menu submenu-list">
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Personal</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Home</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Mortgage</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Business</span>
-                </div>
-              </li>
-            </ul>
-          </div>
+            <span class="nav-text">Coupons</span>
+            <div class="nav-indicator"></div>
+          <% end %>
         </li>
 
-        <!-- Travel Submenu -->
-        <li class="nav-item dropdown-menu-item">
-          <div class="nav-link-modern dropdown-toggle" data-bs-toggle="collapse" data-bs-target="#travel-menu" aria-expanded="false" style="cursor: pointer;">
+        <!-- Franchises -->
+        <li class="nav-item">
+          <%= link_to admin_franchises_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/franchises')}" do %>
             <div class="nav-icon-modern">
               <div class="icon-bg gradient-emerald">
-                <i class="bi bi-airplane"></i>
+                <i class="bi bi-shop-window"></i>
               </div>
             </div>
-            <span class="nav-text">Travel</span>
-            <i class="bi bi-chevron-right dropdown-arrow ms-auto"></i>
-          </div>
-          <div class="collapse submenu" id="travel-menu">
-            <ul class="nav-menu submenu-list">
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">Domestic</span>
-                </div>
-              </li>
-              <li class="nav-item">
-                <div class="nav-link-modern submenu-link disabled" style="cursor: not-allowed; opacity: 0.6;">
-                  <span class="submenu-bullet">•</span>
-                  <span class="nav-text">International</span>
-                </div>
-              </li>
-            </ul>
-          </div>
+            <span class="nav-text">Franchises</span>
+            <div class="nav-indicator"></div>
+          <% end %>
         </li>
-
       </ul>
     </div>
-    <% end %>
 
-    <!-- Vendor Section (renamed from Business Partners) -->
-    <% if show_sidebar_section?(['brokers', 'agency_codes']) %>
-    <div class="nav-section">
-      <div class="nav-section-title">Vendor</div>
-      <ul class="nav-menu">
-        <!-- Brokers -->
-        <% if show_sidebar_item?('brokers') %>
-          <li class="nav-item">
-            <%= link_to admin_brokers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/brokers')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-emerald">
-                  <i class="bi bi-briefcase"></i>
-                </div>
-              </div>
-              <span class="nav-text">Broker</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
 
-        <!-- Agency Code -->
-        <% if show_sidebar_item?('agency_codes') %>
-          <li class="nav-item">
-            <%= link_to admin_agency_codes_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/agency_codes')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-blue">
-                  <i class="bi bi-code-slash"></i>
-                </div>
-              </div>
-              <span class="nav-text">Agency Code</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-      </ul>
-    </div>
-    <% end %>
 
-    <!-- Payouts Section -->
-    <% if show_sidebar_section?(['payouts']) %>
-    <div class="nav-section">
-      <div class="nav-section-title">Payouts</div>
-      <ul class="nav-menu">
-
-        <!-- Commission Tracking -->
-        <% if show_sidebar_item?('payouts') %>
-          <li class="nav-item">
-            <%= link_to admin_commission_tracking_index_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/commission_tracking')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-purple">
-                  <i class="bi bi-diagram-3"></i>
-                </div>
-              </div>
-              <span class="nav-text">Commissions</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-
-        <!-- Affiliate Payout -->
-        <% if show_sidebar_item?('payouts') %>
-          <li class="nav-item">
-            <%= link_to admin_affiliate_payouts_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/affiliate_payouts')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-rose">
-                  <i class="bi bi-person-heart"></i>
-                </div>
-              </div>
-              <span class="nav-text">Affiliate Payout</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-
-        <!-- Ambassador Payout -->
-        <% if show_sidebar_item?('payouts') %>
-          <li class="nav-item">
-            <%= link_to admin_distributor_payouts_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/distributor_payouts')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-lime">
-                  <i class="bi bi-building-check"></i>
-                </div>
-              </div>
-              <span class="nav-text">Ambassador Payout</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-
-      </ul>
-    </div>
-    <% end %>
 
     <!-- Transactions Section (renamed from Invoice) -->
     <% if show_sidebar_section?(['invoices']) %>
@@ -823,98 +618,124 @@
       <div class="nav-section">
         <div class="nav-section-title">Reports & Analytics</div>
         <ul class="nav-menu">
-        <!-- Commission Report -->
-        <% if show_sidebar_item?('reports') %>
-        <li class="nav-item">
-          <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-green">
-                <i class="bi bi-currency-dollar"></i>
-              </div>
-            </div>
-            <span class="nav-text">Commission Report</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
+          <!-- Sales Reports -->
+          <% if show_sidebar_item?('reports') %>
+            <li class="nav-item">
+              <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-green">
+                    <i class="bi bi-graph-up"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Commission Reports</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
 
-        <!-- Expired Insurance -->
-        <li class="nav-item">
-          <%= link_to admin_reports_expired_insurance_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/expired')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-red">
-                <i class="bi bi-clock-history"></i>
-              </div>
-            </div>
-            <span class="nav-text">Expired Insurance</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
+            <!-- Product Analytics -->
+            <li class="nav-item">
+              <%= link_to admin_reports_products_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/products')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-sky">
+                    <i class="bi bi-pie-chart-fill"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Product Analytics</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
 
-        <!-- Payment Due -->
-        <li class="nav-item">
-          <%= link_to admin_reports_payment_due_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/payment_due')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-orange">
-                <i class="bi bi-exclamation-triangle"></i>
-              </div>
-            </div>
-            <span class="nav-text">Payment Due</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
+            <!-- Customer Reports -->
+            <li class="nav-item">
+              <%= link_to admin_reports_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/customers')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-purple">
+                    <i class="bi bi-people-fill"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Customer Reports</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
 
-        <!-- Upcoming Renewal -->
-        <li class="nav-item">
-          <%= link_to admin_reports_upcoming_renewal_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/renewal')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-blue">
-                <i class="bi bi-arrow-repeat"></i>
-              </div>
-            </div>
-            <span class="nav-text">Upcoming Renewal</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
+            <!-- Revenue Analytics -->
+            <li class="nav-item">
+              <%= link_to admin_reports_revenue_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/revenue')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-amber">
+                    <i class="bi bi-currency-dollar"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Revenue Analytics</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
 
-        <!-- Upcoming Payment -->
-        <li class="nav-item">
-          <%= link_to admin_reports_upcoming_payment_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/payment')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-purple">
-                <i class="bi bi-calendar-check"></i>
-              </div>
-            </div>
-            <span class="nav-text">Upcoming Payment</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
+            <!-- Inventory Reports -->
+            <li class="nav-item">
+              <%= link_to admin_reports_inventory_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/inventory')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-orange">
+                    <i class="bi bi-box-seam"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Inventory Reports</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
 
-        <!-- Leads Report -->
-        <li class="nav-item">
-          <%= link_to admin_reports_leads_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/leads')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-pink">
-                <i class="bi bi-funnel"></i>
-              </div>
-            </div>
-            <span class="nav-text">Leads Report</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
+            <!-- Order Analytics -->
+            <li class="nav-item">
+              <%= link_to admin_reports_orders_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/orders')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-indigo">
+                    <i class="bi bi-bag-check-fill"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Order Analytics</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
 
-        <!-- Session Report -->
-        <li class="nav-item">
-          <%= link_to admin_reports_sessions_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/sessions')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-cyan">
-                <i class="bi bi-activity"></i>
-              </div>
-            </div>
-            <span class="nav-text">Session Report</span>
-            <div class="nav-indicator"></div>
+            <!-- Financial Reports -->
+            <li class="nav-item">
+              <%= link_to admin_reports_financial_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/financial')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-teal">
+                    <i class="bi bi-calculator-fill"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Financial Reports</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
+
+            <!-- Performance Dashboard -->
+            <li class="nav-item">
+              <%= link_to admin_reports_performance_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/performance')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-pink">
+                    <i class="bi bi-speedometer2"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Performance Dashboard</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
+
+            <!-- Commission Report (Legacy) -->
+            <li class="nav-item">
+              <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
+                <div class="nav-icon-modern">
+                  <div class="icon-bg gradient-violet">
+                    <i class="bi bi-percent"></i>
+                  </div>
+                </div>
+                <span class="nav-text">Commission Report</span>
+                <div class="nav-indicator"></div>
+              <% end %>
+            </li>
           <% end %>
-        </li>
-        <% end %>
         </ul>
       </div>
     <% end %>
@@ -926,20 +747,6 @@
       <ul class="nav-menu">
         <% if show_sidebar_item?('management') %>
 
-        <!-- Investors (moved from Main Menu) -->
-        <% if show_sidebar_item?('investors') %>
-          <li class="nav-item">
-            <%= link_to admin_investors_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/investors')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-amber">
-                  <i class="bi bi-bar-chart"></i>
-                </div>
-              </div>
-              <span class="nav-text">Investors</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
 
         <!-- Client Request -->
         <li class="nav-item">
@@ -967,18 +774,6 @@
           <% end %>
         </li>
 
-        <!-- Agency/Broker -->
-        <li class="nav-item">
-          <%= link_to admin_agency_brokers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/agency_brokers')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-rose">
-                <i class="bi bi-briefcase-fill"></i>
-              </div>
-            </div>
-            <span class="nav-text">Agency/Broker</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
 
         <!-- Banner Management -->
         <li class="nav-item">
@@ -993,33 +788,7 @@
           <% end %>
         </li>
 
-        <!-- Companies -->
-        <li class="nav-item">
-          <%= link_to admin_insurance_companies_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/insurance_companies')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-emerald">
-                <i class="bi bi-building-fill"></i>
-              </div>
-            </div>
-            <span class="nav-text">Companies</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
 
-        <!-- Import Data (renamed from Imports) -->
-        <% if show_sidebar_item?('management') || current_user&.user_type == 'admin' %>
-          <li class="nav-item">
-            <%= link_to admin_imports_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/imports')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-amber">
-                  <i class="bi bi-cloud-upload-fill"></i>
-                </div>
-              </div>
-              <span class="nav-text">Import Data</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
 
         <% end %>
         </ul>

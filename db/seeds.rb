@@ -3,7 +3,7 @@
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
 # Create Admin User
-admin = User.find_or_create_by!(email: "admin@drwise.in") do |user|
+admin = User.find_or_create_by!(email: "admin@dhanvantri.in") do |user|
   user.first_name = "Admin"
   user.last_name = "User"
   user.mobile = "9876543210"
@@ -55,9 +55,9 @@ puts "Created #{agency_brokers.count} Agency/Brokers"
 
 # Create some Agents
 agents_data = [
-  { first_name: "Rajesh", last_name: "Kumar", email: "rajesh@drwise.in", mobile: "9876543211" },
-  { first_name: "Priya", last_name: "Sharma", email: "priya@drwise.in", mobile: "9876543212" },
-  { first_name: "Amit", last_name: "Patel", email: "amit@drwise.in", mobile: "9876543213" }
+  { first_name: "Rajesh", last_name: "Kumar", email: "rajesh@dhanvantri.in", mobile: "9876543211" },
+  { first_name: "Priya", last_name: "Sharma", email: "priya@dhanvantri.in", mobile: "9876543212" },
+  { first_name: "Amit", last_name: "Patel", email: "amit@dhanvantri.in", mobile: "9876543213" }
 ]
 
 agents_data.each do |agent_data|
@@ -129,4 +129,4 @@ end
 puts "Created #{leads_data.count} Leads"
 
 puts "Seed data created successfully!"
-puts "Admin Login: admin@drwise.in / password"
+puts "Admin Login: admin@dhanvantri.in / password"

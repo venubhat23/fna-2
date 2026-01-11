@@ -1,0 +1,244 @@
+<!-- Review Submission Form -->
+<div class="card shadow-sm">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <i class="bi bi-star me-2"></i>
+      Write a Review
+    </h5>
+  </div>
+  <div class="card-body">
+    <%= form_with model: [@product, @new_review], url: product_product_reviews_path(@product), local: false, id: "review-form", class: "needs-validation", novalidate: true do |form| %>
+      <div class="row g-3">
+        <!-- Rating -->
+        <div class="col-12">
+          <%= form.label :rating, "Your Rating", class: "form-label" %>
+          <span class="text-danger">*</span>
+          <div class="rating-input" id="rating-input">
+            <% (1..5).each do |i| %>
+              <label class="star-label" data-rating="<%= i %>">
+                <%= form.radio_button :rating, i, class: "d-none", required: true %>
+                <i class="bi bi-star star-icon" data-rating="<%= i %>"></i>
+              </label>
+            <% end %>
+          </div>
+          <div class="form-text">Click on stars to rate</div>
+          <div class="invalid-feedback">Please select a rating.</div>
+        </div>
+
+        <!-- Title -->
+        <div class="col-12">
+          <%= form.label :title, "Review Title", class: "form-label" %>
+          <%= form.text_field :title, class: "form-control", placeholder: "Summarize your experience in a few words", maxlength: 200 %>
+          <div class="form-text">Give your review a title (optional)</div>
+        </div>
+
+        <!-- Review Comment -->
+        <div class="col-12">
+          <%= form.label :comment, "Your Review", class: "form-label" %>
+          <span class="text-danger">*</span>
+          <%= form.text_area :comment, class: "form-control", rows: 4, placeholder: "Share your thoughts about this product...", maxlength: 2000, required: true %>
+          <div class="form-text">Minimum 10 characters required</div>
+          <div class="invalid-feedback">Please write a review (minimum 10 characters).</div>
+        </div>
+
+        <!-- Pros and Cons -->
+        <div class="col-md-6">
+          <%= form.label :pros, "What you liked", class: "form-label" %>
+          <%= form.text_area :pros, class: "form-control", rows: 3, placeholder: "What are the positive aspects?", maxlength: 500 %>
+          <div class="form-text">Optional: List what you liked</div>
+        </div>
+
+        <div class="col-md-6">
+          <%= form.label :cons, "What could be better", class: "form-label" %>
+          <%= form.text_area :cons, class: "form-control", rows: 3, placeholder: "What could be improved?", maxlength: 500 %>
+          <div class="form-text">Optional: List areas for improvement</div>
+        </div>
+
+        <!-- Guest User Fields (shown if not logged in) -->
+        <div id="guest-fields" class="col-12" style="<%= current_user ? 'display: none;' : '' %>">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= form.label :reviewer_name, "Your Name", class: "form-label" %>
+              <span class="text-danger">*</span>
+              <%= form.text_field :reviewer_name, class: "form-control", placeholder: "Enter your name", required: !current_user %>
+              <div class="invalid-feedback">Please enter your name.</div>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :reviewer_email, "Your Email", class: "form-label" %>
+              <%= form.email_field :reviewer_email, class: "form-control", placeholder: "Enter your email (optional)" %>
+              <div class="form-text">Email won't be displayed publicly</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              Your review will be published after moderation.
+            </small>
+            <button type="submit" class="btn btn-primary" id="submit-review">
+              <i class="bi bi-send me-1"></i>
+              Submit Review
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.rating-input {
+  display: flex;
+  gap: 2px;
+}
+
+.star-label {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.star-icon {
+  font-size: 1.5rem;
+  color: #ddd;
+  transition: all 0.2s ease;
+}
+
+.star-icon:hover,
+.star-icon.active {
+  color: #ffc107;
+}
+
+.star-label:hover .star-icon {
+  transform: scale(1.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ratingInput = document.getElementById('rating-input');
+  const form = document.getElementById('review-form');
+  const submitButton = document.getElementById('submit-review');
+  let selectedRating = 0;
+
+  // Rating selection
+  if (ratingInput) {
+    const stars = ratingInput.querySelectorAll('.star-icon');
+
+    stars.forEach((star, index) => {
+      star.addEventListener('click', function() {
+        selectedRating = parseInt(this.dataset.rating);
+        updateStarDisplay(selectedRating);
+
+        // Check the corresponding radio button
+        const radioButton = ratingInput.querySelector(`input[value="${selectedRating}"]`);
+        if (radioButton) {
+          radioButton.checked = true;
+        }
+      });
+
+      star.addEventListener('mouseenter', function() {
+        const hoverRating = parseInt(this.dataset.rating);
+        updateStarDisplay(hoverRating);
+      });
+    });
+
+    ratingInput.addEventListener('mouseleave', function() {
+      updateStarDisplay(selectedRating);
+    });
+
+    function updateStarDisplay(rating) {
+      stars.forEach((star, index) => {
+        const starRating = parseInt(star.dataset.rating);
+        if (starRating <= rating) {
+          star.classList.add('active');
+        } else {
+          star.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  // Form submission
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Basic validation
+      if (selectedRating === 0) {
+        alert('Please select a rating');
+        return;
+      }
+
+      const comment = form.querySelector('#product_review_comment').value.trim();
+      if (comment.length < 10) {
+        alert('Please write a review with at least 10 characters');
+        return;
+      }
+
+      // Show loading state
+      submitButton.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i>Submitting...';
+      submitButton.disabled = true;
+
+      // Submit form via fetch
+      const formData = new FormData(form);
+
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Show success message
+          showAlert('success', data.message);
+
+          // Reset form
+          form.reset();
+          selectedRating = 0;
+          updateStarDisplay(0);
+
+          // Optionally reload reviews section
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else {
+          // Show error message
+          showAlert('danger', data.errors ? data.errors.join(', ') : 'Failed to submit review');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred while submitting your review');
+      })
+      .finally(() => {
+        // Restore button state
+        submitButton.innerHTML = '<i class="bi bi-send me-1"></i>Submit Review';
+        submitButton.disabled = false;
+      });
+    });
+  }
+
+  function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    const container = document.querySelector('.card-body');
+    container.insertBefore(alertDiv, container.firstChild);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 5000);
+  }
+});
+</script>

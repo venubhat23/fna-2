@@ -244,11 +244,11 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
           agent_email: agent_info[:email],
           agent_address: agent_info[:address],
           company_info: {
-            name: "Drwise Admin",
+            name: "Dhanvantari Farm",
             mobile: "+918431174477",
-            email: "support@dr-wise.in",
+            email: "support@dhanvantarifarm.in",
             address: "123 Insurance Street, Mumbai, Maharashtra, India",
-            website: "www.dr-wise.in"
+            website: "www.dhanvantarifarm.in"
           },
           support_hours: "Monday to Friday: 9:00 AM - 6:00 PM",
           emergency_contact: "+918431174477"
@@ -259,20 +259,20 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
       render json: {
         success: true,
         data: {
-          company_name: "Drwise Admin",
+          company_name: "Dhanvantari Farm",
           support_mobile: "+918431174477",
-          support_email: "support@dr-wise.in",
+          support_email: "support@dhanvantarifarm.in",
           support_address: "123 Insurance Street, Mumbai, Maharashtra, India",
-          website: "www.dr-wise.in",
+          website: "www.dhanvantarifarm.in",
           support_hours: "Monday to Friday: 9:00 AM - 6:00 PM",
           emergency_contact: "+918431174477",
           technical_support: {
             mobile: "+918431174477",
-            email: "support@dr-wise.in"
+            email: "support@dhanvantarifarm.in"
           },
           sales_support: {
             mobile: "+918431174477",
-            email: "support@dr-wise.in"
+            email: "support@dhanvantarifarm.in"
           }
         }
       }
@@ -388,10 +388,10 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
   def get_terms_content
     # You can store this in database or return static content
     <<~TERMS
-      Terms and Conditions for Drwise Admin
+      Terms and Conditions for Dhanvantri Admin
 
       1. General Terms
-      These terms and conditions govern your use of Drwise Admin mobile application.
+      These terms and conditions govern your use of Dhanvantri Admin mobile application.
 
       2. Privacy Policy
       We are committed to protecting your privacy and personal information.
@@ -423,7 +423,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
     else
       # Default company agent
       {
-        name: "Drwise Support Team",
+        name: "Dhanvantari Farm Support Team",
         mobile: "+918431174477",
         email: "support@dr-wise.in",
         address: "123 Insurance Street, Mumbai, Maharashtra, India"

@@ -1,4 +1,14 @@
 Rails.application.routes.draw do
+  # Product Reviews
+  resources :products, only: [:show] do
+    resources :product_reviews, only: [:create, :update, :destroy] do
+      member do
+        patch :mark_helpful
+      end
+    end
+  end
+
+  resources :product_reviews, only: [:show]
   get "dashboard/index"
   devise_for :users
 
@@ -18,11 +28,18 @@ Rails.application.routes.draw do
   get 'dashboard', to: 'dashboard#index'
   get 'dashboard/beautiful', to: 'dashboard#beautiful'
   get 'dashboard/ultra', to: 'dashboard#ultra'
+  get 'dashboard/ecommerce', to: 'dashboard#ecommerce'
   get 'dashboard/stats', to: 'dashboard#stats'
 
   # API routes
   namespace :api do
     resources :cities, only: [:index]
+
+    # Delivery validation APIs
+    post 'delivery/check_product', to: 'delivery#check_product_delivery'
+    post 'delivery/check_cart', to: 'delivery#check_cart_delivery'
+    get 'delivery/available_pincodes/:product_id', to: 'delivery#available_pincodes'
+
     namespace :v1 do
       # Public API endpoints (no authentication required)
       get 'public/search_sub_agents', to: 'public#search_sub_agents'
@@ -31,6 +48,55 @@ Rails.application.routes.draw do
 
   # Admin routes
   namespace :admin do
+    # Bookings Management (Now handles complete order workflow)
+    resources :bookings do
+      member do
+        get :generate_invoice
+        post :generate_invoice
+        post :convert_to_order
+        get :invoice
+        patch :update_status
+        patch :cancel_order
+        patch :mark_delivered
+        patch :mark_completed
+      end
+      collection do
+        get :search_products
+        get :search_customers
+        get :realtime_data
+        # Status filters
+        get :pending
+        get :confirmed
+        get :processing
+        get :packed
+        get :shipped
+        get :out_for_delivery
+        get :delivered
+        get :completed
+        get :cancelled
+        get :returned
+      end
+    end
+
+    # Orders Management
+    resources :orders do
+      member do
+        patch :update_status
+        patch :ship
+        patch :deliver
+        patch :cancel
+        get :invoice
+        get :tracking
+      end
+      collection do
+        get :pending
+        get :processing
+        get :shipped
+        get :delivered
+        get :cancelled
+      end
+    end
+
     # Document management
     resources :documents do
       member do
@@ -187,6 +253,16 @@ Rails.application.routes.draw do
       resources :family_members
     end
 
+    # Franchise management
+    resources :franchises do
+      collection do
+        get :export
+      end
+      member do
+        patch :toggle_status
+      end
+    end
+
     # Insurance management
     resources :policies do
       member do
@@ -325,6 +401,13 @@ Rails.application.routes.draw do
     get 'reports/upcoming_payment', to: 'reports#upcoming_payment'
     get 'reports/leads', to: 'reports#leads'
     get 'reports/sessions', to: 'reports#sessions'
+    get 'reports/products', to: 'reports#products'
+    get 'reports/customers', to: 'reports#customers'
+    get 'reports/revenue', to: 'reports#revenue'
+    get 'reports/inventory', to: 'reports#inventory'
+    get 'reports/orders', to: 'reports#orders'
+    get 'reports/financial', to: 'reports#financial'
+    get 'reports/performance', to: 'reports#performance'
 
     # Import Section
     resources :imports, only: [:index] do
@@ -345,6 +428,53 @@ Rails.application.routes.draw do
     post 'import/life_insurances', to: 'imports#life_insurances'
     post 'import/motor_insurances', to: 'imports#motor_insurances'
     post 'import/agencies', to: 'imports#agencies'
+
+    # E-commerce Management
+    resources :categories do
+      member do
+        patch :toggle_status
+      end
+      collection do
+        get :search
+      end
+    end
+
+    resources :products do
+      member do
+        patch :toggle_status
+        post :bulk_action
+        get :detail
+      end
+      collection do
+        get :search
+        post :bulk_action
+        get :categories_for_select
+        get :products_chart
+      end
+    end
+
+    # Delivery People Management
+    resources :delivery_people do
+      member do
+        patch :toggle_status
+      end
+      collection do
+        post :bulk_action
+      end
+    end
+
+    # Coupons Management
+    resources :coupons do
+      member do
+        patch :toggle_status
+      end
+    end
+
+    # Bookings Management
+    resources :bookings
+
+    # Orders Management
+    resources :orders
 
     # Settings namespace
     namespace :settings do
@@ -376,6 +506,42 @@ Rails.application.routes.draw do
         post 'auth/login', to: 'authentication#login'
         post 'auth/register', to: 'authentication#register'
         post 'auth/forgot_password', to: 'authentication#forgot_password'
+
+        # E-commerce Module APIs
+        get 'ecommerce/categories', to: 'ecommerce#categories'
+        get 'ecommerce/categories/:id', to: 'ecommerce#category_details'
+        get 'ecommerce/categories/:id/products', to: 'ecommerce#category_products'
+        get 'ecommerce/products', to: 'ecommerce#products'
+        get 'ecommerce/products/:id', to: 'ecommerce#product_details'
+        get 'ecommerce/featured_products', to: 'ecommerce#featured_products'
+        get 'ecommerce/search', to: 'ecommerce#search'
+        post 'ecommerce/products/:id/check_delivery', to: 'ecommerce#check_delivery'
+        get 'ecommerce/filters', to: 'ecommerce#filters'
+
+        # Booking APIs
+        post 'ecommerce/bookings', to: 'ecommerce#create_booking'
+        get 'ecommerce/bookings', to: 'ecommerce#bookings'
+
+        # Order APIs
+        get 'ecommerce/orders', to: 'ecommerce#orders'
+        get 'ecommerce/orders/:id', to: 'ecommerce#order_details'
+
+        # Subscription APIs
+        post 'ecommerce/subscriptions', to: 'ecommerce#create_subscription'
+        get 'ecommerce/subscriptions', to: 'ecommerce#subscriptions'
+        get 'ecommerce/subscriptions/:id', to: 'ecommerce#subscription_details'
+        put 'ecommerce/subscriptions/:id/pause', to: 'ecommerce#pause_subscription'
+        put 'ecommerce/subscriptions/:id/resume', to: 'ecommerce#resume_subscription'
+        put 'ecommerce/subscriptions/:id/cancel', to: 'ecommerce#cancel_subscription'
+
+        # Pincode & Delivery Validation APIs
+        get 'ecommerce/delivery/check-pincode/:pincode', to: 'ecommerce#check_pincode'
+        post 'ecommerce/delivery/validate', to: 'ecommerce#validate_delivery'
+        post 'ecommerce/location/save', to: 'ecommerce#save_location'
+
+        # Customer Profile APIs
+        get 'ecommerce/profile', to: 'ecommerce#customer_profile'
+        put 'ecommerce/profile', to: 'ecommerce#update_profile'
 
         # Customer Module APIs
         get 'customer/portfolio', to: 'customer#portfolio'

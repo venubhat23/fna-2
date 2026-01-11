@@ -1,0 +1,273 @@
+<%= form_with model: [:admin, coupon], local: true, multipart: true, class: "row g-4" do |form| %>
+  <% if coupon.errors.any? %>
+    <div class="col-12">
+      <div class="alert alert-danger border-0 shadow-sm">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+          <div>
+            <h6 class="alert-heading mb-1">Please fix the following errors:</h6>
+            <ul class="mb-0 small">
+              <% coupon.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Information Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-info-circle text-primary"></i>
+          </div>
+          <h5 class="card-title mb-0">Basic Information</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :code, "Coupon Code", class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-tag text-muted"></i>
+              </span>
+              <%= form.text_field :code, class: "form-control border-start-0 ps-0 text-uppercase", placeholder: "e.g., SAVE20", required: true %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Use uppercase letters and numbers only
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :status, "Status", class: "form-label fw-medium" %>
+            <div class="mt-2">
+              <div class="form-check form-switch">
+                <%= form.check_box :status, { class: "form-check-input", checked: coupon.new_record? ? true : coupon.status }, "true", "false" %>
+                <%= form.label :status, class: "form-check-label fw-medium" do %>
+                  <i class="bi bi-check-circle text-success me-1"></i>
+                  Active
+                <% end %>
+              </div>
+              <div class="form-text">Toggle to activate/deactivate this coupon</div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :description, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                <i class="bi bi-text-left text-muted"></i>
+              </span>
+              <%= form.text_area :description, class: "form-control border-start-0 ps-0", rows: 3, placeholder: "Brief description of the coupon" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discount Settings Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-success bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-percent text-success"></i>
+          </div>
+          <h5 class="card-title mb-0">Discount Settings</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :discount_type, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-calculator text-muted"></i>
+              </span>
+              <%= form.select :discount_type, options_for_select([
+                ['Percentage', 'percentage'],
+                ['Fixed Amount', 'fixed']
+              ], coupon.discount_type), { prompt: 'Select discount type' }, { class: "form-select border-start-0", required: true } %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :discount_value, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 discount-prefix">
+                <%= coupon.discount_type == 'percentage' ? '%' : '₹' %>
+              </span>
+              <%= form.number_field :discount_value, class: "form-control border-start-0 ps-0", step: 0.01, min: 0, placeholder: "0", required: true %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Enter the discount amount or percentage
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :minimum_amount, "Minimum Order Amount", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-cash text-muted"></i>
+              </span>
+              <%= form.number_field :minimum_amount, class: "form-control border-start-0 ps-0", step: 0.01, min: 0, placeholder: "0 (No minimum)" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :maximum_discount, "Maximum Discount Amount", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-cash-stack text-muted"></i>
+              </span>
+              <%= form.number_field :maximum_discount, class: "form-control border-start-0 ps-0", step: 0.01, min: 0, placeholder: "0 (No maximum)" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Only applicable for percentage discounts
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Validity & Usage Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-warning bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-calendar text-warning"></i>
+          </div>
+          <h5 class="card-title mb-0">Validity & Usage</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :valid_from, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-calendar-event text-muted"></i>
+              </span>
+              <%= form.datetime_local_field :valid_from, class: "form-control border-start-0 ps-0", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :valid_until, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-calendar-x text-muted"></i>
+              </span>
+              <%= form.datetime_local_field :valid_until, class: "form-control border-start-0 ps-0", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :usage_limit, "Total Usage Limit", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-hash text-muted"></i>
+              </span>
+              <%= form.number_field :usage_limit, class: "form-control border-start-0 ps-0", min: 1, placeholder: "Leave blank for unlimited" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Maximum number of times this coupon can be used
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :applicable_products, "Applicable Products (Optional)", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                <i class="bi bi-box text-muted"></i>
+              </span>
+              <%= form.text_area :applicable_products, class: "form-control border-start-0 ps-0", rows: 2, placeholder: "Product IDs separated by commas (e.g., 1,2,3)" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Leave blank to apply to all products
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :applicable_categories, "Applicable Categories (Optional)", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                <i class="bi bi-grid text-muted"></i>
+              </span>
+              <%= form.text_area :applicable_categories, class: "form-control border-start-0 ps-0", rows: 2, placeholder: "Category IDs separated by commas (e.g., 1,2,3)" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Leave blank to apply to all categories
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-end gap-2">
+          <%= link_to admin_coupons_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-x-lg me-1"></i> Cancel
+          <% end %>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-<%= coupon.new_record? ? 'plus-circle' : 'check-circle' %> me-1"></i>
+            <%= coupon.new_record? ? 'Create Coupon' : 'Update Coupon' %>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const discountTypeSelect = document.getElementById('coupon_discount_type');
+  const discountPrefix = document.querySelector('.discount-prefix');
+  const maxDiscountField = document.querySelector('[name="coupon[maximum_discount]"]');
+  const maxDiscountContainer = maxDiscountField?.closest('.mb-3');
+
+  function updateDiscountFields() {
+    if (discountTypeSelect.value === 'percentage') {
+      discountPrefix.textContent = '%';
+      if (maxDiscountContainer) {
+        maxDiscountContainer.style.display = 'block';
+      }
+    } else {
+      discountPrefix.textContent = '₹';
+      if (maxDiscountContainer) {
+        maxDiscountContainer.style.display = 'none';
+        maxDiscountField.value = '';
+      }
+    }
+  }
+
+  if (discountTypeSelect) {
+    discountTypeSelect.addEventListener('change', updateDiscountFields);
+    updateDiscountFields();
+  }
+});
+</script>

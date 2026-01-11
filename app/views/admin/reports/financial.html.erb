@@ -1,0 +1,108 @@
+<div class="page-header">
+  <h1>Financial Reports</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Revenue</h5>
+        <h2>₹<%= number_with_delimiter(@total_revenue || 0, delimiter: ',') %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Net Revenue</h5>
+        <h2>₹<%= number_with_delimiter(@net_revenue || 0, delimiter: ',') %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Tax</h5>
+        <h2>₹<%= number_with_delimiter(@total_tax || 0, delimiter: ',') %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Discounts</h5>
+        <h2>₹<%= number_with_delimiter(@total_discount || 0, delimiter: ',') %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Commissions</h5>
+        <h2>₹<%= number_with_delimiter(@total_commissions || 0, delimiter: ',') %></h2>
+        <div class="mt-2">
+          <small class="text-success">Paid: ₹<%= number_with_delimiter(@paid_commissions || 0, delimiter: ',') %></small><br>
+          <small class="text-warning">Pending: ₹<%= number_with_delimiter(@pending_commissions || 0, delimiter: ',') %></small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Gross Profit</h5>
+        <h2>₹<%= number_with_delimiter(@gross_profit || 0, delimiter: ',') %></h2>
+        <small class="text-muted">30% margin assumed</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Net Profit</h5>
+        <h2 class="<%= @net_profit >= 0 ? 'text-success' : 'text-danger' %>">
+          ₹<%= number_with_delimiter(@net_profit || 0, delimiter: ',') %>
+        </h2>
+        <small class="text-muted">After commissions</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>Insurance Premiums Collected</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3">
+            <h6>Health Insurance</h6>
+            <h3>₹<%= number_with_delimiter(@health_premiums || 0, delimiter: ',') %></h3>
+          </div>
+          <div class="col-md-3">
+            <h6>Life Insurance</h6>
+            <h3>₹<%= number_with_delimiter(@life_premiums || 0, delimiter: ',') %></h3>
+          </div>
+          <div class="col-md-3">
+            <h6>Motor Insurance</h6>
+            <h3>₹<%= number_with_delimiter(@motor_premiums || 0, delimiter: ',') %></h3>
+          </div>
+          <div class="col-md-3">
+            <h6>Total Premiums</h6>
+            <h3 class="text-primary">₹<%= number_with_delimiter(@total_premiums || 0, delimiter: ',') %></h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

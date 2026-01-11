@@ -4,7 +4,7 @@
     <h2 class="mb-1"><%= @customer.display_name %></h2>
     <p class="text-muted mb-0">
       <span class="badge bg-<%= @customer.customer_type == 'individual' ? 'primary' : 'success' %> me-2">
-        <%= @customer.customer_type.humanize %>
+        <%= @customer.customer_type&.humanize || 'General' %>
       </span>
       Customer ID: #<%= @customer.id %>
     </p>

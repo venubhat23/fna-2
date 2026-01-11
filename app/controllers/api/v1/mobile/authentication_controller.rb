@@ -1,4 +1,5 @@
-class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
+class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
+  skip_before_action :authorize_request, only: [:login, :register, :forgot_password]
 
   # POST /api/v1/mobile/auth/login
   def login
@@ -7,10 +8,10 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     password = params[:password]
 
     if login_field.blank? || password.blank?
-      return render json: {
+      return json_response({
         success: false,
         message: 'Email/Mobile and password are required'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Check if it's a user login (including customers, agents, admin)
@@ -53,7 +54,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
           token = generate_token(user, 'customer')
           portfolio_stats = get_customer_portfolio_stats(customer)
 
-          render json: {
+          json_response({
             success: true,
             data: {
               token: token,
@@ -69,7 +70,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
                 renewal_policies: portfolio_stats[:renewal_policies]
               }
             }
-          }
+          })
           return
         end
       elsif user.agent? || user.admin? || user.sub_agent?
@@ -77,7 +78,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
         token = generate_token(user, user.user_type)
         agent_stats = get_agent_statistics(user)
 
-        render json: {
+        json_response({
           success: true,
           data: {
             token: token,
@@ -99,7 +100,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
               conversion_rate: "#{rand(65..85)}%"
             }
           }
-        }
+        })
         return
       end
     end
@@ -125,7 +126,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
       # Get sub-agent statistics
       sub_agent_stats = get_sub_agent_statistics(sub_agent)
 
-      render json: {
+      json_response({
         success: true,
         data: {
           token: token,
@@ -158,14 +159,14 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
             join_date: (Date.current - rand(30..1000).days).strftime("%Y-%m-%d")
           }
         }
-      }
+      })
       return
     end
 
-    render json: {
+    json_response({
       success: false,
       message: 'Invalid username or password'
-    }, status: :unauthorized
+    }, :unauthorized)
   end
 
   # POST /api/v1/mobile/auth/forgot_password
@@ -173,10 +174,10 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     login_field = params[:email] || params[:mobile]
 
     if login_field.blank?
-      return render json: {
+      return json_response({
         success: false,
         message: 'Email or mobile number is required'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Check in all user types
@@ -216,15 +217,15 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
       # 1. Save the reset token to database with expiry
       # 2. Send email with reset link
 
-      render json: {
+      json_response({
         success: true,
         message: 'Password reset instructions have been sent to your email'
-      }
+      })
     else
-      render json: {
+      json_response({
         success: false,
         message: 'Email address not found'
-      }, status: :not_found
+      }, :not_found)
     end
   end
 
@@ -240,11 +241,11 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     when 'agent', 'sub_agent'
       register_agent
     else
-      render json: {
+      json_response({
         success: false,
         message: 'Invalid role. Only customer and agent registration are allowed.',
         valid_roles: ['customer', 'agent']
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
   end
 
@@ -254,58 +255,58 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     # Validate required fields
     if customer_params[:first_name].blank? || customer_params[:last_name].blank? ||
        customer_params[:email].blank? || customer_params[:mobile].blank? || customer_params[:password].blank?
-      return render json: {
+      return json_response({
         success: false,
         message: 'First name, last name, email, mobile number, and password are required'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate password confirmation if provided
     if customer_params[:password_confirmation].present? && customer_params[:password] != customer_params[:password_confirmation]
-      return render json: {
+      return json_response({
         success: false,
         message: 'Password confirmation does not match'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate email format
     unless customer_params[:email].match?(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
-      return render json: {
+      return json_response({
         success: false,
         message: 'Please enter a valid email address'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate and format mobile number
     mobile_number = format_mobile_number(customer_params[:mobile])
     unless mobile_number
-      return render json: {
+      return json_response({
         success: false,
         message: 'Please enter a valid Indian mobile number (10 digits starting with 6-9)'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate name fields
     unless validate_name_fields(customer_params[:first_name])
-      return render json: {
+      return json_response({
         success: false,
         message: 'First name should contain only alphabetic characters and be 2-50 characters long'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     unless validate_name_fields(customer_params[:last_name])
-      return render json: {
+      return json_response({
         success: false,
         message: 'Last name should contain only alphabetic characters and be 2-50 characters long'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate password strength
     if customer_params[:password].length < 6
-      return render json: {
+      return json_response({
         success: false,
         message: 'Password must be at least 6 characters long'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Check if customer or user already exists
@@ -315,24 +316,24 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     existing_user_mobile = User.exists?(mobile: mobile_number)
 
     if existing_customer_email || existing_user_email
-      return render json: {
+      return json_response({
         success: false,
         message: 'An account with this email address already exists. Please use a different email or try logging in.'
-      }, status: :conflict
+      }, :conflict)
     end
 
     if existing_customer_mobile || existing_user_mobile
-      return render json: {
+      return json_response({
         success: false,
         message: 'An account with this mobile number already exists. Please use a different mobile number or try logging in.'
-      }, status: :conflict
+      }, :conflict)
     end
 
     # Use database transaction to ensure both records are created together
     begin
       ActiveRecord::Base.transaction do
-        # Create Customer record
-        customer = Customer.create!(
+        # Create Customer record (without password validations)
+        customer = Customer.new(
           customer_type: 'individual',
           first_name: customer_params[:first_name],
           last_name: customer_params[:last_name],
@@ -341,20 +342,24 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
           status: true,
           added_by: 'self_registration'
         )
+        customer.save!(validate: false)  # Skip validations to avoid password requirements
 
         # Create User record for login
-        user = User.create!(
+        user = User.new(
           first_name: customer_params[:first_name],
           last_name: customer_params[:last_name],
           email: customer_params[:email],
           mobile: mobile_number, # Use formatted mobile number
-          password: customer_params[:password],
-          password_confirmation: customer_params[:password_confirmation].present? ? customer_params[:password_confirmation] : customer_params[:password],
           user_type: 'customer',
           status: true
         )
 
-        render json: {
+        # Set password separately to ensure proper Devise handling
+        user.password = customer_params[:password]
+        user.password_confirmation = customer_params[:password_confirmation].present? ? customer_params[:password_confirmation] : customer_params[:password]
+        user.save!
+
+        json_response({
           success: true,
           message: 'Customer registration successful. You can now login with your credentials.',
           data: {
@@ -364,20 +369,20 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
             mobile: customer.mobile,
             role: 'customer'
           }
-        }
+        })
       end
     rescue ActiveRecord::RecordInvalid => e
-      render json: {
+      json_response({
         success: false,
         message: 'Customer registration failed',
         errors: e.record.errors.full_messages
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     rescue => e
-      render json: {
+      json_response({
         success: false,
         message: 'Registration failed due to system error',
         error: e.message
-      }, status: :internal_server_error
+      }, :internal_server_error)
     end
   end
 
@@ -388,58 +393,58 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     # Validate required fields
     if agent_params[:first_name].blank? || agent_params[:last_name].blank? ||
        agent_params[:email].blank? || agent_params[:mobile].blank? || agent_params[:password].blank?
-      return render json: {
+      return json_response({
         success: false,
         message: 'First name, last name, email, mobile number, and password are required'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate password confirmation
     if agent_params[:password_confirmation].present? && agent_params[:password] != agent_params[:password_confirmation]
-      return render json: {
+      return json_response({
         success: false,
         message: 'Password confirmation does not match'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate email format
     unless agent_params[:email].match?(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
-      return render json: {
+      return json_response({
         success: false,
         message: 'Please enter a valid email address'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate and format mobile number
     mobile_number = format_mobile_number(agent_params[:mobile])
     unless mobile_number
-      return render json: {
+      return json_response({
         success: false,
         message: 'Please enter a valid Indian mobile number (10 digits starting with 6-9)'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate name fields
     unless validate_name_fields(agent_params[:first_name])
-      return render json: {
+      return json_response({
         success: false,
         message: 'First name should contain only alphabetic characters and be 2-50 characters long'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     unless validate_name_fields(agent_params[:last_name])
-      return render json: {
+      return json_response({
         success: false,
         message: 'Last name should contain only alphabetic characters and be 2-50 characters long'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Validate password strength
     if agent_params[:password].length < 6
-      return render json: {
+      return json_response({
         success: false,
         message: 'Password must be at least 6 characters long'
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
 
     # Check if user already exists
@@ -447,17 +452,17 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
     existing_user_mobile = User.exists?(mobile: mobile_number)
 
     if existing_user_email
-      return render json: {
+      return json_response({
         success: false,
         message: 'An account with this email address already exists. Please use a different email or try logging in.'
-      }, status: :conflict
+      }, :conflict)
     end
 
     if existing_user_mobile
-      return render json: {
+      return json_response({
         success: false,
         message: 'An account with this mobile number already exists. Please use a different mobile number or try logging in.'
-      }, status: :conflict
+      }, :conflict)
     end
 
     user = User.new(
@@ -465,8 +470,6 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
       last_name: agent_params[:last_name],
       email: agent_params[:email],
       mobile: mobile_number, # Use formatted mobile number
-      password: agent_params[:password],
-      password_confirmation: agent_params[:password_confirmation].present? ? agent_params[:password_confirmation] : agent_params[:password],
       user_type: 'agent',
       role: 'agent_role',
       status: false,  # Pending approval
@@ -479,8 +482,12 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
       annual_income: agent_params[:annual_income]
     )
 
+    # Set password separately to ensure proper Devise handling
+    user.password = agent_params[:password]
+    user.password_confirmation = agent_params[:password_confirmation].present? ? agent_params[:password_confirmation] : agent_params[:password]
+
     if user.save
-      render json: {
+      json_response({
         success: true,
         message: 'Agent registration successful. Your account is pending approval by admin.',
         data: {
@@ -489,13 +496,13 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::ApplicationController
           mobile: user.mobile,
           role: 'agent'
         }
-      }
+      })
     else
-      render json: {
+      json_response({
         success: false,
         message: 'Agent registration failed',
         errors: user.errors.full_messages
-      }, status: :unprocessable_entity
+      }, :unprocessable_entity)
     end
   end
 

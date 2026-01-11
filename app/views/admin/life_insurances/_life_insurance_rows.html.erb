@@ -1,5 +1,5 @@
 <% life_insurances.each do |policy| %>
-  <tr class="<%= 'table-warning bg-warning-subtle' if policy.non_drwise_policy? %>">
+  <tr class="<%= 'table-warning bg-warning-subtle' if policy.non_dhanvantri_policy? %>">
     <td>
       <div>
         <h6 class="mb-1"><%= policy.policy_number %></h6>
@@ -43,9 +43,9 @@
         <!-- Type Badge -->
         <div>
           <span class="badge <%= policy.policy_classification_badge_class %>">
-            <% if policy.drwise_policy? %>
+            <% if policy.dhanvantri_policy? %>
               <i class="bi bi-check-circle me-1"></i>
-            <% elsif policy.non_drwise_policy? %>
+            <% elsif policy.non_dhanvantri_policy? %>
               <i class="bi bi-x-circle me-1"></i>
             <% else %>
               <i class="bi bi-question-circle me-1"></i>

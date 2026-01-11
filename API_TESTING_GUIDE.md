@@ -1,6 +1,6 @@
-# Drwise Mobile API Testing Guide
+# Dhanvantri Mobile API Testing Guide
 
-This comprehensive guide provides step-by-step instructions for testing all Drwise Mobile API endpoints using various tools and methods.
+This comprehensive guide provides step-by-step instructions for testing all Dhanvantri Mobile API endpoints using various tools and methods.
 
 ## Table of Contents
 1. [Testing Tools Setup](#testing-tools-setup)
@@ -23,13 +23,13 @@ This comprehensive guide provides step-by-step instructions for testing all Drwi
 2. **Import Collection**
    - Open Postman
    - Click "Import" button
-   - Choose the file: `Drwise_Mobile_API.postman_collection.json`
+   - Choose the file: `Dhanvantri_Mobile_API.postman_collection.json`
    - Click "Import"
 
 3. **Create Environment**
    - Click on "Environments" in left sidebar
    - Click "Create Environment"
-   - Name: "Drwise Mobile API - Local"
+   - Name: "Dhanvantri Mobile API - Local"
    - Add variables:
      ```
      Variable: base_url
@@ -537,7 +537,7 @@ Create `curl-format.txt` file:
 
 #### Setup Collection Runner:
 1. Open Postman Collection Runner
-2. Select "Drwise Mobile API" collection
+2. Select "Dhanvantri Mobile API" collection
 3. Set iterations: 10
 4. Set delay: 100ms
 5. Run collection
@@ -639,8 +639,8 @@ pm.test("Customer has proper agent tracking", function () {
 npm install -g newman
 
 # Run collection
-newman run Drwise_Mobile_API.postman_collection.json \
-  -e Drwise_Mobile_API_Local.postman_environment.json \
+newman run Dhanvantri_Mobile_API.postman_collection.json \
+  -e Dhanvantri_Mobile_API_Local.postman_environment.json \
   --reporters cli,html \
   --reporter-html-export test-results.html
 ```
@@ -680,8 +680,8 @@ jobs:
 
       - name: Run API Tests
         run: |
-          newman run Drwise_Mobile_API.postman_collection.json \
-            -e Drwise_Mobile_API_Local.postman_environment.json \
+          newman run Dhanvantri_Mobile_API.postman_collection.json \
+            -e Dhanvantri_Mobile_API_Local.postman_environment.json \
             --reporters cli,junit \
             --reporter-junit-export results.xml
 ```
@@ -799,4 +799,4 @@ telnet localhost 3000
 
 ---
 
-This testing guide provides comprehensive coverage for testing the Drwise Mobile API. Follow the steps systematically to ensure all endpoints work correctly and handle error cases appropriately.
+This testing guide provides comprehensive coverage for testing the Dhanvantri Mobile API. Follow the steps systematically to ensure all endpoints work correctly and handle error cases appropriately.

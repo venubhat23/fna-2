@@ -9,24 +9,16 @@ module ApplicationHelper
   def show_sidebar_item?(module_name, action = 'read')
     return false unless current_user
 
-    # Only admin@insurebook.com gets full access, all other users are restricted to their sidebar permissions
-    if current_user.email == 'admin@insurebook.com'
-      return true
-    end
-
-    # For all other users (including other admins), check only specific sidebar permissions
-    current_user.has_sidebar_permission?(module_name)
+    # Show all sidebar items to all logged in users
+    return true
   end
 
   # Helper method to check if any items in a section are visible
   def show_sidebar_section?(section_items)
     return false unless current_user
 
-    # Special case: admin@insurebook.com gets full access
-    return true if current_user.email == 'admin@insurebook.com'
-
-    # For other users, check if they have any permission for items in this section
-    section_items.any? { |item| current_user.has_sidebar_permission?(item) }
+    # Show all sidebar sections to all logged in users
+    return true
   end
 
   def sidebar_item_class(current_path, module_paths = [])
@@ -81,7 +73,11 @@ module ApplicationHelper
       'payouts' => 'bi-cash-coin',
       'reports' => 'bi-graph-up',
       'settings' => 'bi-gear-fill',
-      'roles' => 'bi-shield-check'
+      'roles' => 'bi-shield-check',
+      'master' => 'bi-database-fill',
+      'categories' => 'bi-tags-fill',
+      'pincodes' => 'bi-geo-alt-fill',
+      'products' => 'bi-box-seam-fill'
     }
 
     content_tag(:i, '', class: "bi #{icons[module_name] || 'bi-circle'}")
@@ -103,7 +99,11 @@ module ApplicationHelper
       'other_insurance' => 'bi-shield-fill-check',
       'reports' => 'bi-graph-up',
       'management' => 'bi-building-fill',
-      'settings' => 'bi-gear-fill'
+      'settings' => 'bi-gear-fill',
+      'master' => 'bi-database-fill',
+      'categories' => 'bi-tags-fill',
+      'pincodes' => 'bi-geo-alt-fill',
+      'products' => 'bi-box-seam-fill'
     }
 
     content_tag(:i, '', class: "bi #{icons[module_name] || 'bi-circle'}")
@@ -439,6 +439,22 @@ module ApplicationHelper
       'Ambassador'
     else
       model_name.to_s.humanize
+    end
+  end
+
+  # Delivery rule helpers
+  def get_placeholder_for_rule_type(rule_type)
+    case rule_type.to_s
+    when 'everywhere'
+      'Available for all locations (leave empty)'
+    when 'state'
+      'e.g., Karnataka, Maharashtra, Delhi'
+    when 'city'
+      'e.g., Bangalore, Mumbai, Delhi'
+    when 'pincode'
+      'e.g., 560001, 400001, 110001'
+    else
+      'Enter comma-separated values'
     end
   end
 end

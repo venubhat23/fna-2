@@ -3,7 +3,7 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
   def index
     # Placeholder for system settings
     @system_settings = {
-      app_name: 'Drwise Admin',
+      app_name: 'Dhanvantri Admin',
       version: '1.0.0',
       maintenance_mode: false,
       email_notifications: true,

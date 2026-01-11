@@ -2,6 +2,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="mb-1">Customer Management</h2>
+    <p class="text-muted mb-0">Manage and track all your customers</p>
   </div>
   <div>
     <%= link_to new_admin_customer_path, class: "btn btn-primary" do %>
@@ -11,66 +12,63 @@
   </div>
 </div>
 
-<!-- Statistics Cards -->
+<!-- Stats Cards -->
 <div class="row mb-4">
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Total Customers</h6>
-            <h3 class="mb-0 text-primary"><%= number_with_delimiter(@total_customers) %></h3>
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Customers</h6>
+            <h4 class="mb-0"><%= @total_customers || 0 %></h4>
           </div>
-          <div class="bg-primary bg-opacity-10 rounded p-3">
-            <i class="bi bi-people text-primary fs-4"></i>
+          <div class="text-primary">
+            <i class="bi bi-people fs-2"></i>
           </div>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Active Customers</h6>
-            <h3 class="mb-0 text-success"><%= number_with_delimiter(@active_customers) %></h3>
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Customers</h6>
+            <h4 class="mb-0"><%= @active_customers || 0 %></h4>
           </div>
-          <div class="bg-success bg-opacity-10 rounded p-3">
-            <i class="bi bi-person-check text-success fs-4"></i>
+          <div class="text-success">
+            <i class="bi bi-person-check fs-2"></i>
           </div>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Individual Customers</h6>
-            <h3 class="mb-0 text-info"><%= number_with_delimiter(@individual_customers) %></h3>
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Individual</h6>
+            <h4 class="mb-0"><%= @individual_customers || 0 %></h4>
           </div>
-          <div class="bg-info bg-opacity-10 rounded p-3">
-            <i class="bi bi-person text-info fs-4"></i>
+          <div class="text-info">
+            <i class="bi bi-person fs-2"></i>
           </div>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Corporate Customers</h6>
-            <h3 class="mb-0 text-warning"><%= number_with_delimiter(@corporate_customers) %></h3>
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Corporate</h6>
+            <h4 class="mb-0"><%= @corporate_customers || 0 %></h4>
           </div>
-          <div class="bg-warning bg-opacity-10 rounded p-3">
-            <i class="bi bi-building text-warning fs-4"></i>
+          <div class="text-warning">
+            <i class="bi bi-building fs-2"></i>
           </div>
         </div>
       </div>
@@ -78,235 +76,132 @@
   </div>
 </div>
 
-<!-- Filters and Search -->
-<div class="card shadow-sm mb-4">
-  <div class="card-body">
-    <%= form_with url: admin_customers_path, method: :get, local: true, class: "d-flex flex-wrap gap-3 align-items-end", id: "search_form" do |form| %>
-      <!-- Search -->
-      <div class="flex-grow-1 min-width-250">
-        <%= form.text_field :search, placeholder: "Search by name, email, mobile, or PAN... (min 4 characters)",
-                           value: params[:search],
-                           class: "form-control",
-                           id: "search_input",
-                           data: { min_length: 4 } %>
-      </div>
-
-      <!-- Customer Type Filter -->
-      <div>
-        <%= form.select :customer_type,
-                       options_for_select([
-                         ['All Types', ''],
-                         ['Individual', 'individual'],
-                         ['Corporate', 'corporate']
-                       ], params[:customer_type]),
-                       {},
-                       { class: "form-select", id: "customer_type_filter" } %>
-      </div>
-
-      <!-- Status Filter -->
-      <div>
-        <%= form.select :status,
-                       options_for_select([
-                         ['All Status', ''],
-                         ['Active', 'active'],
-                         ['Inactive', 'inactive']
-                       ], params[:status]),
-                       {},
-                       { class: "form-select", id: "status_filter" } %>
-      </div>
-
-      <!-- Actions -->
-      <div class="d-flex gap-2">
-        <%= link_to "Clear", admin_customers_path, class: "btn btn-outline-secondary" %>
-      </div>
-    <% end %>
-  </div>
-</div>
-
-<style>
-.min-width-250 {
-  min-width: 250px;
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const searchInput = document.getElementById('search_input');
-  const customerTypeFilter = document.getElementById('customer_type_filter');
-  const statusFilter = document.getElementById('status_filter');
-  const searchForm = document.getElementById('search_form');
-  let searchTimeout;
-
-  // Auto-search on typing after 4 characters
-  searchInput.addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    const searchValue = this.value;
-
-    searchTimeout = setTimeout(() => {
-      if (searchValue.length >= 4 || searchValue.length === 0) {
-        searchForm.submit();
-      }
-    }, 500); // 500ms delay after typing stops
-  });
-
-  // Auto-submit on customer type filter change
-  customerTypeFilter.addEventListener('change', function() {
-    searchForm.submit();
-  });
-
-  // Auto-submit on status filter change
-  statusFilter.addEventListener('change', function() {
-    searchForm.submit();
-  });
-});
-</script>
-
-<!-- Customers List -->
+<!-- Customers Table -->
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-transparent border-0">
-    <h5 class="mb-0">Customer List</h5>
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Customer List</h5>
+      <div class="d-flex gap-2">
+        <div class="position-relative">
+          <input type="text" class="form-control" placeholder="Search customers..." id="searchInput">
+          <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="card-body p-0">
     <% if @customers.any? %>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead class="bg-light">
+          <thead class="table-light">
             <tr>
-              <th class="border-0">Customer</th>
-              <th class="border-0">Type</th>
-              <th class="border-0">Contact</th>
-              <th class="border-0">Affiliate</th>
-              <th class="border-0">Location</th>
-              <th class="border-0">Policies</th>
-              <th class="border-0">Status</th>
-              <th class="border-0">Actions</th>
+              <th class="border-0 fw-semibold">Customer</th>
+              <th class="border-0 fw-semibold">Contact Info</th>
+              <th class="border-0 fw-semibold">Login Credentials</th>
+              <th class="border-0 fw-semibold">Type</th>
+              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Joined</th>
+              <th class="border-0 fw-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
             <% @customers.each do |customer| %>
               <tr>
-                <td>
-                  <div>
-                    <h6 class="mb-1">
-                      <%= customer.display_name.present? ? customer.display_name : "Unnamed Customer" %>
-                    </h6>
-                    <small class="text-muted d-block">
-                      <%= customer.email.present? ? customer.email : "No email provided" %>
-                    </small>
-                    <% if customer.email.present? %>
-                      <% user = User.find_by(email: customer.email, user_type: 'customer') %>
-                      <% if user %>
-                        <small class="text-success d-block">
-                          <i class="bi bi-person-check me-1"></i>User Account: Active
-                        </small>
-                        <% if user.plain_password.present? %>
-                          <small class="text-info d-block">
-                            <i class="bi bi-key me-1"></i>Password: <%= user.plain_password %>
-                          </small>
-                        <% elsif user.original_password.present? %>
-                          <small class="text-info d-block">
-                            <i class="bi bi-key me-1"></i>Password: <%= user.original_password %>
-                          </small>
-                        <% else %>
-                          <small class="text-muted d-block">
-                            <i class="bi bi-lock me-1"></i>Password: Not available
-                          </small>
-                        <% end %>
-                      <% else %>
-                        <small class="text-warning d-block">
-                          <i class="bi bi-person-x me-1"></i>User Account: Not created
-                        </small>
-                      <% end %>
-                    <% else %>
-                      <small class="text-muted d-block">
-                        <i class="bi bi-person-dash me-1"></i>No user account possible (no email)
-                      </small>
-                    <% end %>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge bg-<%= customer.customer_type == 'individual' ? 'primary' : 'success' %>">
-                    <%= customer.customer_type.humanize %>
-                  </span>
-                </td>
-                <td>
-                  <div>
-                    <div class="mb-1">
-                      <%= customer.mobile.present? ? customer.mobile : "No mobile number" %>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-person text-primary"></i>
                     </div>
-                    <% if customer.pan_number.present? %>
-                      <small class="text-muted d-block">PAN: <%= customer.pan_number %></small>
-                    <% elsif customer.pan_no.present? %>
-                      <small class="text-muted d-block">PAN: <%= customer.pan_no %></small>
-                    <% end %>
-                    <small class="text-muted d-block">
-                      <i class="bi bi-calendar me-1"></i>Created: <%= customer.created_at.strftime('%d %b %Y') %>
-                    </small>
-                  </div>
-                </td>
-                <td>
-                  <div>
-                    <% if customer.affiliate.present? %>
-                      <small class="text-primary">
-                        <i class="bi bi-person me-1"></i><%= customer.affiliate.display_name %>
-                      </small>
-                    <% elsif customer.sub_agent == 'Self' %>
-                      <small class="text-muted">
-                        <i class="bi bi-person-check me-1"></i>Self
-                      </small>
-                    <% else %>
-                      <small class="text-muted">
-                        <i class="bi bi-dash me-1"></i>Not assigned
-                      </small>
-                    <% end %>
-                  </div>
-                </td>
-                <td>
-                  <div>
                     <div>
-                      <%= customer.city.present? ? customer.city : "City not specified" %>
+                      <h6 class="mb-0"><%= customer.display_name %></h6>
+                      <small class="text-muted">ID: #<%= customer.id %></small>
                     </div>
-                    <small class="text-muted">
-                      <%= customer.state.present? ? customer.state.humanize : "State not specified" %>
-                    </small>
                   </div>
                 </td>
-                <td>
-                  <span class="badge bg-info"><%= customer.respond_to?(:policies_count) ? (customer.policies_count || 0) : customer.policies.count %> policies</span>
+                <td class="align-middle">
+                  <div>
+                    <% if customer.email.present? %>
+                      <div class="small">
+                        <i class="bi bi-envelope text-muted me-1"></i>
+                        <%= customer.email %>
+                      </div>
+                    <% end %>
+                    <% if customer.mobile.present? %>
+                      <div class="small">
+                        <i class="bi bi-telephone text-muted me-1"></i>
+                        <%= customer.mobile %>
+                      </div>
+                    <% end %>
+                  </div>
                 </td>
-                <td>
-                  <span class="badge bg-<%= customer.status? ? 'success' : 'secondary' %>">
-                    <%= customer.status? ? 'Active' : 'Inactive' %>
-                  </span>
+                <td class="align-middle">
+                  <div class="login-credentials">
+                    <div class="small">
+                      <i class="bi bi-person-circle text-muted me-1"></i>
+                      <strong>Email:</strong> <%= customer.email || 'N/A' %>
+                    </div>
+                    <div class="small mt-1">
+                      <i class="bi bi-key text-muted me-1"></i>
+                      <strong>Password:</strong>
+                      <span class="password-display" onclick="showPassword('<%= customer.auto_generated_password || 'Not Set' %>')">
+                        <span class="password-hidden">••••••••</span>
+                        <button type="button" class="btn btn-link btn-sm p-0 ms-1" title="Click to view password">
+                          <i class="bi bi-eye text-muted"></i>
+                        </button>
+                      </span>
+                    </div>
+                  </div>
                 </td>
-                <td>
-                  <div class="d-flex gap-1">
-                    <%= link_to admin_customer_path(customer), class: "btn btn-sm btn-outline-primary", title: "View" do %>
-                      <i class="bi bi-eye"></i>
-                    <% end %>
-                    <%= link_to edit_admin_customer_path(customer), class: "btn btn-sm btn-outline-warning", title: "Edit" do %>
-                      <i class="bi bi-pencil"></i>
-                    <% end %>
-                    <%= link_to trace_commission_admin_customer_path(customer), class: "btn btn-sm btn-outline-info", title: "Insurace Summary" do %>
-                      <i class="bi bi-graph-up-arrow"></i>
-                    <% end %>
-                    <%= link_to toggle_status_admin_customer_path(customer),
-                        method: :patch,
-                        class: "btn btn-sm btn-outline-#{customer.status? ? 'secondary' : 'success'}",
-                        title: customer.status? ? 'Deactivate' : 'Activate',
-                        data: {
-                          confirm: "Are you sure you want to #{customer.status? ? 'deactivate' : 'activate'} this customer?",
-                          turbo_method: :patch
-                        } do %>
-                      <i class="bi bi-#{customer.status? ? 'pause-circle' : 'play-circle'}"></i>
-                    <% end %>
-                    <button type="button"
-                        class="btn btn-sm btn-outline-danger delete-customer"
-                        data-url="<%= admin_customer_path(customer) %>"
-                        data-confirm="Are you sure you want to delete this customer?"
-                        title="Delete">
-                      <i class="bi bi-trash"></i>
+                <td class="align-middle">
+                  <span class="badge bg-secondary-subtle text-secondary"><%= customer.customer_type&.humanize || 'Individual' %></span>
+                </td>
+                <td class="align-middle">
+                  <% if customer.respond_to?(:status) && customer.status %>
+                    <span class="badge bg-success-subtle text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Active
+                    </span>
+                  <% else %>
+                    <span class="badge bg-danger-subtle text-danger">
+                      <i class="bi bi-x-circle me-1"></i>
+                      Inactive
+                    </span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <%= customer.created_at.strftime("%b %d, %Y") if customer.created_at %>
+                </td>
+                <td class="align-middle">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                      <i class="bi bi-three-dots"></i>
                     </button>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <%= link_to admin_customer_path(customer), class: "dropdown-item" do %>
+                          <i class="bi bi-eye me-2"></i>
+                          View Details
+                        <% end %>
+                      </li>
+                      <li>
+                        <%= link_to edit_admin_customer_path(customer), class: "dropdown-item" do %>
+                          <i class="bi bi-pencil me-2"></i>
+                          Edit Customer
+                        <% end %>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <%= link_to admin_customer_path(customer), method: :delete,
+                            class: "dropdown-item text-danger",
+                            confirm: "Are you sure you want to delete this customer?",
+                            data: {
+                              confirm: "Are you sure you want to delete #{customer.display_name}? This action cannot be undone."
+                            } do %>
+                          <i class="bi bi-trash me-2"></i>
+                          Delete Customer
+                        <% end %>
+                      </li>
+                    </ul>
                   </div>
                 </td>
               </tr>
@@ -316,90 +211,97 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
 
       <!-- Pagination -->
-      <div class="card-footer bg-transparent border-0">
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-          <small class="text-muted mb-2 mb-md-0">
-            <% if defined?(@total_filtered_count) && @total_filtered_count.present? %>
-              Showing <%= @customers.current_page == 1 ? 1 : ((@customers.current_page - 1) * @customers.limit_value + 1) %>
-              to <%= [@customers.current_page * @customers.limit_value, @total_filtered_count].min %>
-              of <%= number_with_delimiter(@total_filtered_count) %> customers
-            <% elsif @customers.respond_to?(:total_count) %>
-              Showing <%= @customers.current_page == 1 ? 1 : ((@customers.current_page - 1) * @customers.limit_value + 1) %>
-              to <%= [@customers.current_page * @customers.limit_value, @customers.total_count].min %>
-              of <%= number_with_delimiter(@customers.total_count) %> customers
-            <% else %>
-              Showing <%= @customers.count %> customers
-            <% end %>
-          </small>
-
-          <% if @customers.respond_to?(:total_pages) && @customers.total_pages > 1 %>
-            <div class="pagination-wrapper">
-              <%= paginate @customers %>
-            </div>
-          <% end %>
+      <% if respond_to?(:paginate) && @customers.respond_to?(:total_pages) %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @customers %>
         </div>
-      </div>
+      <% end %>
     <% else %>
       <div class="text-center py-5">
-        <i class="bi bi-people fs-1 text-muted d-block mb-3"></i>
-        <h5 class="text-muted">No customers found</h5>
-        <p class="text-muted mb-3">
-          <% if params[:search].present? || params[:customer_type].present? || params[:status].present? %>
-            Try adjusting your search criteria or
-            <%= link_to "view all customers", admin_customers_path, class: "text-decoration-none" %>.
-          <% else %>
-            Start by adding your first customer to the system.
-          <% end %>
-        </p>
-        <%= link_to new_admin_customer_path, class: "btn btn-primary" do %>
-          <i class="bi bi-plus-lg me-1"></i>
-          Add First Customer
-        <% end %>
+        <div class="mb-3">
+          <i class="bi bi-people fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Customers Found</h5>
+        <p class="text-muted mb-4">Start building your customer base by adding your first customer.</p>
+        <%= link_to "Add Customer", new_admin_customer_path, class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
 </div>
 
 <script>
-
 document.addEventListener('DOMContentLoaded', function() {
-  // Handle customer delete buttons
-  document.addEventListener('click', function(e) {
-    if (e.target.closest('.delete-customer')) {
-      e.preventDefault();
+  // Search functionality
+  const searchInput = document.getElementById('searchInput');
+  const tableRows = document.querySelectorAll('tbody tr');
 
-      const button = e.target.closest('.delete-customer');
-      const url = button.dataset.url;
-      const confirmMessage = button.dataset.confirm;
+  searchInput?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
 
-      if (confirm(confirmMessage)) {
-        // Create and submit a form for DELETE request
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = url;
-        form.style.display = 'none';
+    tableRows.forEach(row => {
+      const customerName = row.cells[0]?.textContent.toLowerCase() || '';
+      const contactInfo = row.cells[1]?.textContent.toLowerCase() || '';
+      const customerType = row.cells[2]?.textContent.toLowerCase() || '';
 
-        // Add CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]');
-        if (csrfToken) {
-          const csrfInput = document.createElement('input');
-          csrfInput.type = 'hidden';
-          csrfInput.name = 'authenticity_token';
-          csrfInput.value = csrfToken.content;
-          form.appendChild(csrfInput);
-        }
-
-        // Add method override for DELETE
-        const methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'DELETE';
-        form.appendChild(methodInput);
-
-        document.body.appendChild(form);
-        form.submit();
+      if (customerName.includes(searchTerm) ||
+          contactInfo.includes(searchTerm) ||
+          customerType.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
       }
-    }
+    });
   });
+
+  // Password display functionality
+  window.showPassword = function(password) {
+    if (password && password !== 'Not Set') {
+      alert(`Customer Password: ${password}\n\nPlease keep this information secure!`);
+    } else {
+      alert('No password set for this customer.');
+    }
+  };
 });
 </script>
+
+<style>
+.login-credentials {
+  min-width: 180px;
+  font-size: 0.85rem;
+}
+
+.password-display {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.password-display:hover {
+  background-color: #f8f9fa;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.password-hidden {
+  font-family: monospace;
+  letter-spacing: 1px;
+  color: #6c757d;
+}
+
+.btn-link {
+  text-decoration: none !important;
+}
+
+.btn-link:hover {
+  color: #0d6efd !important;
+}
+
+/* Make the credentials column more compact but readable */
+.login-credentials strong {
+  color: #495057;
+  font-size: 0.8rem;
+}
+
+.login-credentials .small {
+  line-height: 1.3;
+}
+</style>

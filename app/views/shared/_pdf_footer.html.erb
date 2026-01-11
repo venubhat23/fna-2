@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', Arial, sans-serif;
+            font-size: 9px;
+            color: #a0aec0;
+            text-align: center;
+            padding: 10px;
+        }
+        .footer-content {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .page-number {
+            color: #667eea;
+            font-weight: 500;
+        }
+        .company-info {
+            font-size: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="footer-content">
+        <div class="company-info">
+            www.dhanvantarifarm.com | +91 98765 43210
+        </div>
+        <div class="page-number">
+            Page <span class="page"></span> of <span class="topage"></span>
+        </div>
+        <div class="company-info">
+            Generated: <%= Time.current.strftime("%d %b %Y") %>
+        </div>
+    </div>
+</body>
+</html>

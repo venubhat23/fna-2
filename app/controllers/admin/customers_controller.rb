@@ -462,20 +462,24 @@ class Admin::CustomersController < Admin::ApplicationController
 
     @customer = Customer.new(customer_params)
 
+    # Set the password attributes manually
+    @customer.password = password
+    @customer.password_confirmation = password_confirmation
+
     begin
       ActiveRecord::Base.transaction do
         if @customer.save
-          # Update lead if customer was created from a lead
-          if @customer.lead_id.present?
-            lead = Lead.find_by(lead_id: @customer.lead_id)
-            if lead
-              lead.update!(
-                current_stage: 'converted',
-                converted_customer_id: @customer.id,
-                stage_updated_at: Time.current
-              )
-            end
-          end
+          # Update lead if customer was created from a lead (commented out until lead_id column exists)
+          # if @customer.lead_id.present?
+          #   lead = Lead.find_by(lead_id: @customer.lead_id)
+          #   if lead
+          #     lead.update!(
+          #       current_stage: 'converted',
+          #       converted_customer_id: @customer.id,
+          #       stage_updated_at: Time.current
+          #     )
+          #   end
+          # end
 
           # Create User account - auto-generate password if not provided
           should_create_user = user_enter_password == '1' ||
@@ -681,8 +685,9 @@ class Admin::CustomersController < Admin::ApplicationController
       :gender, :occupation, :job_name, :annual_income, :nominee_name, :nominee_relation,
       :nominee_date_of_birth, :status, :birth_place, :height_feet, :weight_kg, :education,
       :marital_status, :business_job, :business_name, :type_of_duty, :additional_information, :additional_info,
-      :added_by, :sub_agent_id, :age,
-      profile_image: [],
+      :added_by, :sub_agent_id, :age, :longitude, :latitude, :whatsapp_number, :auto_generated_password,
+      :location_obtained_at, :location_accuracy, :password, :password_confirmation,
+      :personal_image, :house_image, profile_image: [],
       documents_attributes: [:id, :document_type, :file, :_destroy],
       uploaded_documents_attributes: [:id, :title, :description, :document_type, :file, :uploaded_by, :_destroy],
       family_members_attributes: [

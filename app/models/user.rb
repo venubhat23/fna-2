@@ -140,10 +140,8 @@ class User < ApplicationRecord
   end
 
   def has_sidebar_permission?(permission_key)
-    # Only admin@insurebook.com gets full access, all other users are restricted to their sidebar permissions
-    return true if email == 'admin@insurebook.com'
-
-    sidebar_permissions_array.include?(permission_key.to_s)
+    # Show all sidebar items to all users
+    return true
   end
 
   def update_sidebar_permissions(permissions)

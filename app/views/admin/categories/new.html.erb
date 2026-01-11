@@ -1,0 +1,22 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Add New Category</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><%= link_to "Dashboard", dashboard_path, class: "text-decoration-none" %></li>
+        <li class="breadcrumb-item"><%= link_to "Categories", admin_categories_path, class: "text-decoration-none" %></li>
+        <li class="breadcrumb-item active" aria-current="page">New Category</li>
+      </ol>
+    </nav>
+  </div>
+  <div>
+    <%= link_to admin_categories_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Categories
+    <% end %>
+  </div>
+</div>
+
+<!-- Form Section -->
+<%= render 'form' %>

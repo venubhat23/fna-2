@@ -1,0 +1,245 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Coupon Management</h2>
+    <p class="text-muted mb-0">Create and manage discount coupons for your store</p>
+  </div>
+  <div>
+    <%= link_to new_admin_coupon_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add New Coupon
+    <% end %>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Coupons</h6>
+            <h4 class="mb-0"><%= defined?(Coupon) ? Coupon.count : 0 %></h4>
+          </div>
+          <div class="text-primary">
+            <i class="bi bi-tags fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Coupons</h6>
+            <h4 class="mb-0"><%= defined?(Coupon) && Coupon.respond_to?(:valid) ? Coupon.valid.count : 0 %></h4>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-check-circle fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Upcoming</h6>
+            <h4 class="mb-0"><%= defined?(Coupon) && Coupon.respond_to?(:upcoming) ? Coupon.upcoming.count : 0 %></h4>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-clock fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Expired</h6>
+            <h4 class="mb-0"><%= defined?(Coupon) && Coupon.respond_to?(:expired) ? Coupon.expired.count : 0 %></h4>
+          </div>
+          <div class="text-danger">
+            <i class="bi bi-x-circle fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Coupons Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Coupon List</h5>
+      <div class="d-flex gap-2">
+        <div class="position-relative">
+          <input type="text" class="form-control" placeholder="Search coupons..." id="searchInput">
+          <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <% if @coupons.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0 fw-semibold">Coupon Code</th>
+              <th class="border-0 fw-semibold">Discount</th>
+              <th class="border-0 fw-semibold">Usage</th>
+              <th class="border-0 fw-semibold">Validity</th>
+              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @coupons.each do |coupon| %>
+              <tr>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-tag text-primary"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0"><%= coupon.code %></h6>
+                      <small class="text-muted"><%= truncate(coupon.description || 'No description', length: 30) %></small>
+                    </div>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <strong><%= coupon.respond_to?(:discount_display) ? coupon.discount_display : "#{coupon.discount_value}%" %></strong>
+                    <% if coupon.respond_to?(:maximum_discount) && coupon.maximum_discount.present? %>
+                      <br><small class="text-muted">Max: ₹<%= coupon.maximum_discount.to_i %></small>
+                    <% end %>
+                    <% if coupon.respond_to?(:minimum_amount) && coupon.minimum_amount.present? %>
+                      <br><small class="text-muted">Min: ₹<%= coupon.minimum_amount.to_i %></small>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <% if coupon.respond_to?(:usage_limit) && coupon.usage_limit.present? %>
+                    <span class="badge bg-info-subtle text-info">
+                      <%= coupon.respond_to?(:used_count) ? coupon.used_count : 0 %> / <%= coupon.usage_limit %>
+                    </span>
+                  <% else %>
+                    <span class="badge bg-secondary-subtle text-secondary">Unlimited</span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <% if coupon.respond_to?(:valid_from) && coupon.valid_from.present? %>
+                      <small class="text-muted d-block">From: <%= coupon.valid_from.strftime('%d %b %Y') %></small>
+                    <% end %>
+                    <% if coupon.respond_to?(:valid_until) && coupon.valid_until.present? %>
+                      <small class="text-muted d-block">Until: <%= coupon.valid_until.strftime('%d %b %Y') %></small>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <% if coupon.respond_to?(:status) && coupon.status %>
+                    <span class="badge bg-success-subtle text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Active
+                    </span>
+                  <% else %>
+                    <span class="badge bg-danger-subtle text-danger">
+                      <i class="bi bi-x-circle me-1"></i>
+                      Inactive
+                    </span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                      <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <%= link_to admin_coupon_path(coupon), class: "dropdown-item" do %>
+                          <i class="bi bi-eye me-2"></i>
+                          View Details
+                        <% end %>
+                      </li>
+                      <li>
+                        <%= link_to edit_admin_coupon_path(coupon), class: "dropdown-item" do %>
+                          <i class="bi bi-pencil me-2"></i>
+                          Edit Coupon
+                        <% end %>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <%= link_to admin_coupon_path(coupon), method: :delete,
+                            class: "dropdown-item text-danger",
+                            confirm: "Are you sure you want to delete this coupon?",
+                            data: {
+                              confirm: "Are you sure you want to delete #{coupon.code}? This action cannot be undone."
+                            } do %>
+                          <i class="bi bi-trash me-2"></i>
+                          Delete Coupon
+                        <% end %>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @coupons.respond_to?(:total_pages) %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @coupons %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-tags fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Coupons Found</h5>
+        <p class="text-muted mb-4">Start by creating your first discount coupon to boost sales and customer engagement.</p>
+        <%= link_to "Add Coupon", new_admin_coupon_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Search functionality
+  const searchInput = document.getElementById('searchInput');
+  const tableRows = document.querySelectorAll('tbody tr');
+
+  searchInput?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+
+    tableRows.forEach(row => {
+      const couponCode = row.cells[0]?.textContent.toLowerCase() || '';
+      const discount = row.cells[1]?.textContent.toLowerCase() || '';
+      const description = row.cells[0]?.textContent.toLowerCase() || '';
+
+      if (couponCode.includes(searchTerm) ||
+          discount.includes(searchTerm) ||
+          description.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+});
+</script>

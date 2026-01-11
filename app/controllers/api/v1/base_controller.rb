@@ -1,6 +1,8 @@
 class Api::V1::BaseController < ActionController::API
   include ExceptionHandler
 
+  before_action :authorize_request
+
   private
 
   # Serialize JSON response with message

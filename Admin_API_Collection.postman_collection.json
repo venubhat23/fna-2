@@ -1,0 +1,1095 @@
+{
+	"info": {
+		"_postman_id": "admin-api-complete-v1",
+		"name": "Admin API - Complete Collection",
+		"description": "Comprehensive Admin API collection for Ecommerce Store application including all admin management endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"description": "Admin authentication endpoints",
+			"item": [
+				{
+					"name": "Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.token) {",
+									"        pm.environment.set('admin_token', response.token);",
+									"        pm.test('Admin token saved', function() {",
+									"            pm.expect(pm.environment.get('admin_token')).to.not.be.undefined;",
+									"        });",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "E-commerce Management",
+			"description": "E-commerce related endpoints",
+			"item": [
+				{
+					"name": "Categories",
+					"description": "Category management endpoints",
+					"item": [
+						{
+							"name": "Get All Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/categories",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"categories"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Category",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"category\": {\n    \"name\": \"Electronics\",\n    \"description\": \"Electronic items and gadgets\",\n    \"status\": true,\n    \"display_order\": 1\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/categories",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"categories"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Category",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"category\": {\n    \"name\": \"Updated Electronics\",\n    \"description\": \"Updated electronic items and gadgets\",\n    \"status\": true\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/categories/{{category_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"categories",
+										"{{category_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Toggle Category Status",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/categories/{{category_id}}/toggle_status",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"categories",
+										"{{category_id}}",
+										"toggle_status"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Products",
+					"description": "Product management endpoints",
+					"item": [
+						{
+							"name": "Get All Products",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/products",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"products"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Product Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/products/{{product_id}}/detail",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{product_id}}",
+										"detail"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Products Chart",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/products/products_chart",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"products_chart"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Product",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product\": {\n    \"name\": \"iPhone 15\",\n    \"description\": \"Latest iPhone with advanced features\",\n    \"category_id\": 1,\n    \"price\": 79900,\n    \"discount_price\": 75000,\n    \"stock\": 50,\n    \"status\": \"active\",\n    \"sku\": \"IPH15-001\",\n    \"weight\": 0.171,\n    \"gst_enabled\": true,\n    \"gst_percentage\": 18\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/products",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"products"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Product",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product\": {\n    \"name\": \"iPhone 15 Pro\",\n    \"price\": 89900,\n    \"stock\": 45\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/products/{{product_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{product_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Toggle Product Status",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/products/{{product_id}}/toggle_status",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{product_id}}",
+										"toggle_status"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Bookings",
+					"description": "Booking management endpoints",
+					"item": [
+						{
+							"name": "Get All Bookings",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/bookings",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"bookings"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Booking",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"booking\": {\n    \"customer_id\": 1,\n    \"customer_name\": \"John Doe\",\n    \"customer_email\": \"john@example.com\",\n    \"customer_phone\": \"9876543210\",\n    \"delivery_address\": \"123 Main St, Mumbai\",\n    \"payment_method\": \"cash\",\n    \"booking_items\": [\n      {\n        \"product_id\": 1,\n        \"quantity\": 2,\n        \"unit_price\": 500\n      }\n    ]\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/bookings",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"bookings"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Convert Booking to Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/bookings/{{booking_id}}/convert_to_order",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"bookings",
+										"{{booking_id}}",
+										"convert_to_order"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Generate Invoice",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/bookings/{{booking_id}}/generate_invoice",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"bookings",
+										"{{booking_id}}",
+										"generate_invoice"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Orders",
+					"description": "Order management endpoints",
+					"item": [
+						{
+							"name": "Get All Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/orders",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"orders"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Pending Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/orders/pending",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"pending"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Order Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/orders/{{order_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{order_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Order Status",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"processing\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/orders/{{order_id}}/update_status",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{order_id}}",
+										"update_status"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Ship Order",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"tracking_number\": \"TRK123456789\",\n  \"delivery_person_id\": 1\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/orders/{{order_id}}/ship",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{order_id}}",
+										"ship"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Deliver Order",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{admin_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/admin/orders/{{order_id}}/deliver",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{order_id}}",
+										"deliver"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Customer Management",
+			"description": "Customer related endpoints",
+			"item": [
+				{
+					"name": "Get All Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"customers"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/customers/{{customer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"customers",
+								"{{customer_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer\": {\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"john.new@example.com\",\n    \"mobile\": \"9876543213\",\n    \"address\": \"123 New Street\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"400001\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"customers"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Customer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer\": {\n    \"first_name\": \"John Updated\",\n    \"address\": \"456 Updated Street\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/customers/{{customer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"customers",
+								"{{customer_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Customer Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/customers/{{customer_id}}/toggle_status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"customers",
+								"{{customer_id}}",
+								"toggle_status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Delivery Management",
+			"description": "Delivery related endpoints",
+			"item": [
+				{
+					"name": "Get Delivery People",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/delivery_people",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"delivery_people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Delivery Person",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"delivery_person\": {\n    \"first_name\": \"Ravi\",\n    \"last_name\": \"Kumar\",\n    \"email\": \"ravi.kumar@delivery.com\",\n    \"mobile\": \"9876543214\",\n    \"vehicle_type\": \"bike\",\n    \"vehicle_number\": \"MH01AB1234\",\n    \"license_number\": \"LIC123456\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/delivery_people",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"delivery_people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Product Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product_id\": 1,\n  \"pincode\": \"400001\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/delivery/check_product",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"delivery",
+								"check_product"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coupons Management",
+			"description": "Coupon related endpoints",
+			"item": [
+				{
+					"name": "Get All Coupons",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"coupon\": {\n    \"code\": \"SAVE10\",\n    \"description\": \"Save 10% on all products\",\n    \"discount_type\": \"percentage\",\n    \"discount_value\": 10,\n    \"minimum_amount\": 500,\n    \"maximum_discount\": 1000,\n    \"usage_limit\": 100,\n    \"valid_from\": \"2024-01-01T00:00:00Z\",\n    \"valid_until\": \"2024-12-31T23:59:59Z\",\n    \"status\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Coupon Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/coupons/{{coupon_id}}/toggle_status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons",
+								"{{coupon_id}}",
+								"toggle_status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Franchise Management",
+			"description": "Franchise related endpoints",
+			"item": [
+				{
+					"name": "Get All Franchises",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/franchises",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"franchises"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Franchise",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"franchise\": {\n    \"name\": \"Mumbai Central Franchise\",\n    \"email\": \"mumbai.central@franchise.com\",\n    \"mobile\": \"9876543215\",\n    \"contact_person_name\": \"Amit Shah\",\n    \"business_type\": \"retail\",\n    \"address\": \"Central Mumbai\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"400001\",\n    \"franchise_fee\": 500000,\n    \"commission_percentage\": 15,\n    \"territory\": \"Central Mumbai\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/franchises",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"franchises"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Franchise Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/franchises/{{franchise_id}}/toggle_status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"franchises",
+								"{{franchise_id}}",
+								"toggle_status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-generate request ID for tracking",
+					"pm.globals.set('request_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+					"",
+					"// Set timestamp",
+					"pm.globals.set('timestamp', new Date().toISOString());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for response time",
+					"pm.test('Response time is less than 10000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(10000);",
+					"});",
+					"",
+					"// Log response for debugging",
+					"console.log('Response Status:', pm.response.status);",
+					"console.log('Response Time:', pm.response.responseTime + 'ms');"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "category_id",
+			"value": "1"
+		},
+		{
+			"key": "product_id",
+			"value": "1"
+		},
+		{
+			"key": "customer_id",
+			"value": "1"
+		},
+		{
+			"key": "booking_id",
+			"value": "1"
+		},
+		{
+			"key": "order_id",
+			"value": "1"
+		},
+		{
+			"key": "coupon_id",
+			"value": "1"
+		},
+		{
+			"key": "franchise_id",
+			"value": "1"
+		}
+	]
+}

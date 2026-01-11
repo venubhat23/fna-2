@@ -131,7 +131,7 @@
               <tr>
                 <td>
                   <div>
-                    <strong><%= receipt.policy_type.humanize %> Policy</strong>
+                    <strong><%= receipt.policy_type&.humanize || 'Unknown' %> Policy</strong>
                     <br>
                     <small class="text-muted">
                       Policy #<%= receipt.policy_id %>
@@ -251,7 +251,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="distributionModalLabel<%= receipt.id %>">
-            Distribution Details - <%= receipt.policy_type.humanize %> Policy #<%= receipt.policy_id %>
+            Distribution Details - <%= receipt.policy_type&.humanize || 'Unknown' %> Policy #<%= receipt.policy_id %>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -284,7 +284,7 @@
                   <% receipt.payout_distributions.each do |distribution| %>
                     <tr>
                       <td>
-                        <strong><%= distribution.recipient_type.humanize %></strong>
+                        <strong><%= distribution.recipient_type&.humanize || 'Unknown' %></strong>
                         <% if distribution.recipient_name != 'Unknown' %>
                           <br>
                           <small class="text-muted"><%= distribution.recipient_name %></small>

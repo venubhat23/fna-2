@@ -21,7 +21,7 @@ def create_or_update_user(email, attributes)
 end
 
 # Create/Update Admin User
-admin_user = create_or_update_user('admin@drwise.com', {
+admin_user = create_or_update_user('admin@dhanvantri.com', {
   first_name: 'Admin',
   last_name: 'User',
   password: 'admin123456',
@@ -33,7 +33,7 @@ admin_user = create_or_update_user('admin@drwise.com', {
 })
 
 # Create/Update Agent User
-agent_user = create_or_update_user('subagent@drwise.com', {
+agent_user = create_or_update_user('subagent@dhanvantri.com', {
   first_name: 'Rajesh',
   last_name: 'Kumar',
   password: 'subagent123456',
@@ -68,8 +68,8 @@ customer2_user = create_or_update_user('customer2@example.com', {
 })
 
 puts "\n✅ Test users ready:"
-puts "Admin: admin@drwise.com / admin123456"
-puts "Agent: subagent@drwise.com / subagent123456"
+puts "Admin: admin@dhanvantri.com / admin123456"
+puts "Agent: subagent@dhanvantri.com / subagent123456"
 puts "Customer1: customer1@example.com / customer123456"
 puts "Customer2: customer2@example.com / customer123456"
 

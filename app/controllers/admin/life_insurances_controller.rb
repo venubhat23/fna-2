@@ -6,19 +6,19 @@ class Admin::LifeInsurancesController < Admin::ApplicationController
   def index
     @life_insurances = LifeInsurance.includes(:customer, :sub_agent, :agency_code, :broker)
 
-    # Tab-based filtering for DrWise vs Non-DrWise policies
-    @current_tab = params[:tab] || 'drwise'
+    # Tab-based filtering for Dhanvantari Farm vs Non-Dhanvantari Farm policies
+    @current_tab = params[:tab] || 'dhanvantri'
 
     case @current_tab
-    when 'drwise'
-      # DrWise policies: Admin added policies (is_admin_added: true AND others false)
+    when 'dhanvantri'
+      # Dhanvantari Farm policies: Admin added policies (is_admin_added: true AND others false)
       @life_insurances = @life_insurances.where(
         is_admin_added: true,
         is_customer_added: false,
         is_agent_added: false
       )
-    when 'non_drwise'
-      # Non-DrWise policies: Customer or Agent added policies
+    when 'non_dhanvantri'
+      # Non-Dhanvantari Farm policies: Customer or Agent added policies
       @life_insurances = @life_insurances.where(
         '(is_customer_added = ? AND is_admin_added = ? AND is_agent_added = ?) OR (is_agent_added = ? AND is_customer_added = ? AND is_admin_added = ?)',
         true, false, false, true, false, false
@@ -338,38 +338,38 @@ class Admin::LifeInsurancesController < Admin::ApplicationController
   end
 
   def calculate_tab_statistics
-    # Calculate statistics for all DrWise policies
-    drwise_policies = LifeInsurance.where(
+    # Calculate statistics for all Dhanvantari Farm policies
+    dhanvantri_policies = LifeInsurance.where(
       is_admin_added: true,
       is_customer_added: false,
       is_agent_added: false
     )
 
-    @drwise_count = drwise_policies.count
-    @drwise_premium = drwise_policies.sum(:total_premium) || 0
-    @drwise_coverage = drwise_policies.sum(:sum_insured) || 0
+    @dhanvantri_count = dhanvantri_policies.count
+    @dhanvantri_premium = dhanvantri_policies.sum(:total_premium) || 0
+    @dhanvantri_coverage = dhanvantri_policies.sum(:sum_insured) || 0
 
-    # Calculate statistics for all Non-DrWise policies
-    non_drwise_policies = LifeInsurance.where(
+    # Calculate statistics for all Non-Dhanvantari Farm policies
+    non_dhanvantri_policies = LifeInsurance.where(
       '(is_customer_added = ? AND is_admin_added = ? AND is_agent_added = ?) OR (is_agent_added = ? AND is_customer_added = ? AND is_admin_added = ?)',
       true, false, false, true, false, false
     )
 
-    @non_drwise_count = non_drwise_policies.count
-    @non_drwise_premium = non_drwise_policies.sum(:total_premium) || 0
-    @non_drwise_coverage = non_drwise_policies.sum(:sum_insured) || 0
+    @non_dhanvantri_count = non_dhanvantri_policies.count
+    @non_dhanvantri_premium = non_dhanvantri_policies.sum(:total_premium) || 0
+    @non_dhanvantri_coverage = non_dhanvantri_policies.sum(:sum_insured) || 0
 
     # Set current tab statistics
-    if @current_tab == 'drwise'
-      @total_policies_count = @drwise_count
-      @total_premium_amount = @drwise_premium
-      @total_coverage_amount = @drwise_coverage
-      @covered_lives_count = drwise_policies.joins(:customer).distinct.count('customers.id')
+    if @current_tab == 'dhanvantri'
+      @total_policies_count = @dhanvantri_count
+      @total_premium_amount = @dhanvantri_premium
+      @total_coverage_amount = @dhanvantri_coverage
+      @covered_lives_count = dhanvantri_policies.joins(:customer).distinct.count('customers.id')
     else
-      @total_policies_count = @non_drwise_count
-      @total_premium_amount = @non_drwise_premium
-      @total_coverage_amount = @non_drwise_coverage
-      @covered_lives_count = non_drwise_policies.joins(:customer).distinct.count('customers.id')
+      @total_policies_count = @non_dhanvantri_count
+      @total_premium_amount = @non_dhanvantri_premium
+      @total_coverage_amount = @non_dhanvantri_coverage
+      @covered_lives_count = non_dhanvantri_policies.joins(:customer).distinct.count('customers.id')
     end
   end
 end

@@ -1,0 +1,141 @@
+<div class="delivery-rule-row border rounded p-3 mb-3">
+  <%= f.hidden_field :_destroy %>
+
+  <div class="row g-3">
+    <div class="col-md-3">
+      <%= f.label :rule_type, "Rule Type", class: "form-label" %>
+      <%= f.select :rule_type,
+          options_for_select([
+            ['Select Type', ''],
+            ['All Locations', 'everywhere'],
+            ['Specific States', 'state'],
+            ['Specific Cities', 'city'],
+            ['Specific Pincodes', 'pincode']
+          ], f.object.rule_type),
+          {},
+          { class: "form-select", name: "#{f.object_name}[rule_type]" } %>
+    </div>
+
+    <div class="col-md-4 location-data-group" style="<%= f.object.rule_type == 'everywhere' ? 'display: none;' : '' %>">
+      <%= f.label :location_data, "Location Data", class: "form-label" %>
+
+      <!-- State Multiselect -->
+      <div class="state-select-group" style="<%= f.object.rule_type != 'state' ? 'display: none;' : '' %>">
+        <%
+          # Get selected states from JSON
+          selected_states = if f.object.location_data.present? && f.object.rule_type == 'state'
+            begin
+              JSON.parse(f.object.location_data)
+            rescue JSON::ParserError
+              []
+            end
+          else
+            []
+          end
+        %>
+        <%= select_tag "#{f.object_name}[location_data_states][]",
+            options_from_collection_for_select(indian_states.map { |s| [s, s] }, :last, :first, selected_states),
+            {
+              multiple: true,
+              class: "form-control multiselect-states",
+              data: {
+                placeholder: "Select states...",
+                'allow-clear': true
+              }
+            } %>
+        <div class="form-text">Select one or more states for delivery</div>
+      </div>
+
+      <!-- City Multiselect -->
+      <div class="city-select-group" style="<%= f.object.rule_type != 'city' ? 'display: none;' : '' %>">
+        <%
+          # Get selected cities from JSON
+          selected_cities = if f.object.location_data.present? && f.object.rule_type == 'city'
+            begin
+              JSON.parse(f.object.location_data)
+            rescue JSON::ParserError
+              []
+            end
+          else
+            []
+          end
+        %>
+        <%= select_tag "#{f.object_name}[location_data_cities][]",
+            options_from_collection_for_select(all_indian_cities.map { |c| [c, c] }, :last, :first, selected_cities),
+            {
+              multiple: true,
+              class: "form-control multiselect-cities",
+              data: {
+                placeholder: "Select cities...",
+                'allow-clear': true
+              }
+            } %>
+        <div class="form-text">Select one or more cities for delivery</div>
+      </div>
+
+      <!-- Pincode Input (unchanged) -->
+      <div class="pincode-input-group" style="<%= f.object.rule_type != 'pincode' ? 'display: none;' : '' %>">
+        <%
+          # Convert JSON array back to comma-separated string for pincodes
+          pincode_value = if f.object.location_data.present? && f.object.rule_type == 'pincode'
+            begin
+              JSON.parse(f.object.location_data).join(', ')
+            rescue JSON::ParserError
+              f.object.location_data
+            end
+          else
+            ''
+          end
+        %>
+        <%= text_area_tag "#{f.object_name}[location_data_pincodes]", pincode_value,
+            class: "form-control", rows: 2,
+            placeholder: "Enter pincodes separated by commas (e.g., 560001, 560002)" %>
+        <div class="form-text">Enter pincodes separated by commas</div>
+      </div>
+
+      <!-- Hidden field to store the final JSON data -->
+      <%= hidden_field_tag "#{f.object_name}[location_data]", f.object.location_data, class: "location-data-hidden" %>
+    </div>
+
+    <div class="col-md-2">
+      <%= f.label :delivery_days, class: "form-label" %>
+      <%= f.number_field :delivery_days, class: "form-control", min: 1, value: f.object.delivery_days || 7 %>
+    </div>
+
+    <div class="col-md-2">
+      <%= f.label :delivery_charge, "Delivery Charge (₹)", class: "form-label" %>
+      <%= f.number_field :delivery_charge, class: "form-control", step: 0.01, min: 0, value: f.object.delivery_charge || 0 %>
+    </div>
+
+    <div class="col-md-1 d-flex align-items-end">
+      <button type="button" class="btn btn-outline-danger remove-delivery-rule" title="Remove Rule">
+        <i class="ri-delete-bin-line"></i>
+      </button>
+    </div>
+  </div>
+
+  <% if f.object.rule_type.present? && f.object.rule_type != 'everywhere' %>
+    <div class="row mt-2">
+      <div class="col-12">
+        <small class="text-muted">
+          Current rule: <%= f.object.rule_description %>
+        </small>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<%
+  def get_placeholder_for_rule_type(rule_type)
+    case rule_type
+    when 'state'
+      'Enter states separated by commas (e.g., Karnataka, Tamil Nadu)'
+    when 'city'
+      'Enter cities separated by commas (e.g., Bangalore, Chennai)'
+    when 'pincode'
+      'Enter pincodes separated by commas (e.g., 560001, 560002)'
+    else
+      ''
+    end
+  end
+%>

@@ -1,0 +1,529 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Product Details</h2>
+    <p class="text-muted mb-0">View and manage product information</p>
+  </div>
+  <div>
+    <%= link_to admin_products_path, class: "btn btn-secondary me-2" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Products
+    <% end %>
+    <%= link_to edit_admin_product_path(@product), class: "btn btn-primary" do %>
+      <i class="bi bi-pencil me-1"></i>
+      Edit Product
+    <% end %>
+  </div>
+</div>
+
+<!-- Product Details -->
+<div class="row">
+  <div class="col-xl-9">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="row gx-lg-5">
+            <div class="col-xl-4 col-md-8 mx-auto">
+              <!-- Product Images -->
+              <div class="product-img-slider sticky-side-div">
+                <% if @product.images.attached? %>
+                  <div class="swiper product-thumbnail-slider p-2 rounded bg-light">
+                    <div class="swiper-wrapper">
+                      <% @product.images.each do |image| %>
+                        <div class="swiper-slide">
+                          <%= image_tag image, class: "img-fluid d-block", style: "height: 300px; width: 100%; object-fit: cover;" %>
+                        </div>
+                      <% end %>
+                    </div>
+                    <% if @product.images.count > 1 %>
+                      <div class="swiper-button-next"></div>
+                      <div class="swiper-button-prev"></div>
+                    <% end %>
+                  </div>
+
+                  <!-- Thumbnail navigation -->
+                  <% if @product.images.count > 1 %>
+                    <div class="swiper product-nav-slider mt-2">
+                      <div class="swiper-wrapper">
+                        <% @product.images.each do |image| %>
+                          <div class="swiper-slide">
+                            <%= image_tag image, class: "img-fluid d-block rounded", style: "height: 60px; width: 100%; object-fit: cover; cursor: pointer;" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 300px;">
+                    <div class="text-center">
+                      <i class="bi bi-image display-4 text-muted"></i>
+                      <p class="text-muted mt-2">No images uploaded</p>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="col-xl-8">
+              <div class="mt-xl-0 mt-5">
+                <div class="d-flex">
+                  <div class="flex-grow-1">
+                    <h4><%= @product.name %></h4>
+                    <div class="hstack gap-3 flex-wrap">
+                      <div><span class="text-muted fw-medium">SKU:</span> <span class="fw-medium"><%= @product.sku %></span></div>
+                      <div class="vr"></div>
+                      <div><span class="text-muted fw-medium">Category:</span>
+                        <%= link_to @product.category.name, admin_category_path(@product.category), class: "fw-medium" %>
+                      </div>
+                      <div class="vr"></div>
+                      <div>
+                        <% case @product.status %>
+                        <% when 'active' %>
+                          <span class="badge bg-success-subtle text-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Active
+                          </span>
+                        <% when 'inactive' %>
+                          <span class="badge bg-danger-subtle text-danger">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Inactive
+                          </span>
+                        <% when 'draft' %>
+                          <span class="badge bg-warning-subtle text-warning">
+                            <i class="bi bi-pencil me-1"></i>
+                            Draft
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mt-4">
+                  <div class="col-lg-3 col-sm-6">
+                    <div class="p-2 border border-dashed rounded">
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                          <div class="avatar-title rounded bg-transparent text-success fs-24">
+                            <i class="bi bi-currency-rupee"></i>
+                          </div>
+                        </div>
+                        <div class="flex-grow-1">
+                          <p class="text-muted mb-1">
+                            <%= @product.discounted? ? 'Sale Price' : 'Price' %>
+                            <% if @product.discounted? %>
+                              <span class="badge bg-success-subtle text-success ms-1">
+                                <%= @product.discount_percentage.round(1) %>% OFF
+                              </span>
+                            <% end %>
+                          </p>
+                          <h5 class="mb-0 text-success">₹<%= @product.final_price_after_discount.round(2) %></h5>
+                          <% if @product.discounted? %>
+                            <small class="text-muted text-decoration-line-through">
+                              MRP: ₹<%= (@product.original_price || @product.price).round(2) %>
+                            </small>
+                            <br>
+                            <small class="text-success fw-medium">
+                              You save: ₹<%= @product.savings_amount.round(2) %>
+                            </small>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-lg-3 col-sm-6">
+                    <div class="p-2 border border-dashed rounded">
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                          <div class="avatar-title rounded bg-transparent text-info fs-24">
+                            <i class="bi bi-box-seam"></i>
+                          </div>
+                        </div>
+                        <div class="flex-grow-1">
+                          <p class="text-muted mb-1">Stock</p>
+                          <h5 class="mb-0 <%= @product.stock_status_class %>"><%= @product.stock %></h5>
+                          <small class="text-muted"><%= @product.stock_status %></small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <% if @product.discounted? %>
+                    <div class="col-lg-3 col-sm-6">
+                      <div class="p-2 border border-dashed rounded">
+                        <div class="d-flex align-items-center">
+                          <div class="avatar-sm me-2">
+                            <div class="avatar-title rounded bg-transparent text-warning fs-24">
+                              <i class="bi bi-percent"></i>
+                            </div>
+                          </div>
+                          <div class="flex-grow-1">
+                            <p class="text-muted mb-1">Discount</p>
+                            <h5 class="mb-0"><%= @product.discount_percentage %>%</h5>
+                            <small class="text-muted">Off regular price</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <!-- Profit Margin Card -->
+                  <% if @product.buying_price.present? %>
+                    <div class="col-lg-3 col-sm-6">
+                      <div class="p-2 border border-dashed rounded">
+                        <div class="d-flex align-items-center">
+                          <div class="avatar-sm me-2">
+                            <div class="avatar-title rounded bg-transparent <%= @product.profitable? ? 'text-success' : (@product.profit_amount == 0 ? 'text-warning' : 'text-danger') %> fs-24">
+                              <i class="bi bi-graph-up"></i>
+                            </div>
+                          </div>
+                          <div class="flex-grow-1">
+                            <p class="text-muted mb-1">Profit</p>
+                            <h5 class="mb-0 <%= @product.profit_status_class %>">₹<%= @product.profit_amount.round(2) %></h5>
+                            <small class="<%= @product.profit_status_class %>">
+                              <%= @product.profit_margin_percentage.round(1) %>% margin
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <div class="col-lg-3 col-sm-6">
+                    <div class="p-2 border border-dashed rounded">
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-2">
+                          <div class="avatar-title rounded bg-transparent text-primary fs-24">
+                            <i class="bi bi-box"></i>
+                          </div>
+                        </div>
+                        <div class="flex-grow-1">
+                          <p class="text-muted mb-1">Weight</p>
+                          <h5 class="mb-0"><%= @product.weight || '-' %></h5>
+                          <% if @product.weight %>
+                            <small class="text-muted">kg</small>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <% if @product.description.present? %>
+                  <div class="mt-4">
+                    <h5 class="fs-14 mb-3">Product Description</h5>
+                    <p class="text-muted"><%= simple_format(@product.description) %></p>
+                  </div>
+                <% end %>
+
+                <% if @product.dimensions.present? %>
+                  <div class="mt-3">
+                    <h5 class="fs-14 mb-3">Dimensions</h5>
+                    <p class="text-muted"><%= @product.dimensions %></p>
+                  </div>
+                <% end %>
+
+                <!-- Discount Details -->
+                <% if @product.discounted? %>
+                  <div class="mt-4">
+                    <h5 class="fs-14 mb-3">
+                      <i class="bi bi-percent me-2"></i>
+                      Discount Details
+                    </h5>
+                    <div class="card border-success">
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <% if @product.discount_type.present? %>
+                            <div class="col-md-6">
+                              <div class="d-flex justify-content-between">
+                                <span class="text-muted">Discount Type:</span>
+                                <span class="fw-medium">
+                                  <%= @product.discount_type.humanize %>
+                                  <% if @product.discount_type == 'percentage' %>
+                                    (<%= @product.discount_value %>%)
+                                  <% elsif @product.discount_type == 'fixed' %>
+                                    (₹<%= @product.discount_value %>)
+                                  <% end %>
+                                </span>
+                              </div>
+                            </div>
+                          <% end %>
+
+                          <% if @product.original_price.present? %>
+                            <div class="col-md-6">
+                              <div class="d-flex justify-content-between">
+                                <span class="text-muted">Original Price:</span>
+                                <span class="fw-medium">₹<%= @product.original_price.round(2) %></span>
+                              </div>
+                            </div>
+                          <% end %>
+
+                          <% if @product.discount_amount.present? %>
+                            <div class="col-md-6">
+                              <div class="d-flex justify-content-between">
+                                <span class="text-muted">Discount Amount:</span>
+                                <span class="fw-medium text-success">-₹<%= @product.discount_amount.round(2) %></span>
+                              </div>
+                            </div>
+                          <% end %>
+
+                          <div class="col-md-6">
+                            <div class="d-flex justify-content-between">
+                              <span class="text-muted">Final Price:</span>
+                              <span class="fw-bold text-primary">₹<%= @product.final_price_after_discount.round(2) %></span>
+                            </div>
+                          </div>
+
+                          <div class="col-12">
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <span class="text-muted">You Save:</span>
+                              <div class="text-end">
+                                <span class="fw-bold text-success h6 mb-0">₹<%= @product.savings_amount.round(2) %></span>
+                                <br>
+                                <small class="text-muted">(<%= @product.discount_percentage.round(1) %>% off)</small>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
+                <% if @product.tags.present? %>
+                  <div class="mt-3">
+                    <h5 class="fs-14 mb-3">Tags</h5>
+                    <div class="hstack gap-2">
+                      <% @product.tags.split(',').each do |tag| %>
+                        <span class="badge bg-light text-muted"><%= tag.strip %></span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Delivery Rules -->
+    <% if @delivery_rules.any? %>
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0">Delivery Rules (<%= @delivery_rules.count %>)</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0 fw-semibold">Rule Type</th>
+                  <th class="border-0 fw-semibold">Locations</th>
+                  <th class="border-0 fw-semibold">Delivery Days</th>
+                  <th class="border-0 fw-semibold">Delivery Charge</th>
+                  <th class="border-0 fw-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @delivery_rules.each do |rule| %>
+                  <tr>
+                    <td class="align-middle">
+                      <span class="badge bg-primary-subtle text-primary"><%= rule.rule_type&.humanize || 'Unknown' %></span>
+                    </td>
+                    <td class="align-middle">
+                      <%= rule.formatted_locations %>
+                    </td>
+                    <td class="align-middle">
+                      <span class="fw-medium"><%= rule.delivery_days || 7 %> days</span>
+                    </td>
+                    <td class="align-middle">
+                      <span class="fw-medium">
+                        <%= rule.delivery_charge > 0 ? "₹#{rule.delivery_charge}" : 'Free' %>
+                      </span>
+                    </td>
+                    <td class="align-middle">
+                      <% if rule.is_excluded? %>
+                        <span class="badge bg-danger-subtle text-danger">Excluded</span>
+                      <% else %>
+                        <span class="badge bg-success-subtle text-success">Included</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+  <div class="col-xl-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Quick Actions</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <%= link_to edit_admin_product_path(@product), class: "btn btn-primary" do %>
+            <i class="bi bi-pencil me-1"></i> Edit Product
+          <% end %>
+
+          <%= link_to admin_products_path, class: "btn btn-secondary" do %>
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+          <% end %>
+
+          <hr>
+
+          <%= link_to admin_product_path(@product), method: :delete,
+              class: "btn btn-outline-danger",
+              confirm: "Are you sure you want to delete this product? This action cannot be undone." do %>
+            <i class="bi bi-trash me-1"></i> Delete Product
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Product Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="ps-0">
+                  <span class="text-muted">Created</span>
+                </td>
+                <td class="pe-0">
+                  <span class="fw-medium"><%= @product.created_at.strftime("%d %b %Y") %></span>
+                </td>
+              </tr>
+              <tr>
+                <td class="ps-0">
+                  <span class="text-muted">Last Updated</span>
+                </td>
+                <td class="pe-0">
+                  <span class="fw-medium"><%= @product.updated_at.strftime("%d %b %Y") %></span>
+                </td>
+              </tr>
+              <% if @product.meta_title.present? %>
+                <tr>
+                  <td class="ps-0">
+                    <span class="text-muted">Meta Title</span>
+                  </td>
+                  <td class="pe-0">
+                    <span class="fw-medium"><%= @product.meta_title %></span>
+                  </td>
+                </tr>
+              <% end %>
+              <% if @product.meta_description.present? %>
+                <tr>
+                  <td class="ps-0" colspan="2">
+                    <span class="text-muted">Meta Description</span><br>
+                    <small class="text-muted"><%= @product.meta_description %></small>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delivery Test -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Test Delivery</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with url: '#', method: :get, local: false, id: "delivery-test-form" do |form| %>
+          <%= form.text_field :pincode, class: "form-control mb-2", placeholder: "Enter pincode", maxlength: 6 %>
+          <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="testDelivery()">
+            Check Delivery
+          </button>
+        <% end %>
+
+        <div id="delivery-result" class="mt-3" style="display: none;">
+          <div class="alert alert-info mb-0">
+            <div id="delivery-message"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function testDelivery() {
+  const pincodeInput = document.querySelector('#delivery-test-form input[name="pincode"]');
+  const resultDiv = document.getElementById('delivery-result');
+  const messageDiv = document.getElementById('delivery-message');
+  const pincode = pincodeInput.value.trim();
+
+  if (!pincode || pincode.length !== 6) {
+    messageDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Please enter a valid 6-digit pincode';
+    resultDiv.querySelector('.alert').className = 'alert alert-danger mb-0';
+    resultDiv.style.display = 'block';
+    return;
+  }
+
+  // Simulate delivery check (replace with actual API call)
+  const isDeliverable = checkDeliveryRules(pincode);
+
+  if (isDeliverable.deliverable) {
+    messageDiv.innerHTML = `
+      <i class="bi bi-check-circle me-1"></i>
+      <strong>Delivery Available!</strong><br>
+      <small>
+        Estimated delivery: ${isDeliverable.delivery_days} days<br>
+        Delivery charge: ${isDeliverable.delivery_charge > 0 ? '₹' + isDeliverable.delivery_charge : 'Free'}
+      </small>
+    `;
+    resultDiv.querySelector('.alert').className = 'alert alert-success mb-0';
+  } else {
+    messageDiv.innerHTML = '<i class="bi bi-x-circle me-1"></i><strong>Delivery not available</strong> for this pincode';
+    resultDiv.querySelector('.alert').className = 'alert alert-danger mb-0';
+  }
+
+  resultDiv.style.display = 'block';
+}
+
+function checkDeliveryRules(pincode) {
+  // This should be replaced with actual server-side logic
+  const deliveryRules = <%= raw @delivery_rules.map { |rule|
+    {
+      rule_type: rule.rule_type || 'everywhere',
+      location_data: rule.location_list,
+      delivery_days: rule.delivery_days || 7,
+      delivery_charge: rule.delivery_charge || 0
+    }
+  }.to_json %>;
+
+  // Check if there's an 'everywhere' rule
+  const allRule = deliveryRules.find(rule => rule.rule_type === 'everywhere');
+  if (allRule) {
+    return {
+      deliverable: true,
+      delivery_days: allRule.delivery_days,
+      delivery_charge: allRule.delivery_charge
+    };
+  }
+
+  // Check pincode-specific rules
+  const pincodeRules = deliveryRules.filter(rule => rule.rule_type === 'pincode');
+  for (const rule of pincodeRules) {
+    if (rule.location_data.includes(pincode)) {
+      return {
+        deliverable: true,
+        delivery_days: rule.delivery_days,
+        delivery_charge: rule.delivery_charge
+      };
+    }
+  }
+
+  return { deliverable: false };
+}
+</script>

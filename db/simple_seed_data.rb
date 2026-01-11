@@ -69,7 +69,7 @@ admins = 5.times.map do |i|
   User.create!(
     first_name: FIRST_NAMES[i],
     last_name: LAST_NAMES[i],
-    email: "admin#{existing_admin_count + i + 1}@drwise.com",
+    email: "admin#{existing_admin_count + i + 1}@dhanvantri.com",
     password: 'password123',
     mobile: random_mobile,
     user_type: 'admin',
@@ -82,7 +82,7 @@ agents = 20.times.map do |i|
   User.create!(
     first_name: FIRST_NAMES[i % FIRST_NAMES.length],
     last_name: LAST_NAMES[i % LAST_NAMES.length],
-    email: "agent#{existing_agent_count + i + 1}@drwise.com",
+    email: "agent#{existing_agent_count + i + 1}@dhanvantri.com",
     password: 'password123',
     mobile: random_mobile,
     user_type: 'agent',
@@ -95,7 +95,7 @@ customers_users = 25.times.map do |i|
   User.create!(
     first_name: FIRST_NAMES[i % FIRST_NAMES.length],
     last_name: LAST_NAMES[i % LAST_NAMES.length],
-    email: "customer#{existing_customer_count + i + 1}@drwise.com",
+    email: "customer#{existing_customer_count + i + 1}@dhanvantri.com",
     password: 'password123',
     mobile: random_mobile,
     user_type: 'customer',
@@ -167,7 +167,7 @@ distributors = 15.times.map do |i|
     last_name: name_parts[1],
     company_name: COMPANY_NAMES[i % COMPANY_NAMES.length],
     mobile: random_mobile,
-    email: "dist#{existing_distributor_count + i + 1}@drwise.com",
+    email: "dist#{existing_distributor_count + i + 1}@dhanvantri.com",
     pan_no: random_pan,
     gst_no: "#{rand(10..35)}#{random_pan}#{rand(1..9)}Z#{rand(1..9)}",
     address: random_address,
@@ -197,7 +197,7 @@ sub_agents = 40.times.map do |i|
     first_name: name_parts[0],
     last_name: name_parts[1],
     mobile: random_mobile,
-    email: "subagent#{existing_subagent_count + i + 1}@drwise.com",
+    email: "subagent#{existing_subagent_count + i + 1}@dhanvantri.com",
     pan_no: random_pan,
     aadhar_no: rand(100000000000..999999999999).to_s,
     birth_date: random_date_between(45.years.ago, 21.years.ago),
@@ -224,7 +224,7 @@ investors = 20.times.map do |i|
     first_name: name_parts[0],
     last_name: name_parts[1],
     mobile: random_mobile,
-    email: "investor#{existing_investor_count + i + 1}@drwise.com",
+    email: "investor#{existing_investor_count + i + 1}@dhanvantri.com",
     birth_date: random_date_between(50.years.ago, 25.years.ago),
     gender: %w[Male Female].sample,
     pan_no: random_pan,
@@ -681,7 +681,7 @@ puts "="*60
 puts "\n🔑 Sample Login Credentials:"
 puts "="*40
 puts "Admin User:"
-puts "Email: admin1@drwise.com"
+puts "Email: admin1@dhanvantri.com"
 puts "Password: password123"
 puts ""
 puts "Agent User:"

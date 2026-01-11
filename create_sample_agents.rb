@@ -16,7 +16,7 @@ sample_agents = [
   {
     first_name: "Rajesh",
     last_name: "Kumar",
-    email: "rajesh.kumar@drwise.com",
+    email: "rajesh.kumar@dhanvantri.com",
     mobile: "9876543210",
     user_type: "agent",
     role: "agent_role",
@@ -32,7 +32,7 @@ sample_agents = [
   {
     first_name: "Priya",
     last_name: "Sharma",
-    email: "priya.sharma@drwise.com",
+    email: "priya.sharma@dhanvantri.com",
     mobile: "9876543211",
     user_type: "agent",
     role: "agent_role",
@@ -47,7 +47,7 @@ sample_agents = [
   {
     first_name: "Amit",
     last_name: "Patel",
-    email: "amit.patel@drwise.com",
+    email: "amit.patel@dhanvantri.com",
     mobile: "9876543212",
     user_type: "sub_agent",
     role: "agent_role",
@@ -63,7 +63,7 @@ sample_agents = [
   {
     first_name: "Sneha",
     last_name: "Reddy",
-    email: "sneha.reddy@drwise.com",
+    email: "sneha.reddy@dhanvantri.com",
     mobile: "9876543213",
     user_type: "agent",
     role: "manager",
@@ -78,7 +78,7 @@ sample_agents = [
   {
     first_name: "Admin",
     last_name: "User",
-    email: "admin@drwise.com",
+    email: "admin@dhanvantri.com",
     mobile: "9876543214",
     user_type: "admin",
     role: "super_admin",

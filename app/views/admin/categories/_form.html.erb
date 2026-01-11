@@ -1,0 +1,188 @@
+<%= form_with model: [:admin, @category], local: true, multipart: true, class: "row g-4" do |form| %>
+  <% if @category.errors.any? %>
+    <div class="col-12">
+      <div class="alert alert-danger border-0 shadow-sm">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+          <div>
+            <h6 class="alert-heading mb-1">Please fix the following errors:</h6>
+            <ul class="mb-0 small">
+              <% @category.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Details Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-info-circle text-primary"></i>
+          </div>
+          <h5 class="card-title mb-0">Basic Details</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :name, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-tag text-muted"></i>
+              </span>
+              <%= form.text_field :name, class: "form-control border-start-0 ps-0", placeholder: "Enter category name", required: true %>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :description, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                <i class="bi bi-text-left text-muted"></i>
+              </span>
+              <%= form.text_area :description, class: "form-control border-start-0 ps-0", rows: 4, placeholder: "Enter category description" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :display_order, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-sort-numeric-up text-muted"></i>
+              </span>
+              <%= form.number_field :display_order, class: "form-control border-start-0 ps-0", min: 0, value: @category.display_order || 0 %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Lower numbers appear first
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :status, "Status", class: "form-label fw-medium" %>
+            <div class="mt-2">
+              <div class="form-check form-switch">
+                <%= form.check_box :status, { class: "form-check-input", checked: @category.status != false }, "true", "false" %>
+                <%= form.label :status, class: "form-check-label fw-medium" do %>
+                  <i class="bi bi-check-circle text-success me-1"></i>
+                  Active
+                <% end %>
+              </div>
+              <div class="form-text">Toggle to activate/deactivate this category</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Upload Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-success bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-image text-success"></i>
+          </div>
+          <h5 class="card-title mb-0">Category Image</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :image, class: "form-label fw-medium" %>
+            <%= form.file_field :image, class: "form-control", accept: "image/*", id: "category-image-input" %>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Upload an image for this category (JPG, PNG, GIF - Max 2MB)
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-medium">
+              <span id="preview-label"><%= @category.image.attached? ? 'Current Image' : 'Image Preview' %></span>
+            </label>
+            <div class="image-preview-container p-3 border border-2 border-dashed rounded bg-light text-center" id="image-preview-container">
+              <% if @category.image.attached? %>
+                <%= image_tag @category.image, class: "img-thumbnail shadow-sm", id: "image-preview", style: "max-width: 150px; max-height: 150px;" %>
+              <% else %>
+                <div id="no-preview" class="text-muted">
+                  <i class="bi bi-image fs-1 d-block mb-2"></i>
+                  <small>No image selected</small>
+                </div>
+                <img id="image-preview" class="img-thumbnail shadow-sm d-none" style="max-width: 150px; max-height: 150px;" alt="Image preview">
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-end gap-2">
+          <%= link_to admin_categories_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-x-lg me-1"></i> Cancel
+          <% end %>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-<%= @category.new_record? ? 'plus-circle' : 'check-circle' %> me-1"></i>
+            <%= @category.new_record? ? 'Create Category' : 'Update Category' %>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const imageInput = document.getElementById('category-image-input');
+  const imagePreview = document.getElementById('image-preview');
+  const noPreview = document.getElementById('no-preview');
+  const previewLabel = document.getElementById('preview-label');
+
+  if (imageInput) {
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+          // Show the image preview
+          imagePreview.src = e.target.result;
+          imagePreview.classList.remove('d-none');
+
+          // Hide the "no preview" message if it exists
+          if (noPreview) {
+            noPreview.classList.add('d-none');
+          }
+
+          // Update the label
+          previewLabel.textContent = 'Image Preview';
+        };
+
+        reader.readAsDataURL(file);
+      } else if (!file) {
+        // If no file is selected, show the "no preview" message
+        imagePreview.classList.add('d-none');
+        if (noPreview) {
+          noPreview.classList.remove('d-none');
+        }
+        previewLabel.textContent = 'Image Preview';
+      }
+    });
+  }
+});
+</script>

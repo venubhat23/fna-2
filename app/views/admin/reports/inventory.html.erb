@@ -1,0 +1,133 @@
+<div class="page-header">
+  <h1>Inventory Reports</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Products</h5>
+        <h2><%= @total_products %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Stock Value</h5>
+        <h2>₹<%= number_with_delimiter(@total_stock_value || 0, delimiter: ',') %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Out of Stock</h5>
+        <h2 class="text-danger"><%= @out_of_stock %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Low Stock Alert</h5>
+        <h2 class="text-warning"><%= @low_stock %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5>Low Stock Products</h5>
+      </div>
+      <div class="card-body">
+        <% if @low_stock_products && @low_stock_products.any? %>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @low_stock_products.each do |product| %>
+                <tr>
+                  <td><%= product.name %></td>
+                  <td class="text-warning"><%= product.stock %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p>No low stock products.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5>Out of Stock Products</h5>
+      </div>
+      <div class="card-body">
+        <% if @out_of_stock_products && @out_of_stock_products.any? %>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @out_of_stock_products.each do |product| %>
+                <tr>
+                  <td><%= product.name %></td>
+                  <td class="text-danger">Out of Stock</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p>All products are in stock.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if @categories_stock && @categories_stock.any? %>
+  <div class="row mt-4">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <h5>Stock by Category</h5>
+        </div>
+        <div class="card-body">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Total Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @categories_stock.each do |category, stock| %>
+                <tr>
+                  <td><%= category %></td>
+                  <td><%= stock %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

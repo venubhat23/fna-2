@@ -3,8 +3,8 @@ import "@hotwired/turbo-rails"
 import "controllers"
 import * as bootstrap from "bootstrap"
 
-// Premium Drwise Admin JavaScript
-window.DrwiseAdmin = {
+// Premium Dhanvantri Admin JavaScript
+window.DhanvantriAdmin = {
 
   // Initialize the application
   init() {
@@ -184,7 +184,7 @@ function toggleSidebar() {
 
   if (sidebar.classList.contains('show')) {
     sidebar.classList.remove('show');
-    DrwiseAdmin.removeBackdrop();
+    DhanvantriAdmin.removeBackdrop();
   } else {
     sidebar.classList.add('show');
 
@@ -218,7 +218,7 @@ window.toggleSidebar = toggleSidebar;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  DrwiseAdmin.init();
+  DhanvantriAdmin.init();
 });
 
 // Enhanced dropdown functionality

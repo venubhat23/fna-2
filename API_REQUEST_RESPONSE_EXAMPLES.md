@@ -1,6 +1,6 @@
-# Drwise Mobile API - Request/Response Examples
+# Dhanvantri Mobile API - Request/Response Examples
 
-This document provides detailed request and response examples for all Drwise Mobile API endpoints with various scenarios including success cases, error cases, and edge cases.
+This document provides detailed request and response examples for all Dhanvantri Mobile API endpoints with various scenarios including success cases, error cases, and edge cases.
 
 ## Table of Contents
 1. [Authentication Examples](#authentication-examples)

@@ -1,0 +1,221 @@
+<!-- Reviews Display Section -->
+<div class="card shadow-sm">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="bi bi-chat-left-text me-2"></i>
+        Customer Reviews
+        <% if @review_summary[:total_reviews] > 0 %>
+          <span class="badge bg-primary ms-2"><%= @review_summary[:total_reviews] %></span>
+        <% end %>
+      </h5>
+    </div>
+  </div>
+  <div class="card-body">
+    <% if @review_summary[:total_reviews] > 0 %>
+      <!-- Rating Summary -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="text-center">
+            <h2 class="mb-1"><%= @review_summary[:average_rating] %></h2>
+            <div class="text-warning mb-2">
+              <%= @product.star_display %>
+            </div>
+            <p class="text-muted mb-0">
+              Based on <%= @review_summary[:total_reviews] %>
+              <%= 'review'.pluralize(@review_summary[:total_reviews]) %>
+            </p>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <h6 class="mb-3">Rating Breakdown</h6>
+          <% (5).downto(1).each do |rating| %>
+            <% count = @review_summary[:distribution][rating] || 0 %>
+            <div class="d-flex align-items-center mb-2">
+              <span class="me-2"><%= rating %> ⭐</span>
+              <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                <div class="progress-bar bg-warning" style="width: <%= count %>%"></div>
+              </div>
+              <small class="text-muted"><%= count.round(1) %>%</small>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Individual Reviews -->
+      <div class="reviews-list">
+        <% @reviews.each do |review| %>
+          <div class="review-item border-bottom py-4" data-review-id="<%= review.id %>">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="d-flex align-items-center">
+                <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-3">
+                  <i class="bi bi-person-fill text-white"></i>
+                </div>
+                <div>
+                  <h6 class="mb-0">
+                    <%= review.reviewer_display_name %>
+                    <% if review.verified_purchase? %>
+                      <span class="badge bg-success-subtle text-success ms-1">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Verified Purchase
+                      </span>
+                    <% end %>
+                  </h6>
+                  <small class="text-muted">
+                    <%= time_ago_in_words(review.created_at) %> ago
+                  </small>
+                </div>
+              </div>
+              <div class="text-end">
+                <div class="text-warning mb-1">
+                  <%= review.star_display %>
+                </div>
+                <small class="text-muted"><%= review.rating %>/5</small>
+              </div>
+            </div>
+
+            <!-- Review Title -->
+            <% if review.title.present? %>
+              <h6 class="mb-2 text-dark"><%= review.title %></h6>
+            <% end %>
+
+            <!-- Review Comment -->
+            <p class="mb-3"><%= simple_format(review.comment) %></p>
+
+            <!-- Pros and Cons -->
+            <% if review.has_pros_cons? %>
+              <div class="row mb-3">
+                <% if review.pros.present? %>
+                  <div class="col-md-6">
+                    <div class="bg-success-subtle p-3 rounded">
+                      <h6 class="text-success mb-2">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Pros
+                      </h6>
+                      <p class="mb-0 small"><%= simple_format(review.pros) %></p>
+                    </div>
+                  </div>
+                <% end %>
+                <% if review.cons.present? %>
+                  <div class="col-md-6">
+                    <div class="bg-warning-subtle p-3 rounded">
+                      <h6 class="text-warning mb-2">
+                        <i class="bi bi-dash-circle me-1"></i>
+                        Cons
+                      </h6>
+                      <p class="mb-0 small"><%= simple_format(review.cons) %></p>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <!-- Review Actions -->
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <button class="btn btn-sm btn-outline-primary helpful-btn"
+                        data-review-id="<%= review.id %>"
+                        data-helpful-count="<%= review.helpful_count %>">
+                  <i class="bi bi-hand-thumbs-up me-1"></i>
+                  Helpful (<span class="helpful-count"><%= review.helpful_count %></span>)
+                </button>
+              </div>
+              <div>
+                <% if review.review_quality_score >= 3 %>
+                  <span class="badge bg-info-subtle text-info">
+                    <i class="bi bi-award me-1"></i>
+                    Quality Review
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Load More Reviews -->
+      <% if @product.total_reviews > @reviews.count %>
+        <div class="text-center mt-4">
+          <button class="btn btn-outline-primary" id="load-more-reviews">
+            <i class="bi bi-arrow-down me-1"></i>
+            Load More Reviews
+          </button>
+        </div>
+      <% end %>
+
+    <% else %>
+      <!-- No Reviews Yet -->
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-chat-left-text text-muted" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="text-muted mb-2">No reviews yet</h5>
+        <p class="text-muted mb-4">
+          Be the first to share your thoughts about this product!
+        </p>
+        <a href="#review-form" class="btn btn-primary">
+          <i class="bi bi-star me-1"></i>
+          Write the First Review
+        </a>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Helpful button functionality
+  document.querySelectorAll('.helpful-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const reviewId = this.dataset.reviewId;
+      const countSpan = this.querySelector('.helpful-count');
+
+      // Disable button temporarily
+      this.disabled = true;
+
+      fetch(`/product_reviews/${reviewId}/mark_helpful`, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          countSpan.textContent = data.helpful_count;
+          this.classList.remove('btn-outline-primary');
+          this.classList.add('btn-primary');
+
+          // Show thank you message
+          showToast('success', data.message);
+        } else {
+          showToast('error', 'Failed to mark as helpful');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'An error occurred');
+      })
+      .finally(() => {
+        this.disabled = false;
+      });
+    });
+  });
+
+  function showToast(type, message) {
+    // Simple toast implementation
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+});
+</script>

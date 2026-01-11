@@ -1,0 +1,248 @@
+<!-- Example Delivery Validation Implementation -->
+
+<script>
+// Example implementation for checking delivery during product view/checkout
+class DeliveryChecker {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    // Bind event listeners
+    const checkButtons = document.querySelectorAll('.check-delivery-btn');
+    checkButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => this.handleDeliveryCheck(e));
+    });
+  }
+
+  async handleDeliveryCheck(event) {
+    const button = event.target;
+    const productId = button.dataset.productId;
+    const pincodeInput = button.closest('.delivery-check').querySelector('.pincode-input');
+    const pincode = pincodeInput.value.trim();
+
+    if (!this.validatePincode(pincode)) {
+      this.showResult(button, {
+        success: false,
+        message: 'Please enter a valid 6-digit pincode'
+      });
+      return;
+    }
+
+    button.disabled = true;
+    button.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i> Checking...';
+
+    try {
+      const result = await this.checkProductDelivery(productId, pincode);
+      this.showResult(button, result);
+    } catch (error) {
+      this.showResult(button, {
+        success: false,
+        message: 'Failed to check delivery. Please try again.'
+      });
+    } finally {
+      button.disabled = false;
+      button.innerHTML = 'Check Delivery';
+    }
+  }
+
+  async checkProductDelivery(productId, pincode) {
+    const response = await fetch('/api/delivery/check_product', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        pincode: pincode
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    return await response.json();
+  }
+
+  async checkCartDelivery(cartItems, pincode) {
+    const response = await fetch('/api/delivery/check_cart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        cart_items: cartItems,
+        pincode: pincode
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    return await response.json();
+  }
+
+  validatePincode(pincode) {
+    return /^\d{6}$/.test(pincode);
+  }
+
+  showResult(button, result) {
+    const resultContainer = button.closest('.delivery-check').querySelector('.delivery-result');
+
+    if (result.success) {
+      const data = result.data;
+      resultContainer.innerHTML = `
+        <div class="alert alert-success">
+          <i class="ri-check-circle-line me-1"></i>
+          <strong>Delivery Available!</strong><br>
+          <small>
+            Estimated delivery: ${data.delivery_days} days<br>
+            Delivery charge: ${data.delivery_charge > 0 ? '₹' + data.delivery_charge : 'Free'}
+          </small>
+        </div>
+      `;
+    } else {
+      resultContainer.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="ri-close-circle-line me-1"></i>
+          <strong>${result.message}</strong>
+        </div>
+      `;
+    }
+
+    resultContainer.style.display = 'block';
+
+    // Hide result after 10 seconds
+    setTimeout(() => {
+      resultContainer.style.display = 'none';
+    }, 10000);
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  new DeliveryChecker();
+});
+
+// Example cart validation for checkout page
+async function validateCartOnCheckout(cartItems, pincode) {
+  if (!cartItems || cartItems.length === 0) {
+    return {
+      success: false,
+      message: 'Cart is empty'
+    };
+  }
+
+  const deliveryChecker = new DeliveryChecker();
+  const result = await deliveryChecker.checkCartDelivery(cartItems, pincode);
+
+  if (result.success) {
+    const data = result.data;
+
+    // Update delivery summary in checkout
+    updateCheckoutSummary({
+      deliveryCharge: data.total_delivery_charge,
+      estimatedDays: data.estimated_delivery_days,
+      items: data.items
+    });
+
+    return result;
+  } else {
+    // Show which items cannot be delivered
+    showDeliveryErrors(result.data.items);
+    return result;
+  }
+}
+
+function updateCheckoutSummary(deliveryInfo) {
+  // Update delivery charge in order summary
+  const deliveryChargeElement = document.querySelector('.delivery-charge');
+  if (deliveryChargeElement) {
+    deliveryChargeElement.textContent = deliveryInfo.deliveryCharge > 0
+      ? `₹${deliveryInfo.deliveryCharge}`
+      : 'Free';
+  }
+
+  // Update estimated delivery
+  const deliveryDaysElement = document.querySelector('.delivery-days');
+  if (deliveryDaysElement) {
+    deliveryDaysElement.textContent = `${deliveryInfo.estimatedDays} days`;
+  }
+
+  // Update total amount
+  updateTotalAmount();
+}
+
+function showDeliveryErrors(items) {
+  const undeliverableItems = items.filter(item => !item.deliverable);
+
+  if (undeliverableItems.length > 0) {
+    const errorMessage = undeliverableItems.map(item =>
+      `${item.product_name}: ${item.error}`
+    ).join('\n');
+
+    alert(`Some items cannot be delivered:\n\n${errorMessage}\n\nPlease remove these items or change your delivery location.`);
+  }
+}
+
+function updateTotalAmount() {
+  // Calculate new total including delivery charges
+  const subtotal = parseFloat(document.querySelector('.subtotal').textContent.replace('₹', ''));
+  const deliveryCharge = parseFloat(document.querySelector('.delivery-charge').textContent.replace('₹', '') || 0);
+  const total = subtotal + deliveryCharge;
+
+  const totalElement = document.querySelector('.total-amount');
+  if (totalElement) {
+    totalElement.textContent = `₹${total.toFixed(2)}`;
+  }
+}
+</script>
+
+<!-- Example HTML for product page delivery check -->
+<div class="delivery-check mt-3">
+  <h6>Check Delivery</h6>
+  <div class="input-group mb-2">
+    <input type="text" class="form-control pincode-input" placeholder="Enter pincode" maxlength="6">
+    <button class="btn btn-outline-primary check-delivery-btn" data-product-id="<%= @product.id %>">
+      Check Delivery
+    </button>
+  </div>
+  <div class="delivery-result" style="display: none;"></div>
+</div>
+
+<!-- Example HTML for checkout page -->
+<div class="checkout-delivery mt-4">
+  <h5>Delivery Information</h5>
+  <div class="delivery-summary">
+    <div class="row">
+      <div class="col-6">
+        <strong>Delivery Charge:</strong>
+        <span class="delivery-charge">-</span>
+      </div>
+      <div class="col-6">
+        <strong>Estimated Delivery:</strong>
+        <span class="delivery-days">-</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-summary mt-3">
+    <div class="row">
+      <div class="col-6">Subtotal:</div>
+      <div class="col-6 text-end subtotal">₹0.00</div>
+    </div>
+    <div class="row">
+      <div class="col-6">Delivery:</div>
+      <div class="col-6 text-end delivery-charge">₹0.00</div>
+    </div>
+    <hr>
+    <div class="row fw-bold">
+      <div class="col-6">Total:</div>
+      <div class="col-6 text-end total-amount">₹0.00</div>
+    </div>
+  </div>
+</div>

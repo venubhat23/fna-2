@@ -1414,7 +1414,7 @@ class Api::V1::Mobile::AgentController < Api::V1::Mobile::BaseController
 
   private
 
-  def determine_drwise_policy(policy)
+  def determine_dhanvantri_policy(policy)
     # DR wise policy: Only admin added (not customer or agent added)
     # is_customer_added: false && is_agent_added: false && is_admin_added: true
     !policy.is_customer_added && !policy.is_agent_added && policy.is_admin_added
@@ -1697,7 +1697,7 @@ class Api::V1::Mobile::AgentController < Api::V1::Mobile::BaseController
       agent_percentage: agent_percentage,
       agent_commission: agent_commission,
       status: policy.respond_to?(:active?) ? (policy.active? ? 'Active' : 'Inactive') : 'Active',
-      is_drwise_policy: determine_drwise_policy(policy),
+      is_dhanvantri_policy: determine_dhanvantri_policy(policy),
       documents: documents,
       documents_count: documents.count,
       created_at: policy.created_at

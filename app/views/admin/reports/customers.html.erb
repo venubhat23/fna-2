@@ -1,0 +1,66 @@
+<div class="page-header">
+  <h1>Customer Reports</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Customers</h5>
+        <h2><%= @total_customers %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">New Customers</h5>
+        <h2><%= @new_customers %></h2>
+        <small class="text-muted">In selected period</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Active Customers</h5>
+        <h2><%= @active_customers %></h2>
+        <small class="text-muted">Made purchases</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>Customer Growth (Last 7 Days)</h5>
+      </div>
+      <div class="card-body">
+        <% if @customer_growth.any? %>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>New Customers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @customer_growth.each do |data| %>
+                <tr>
+                  <td><%= data[:date] %></td>
+                  <td><%= data[:count] %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p>No customer growth data available.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

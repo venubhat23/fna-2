@@ -1,0 +1,845 @@
+{
+	"info": {
+		"_postman_id": "a7b2c3d4-e5f6-4789-a0b1-c2d3e4f5g6h7",
+		"name": "Dhanvantri Mobile API",
+		"description": "Complete API collection for Dhanvantri Mobile Agent APIs including authentication, customer management, policy creation, leads, and insurance companies.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Agent Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success field\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Save auth token\", function () {",
+									"    if (pm.response.code === 200) {",
+									"        const response = pm.response.json();",
+									"        pm.environment.set(\"auth_token\", response.data.token);",
+									"        pm.environment.set(\"user_id\", response.data.user.id);",
+									"        pm.environment.set(\"user_name\", response.data.user.name);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"subagent@insurebook.com\",\n  \"password\": \"subagent123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Statistics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success field\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Response has agent_info and statistics\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('agent_info');",
+									"    pm.expect(jsonData.data).to.have.property('statistics');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "dashboard"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Customer Management",
+			"item": [
+				{
+					"name": "Get Customers List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has customers array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('customers');",
+									"    pm.expect(jsonData.data.customers).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Response has pagination\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('pagination');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/customers?page=1&per_page=10&filter=all",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "customers"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "filter",
+									"value": "all"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Agent Added Customers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has customers array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('customers');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/customers?filter=agent_added",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "customers"],
+							"query": [
+								{
+									"key": "filter",
+									"value": "agent_added"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Customer created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});",
+									"",
+									"pm.test(\"Save customer ID\", function () {",
+									"    if (pm.response.code === 201) {",
+									"        const response = pm.response.json();",
+									"        pm.environment.set(\"test_customer_id\", response.data.customer_id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_type\": \"individual\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"Customer\",\n  \"email\": \"test.customer{{$timestamp}}@example.com\",\n  \"mobile\": \"987654{{$randomInt}}\",\n  \"gender\": \"Male\",\n  \"birth_date\": \"1990-05-15\",\n  \"address\": \"123 Test Street\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pincode\": \"560001\",\n  \"pan_no\": \"ABCDE1234F\",\n  \"occupation\": \"Software Engineer\",\n  \"annual_income\": 1200000,\n  \"marital_status\": \"Single\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/customers",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "customers"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Policy Management",
+			"item": [
+				{
+					"name": "Get Policies List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has policies array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('policies');",
+									"    pm.expect(jsonData.data.policies).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/policies?page=1&per_page=10&policy_type=all",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "policies"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "policy_type",
+									"value": "all"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Health Policy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Health policy created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"client_id\": \"{{test_customer_id}}\",\n  \"policy_holder\": \"Self\",\n  \"insurance_company_id\": 5,\n  \"policy_type\": \"individual\",\n  \"insurance_type\": \"health\",\n  \"plan_name\": \"Star Family Health Plan\",\n  \"policy_number\": \"SH{{$timestamp}}\",\n  \"policy_booking_date\": \"{{$isoTimestamp}}\",\n  \"policy_start_date\": \"{{$isoTimestamp}}\",\n  \"policy_end_date\": \"2025-12-31\",\n  \"payment_mode\": \"yearly\",\n  \"sum_insured\": 500000,\n  \"net_premium\": 38136,\n  \"gst_percentage\": 18,\n  \"total_premium\": 45000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/policies/health",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "policies", "health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Life Policy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Life policy created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});",
+									"",
+									"pm.test(\"Response has policy data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('policy_id');",
+									"    pm.expect(jsonData.data).to.have.property('policy_number');",
+									"    pm.expect(jsonData.data).to.have.property('client_name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"client_id\": {{test_customer_id}},\n  \"policy_holder\": \"self\",\n  \"insured_name\": \"Rahul Sharma\",\n  \"insurance_company_id\": 3,\n  \"agency_code_id\": 12,\n  \"policy_type\": \"endowment\",\n  \"payment_mode\": \"yearly\",\n  \"policy_number\": \"LIFE{{$timestamp}}\",\n  \"policy_booking_date\": \"{{$isoTimestamp}}\",\n  \"policy_start_date\": \"{{$isoTimestamp}}\",\n  \"policy_end_date\": \"2045-12-15\",\n  \"policy_term_years\": 20,\n  \"premium_payment_term_years\": 15,\n  \"plan_name\": \"LIC Jeevan Anand\",\n  \"sum_insured\": 1000000,\n  \"net_premium\": 25000,\n  \"gst_percentage_year_1\": 4.5,\n  \"gst_percentage_year_2\": 2.25,\n  \"gst_percentage_year_3\": 2.25,\n  \"total_premium\": 26125,\n  \"reference_by_name\": \"Sub Agent Ramesh\",\n  \"installment_autopay_start_date\": \"2025-12-20\",\n  \"installment_autopay_end_date\": \"2026-12-20\",\n  \"nominees\": [\n    {\n      \"nominee_name\": \"Anita Sharma\",\n      \"relationship\": \"spouse\",\n      \"age\": 32\n    }\n  ],\n  \"bank_details\": {\n    \"bank_name\": \"HDFC Bank\",\n    \"account_type\": \"savings\",\n    \"account_number\": \"123456789012\",\n    \"ifsc_code\": \"HDFC0001234\",\n    \"account_holder_name\": \"Rahul Sharma\"\n  },\n  \"documents\": [\n    {\n      \"document_type\": \"policy_copy\",\n      \"document_file\": \"base64_encoded_string_placeholder\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/policies/life",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "policies", "life"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Motor Policy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Motor policy created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"{{test_customer_id}}\",\n  \"policy_holder\": \"Test Customer\",\n  \"plan_name\": \"Comprehensive Motor Plan\",\n  \"policy_number\": \"MTR{{$timestamp}}\",\n  \"insurance_company_name\": \"Bajaj Allianz General Insurance\",\n  \"policy_type\": \"New\",\n  \"policy_start_date\": \"{{$isoTimestamp}}\",\n  \"policy_end_date\": \"2025-12-31\",\n  \"payment_mode\": \"yearly\",\n  \"sum_insured\": 800000,\n  \"net_premium\": 15000,\n  \"gst_percentage\": 18,\n  \"total_premium\": 17700,\n  \"agent_commission_percentage\": 10,\n  \"commission_amount\": 1770,\n  \"vehicle_make\": \"Maruti Suzuki\",\n  \"vehicle_model\": \"Swift\",\n  \"vehicle_number\": \"KA01AB{{$randomInt}}\",\n  \"vehicle_year\": \"2022\",\n  \"engine_number\": \"ABC{{$randomInt}}\",\n  \"chassis_number\": \"DEF{{$randomInt}}\",\n  \"vehicle_type\": \"Four Wheeler\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/policies/motor",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "policies", "motor"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Other Policy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Other policy created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"{{test_customer_id}}\",\n  \"policy_holder\": \"Test Customer\",\n  \"plan_name\": \"Home Insurance Plan\",\n  \"policy_number\": \"HOME{{$timestamp}}\",\n  \"insurance_company_name\": \"HDFC ERGO General Insurance\",\n  \"policy_type\": \"New\",\n  \"policy_start_date\": \"{{$isoTimestamp}}\",\n  \"policy_end_date\": \"2025-12-31\",\n  \"payment_mode\": \"yearly\",\n  \"sum_insured\": 5000000,\n  \"net_premium\": 8000,\n  \"gst_percentage\": 18,\n  \"total_premium\": 9440,\n  \"agent_commission_percentage\": 8,\n  \"commission_amount\": 755,\n  \"coverage_type\": \"Property\",\n  \"description\": \"Comprehensive home insurance covering structure and contents\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/policies/other",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "policies", "other"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Leads Management",
+			"item": [
+				{
+					"name": "Get Leads List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has leads array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('leads');",
+									"    pm.expect(jsonData.data.leads).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Response has statistics\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('statistics');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/leads?page=1&per_page=10",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "leads"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Leads by Stage",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has leads array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('leads');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/leads?stage=consultation&product=health",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "leads"],
+							"query": [
+								{
+									"key": "stage",
+									"value": "consultation"
+								},
+								{
+									"key": "product",
+									"value": "health"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Lead",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Lead created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});",
+									"",
+									"pm.test(\"Save lead ID\", function () {",
+									"    if (pm.response.code === 201) {",
+									"        const response = pm.response.json();",
+									"        pm.environment.set(\"test_lead_id\", response.data.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test Lead {{$timestamp}}\",\n  \"contact_number\": \"987654{{$randomInt}}\",\n  \"email\": \"testlead{{$timestamp}}@example.com\",\n  \"product_interest\": \"health\",\n  \"address\": \"Test Address\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"referred_by\": \"Existing Customer\",\n  \"current_stage\": \"consultation\",\n  \"priority\": \"high\",\n  \"note\": \"Interested in family health insurance\",\n  \"call_disposition\": \"Positive response\",\n  \"lead_source\": \"agent_referral\",\n  \"referral_amount\": 0.0,\n  \"transferred_amount\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/agent/leads",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "leads"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Insurance Companies",
+			"item": [
+				{
+					"name": "Get Insurance Companies",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has insurance_companies array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('insurance_companies');",
+									"    pm.expect(jsonData.data.insurance_companies).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Response has statistics\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('statistics');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/insurance_companies?page=1&per_page=20&status=active",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "insurance_companies"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Insurance Companies",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has insurance_companies array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('insurance_companies');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/insurance_companies?search=LIC",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "insurance_companies"],
+							"query": [
+								{
+									"key": "search",
+									"value": "LIC"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Utilities",
+			"item": [
+				{
+					"name": "Get Form Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has form data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('clients');",
+									"    pm.expect(jsonData.data).to.have.property('insurance_companies');",
+									"    pm.expect(jsonData.data).to.have.property('payment_modes');",
+									"    pm.expect(jsonData.data).to.have.property('lead_stages');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/agent/form_data",
+							"host": ["{{base_url}}"],
+							"path": ["agent", "form_data"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set timestamp variables for dynamic data",
+					"pm.globals.set('timestamp', Date.now());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test to log response time",
+					"pm.test(\"Response time is less than 5000ms\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api/v1/mobile",
+			"type": "string"
+		}
+	]
+}

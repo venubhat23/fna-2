@@ -1,0 +1,73 @@
+<div class="page-header">
+  <h1>Product Analytics</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Products</h5>
+        <h2><%= @total_products %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Active Products</h5>
+        <h2><%= @active_products %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Out of Stock</h5>
+        <h2 class="text-danger"><%= @out_of_stock %></h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Low Stock</h5>
+        <h2 class="text-warning"><%= @low_stock %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>Top Selling Products</h5>
+      </div>
+      <div class="card-body">
+        <% if @top_products.any? %>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Units Sold</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @top_products.each do |product| %>
+                <tr>
+                  <td><%= product[0] %></td>
+                  <td><%= product[1] %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p>No sales data available for the selected period.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

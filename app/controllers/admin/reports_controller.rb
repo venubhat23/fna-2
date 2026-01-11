@@ -214,4 +214,336 @@ class Admin::ReportsController < Admin::ApplicationController
       }
     end
   end
+
+  # GET /admin/reports/products
+  def products
+    @date_range = params[:date_range] || '30_days'
+
+    case @date_range
+    when '7_days'
+      start_date = 7.days.ago
+    when '30_days'
+      start_date = 30.days.ago
+    when '3_months'
+      start_date = 3.months.ago
+    when '6_months'
+      start_date = 6.months.ago
+    when '1_year'
+      start_date = 1.year.ago
+    else
+      start_date = 30.days.ago
+    end
+
+    if defined?(Product)
+      @total_products = Product.count
+      @active_products = Product.where(status: 'active').count rescue Product.count
+      @out_of_stock = Product.where('stock <= ?', 0).count rescue 0
+      @low_stock = Product.where('stock > 0 AND stock <= ?', 10).count rescue 0
+
+      @top_products = Product.joins(:order_items)
+                             .where(order_items: { created_at: start_date..Time.current })
+                             .group('products.id', 'products.name')
+                             .order('COUNT(order_items.id) DESC')
+                             .limit(10)
+                             .pluck('products.name', 'COUNT(order_items.id)') rescue []
+    else
+      @total_products = 0
+      @active_products = 0
+      @out_of_stock = 0
+      @low_stock = 0
+      @top_products = []
+    end
+  end
+
+  # GET /admin/reports/customers
+  def customers
+    @date_range = params[:date_range] || '30_days'
+
+    case @date_range
+    when '7_days'
+      start_date = 7.days.ago
+    when '30_days'
+      start_date = 30.days.ago
+    when '3_months'
+      start_date = 3.months.ago
+    when '6_months'
+      start_date = 6.months.ago
+    when '1_year'
+      start_date = 1.year.ago
+    else
+      start_date = 30.days.ago
+    end
+
+    @total_customers = Customer.count
+    @new_customers = Customer.where(created_at: start_date..Time.current).count
+    @active_customers = Customer.joins(:health_insurances)
+                               .where(health_insurances: { created_at: start_date..Time.current })
+                               .distinct.count rescue 0
+
+    @customer_growth = []
+    (0..6).each do |i|
+      date = (6-i).days.ago.to_date
+      count = Customer.where('DATE(created_at) = ?', date).count
+      @customer_growth << { date: date.strftime('%b %d'), count: count }
+    end
+  end
+
+  # GET /admin/reports/revenue
+  def revenue
+    @date_range = params[:date_range] || '30_days'
+
+    case @date_range
+    when '7_days'
+      start_date = 7.days.ago
+    when '30_days'
+      start_date = 30.days.ago
+    when '3_months'
+      start_date = 3.months.ago
+    when '6_months'
+      start_date = 6.months.ago
+    when '1_year'
+      start_date = 1.year.ago
+    else
+      start_date = 30.days.ago
+    end
+
+    if defined?(Order)
+      @total_revenue = Order.where(created_at: start_date..Time.current).sum(:total_amount)
+      @total_orders = Order.where(created_at: start_date..Time.current).count
+      @average_order_value = @total_orders > 0 ? (@total_revenue / @total_orders).round(2) : 0
+
+      @revenue_by_day = []
+      (0..6).each do |i|
+        date = (6-i).days.ago.to_date
+        revenue = Order.where('DATE(created_at) = ?', date).sum(:total_amount)
+        @revenue_by_day << { date: date.strftime('%b %d'), revenue: revenue }
+      end
+    elsif defined?(Booking)
+      @total_revenue = Booking.where(created_at: start_date..Time.current).sum(:total_amount)
+      @total_orders = Booking.where(created_at: start_date..Time.current).count
+      @average_order_value = @total_orders > 0 ? (@total_revenue / @total_orders).round(2) : 0
+
+      @revenue_by_day = []
+      (0..6).each do |i|
+        date = (6-i).days.ago.to_date
+        revenue = Booking.where('DATE(created_at) = ?', date).sum(:total_amount)
+        @revenue_by_day << { date: date.strftime('%b %d'), revenue: revenue }
+      end
+    else
+      @total_revenue = 0
+      @total_orders = 0
+      @average_order_value = 0
+      @revenue_by_day = []
+    end
+  end
+
+  # GET /admin/reports/inventory
+  def inventory
+    if defined?(Product)
+      @total_products = Product.count
+      @total_stock_value = Product.sum('stock * price') rescue 0
+      @out_of_stock = Product.where('stock <= ?', 0).count rescue 0
+      @low_stock = Product.where('stock > 0 AND stock <= ?', 10).count rescue 0
+
+      @low_stock_products = Product.where('stock > 0 AND stock <= ?', 10)
+                                   .order(:stock)
+                                   .limit(20) rescue []
+
+      @out_of_stock_products = Product.where('stock <= ?', 0)
+                                      .order(:updated_at)
+                                      .limit(20) rescue []
+
+      @categories_stock = Category.joins(:products)
+                                  .group('categories.name')
+                                  .sum('products.stock') rescue {}
+    else
+      @total_products = 0
+      @total_stock_value = 0
+      @out_of_stock = 0
+      @low_stock = 0
+      @low_stock_products = []
+      @out_of_stock_products = []
+      @categories_stock = {}
+    end
+  end
+
+  # GET /admin/reports/orders
+  def orders
+    @date_range = params[:date_range] || '30_days'
+
+    case @date_range
+    when '7_days'
+      start_date = 7.days.ago
+    when '30_days'
+      start_date = 30.days.ago
+    when '3_months'
+      start_date = 3.months.ago
+    when '6_months'
+      start_date = 6.months.ago
+    when '1_year'
+      start_date = 1.year.ago
+    else
+      start_date = 30.days.ago
+    end
+
+    if defined?(Order)
+      @total_orders = Order.where(created_at: start_date..Time.current).count
+      @pending_orders = Order.where(created_at: start_date..Time.current, status: 'pending').count rescue 0
+      @processing_orders = Order.where(created_at: start_date..Time.current, status: 'processing').count rescue 0
+      @completed_orders = Order.where(created_at: start_date..Time.current, status: ['completed', 'delivered']).count rescue 0
+      @cancelled_orders = Order.where(created_at: start_date..Time.current, status: 'cancelled').count rescue 0
+
+      @recent_orders = Order.where(created_at: start_date..Time.current)
+                           .includes(:customer)
+                           .order(created_at: :desc)
+                           .limit(20) rescue []
+
+      @orders_by_status = Order.where(created_at: start_date..Time.current)
+                               .group(:status)
+                               .count rescue {}
+    elsif defined?(Booking)
+      @total_orders = Booking.where(created_at: start_date..Time.current).count
+      @pending_orders = Booking.where(created_at: start_date..Time.current, status: 'pending').count rescue 0
+      @processing_orders = Booking.where(created_at: start_date..Time.current, status: 'processing').count rescue 0
+      @completed_orders = Booking.where(created_at: start_date..Time.current, status: ['completed', 'confirmed']).count rescue 0
+      @cancelled_orders = Booking.where(created_at: start_date..Time.current, status: 'cancelled').count rescue 0
+
+      @recent_orders = Booking.where(created_at: start_date..Time.current)
+                             .includes(:customer)
+                             .order(created_at: :desc)
+                             .limit(20) rescue []
+
+      @orders_by_status = Booking.where(created_at: start_date..Time.current)
+                                .group(:status)
+                                .count rescue {}
+    else
+      @total_orders = 0
+      @pending_orders = 0
+      @processing_orders = 0
+      @completed_orders = 0
+      @cancelled_orders = 0
+      @recent_orders = []
+      @orders_by_status = {}
+    end
+  end
+
+  # GET /admin/reports/financial
+  def financial
+    @date_range = params[:date_range] || '30_days'
+
+    case @date_range
+    when '7_days'
+      start_date = 7.days.ago
+    when '30_days'
+      start_date = 30.days.ago
+    when '3_months'
+      start_date = 3.months.ago
+    when '6_months'
+      start_date = 6.months.ago
+    when '1_year'
+      start_date = 1.year.ago
+    else
+      start_date = 30.days.ago
+    end
+
+    # Revenue calculations
+    if defined?(Order)
+      @total_revenue = Order.where(created_at: start_date..Time.current).sum(:total_amount)
+      @total_tax = Order.where(created_at: start_date..Time.current).sum(:tax_amount)
+      @total_discount = Order.where(created_at: start_date..Time.current).sum(:discount_amount)
+      @net_revenue = @total_revenue - @total_tax - @total_discount
+    elsif defined?(Booking)
+      @total_revenue = Booking.where(created_at: start_date..Time.current).sum(:total_amount)
+      @total_tax = Booking.where(created_at: start_date..Time.current).sum(:tax_amount)
+      @total_discount = Booking.where(created_at: start_date..Time.current).sum(:discount_amount)
+      @net_revenue = @total_revenue - @total_tax - @total_discount
+    else
+      @total_revenue = 0
+      @total_tax = 0
+      @total_discount = 0
+      @net_revenue = 0
+    end
+
+    # Commission calculations
+    @total_commissions = CommissionPayout.where(created_at: start_date..Time.current).sum(:payout_amount) rescue 0
+    @pending_commissions = CommissionPayout.where(created_at: start_date..Time.current, status: 'pending').sum(:payout_amount) rescue 0
+    @paid_commissions = CommissionPayout.where(created_at: start_date..Time.current, status: 'paid').sum(:payout_amount) rescue 0
+
+    # Insurance premium calculations
+    @health_premiums = HealthInsurance.where(created_at: start_date..Time.current).sum(:total_premium) rescue 0
+    @life_premiums = LifeInsurance.where(created_at: start_date..Time.current).sum(:total_premium) rescue 0
+    @motor_premiums = MotorInsurance.where(created_at: start_date..Time.current).sum(:total_premium) rescue 0
+    @total_premiums = @health_premiums + @life_premiums + @motor_premiums
+
+    # Profit calculations
+    @gross_profit = @net_revenue * 0.3 rescue 0  # Assuming 30% margin
+    @net_profit = @gross_profit - @total_commissions rescue 0
+  end
+
+  # GET /admin/reports/performance
+  def performance
+    @date_range = params[:date_range] || '30_days'
+
+    case @date_range
+    when '7_days'
+      start_date = 7.days.ago
+    when '30_days'
+      start_date = 30.days.ago
+    when '3_months'
+      start_date = 3.months.ago
+    when '6_months'
+      start_date = 6.months.ago
+    when '1_year'
+      start_date = 1.year.ago
+    else
+      start_date = 30.days.ago
+    end
+
+    # Sales performance
+    if defined?(Order)
+      @total_sales = Order.where(created_at: start_date..Time.current).count
+      @avg_order_value = Order.where(created_at: start_date..Time.current).average(:total_amount) || 0
+      @conversion_rate = 0  # Would need visitor tracking to calculate
+    elsif defined?(Booking)
+      @total_sales = Booking.where(created_at: start_date..Time.current).count
+      @avg_order_value = Booking.where(created_at: start_date..Time.current).average(:total_amount) || 0
+      @conversion_rate = 0
+    else
+      @total_sales = 0
+      @avg_order_value = 0
+      @conversion_rate = 0
+    end
+
+    # Agent performance
+    @top_agents = User.where(user_type: 'agent')
+                     .joins(:life_insurances)
+                     .where(life_insurances: { created_at: start_date..Time.current })
+                     .group('users.id', 'users.first_name', 'users.last_name')
+                     .order('COUNT(life_insurances.id) DESC')
+                     .limit(10)
+                     .pluck('users.first_name', 'users.last_name', 'COUNT(life_insurances.id)') rescue []
+
+    # Product performance
+    if defined?(Product)
+      @top_performing_products = Product.joins(:order_items)
+                                       .where(order_items: { created_at: start_date..Time.current })
+                                       .group('products.id', 'products.name')
+                                       .order('SUM(order_items.quantity * order_items.price) DESC')
+                                       .limit(10)
+                                       .pluck('products.name', 'SUM(order_items.quantity * order_items.price)') rescue []
+    else
+      @top_performing_products = []
+    end
+
+    # Customer metrics
+    @new_customers = Customer.where(created_at: start_date..Time.current).count
+    @repeat_customers = Customer.joins(:health_insurances)
+                               .where(health_insurances: { created_at: start_date..Time.current })
+                               .group('customers.id')
+                               .having('COUNT(health_insurances.id) > 1')
+                               .count.keys.count rescue 0
+
+    @customer_retention_rate = @repeat_customers > 0 && @new_customers > 0 ?
+                              ((@repeat_customers.to_f / @new_customers) * 100).round(2) : 0
+  end
 end

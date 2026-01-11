@@ -142,23 +142,23 @@ class LifeInsurance < ApplicationRecord
     notification_list.select { |notification| notification['date'] == today }
   end
 
-  # DrWise vs Non-DrWise classification
-  def drwise_policy?
-    # DrWise: Admin Added policies (is_admin_added: true AND others false)
+  # Dhanvantari Farm vs Non-Dhanvantari Farm classification
+  def dhanvantri_policy?
+    # Dhanvantari Farm: Admin Added policies (is_admin_added: true AND others false)
     is_admin_added? && !is_customer_added? && !is_agent_added?
   end
 
-  def non_drwise_policy?
-    # Non-DrWise: Customer Added OR Agent Added policies
+  def non_dhanvantri_policy?
+    # Non-Dhanvantari Farm: Customer Added OR Agent Added policies
     (is_customer_added? && !is_admin_added? && !is_agent_added?) ||
     (is_agent_added? && !is_customer_added? && !is_admin_added?)
   end
 
   def policy_classification
-    if drwise_policy?
-      'DrWise'
-    elsif non_drwise_policy?
-      'Non-DrWise'
+    if dhanvantri_policy?
+      'Dhanvantari Farm'
+    elsif non_dhanvantri_policy?
+      'Non-Dhanvantari Farm'
     else
       'Unknown'
     end
@@ -166,10 +166,10 @@ class LifeInsurance < ApplicationRecord
 
   def policy_classification_badge_class
     case policy_classification
-    when 'DrWise'
-      'bg-success text-white'  # Green for DrWise
-    when 'Non-DrWise'
-      'bg-warning text-dark'   # Orange/Yellow for Non-DrWise
+    when 'Dhanvantari Farm'
+      'bg-success text-white'  # Green for Dhanvantari Farm
+    when 'Non-Dhanvantari Farm'
+      'bg-warning text-dark'   # Orange/Yellow for Non-Dhanvantari Farm
     else
       'bg-secondary text-white' # Gray for Unknown
     end

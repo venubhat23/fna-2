@@ -1,0 +1,2772 @@
+<%= form_with model: [:admin, @product], local: true, multipart: true, class: "row g-3" do |form| %>
+  <% if @product.errors.any? %>
+    <div class="col-12">
+      <div class="alert alert-danger">
+        <h4>Please fix the following errors:</h4>
+        <ul class="mb-0">
+          <% @product.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Details Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Basic Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :name, class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.text_field :name, class: "form-control", placeholder: "Enter product name", required: true %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :category_id, "Category", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="position-relative">
+              <select name="product[category_id]" id="product_category_id" class="form-select searchable-select" required>
+                <option value="">Search and select category...</option>
+                <% Category.for_select.each do |category| %>
+                  <option value="<%= category[1] %>" <%= 'selected' if @product.category_id == category[1] %>>
+                    <%= category[0] %>
+                  </option>
+                <% end %>
+              </select>
+              <div class="search-dropdown-container" style="display: none;">
+                <input type="text" class="form-control search-input" placeholder="Search categories..." autocomplete="off">
+                <div class="search-results"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :sku, "SKU", class: "form-label" %>
+            <%= form.text_field :sku, class: "form-control", placeholder: "Enter SKU (leave blank to auto-generate)" %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :status, class: "form-label" %>
+            <%= form.select :status,
+                options_for_select([['Draft', 'draft'], ['Active', 'active'], ['Inactive', 'inactive']], @product.status),
+                {},
+                { class: "form-select" } %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :product_type, "Product Type", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="product-type-selector">
+              <%= form.select :product_type,
+                  options_for_select([['Select Product Type', '']] + Product::PRODUCT_TYPES, @product.product_type || 'Grocery'),
+                  {},
+                  { class: "form-select product-type-select", id: "product_type_select", required: true } %>
+
+              <!-- Product Type Cards -->
+              <div class="product-type-cards mt-3" id="productTypeCards">
+                <div class="row g-2">
+                  <% Product::PRODUCT_TYPES.each do |type_name, type_value| %>
+                    <% options = Product::PRODUCT_TYPE_OPTIONS[type_value] %>
+                    <div class="col-4">
+                      <div class="product-type-card"
+                           data-type="<%= type_value %>"
+                           style="background: <%= options[:color] %>; border: 2px solid <%= options[:border] %>; color: <%= options[:text] %>;">
+                        <div class="text-center p-3">
+                          <i class="<%= options[:icon] %> fs-2 mb-2"></i>
+                          <div class="fw-medium"><%= type_name %></div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Choose the category that best describes your product
+            </div>
+          </div>
+
+          <!-- Subscription Enable Option -->
+          <div class="col-12">
+            <div class="subscription-toggle-section">
+              <div class="card border-0 bg-gradient-primary-subtle">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                      <div class="subscription-icon-container me-3">
+                        <i class="bi bi-arrow-repeat fs-2 text-primary"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-1 fw-bold text-dark">
+                          <i class="bi bi-star me-1 text-warning"></i>
+                          Subscription Feature
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                          Enable customers to subscribe for regular delivery of this product
+                        </p>
+                      </div>
+                    </div>
+                    <div class="form-check form-switch form-check-lg">
+                      <%= form.check_box :is_subscription_enabled,
+                          class: "form-check-input subscription-toggle",
+                          id: "subscription_toggle",
+                          'data-bs-toggle': "tooltip",
+                          'data-bs-placement': "top",
+                          title: "Enable subscription for this product" %>
+                      <%= form.label :is_subscription_enabled, "", class: "form-check-label" %>
+                    </div>
+                  </div>
+
+                  <!-- Subscription Info -->
+                  <div class="subscription-info mt-3" id="subscriptionInfo" style="<%= 'display: none;' unless @product.is_subscription_enabled %>">
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 mb-0">
+                      <div class="d-flex align-items-start">
+                        <i class="bi bi-info-circle text-info me-2 mt-1"></i>
+                        <div class="small">
+                          <h6 class="alert-heading mb-1 text-info">Subscription Benefits:</h6>
+                          <ul class="mb-0 text-muted">
+                            <li>Customers can set up automatic recurring orders</li>
+                            <li>Choose delivery frequency (daily, weekly, monthly)</li>
+                            <li>Guaranteed regular revenue stream</li>
+                            <li>Higher customer retention and loyalty</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4, placeholder: "Enter product description" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Section -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Pricing</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :buying_price, "Cost/Buying Price", class: "form-label" %>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <%= form.number_field :buying_price, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", id: "product_buying_price" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :price, "Regular Price", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <%= form.number_field :price, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", required: true, id: "product_price" %>
+            </div>
+          </div>
+
+          <!-- Enable Discount Checkbox -->
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <%= form.check_box :is_discounted, class: "form-check-input", id: "discount_toggle" %>
+              <%= form.label :is_discounted, "Enable Discount", class: "form-check-label" %>
+            </div>
+          </div>
+
+          <!-- Discount Configuration (hidden by default) -->
+          <div id="discount_config" class="col-12" style="<%= 'display: none;' unless @product.is_discounted %>">
+            <div class="card border-warning">
+              <div class="card-header bg-warning bg-opacity-10">
+                <h6 class="card-title mb-0 text-warning">
+                  <i class="bi bi-percent me-1"></i>
+                  Discount Configuration
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <!-- Discount Type -->
+                  <div class="col-md-6">
+                    <%= form.label :discount_type, "Discount Type", class: "form-label" %>
+                    <span class="text-danger">*</span>
+                    <%= form.select :discount_type,
+                        options_for_select([
+                          ['Select Discount Type', ''],
+                          ['Percentage (%)', 'percentage'],
+                          ['Fixed Amount (₹)', 'fixed']
+                        ], @product.discount_type),
+                        {},
+                        { class: "form-select", id: "discount_type" } %>
+                  </div>
+
+                  <!-- Discount Value -->
+                  <div class="col-md-6">
+                    <%= form.label :discount_value, "Discount Value", class: "form-label" %>
+                    <span class="text-danger">*</span>
+                    <div class="input-group">
+                      <span class="input-group-text" id="discount_symbol">%</span>
+                      <%= form.number_field :discount_value, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", id: "discount_value" %>
+                    </div>
+                    <div class="form-text">Enter discount amount or percentage</div>
+                  </div>
+
+                  <!-- Calculated Discount Amount -->
+                  <div class="col-12">
+                    <%= form.label :discount_amount, "Calculated Discount Amount", class: "form-label" %>
+                    <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <%= form.number_field :discount_amount, class: "form-control", readonly: true, step: 0.01, placeholder: "0.00", id: "discount_amount_display" %>
+                    </div>
+                    <div class="form-text">Auto-calculated savings amount</div>
+                  </div>
+
+                  <!-- Updated Price Display -->
+                  <div class="col-12">
+                    <div class="alert alert-info mb-0" id="updated_price_preview">
+                      <div class="row text-center">
+                        <div class="col-md-6">
+                          <small class="text-muted d-block">Regular Price</small>
+                          <span class="fw-bold" id="regular_price_display">₹0.00</span>
+                        </div>
+                        <div class="col-md-6">
+                          <small class="text-muted d-block">Final Price After Discount</small>
+                          <span class="fw-bold text-success" id="final_discounted_price">₹0.00</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Section -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Inventory</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <%= form.label :stock, "Stock Quantity", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.number_field :stock, class: "form-control", min: 0, placeholder: "0", required: true %>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :weight, "Weight (kg)", class: "form-label" %>
+            <%= form.number_field :weight, class: "form-control", step: 0.001, min: 0, placeholder: "0.000" %>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :dimensions, "Dimensions", class: "form-label" %>
+            <%= form.text_field :dimensions, class: "form-control", placeholder: "L x W x H (cm)" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Images Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-images me-2"></i>
+          Product Images
+        </h5>
+        <small class="text-muted">Upload high-quality images to showcase your product</small>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- Image Upload Area -->
+          <div class="col-12">
+            <%= form.label :images, class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="image-upload-container">
+              <div class="upload-dropzone" id="imageDropzone">
+                <div class="upload-content text-center py-4">
+                  <div class="upload-icon mb-3">
+                    <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                  </div>
+                  <h6 class="upload-title">Drop images here or click to browse</h6>
+                  <p class="upload-subtitle text-muted mb-3">
+                    Upload multiple product images (JPG, PNG, WebP)
+                  </p>
+                  <%= form.file_field :images,
+                      class: "form-control d-none",
+                      multiple: true,
+                      accept: "image/*",
+                      id: "imageInput" %>
+                  <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Choose Images
+                  </button>
+                </div>
+              </div>
+              <div class="upload-guidelines mt-2">
+                <small class="text-muted">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Guidelines: Max 2MB per image, minimum 800x600px recommended, first image will be the main product image
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- New Images Preview -->
+          <div class="col-12" id="newImagesPreview" style="display: none;">
+            <label class="form-label">
+              <i class="bi bi-eye me-1"></i>
+              New Images Preview
+            </label>
+            <div class="row g-3" id="newImagesContainer">
+              <!-- New images will be shown here -->
+            </div>
+          </div>
+
+          <!-- Current Images Management -->
+          <% if @product.images.attached? %>
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <label class="form-label mb-0">
+                  <i class="bi bi-images me-1"></i>
+                  Product Images (<%= @product.images.count %>)
+                  <span class="badge bg-primary-subtle text-primary ms-2">
+                    <i class="bi bi-star me-1"></i>Main Image Set
+                  </span>
+                </label>
+                <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Add More Images
+                  </button>
+                </div>
+              </div>
+
+              <div class="alert alert-info border-info bg-info bg-opacity-10 mb-3">
+                <div class="d-flex align-items-start">
+                  <i class="bi bi-info-circle text-info me-2 mt-1"></i>
+                  <div class="small">
+                    <strong>Image Management:</strong> First image is your main product image. Click the star icon on any image to set it as main. You can reorder images by setting a new main image.
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3" id="currentImagesContainer">
+                <% @product.images.each_with_index do |image, index| %>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-6" data-image-id="<%= image.id %>">
+                    <div class="image-card position-relative">
+                      <div class="image-wrapper">
+                        <%= image_tag image,
+                            class: "img-thumbnail product-image",
+                            style: "width: 100%; height: 150px; object-fit: cover; cursor: pointer;",
+                            onclick: "previewImage(this.src, '#{image.filename}')" %>
+
+                        <!-- Main Image Badge -->
+                        <% if index == 0 %>
+                          <span class="badge bg-gradient bg-primary position-absolute top-0 start-0 m-2 main-badge">
+                            <i class="bi bi-star-fill me-1"></i>Main Image
+                          </span>
+                        <% else %>
+                          <span class="badge bg-secondary position-absolute top-0 start-0 m-2">
+                            <i class="bi bi-images me-1"></i>Sub Image
+                          </span>
+                        <% end %>
+
+                        <!-- Image Actions -->
+                        <div class="image-actions position-absolute top-0 end-0 m-2">
+                          <div class="btn-group-vertical btn-group-sm" role="group">
+                            <% if index != 0 %>
+                              <button type="button"
+                                      class="btn btn-light btn-sm set-main-btn"
+                                      data-image-id="<%= image.id %>"
+                                      title="Set as main image">
+                                <i class="bi bi-star-fill text-warning"></i>
+                              </button>
+                            <% end %>
+                            <button type="button"
+                                    class="btn btn-danger btn-sm remove-image-btn"
+                                    data-image-id="<%= image.id %>"
+                                    title="Remove image">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Image Info -->
+                      <div class="image-info mt-2">
+                        <small class="text-muted d-block text-truncate" title="<%= image.filename %>">
+                          <%= image.filename %>
+                        </small>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <small class="text-muted">
+                            <%= number_to_human_size(image.byte_size) %>
+                          </small>
+                          <% if index == 0 %>
+                            <small class="badge bg-primary-subtle text-primary">Main</small>
+                          <% else %>
+                            <small class="badge bg-secondary-subtle text-secondary">Sub</small>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Add More Images Button -->
+              <div class="mt-3 text-center">
+                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                  <i class="bi bi-plus-circle me-2"></i>
+                  Add More Product Images
+                </button>
+                <div class="form-text mt-2">
+                  <i class="bi bi-info-circle me-1"></i>
+                  You can add multiple images. First image is always the main product image.
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <div class="col-12" id="noImagesMessage">
+              <div class="text-center py-4 border-2 border-dashed rounded-3 bg-light">
+                <div class="mb-3">
+                  <i class="bi bi-cloud-upload-fill fs-1 text-primary mb-3"></i>
+                </div>
+                <h6 class="text-dark mb-2">Ready to upload your first product image?</h6>
+                <p class="text-muted mb-3">Click below to select images or drag and drop them above</p>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('imageInput').click()">
+                  <i class="bi bi-upload me-2"></i>
+                  Choose Product Images
+                </button>
+                <div class="form-text mt-3">
+                  <i class="bi bi-info-circle me-1"></i>
+                  First image will be your main product image, others will be sub-images
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Hidden fields for image removal -->
+        <div id="imageRemovalFields"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery Rules Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Delivery Rules</h5>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add-delivery-rule">
+          <i class="ri-add-line"></i> Add Rule
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="delivery-rules-container">
+          <%= form.fields_for :delivery_rules do |rule_form| %>
+            <%= render 'delivery_rule_fields', f: rule_form %>
+          <% end %>
+        </div>
+
+        <div class="form-text mt-3">
+          <strong>Rule Types:</strong><br>
+          • <strong>All:</strong> Product is available for delivery everywhere<br>
+          • <strong>State:</strong> Available only in selected states<br>
+          • <strong>City:</strong> Available only in selected cities<br>
+          • <strong>Pincode:</strong> Available only for specific pincodes
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Occasional Product Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-calendar-event me-2"></i>
+          Occasional Product Settings
+        </h5>
+        <div class="form-check form-switch">
+          <%= form.check_box :is_occasional_product, class: "form-check-input", id: "occasionalProductToggle" %>
+          <%= form.label :is_occasional_product, "Enable Occasional Product", class: "form-check-label" %>
+        </div>
+      </div>
+      <div class="card-body" id="occasionalProductSettings" style="<%= 'display: none;' unless @product.is_occasional_product %>">
+        <div class="row g-3">
+          <!-- Description -->
+          <div class="col-12">
+            <div class="alert alert-info border-info bg-info bg-opacity-10 mb-3">
+              <div class="d-flex align-items-start">
+                <i class="bi bi-info-circle text-info me-2 mt-1"></i>
+                <div>
+                  <h6 class="alert-heading mb-1">What are Occasional Products?</h6>
+                  <p class="mb-0 small">
+                    Occasional products can be time-bound for specific dates (one-time) or follow recurring schedules (weekly patterns).
+                    Perfect for seasonal items, limited-time offers, holiday specials, weekly deals, or recurring events.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule Type Selection -->
+          <div class="col-12">
+            <%= form.label :occasional_schedule_type, "Schedule Type", class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="form-check form-check-inline">
+                  <%= form.radio_button :occasional_schedule_type, 'one_time', class: "form-check-input", id: "schedule_one_time", checked: true %>
+                  <%= form.label :occasional_schedule_type, class: "form-check-label", for: "schedule_one_time" do %>
+                    <i class="bi bi-calendar-event me-1"></i>
+                    <strong>One-Time</strong>
+                    <small class="d-block text-muted">Specific start and end dates</small>
+                  <% end %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check form-check-inline">
+                  <%= form.radio_button :occasional_schedule_type, 'recurring', class: "form-check-input", id: "schedule_recurring" %>
+                  <%= form.label :occasional_schedule_type, class: "form-check-label", for: "schedule_recurring" do %>
+                    <i class="bi bi-arrow-repeat me-1"></i>
+                    <strong>Recurring</strong>
+                    <small class="d-block text-muted">Weekly schedule with specific days and times</small>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- One-Time Schedule Section -->
+          <div id="oneTimeSchedule" class="col-12">
+            <div class="row g-3">
+              <!-- Start Date -->
+              <div class="col-md-6">
+                <%= form.label :occasional_start_date, "Start Date & Time", class: "form-label fw-medium" %>
+                <span class="text-danger ms-1" id="startDateRequired">*</span>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0">
+                    <i class="bi bi-calendar-plus text-muted"></i>
+                  </span>
+                  <%= form.datetime_local_field :occasional_start_date, class: "form-control border-start-0", id: "occasionalStartDate" %>
+                </div>
+                <div class="form-text">When should this product become available?</div>
+              </div>
+
+              <!-- End Date -->
+              <div class="col-md-6">
+                <%= form.label :occasional_end_date, "End Date & Time", class: "form-label fw-medium" %>
+                <span class="text-danger ms-1" id="endDateRequired">*</span>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0">
+                    <i class="bi bi-calendar-x text-muted"></i>
+                  </span>
+                  <%= form.datetime_local_field :occasional_end_date, class: "form-control border-start-0", id: "occasionalEndDate" %>
+                </div>
+                <div class="form-text">When should this product become unavailable?</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recurring Schedule Section -->
+          <div id="recurringSchedule" class="col-12" style="display: none;">
+            <div class="card border-primary">
+              <div class="card-header bg-primary bg-opacity-10">
+                <h6 class="card-title mb-0 text-primary">
+                  <i class="bi bi-arrow-repeat me-1"></i>
+                  Weekly Recurring Schedule
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <!-- From Day and Time -->
+                  <div class="col-md-6">
+                    <label class="form-label fw-medium">
+                      <i class="bi bi-play-circle me-1"></i>
+                      Available From
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-8">
+                        <%= form.select :occasional_recurring_from_day,
+                            options_for_select([
+                              ['Select Day', ''],
+                              ['Monday', 'monday'],
+                              ['Tuesday', 'tuesday'],
+                              ['Wednesday', 'wednesday'],
+                              ['Thursday', 'thursday'],
+                              ['Friday', 'friday'],
+                              ['Saturday', 'saturday'],
+                              ['Sunday', 'sunday']
+                            ], @product.occasional_recurring_from_day),
+                            {},
+                            { class: "form-select", id: "recurringFromDay" } %>
+                      </div>
+                      <div class="col-4">
+                        <%= form.time_field :occasional_recurring_from_time, class: "form-control", id: "recurringFromTime" %>
+                      </div>
+                    </div>
+                    <div class="form-text">Day and time when product becomes available each week</div>
+                  </div>
+
+                  <!-- To Day and Time -->
+                  <div class="col-md-6">
+                    <label class="form-label fw-medium">
+                      <i class="bi bi-stop-circle me-1"></i>
+                      Available Until
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-8">
+                        <%= form.select :occasional_recurring_to_day,
+                            options_for_select([
+                              ['Select Day', ''],
+                              ['Monday', 'monday'],
+                              ['Tuesday', 'tuesday'],
+                              ['Wednesday', 'wednesday'],
+                              ['Thursday', 'thursday'],
+                              ['Friday', 'friday'],
+                              ['Saturday', 'saturday'],
+                              ['Sunday', 'sunday']
+                            ], @product.occasional_recurring_to_day),
+                            {},
+                            { class: "form-select", id: "recurringToDay" } %>
+                      </div>
+                      <div class="col-4">
+                        <%= form.time_field :occasional_recurring_to_time, class: "form-control", id: "recurringToTime" %>
+                      </div>
+                    </div>
+                    <div class="form-text">Day and time when product becomes unavailable each week</div>
+                  </div>
+
+                  <!-- Recurring Examples -->
+                  <div class="col-12">
+                    <div class="alert alert-light border">
+                      <h6 class="mb-2">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Examples:
+                      </h6>
+                      <ul class="mb-0 small">
+                        <li><strong>Weekend Special:</strong> Friday 18:00 to Sunday 23:59</li>
+                        <li><strong>Weekday Deal:</strong> Monday 09:00 to Friday 17:00</li>
+                        <li><strong>Flash Sale:</strong> Wednesday 12:00 to Wednesday 14:00</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <!-- Recurring Preview -->
+                  <div class="col-12">
+                    <div id="recurringPreview" class="alert alert-info d-none">
+                      <div class="row">
+                        <div class="col-md-4">
+                          <h6 class="text-muted mb-1">Schedule Pattern</h6>
+                          <span id="recurringPattern" class="fw-medium">-</span>
+                        </div>
+                        <div class="col-md-4">
+                          <h6 class="text-muted mb-1">Current Status</h6>
+                          <span id="recurringStatus" class="fw-medium">-</span>
+                        </div>
+                        <div class="col-md-4">
+                          <h6 class="text-muted mb-1">Next Change</h6>
+                          <span id="recurringNextChange" class="fw-medium">-</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Occasional Description -->
+          <div class="col-12">
+            <%= form.label :occasional_description, "Occasional Details", class: "form-label fw-medium" %>
+            <%= form.text_area :occasional_description, class: "form-control", rows: 3,
+                placeholder: "Describe this occasional product (e.g., 'Christmas Special Offer', 'Summer Collection', etc.)" %>
+            <div class="form-text">Optional: Add context about why this product is occasional</div>
+          </div>
+
+          <!-- Auto Hide Option -->
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <%= form.check_box :occasional_auto_hide, class: "form-check-input", checked: true %>
+              <%= form.label :occasional_auto_hide, class: "form-check-label fw-medium" do %>
+                <i class="bi bi-eye-slash me-1"></i>
+                Auto-hide when not active
+              <% end %>
+            </div>
+            <div class="form-text">
+              When enabled, this product will be automatically hidden from customers when outside the active date range.
+              When disabled, the product remains visible but may show as "not available" or "coming soon".
+            </div>
+          </div>
+
+          <!-- Date Preview -->
+          <div class="col-12">
+            <div id="occasionalPreview" class="alert alert-light border d-none">
+              <div class="row">
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-1">Duration</h6>
+                  <span id="previewDuration" class="fw-medium">-</span>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-1">Status</h6>
+                  <span id="previewStatus" class="fw-medium">-</span>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-1">Time Remaining</h6>
+                  <span id="previewTimeRemaining" class="fw-medium">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Date Presets -->
+          <div class="col-12">
+            <label class="form-label fw-medium">Quick Date Presets</label>
+            <div class="btn-group btn-group-sm d-flex flex-wrap gap-2" role="group">
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="today">Today</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="tomorrow">Tomorrow</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="this-week">This Week</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="next-week">Next Week</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="this-month">This Month</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="next-month">Next Month</button>
+            </div>
+            <div class="form-text">Click any preset to quickly set the date range</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEO Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">SEO & Marketing</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :meta_title, class: "form-label" %>
+            <%= form.text_field :meta_title, class: "form-control", placeholder: "SEO title for search engines" %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :tags, class: "form-label" %>
+            <%= form.text_field :tags, class: "form-control", placeholder: "Comma separated tags" %>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :meta_description, class: "form-label" %>
+            <%= form.text_area :meta_description, class: "form-control", rows: 2, placeholder: "SEO description for search engines" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="col-12">
+    <div class="text-end">
+      <%= link_to admin_products_path, class: "btn btn-secondary me-2" do %>
+        <i class="ri-arrow-left-line"></i> Cancel
+      <% end %>
+
+      <%= form.submit class: "btn btn-primary" do %>
+        <i class="ri-save-line"></i> <%= @product.new_record? ? 'Create Product' : 'Update Product' %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  let deliveryRuleIndex = document.querySelectorAll('.delivery-rule-row').length;
+
+  // Image Management System
+  const imageInput = document.getElementById('imageInput');
+  const imageDropzone = document.getElementById('imageDropzone');
+  const newImagesPreview = document.getElementById('newImagesPreview');
+  const newImagesContainer = document.getElementById('newImagesContainer');
+  const imageRemovalFields = document.getElementById('imageRemovalFields');
+
+  let selectedFiles = [];
+  let imagesToRemove = [];
+
+  // Drag and Drop functionality
+  if (imageDropzone) {
+    imageDropzone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    });
+
+    imageDropzone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+    });
+
+    imageDropzone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+
+      const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      if (files.length > 0) {
+        handleFileSelection(files);
+      }
+    });
+  }
+
+  // File input change handler
+  if (imageInput) {
+    imageInput.addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      handleFileSelection(files);
+    });
+  }
+
+  // Handle file selection (drag & drop or file input)
+  function handleFileSelection(files) {
+    selectedFiles = [...selectedFiles, ...files];
+
+    // Validate files
+    const validFiles = [];
+    const invalidFiles = [];
+
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        if (file.size <= 2 * 1024 * 1024) { // 2MB limit
+          validFiles.push(file);
+        } else {
+          invalidFiles.push(`${file.name} (too large - max 2MB)`);
+        }
+      } else {
+        invalidFiles.push(`${file.name} (not an image)`);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      alert('Some files were rejected:\n' + invalidFiles.join('\n'));
+    }
+
+    if (validFiles.length > 0) {
+      displayNewImagePreviews(validFiles);
+      updateImageInput();
+    }
+  }
+
+  // Display preview of new images
+  function displayNewImagePreviews(files) {
+    // Hide "no images" message if it exists
+    const noImagesMessage = document.getElementById('noImagesMessage');
+    if (noImagesMessage) {
+      noImagesMessage.style.display = 'none';
+    }
+
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const col = document.createElement('div');
+        col.className = 'col-lg-2 col-md-3 col-sm-4 col-6';
+        col.innerHTML = `
+          <div class="image-card position-relative">
+            <div class="image-wrapper">
+              <img src="${e.target.result}"
+                   class="img-thumbnail product-image"
+                   style="width: 100%; height: 150px; object-fit: cover; cursor: pointer;"
+                   onclick="previewImage('${e.target.result}', '${file.name}')">
+
+              <!-- New Image Badge -->
+              <span class="badge bg-success position-absolute top-0 start-0 m-2">
+                <i class="bi bi-cloud-upload me-1"></i>Ready to Upload
+              </span>
+
+              <!-- Remove Button -->
+              <div class="image-actions position-absolute top-0 end-0 m-2">
+                <button type="button"
+                        class="btn btn-danger btn-sm remove-new-image-btn"
+                        data-file-index="${selectedFiles.indexOf(file)}"
+                        title="Remove image">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Image Info -->
+            <div class="image-info mt-2">
+              <small class="text-muted d-block text-truncate" title="${file.name}">${file.name}</small>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">${formatFileSize(file.size)}</small>
+                <small class="badge bg-success-subtle text-success">New</small>
+              </div>
+            </div>
+          </div>
+        `;
+
+        newImagesContainer.appendChild(col);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    newImagesPreview.style.display = 'block';
+  }
+
+  // Update the file input with current files
+  function updateImageInput() {
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    imageInput.files = dt.files;
+  }
+
+  // Remove new image
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-new-image-btn')) {
+      const button = e.target.closest('.remove-new-image-btn');
+      const fileIndex = parseInt(button.dataset.fileIndex);
+
+      // Remove from selectedFiles array
+      selectedFiles = selectedFiles.filter((_, index) => index !== fileIndex);
+
+      // Remove from DOM
+      button.closest('.col-lg-2').remove();
+
+      // Update file input
+      updateImageInput();
+
+      // Hide preview if no new images
+      if (selectedFiles.length === 0) {
+        newImagesPreview.style.display = 'none';
+      }
+    }
+  });
+
+  // Remove existing image
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-image-btn')) {
+      const button = e.target.closest('.remove-image-btn');
+      const imageId = button.dataset.imageId;
+
+      if (confirm('Are you sure you want to remove this image?')) {
+        // Add to removal list
+        imagesToRemove.push(imageId);
+
+        // Create hidden field for removal
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'remove_images[]';
+        hiddenField.value = imageId;
+        imageRemovalFields.appendChild(hiddenField);
+
+        // Remove from DOM
+        button.closest('.col-lg-2').remove();
+
+        showNotification('Image marked for removal. Save the form to confirm.', 'warning');
+      }
+    }
+  });
+
+  // Set main image
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.set-main-btn')) {
+      const button = e.target.closest('.set-main-btn');
+      const imageId = button.dataset.imageId;
+
+      // Update all badges and buttons
+      document.querySelectorAll('.main-badge').forEach(badge => {
+        badge.className = 'badge bg-secondary position-absolute top-0 start-0 m-2';
+        badge.innerHTML = '<i class="bi bi-images me-1"></i>Sub Image';
+      });
+
+      // Show all set-main buttons
+      document.querySelectorAll('.set-main-btn').forEach(btn => btn.style.display = 'block');
+
+      // Update all image info badges to 'Sub'
+      document.querySelectorAll('.image-info .badge').forEach(badge => {
+        if (badge.textContent.trim() === 'Main') {
+          badge.className = 'badge bg-secondary-subtle text-secondary';
+          badge.textContent = 'Sub';
+        }
+      });
+
+      // Set new main image
+      const imageCard = button.closest('.image-card');
+      const existingBadge = imageCard.querySelector('.badge');
+      if (existingBadge) {
+        existingBadge.className = 'badge bg-gradient bg-primary position-absolute top-0 start-0 m-2 main-badge';
+        existingBadge.innerHTML = '<i class="bi bi-star-fill me-1"></i>Main Image';
+      }
+
+      // Hide the set-main button for this image
+      button.style.display = 'none';
+
+      // Update image info badge to 'Main'
+      const imageInfoBadge = imageCard.querySelector('.image-info .badge');
+      if (imageInfoBadge) {
+        imageInfoBadge.className = 'badge bg-primary-subtle text-primary';
+        imageInfoBadge.textContent = 'Main';
+      }
+
+      // Create hidden field for main image
+      const existingMainField = document.querySelector('input[name="main_image_id"]');
+      if (existingMainField) {
+        existingMainField.remove();
+      }
+
+      const mainImageField = document.createElement('input');
+      mainImageField.type = 'hidden';
+      mainImageField.name = 'main_image_id';
+      mainImageField.value = imageId;
+      imageRemovalFields.appendChild(mainImageField);
+
+      showNotification('Main image updated successfully!', 'success');
+    }
+  });
+
+  // Helper functions
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showNotification(message, type = 'info') {
+    // Simple notification system
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alert);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      if (alert.parentNode) {
+        alert.remove();
+      }
+    }, 3000);
+  }
+
+  // Category Search Dropdown Functionality
+  const categorySelect = document.getElementById('product_category_id');
+  const searchContainer = categorySelect?.closest('.position-relative').querySelector('.search-dropdown-container');
+  const searchInput = searchContainer?.querySelector('.search-input');
+  const searchResults = searchContainer?.querySelector('.search-results');
+  let allCategories = [];
+
+  // Initialize category search dropdown
+  if (categorySelect && searchContainer) {
+    // Collect all categories
+    Array.from(categorySelect.options).forEach(option => {
+      if (option.value) {
+        allCategories.push({
+          value: option.value,
+          text: option.textContent.trim()
+        });
+      }
+    });
+
+    // Show search on select click
+    categorySelect.addEventListener('click', function(e) {
+      e.preventDefault();
+      showCategorySearch();
+    });
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      filterCategories(query);
+    });
+
+    // Hide on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.position-relative')) {
+        hideCategorySearch();
+      }
+    });
+  }
+
+  function showCategorySearch() {
+    categorySelect.style.display = 'none';
+    searchContainer.style.display = 'block';
+    searchInput.focus();
+    filterCategories(''); // Show all initially
+  }
+
+  function hideCategorySearch() {
+    searchContainer.style.display = 'none';
+    categorySelect.style.display = 'block';
+    searchInput.value = '';
+  }
+
+  function filterCategories(query) {
+    const filtered = allCategories.filter(cat =>
+      cat.text.toLowerCase().includes(query)
+    );
+
+    searchResults.innerHTML = '';
+
+    if (filtered.length === 0) {
+      searchResults.innerHTML = '<div class="search-item text-muted p-2">No categories found</div>';
+    } else {
+      filtered.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'search-item p-2 cursor-pointer';
+        item.innerHTML = `<i class="bi bi-tag me-2"></i>${cat.text}`;
+        item.dataset.value = cat.value;
+
+        item.addEventListener('click', function() {
+          categorySelect.value = cat.value;
+          categorySelect.dispatchEvent(new Event('change'));
+          hideCategorySearch();
+        });
+
+        searchResults.appendChild(item);
+      });
+    }
+  }
+
+  // Discount Configuration Functionality
+  const discountToggle = document.getElementById('discount_toggle');
+  const discountConfig = document.getElementById('discount_config');
+  const discountType = document.getElementById('discount_type');
+  const discountValue = document.getElementById('discount_value');
+  const discountSymbol = document.getElementById('discount_symbol');
+  const regularPrice = document.querySelector('#product_price');
+  const discountAmountDisplay = document.querySelector('#discount_amount_display');
+
+  // Toggle discount configuration visibility
+  if (discountToggle) {
+    discountToggle.addEventListener('change', function() {
+      if (this.checked) {
+        discountConfig.style.display = 'block';
+        calculateSimplifiedDiscount(); // Trigger calculation when enabled
+      } else {
+        discountConfig.style.display = 'none';
+        clearDiscountFields();
+      }
+    });
+  }
+
+  // Change discount symbol based on type
+  if (discountType) {
+    discountType.addEventListener('change', function() {
+      console.log('Discount type changed to:', this.value);
+
+      if (this.value === 'percentage') {
+        if (discountSymbol) discountSymbol.textContent = '%';
+        if (discountValue) {
+          discountValue.setAttribute('max', '100');
+          discountValue.setAttribute('placeholder', '0-100');
+        }
+      } else if (this.value === 'fixed') {
+        if (discountSymbol) discountSymbol.textContent = '₹';
+        if (discountValue) {
+          discountValue.removeAttribute('max');
+          discountValue.setAttribute('placeholder', '0.00');
+        }
+      } else {
+        // Reset for "Select Discount Type" or empty value
+        if (discountSymbol) discountSymbol.textContent = '%';
+        if (discountValue) {
+          discountValue.setAttribute('placeholder', 'Select type first');
+        }
+      }
+
+      // Don't clear value when type changes - let user keep their entered value
+      // if (discountValue) discountValue.value = '';
+
+      // Trigger calculation after type change
+      setTimeout(() => calculateSimplifiedDiscount(), 10);
+    });
+  }
+
+  // Calculate discount on value changes
+  [discountValue, regularPrice].forEach(field => {
+    if (field) {
+      field.addEventListener('input', function() {
+        console.log('Field changed:', field.id, 'value:', field.value);
+        setTimeout(() => calculateSimplifiedDiscount(), 10); // Small delay to ensure value is updated
+      });
+      field.addEventListener('change', function() {
+        console.log('Field change event:', field.id, 'value:', field.value);
+        calculateSimplifiedDiscount();
+      });
+      field.addEventListener('keyup', function() {
+        console.log('Field keyup:', field.id, 'value:', field.value);
+        calculateSimplifiedDiscount();
+      });
+    }
+  });
+
+  // Profit calculation functionality
+  const buyingPrice = document.querySelector('#product_buying_price');
+  const profitPreview = document.getElementById('profit_preview');
+
+  // Calculate profit on price changes
+  [buyingPrice, regularPrice].forEach(field => {
+    if (field) {
+      field.addEventListener('input', calculateProfit);
+    }
+  });
+
+  function calculateProfit() {
+    const cost = parseFloat(buyingPrice?.value) || 0;
+    const selling = parseFloat(regularPrice?.value) || 0;
+
+    if (cost > 0) {
+      profitPreview.style.display = 'block';
+
+      const profit = selling - cost;
+      const marginPercentage = selling > 0 ? ((profit / selling) * 100).toFixed(2) : 0;
+
+      updateProfitPreview(cost, selling, profit, marginPercentage);
+    } else {
+      profitPreview.style.display = 'none';
+    }
+  }
+
+  function updateProfitPreview(cost, selling, profit, margin) {
+    const costDisplay = document.getElementById('cost_display');
+    const sellingDisplay = document.getElementById('selling_display');
+    const profitDisplay = document.getElementById('profit_display');
+    const marginDisplay = document.getElementById('margin_display');
+    const profitStatus = document.getElementById('profit_status');
+
+    if (costDisplay) costDisplay.textContent = `₹${cost.toFixed(2)}`;
+    if (sellingDisplay) sellingDisplay.textContent = `₹${selling.toFixed(2)}`;
+    if (profitDisplay) {
+      profitDisplay.textContent = `₹${profit.toFixed(2)}`;
+      profitDisplay.className = profit >= 0 ? 'fw-medium text-success' : 'fw-medium text-danger';
+    }
+    if (marginDisplay) {
+      marginDisplay.textContent = `${margin}%`;
+      marginDisplay.className = profit >= 0 ? 'fw-medium text-success' : 'fw-medium text-danger';
+    }
+    if (profitStatus) {
+      let status, statusClass;
+      if (profit > 0) {
+        status = 'Profitable';
+        statusClass = 'text-success';
+      } else if (profit === 0) {
+        status = 'Break Even';
+        statusClass = 'text-warning';
+      } else {
+        status = 'Loss Making';
+        statusClass = 'text-danger';
+      }
+      profitStatus.textContent = status;
+      profitStatus.className = `fw-medium ${statusClass}`;
+    }
+  }
+
+  function calculateSimplifiedDiscount() {
+    const type = discountType?.value;
+    const value = parseFloat(discountValue?.value) || 0;
+    const regular = parseFloat(regularPrice?.value) || 0;
+
+    console.log('Calculating discount:', {
+      type,
+      value,
+      regular,
+      discountTypeElement: discountType,
+      discountValueElement: discountValue,
+      regularPriceElement: regularPrice
+    });
+
+    // Always update the price preview with regular price even if no discount
+    if (regular > 0) {
+      let discountAmount = 0;
+      let finalPrice = regular;
+
+      // Check if we have a valid discount type and value
+      if (type && type !== '' && type !== 'Select Discount Type' && value > 0) {
+        console.log('Processing discount:', type, value);
+
+        if (type === 'percentage') {
+          if (value > 100) {
+            alert('Percentage discount cannot be more than 100%');
+            if (discountValue) discountValue.value = 100;
+            return;
+          }
+          discountAmount = (regular * value / 100);
+          console.log('Percentage calculation:', regular, '*', value, '/ 100 =', discountAmount);
+        } else if (type === 'fixed') {
+          if (value > regular) {
+            alert('Fixed discount cannot be more than the regular price');
+            if (discountValue) discountValue.value = regular;
+            return;
+          }
+          discountAmount = value;
+          console.log('Fixed calculation:', value);
+        }
+        finalPrice = regular - discountAmount;
+        console.log('Final price calculation:', regular, '-', discountAmount, '=', finalPrice);
+      } else {
+        console.log('No valid discount type or value:', { type, value });
+      }
+
+      // Update discount amount display
+      if (discountAmountDisplay) {
+        discountAmountDisplay.value = discountAmount.toFixed(2);
+        console.log('Updated discount amount display:', discountAmount.toFixed(2));
+      }
+
+      updateSimplifiedPricePreview(discountAmount, finalPrice, regular);
+    } else {
+      // No regular price set
+      console.log('No regular price set');
+      updateSimplifiedPricePreview(0, 0, 0);
+    }
+  }
+
+  function updateSimplifiedPricePreview(discountAmount, finalPrice, regularPriceValue) {
+    const regularPriceDisplay = document.getElementById('regular_price_display');
+    const finalDiscountedPrice = document.getElementById('final_discounted_price');
+
+    console.log('Updating price preview:', { discountAmount, finalPrice, regularPriceValue });
+
+    if (regularPriceDisplay) regularPriceDisplay.textContent = `₹${regularPriceValue.toFixed(2)}`;
+    if (finalDiscountedPrice) finalDiscountedPrice.textContent = `₹${finalPrice.toFixed(2)}`;
+  }
+
+  function clearDiscountFields() {
+    if (discountValue) discountValue.value = '';
+    if (discountAmountDisplay) discountAmountDisplay.value = '';
+    updateSimplifiedPricePreview(0, 0, 0);
+  }
+
+  // Add specific event listeners for discount value field
+  if (discountValue) {
+    console.log('Adding specific listeners to discount value field:', discountValue);
+    discountValue.addEventListener('input', function() {
+      console.log('Discount value input event:', this.value);
+      calculateSimplifiedDiscount();
+    });
+    discountValue.addEventListener('propertychange', function() {
+      console.log('Discount value property change:', this.value);
+      calculateSimplifiedDiscount();
+    });
+  }
+
+  // Add specific event listeners for regular price field
+  if (regularPrice) {
+    console.log('Adding specific listeners to regular price field:', regularPrice);
+    regularPrice.addEventListener('input', function() {
+      console.log('Regular price input event:', this.value);
+      calculateSimplifiedDiscount();
+    });
+  }
+
+  // Initialize calculations on page load
+  setTimeout(() => {
+    console.log('Initializing calculations on page load');
+    console.log('Elements found:', {
+      discountType: discountType,
+      discountValue: discountValue,
+      regularPrice: regularPrice,
+      discountAmountDisplay: discountAmountDisplay
+    });
+    calculateSimplifiedDiscount();
+    calculateProfit();
+  }, 100);
+
+  // Global function for manual testing
+  window.testDiscountCalculation = function() {
+    console.log('Manual test triggered');
+    const type = discountType?.value;
+    const value = discountValue?.value;
+    const price = regularPrice?.value;
+    console.log('Current values:', { type, value, price });
+    calculateSimplifiedDiscount();
+  };
+
+  // Initialize multiselect functionality
+  initializeMultiselectDropdowns();
+
+  // Initialize occasional product functionality
+  initializeOccasionalProduct();
+
+  // Initialize Product Type functionality
+  initializeProductTypeSelector();
+
+  // Initialize Subscription functionality
+  initializeSubscriptionToggle();
+
+  // Handle multiselect change events to update hidden location_data field
+  function updateLocationData(ruleRow) {
+    const ruleTypeSelect = ruleRow.querySelector('[name*="rule_type"]');
+    const hiddenLocationData = ruleRow.querySelector('.location-data-hidden');
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+    const pincodeInput = ruleRow.querySelector('[name*="location_data_pincodes"]');
+
+    if (!hiddenLocationData || !ruleTypeSelect) return;
+
+    let locationData = [];
+
+    switch(ruleTypeSelect.value) {
+      case 'state':
+        if (stateSelect) {
+          locationData = Array.from(stateSelect.selectedOptions).map(option => option.value);
+        }
+        break;
+      case 'city':
+        if (citySelect) {
+          locationData = Array.from(citySelect.selectedOptions).map(option => option.value);
+        }
+        break;
+      case 'pincode':
+        if (pincodeInput && pincodeInput.value.trim()) {
+          locationData = pincodeInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+        break;
+      case 'all':
+        locationData = [];
+        break;
+    }
+
+    hiddenLocationData.value = JSON.stringify(locationData);
+  }
+
+  // Add change event listeners to multiselects and pincode input
+  function initializeMultiselectDropdowns() {
+    document.querySelectorAll('.delivery-rule-row').forEach(ruleRow => {
+      initializeMultiselectForRow(ruleRow);
+    });
+  }
+
+  // Initialize multiselect functionality for a single row
+  function initializeMultiselectForRow(ruleRow) {
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+    const pincodeInput = ruleRow.querySelector('[name*="location_data_pincodes"]');
+
+    if (stateSelect) {
+      stateSelect.addEventListener('change', () => updateLocationData(ruleRow));
+    }
+    if (citySelect) {
+      citySelect.addEventListener('change', () => updateLocationData(ruleRow));
+    }
+    if (pincodeInput) {
+      pincodeInput.addEventListener('input', () => updateLocationData(ruleRow));
+    }
+  }
+
+  document.getElementById('add-delivery-rule').addEventListener('click', function() {
+    const container = document.getElementById('delivery-rules-container');
+    const template = document.getElementById('delivery-rule-template').content.cloneNode(true);
+
+    // Replace index placeholders with actual index
+    const ruleRow = template.querySelector('.delivery-rule-row');
+    ruleRow.innerHTML = ruleRow.innerHTML.replace(/NEW_RECORD/g, deliveryRuleIndex);
+
+    container.appendChild(template);
+    deliveryRuleIndex++;
+
+    // Initialize the new rule type select
+    const newRuleType = ruleRow.querySelector('[name*="rule_type"]');
+    initializeRuleTypeSelect(newRuleType);
+
+    // Initialize multiselect functionality for the new row
+    initializeMultiselectForRow(ruleRow);
+  });
+
+  // Initialize existing rule type selects
+  document.querySelectorAll('[name*="rule_type"]').forEach(initializeRuleTypeSelect);
+
+  function initializeRuleTypeSelect(select) {
+    select.addEventListener('change', function() {
+      const ruleRow = this.closest('.delivery-rule-row');
+      const locationGroup = ruleRow.querySelector('.location-data-group');
+      const stateGroup = ruleRow.querySelector('.state-select-group');
+      const cityGroup = ruleRow.querySelector('.city-select-group');
+      const pincodeGroup = ruleRow.querySelector('.pincode-input-group');
+      const hiddenLocationData = ruleRow.querySelector('.location-data-hidden');
+
+      // Hide all location input groups first
+      if (stateGroup) stateGroup.style.display = 'none';
+      if (cityGroup) cityGroup.style.display = 'none';
+      if (pincodeGroup) pincodeGroup.style.display = 'none';
+
+      if (this.value === 'everywhere') {
+        locationGroup.style.display = 'none';
+        if (hiddenLocationData) hiddenLocationData.value = '';
+      } else {
+        locationGroup.style.display = 'block';
+
+        // Show appropriate input group based on rule type
+        switch(this.value) {
+          case 'state':
+            if (stateGroup) stateGroup.style.display = 'block';
+            break;
+          case 'city':
+            if (cityGroup) cityGroup.style.display = 'block';
+            break;
+          case 'pincode':
+            if (pincodeGroup) pincodeGroup.style.display = 'block';
+            break;
+        }
+      }
+    });
+
+    // Trigger change event for initial setup
+    select.dispatchEvent(new Event('change'));
+  }
+
+  function updateLocationPlaceholder(ruleType, input) {
+    const placeholders = {
+      'state': 'Enter states separated by commas (e.g., Karnataka, Tamil Nadu)',
+      'city': 'Enter cities separated by commas (e.g., Bangalore, Chennai)',
+      'pincode': 'Enter pincodes separated by commas (e.g., 560001, 560002)'
+    };
+
+    input.placeholder = placeholders[ruleType] || '';
+  }
+
+  // Handle remove rule buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-delivery-rule') || e.target.closest('.remove-delivery-rule')) {
+      const ruleRow = e.target.closest('.delivery-rule-row');
+      const destroyInput = ruleRow.querySelector('[name*="_destroy"]');
+
+      if (destroyInput) {
+        destroyInput.value = '1';
+        ruleRow.style.display = 'none';
+      } else {
+        ruleRow.remove();
+      }
+    }
+  });
+
+  // Occasional Product Functionality
+  function initializeOccasionalProduct() {
+    const occasionalToggle = document.getElementById('occasionalProductToggle');
+    const occasionalSettings = document.getElementById('occasionalProductSettings');
+    const startDateInput = document.getElementById('occasionalStartDate');
+    const endDateInput = document.getElementById('occasionalEndDate');
+    const startDateRequired = document.getElementById('startDateRequired');
+    const endDateRequired = document.getElementById('endDateRequired');
+    const occasionalPreview = document.getElementById('occasionalPreview');
+
+    // Schedule type elements
+    const scheduleOneTime = document.getElementById('schedule_one_time');
+    const scheduleRecurring = document.getElementById('schedule_recurring');
+    const oneTimeSchedule = document.getElementById('oneTimeSchedule');
+    const recurringSchedule = document.getElementById('recurringSchedule');
+
+    // Recurring elements
+    const recurringFromDay = document.getElementById('recurringFromDay');
+    const recurringFromTime = document.getElementById('recurringFromTime');
+    const recurringToDay = document.getElementById('recurringToDay');
+    const recurringToTime = document.getElementById('recurringToTime');
+
+    // Toggle occasional product settings
+    if (occasionalToggle) {
+      occasionalToggle.addEventListener('change', function() {
+        if (this.checked) {
+          occasionalSettings.style.display = 'block';
+          updateScheduleTypeDisplay();
+        } else {
+          occasionalSettings.style.display = 'none';
+          clearAllScheduleFields();
+          occasionalPreview.classList.add('d-none');
+        }
+      });
+    }
+
+    // Schedule type change handlers
+    if (scheduleOneTime) {
+      scheduleOneTime.addEventListener('change', function() {
+        if (this.checked) {
+          updateScheduleTypeDisplay();
+        }
+      });
+    }
+
+    if (scheduleRecurring) {
+      scheduleRecurring.addEventListener('change', function() {
+        if (this.checked) {
+          updateScheduleTypeDisplay();
+        }
+      });
+    }
+
+    function updateScheduleTypeDisplay() {
+      if (scheduleOneTime && scheduleOneTime.checked) {
+        // Show one-time, hide recurring
+        oneTimeSchedule.style.display = 'block';
+        recurringSchedule.style.display = 'none';
+
+        // Set required fields
+        if (startDateInput) {
+          startDateInput.required = true;
+          startDateRequired.style.display = 'inline';
+        }
+        if (endDateInput) {
+          endDateInput.required = true;
+          endDateRequired.style.display = 'inline';
+        }
+
+        // Clear recurring fields
+        clearRecurringFields();
+
+      } else if (scheduleRecurring && scheduleRecurring.checked) {
+        // Show recurring, hide one-time
+        oneTimeSchedule.style.display = 'none';
+        recurringSchedule.style.display = 'block';
+
+        // Remove required from one-time fields
+        if (startDateInput) {
+          startDateInput.required = false;
+          startDateRequired.style.display = 'none';
+        }
+        if (endDateInput) {
+          endDateInput.required = false;
+          endDateRequired.style.display = 'none';
+        }
+
+        // Clear one-time fields
+        clearDateInputs();
+
+        // Initialize recurring preview
+        updateRecurringPreview();
+      }
+    }
+
+    // Date change handlers for one-time schedule
+    if (startDateInput) {
+      startDateInput.addEventListener('change', updateOccasionalPreview);
+    }
+    if (endDateInput) {
+      endDateInput.addEventListener('change', updateOccasionalPreview);
+    }
+
+    // Recurring schedule change handlers
+    [recurringFromDay, recurringFromTime, recurringToDay, recurringToTime].forEach(element => {
+      if (element) {
+        element.addEventListener('change', updateRecurringPreview);
+      }
+    });
+
+    // Date preset handlers
+    document.querySelectorAll('.preset-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const preset = this.dataset.preset;
+        setDatePreset(preset);
+      });
+    });
+
+    function clearRecurringFields() {
+      if (recurringFromDay) recurringFromDay.value = '';
+      if (recurringFromTime) recurringFromTime.value = '';
+      if (recurringToDay) recurringToDay.value = '';
+      if (recurringToTime) recurringToTime.value = '';
+
+      const recurringPreview = document.getElementById('recurringPreview');
+      if (recurringPreview) {
+        recurringPreview.classList.add('d-none');
+      }
+    }
+
+    function clearAllScheduleFields() {
+      clearDateInputs();
+      clearRecurringFields();
+    }
+
+    // Initial setup
+    updateScheduleTypeDisplay();
+    updateOccasionalPreview();
+  }
+
+  function updateOccasionalPreview() {
+    const startDate = document.getElementById('occasionalStartDate').value;
+    const endDate = document.getElementById('occasionalEndDate').value;
+    const preview = document.getElementById('occasionalPreview');
+    const durationEl = document.getElementById('previewDuration');
+    const statusEl = document.getElementById('previewStatus');
+    const timeRemainingEl = document.getElementById('previewTimeRemaining');
+
+    if (!startDate || !endDate) {
+      preview.classList.add('d-none');
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const now = new Date();
+
+    // Validate dates
+    if (start >= end) {
+      preview.classList.remove('d-none');
+      preview.className = 'alert alert-danger border';
+      durationEl.textContent = 'Invalid';
+      statusEl.textContent = 'End date must be after start date';
+      timeRemainingEl.textContent = '-';
+      return;
+    }
+
+    // Calculate duration
+    const durationMs = end - start;
+    const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    let durationText = '';
+    if (days > 0) {
+      durationText = `${days} day${days > 1 ? 's' : ''}`;
+      if (hours > 0) durationText += `, ${hours} hour${hours > 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+      durationText = `${hours} hour${hours > 1 ? 's' : ''}`;
+    } else {
+      durationText = 'Less than 1 hour';
+    }
+
+    // Determine status
+    let status, statusClass, timeRemaining;
+    if (now < start) {
+      status = 'Upcoming';
+      statusClass = 'alert-warning';
+      const timeToStart = start - now;
+      const daysToStart = Math.floor(timeToStart / (1000 * 60 * 60 * 24));
+      timeRemaining = daysToStart > 0 ? `Starts in ${daysToStart} day${daysToStart > 1 ? 's' : ''}` : 'Starts soon';
+    } else if (now >= start && now <= end) {
+      status = 'Active Now';
+      statusClass = 'alert-success';
+      const timeToEnd = end - now;
+      const daysToEnd = Math.floor(timeToEnd / (1000 * 60 * 60 * 24));
+      timeRemaining = daysToEnd > 0 ? `${daysToEnd} day${daysToEnd > 1 ? 's' : ''} remaining` : 'Ending soon';
+    } else {
+      status = 'Expired';
+      statusClass = 'alert-danger';
+      const timeSinceEnd = now - end;
+      const daysSinceEnd = Math.floor(timeSinceEnd / (1000 * 60 * 60 * 24));
+      timeRemaining = daysSinceEnd > 0 ? `Ended ${daysSinceEnd} day${daysSinceEnd > 1 ? 's' : ''} ago` : 'Just ended';
+    }
+
+    // Update preview
+    preview.className = `alert ${statusClass} border`;
+    preview.classList.remove('d-none');
+    durationEl.textContent = durationText;
+    statusEl.textContent = status;
+    timeRemainingEl.textContent = timeRemaining;
+  }
+
+  function setDatePreset(preset) {
+    const startInput = document.getElementById('occasionalStartDate');
+    const endInput = document.getElementById('occasionalEndDate');
+    const now = new Date();
+
+    let start, end;
+
+    switch(preset) {
+      case 'today':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0); // 9 AM today
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0); // 9 PM today
+        break;
+      case 'tomorrow':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0);
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 21, 0);
+        break;
+      case 'this-week':
+        const mondayThisWeek = new Date(now);
+        mondayThisWeek.setDate(now.getDate() - now.getDay() + 1);
+        start = new Date(mondayThisWeek.getFullYear(), mondayThisWeek.getMonth(), mondayThisWeek.getDate(), 9, 0);
+        end = new Date(mondayThisWeek.getFullYear(), mondayThisWeek.getMonth(), mondayThisWeek.getDate() + 6, 21, 0);
+        break;
+      case 'next-week':
+        const mondayNextWeek = new Date(now);
+        mondayNextWeek.setDate(now.getDate() - now.getDay() + 8);
+        start = new Date(mondayNextWeek.getFullYear(), mondayNextWeek.getMonth(), mondayNextWeek.getDate(), 9, 0);
+        end = new Date(mondayNextWeek.getFullYear(), mondayNextWeek.getMonth(), mondayNextWeek.getDate() + 6, 21, 0);
+        break;
+      case 'this-month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1, 9, 0);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 21, 0);
+        break;
+      case 'next-month':
+        start = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0);
+        end = new Date(now.getFullYear(), now.getMonth() + 2, 0, 21, 0);
+        break;
+    }
+
+    if (start && end) {
+      startInput.value = formatDateTimeLocal(start);
+      endInput.value = formatDateTimeLocal(end);
+      updateOccasionalPreview();
+
+      // Add visual feedback
+      startInput.classList.add('border-primary');
+      endInput.classList.add('border-primary');
+      setTimeout(() => {
+        startInput.classList.remove('border-primary');
+        endInput.classList.remove('border-primary');
+      }, 1000);
+    }
+  }
+
+  function clearDateInputs() {
+    document.getElementById('occasionalStartDate').value = '';
+    document.getElementById('occasionalEndDate').value = '';
+    updateOccasionalPreview();
+  }
+
+  function formatDateTimeLocal(date) {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+
+  // Recurring Schedule Preview
+  function updateRecurringPreview() {
+    const fromDay = document.getElementById('recurringFromDay')?.value;
+    const fromTime = document.getElementById('recurringFromTime')?.value;
+    const toDay = document.getElementById('recurringToDay')?.value;
+    const toTime = document.getElementById('recurringToTime')?.value;
+
+    const preview = document.getElementById('recurringPreview');
+    const patternEl = document.getElementById('recurringPattern');
+    const statusEl = document.getElementById('recurringStatus');
+    const nextChangeEl = document.getElementById('recurringNextChange');
+
+    if (!fromDay || !fromTime || !toDay || !toTime) {
+      preview.classList.add('d-none');
+      return;
+    }
+
+    // Validate schedule
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const fromDayIndex = dayOrder.indexOf(fromDay);
+    const toDayIndex = dayOrder.indexOf(toDay);
+
+    if (fromDayIndex === -1 || toDayIndex === -1) {
+      preview.classList.add('d-none');
+      return;
+    }
+
+    // Format pattern display
+    let pattern = '';
+    if (fromDayIndex === toDayIndex) {
+      pattern = `Every ${capitalizeFirst(fromDay)} ${formatTime12Hour(fromTime)} - ${formatTime12Hour(toTime)}`;
+    } else if (toDayIndex > fromDayIndex) {
+      pattern = `${capitalizeFirst(fromDay)} ${formatTime12Hour(fromTime)} to ${capitalizeFirst(toDay)} ${formatTime12Hour(toTime)}`;
+    } else {
+      // Spans across week boundary
+      pattern = `${capitalizeFirst(fromDay)} ${formatTime12Hour(fromTime)} to ${capitalizeFirst(toDay)} ${formatTime12Hour(toTime)} (next week)`;
+    }
+
+    // Determine current status
+    const now = new Date();
+    const currentDay = dayOrder[now.getDay() === 0 ? 6 : now.getDay() - 1]; // Convert Sunday=0 to Sunday=6
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const fromTimeMinutes = timeToMinutes(fromTime);
+    const toTimeMinutes = timeToMinutes(toTime);
+
+    let status = 'Inactive';
+    let statusClass = 'alert-secondary';
+    let nextChange = 'N/A';
+
+    // Check if currently active
+    const isActive = isCurrentlyActiveRecurring(currentDay, currentTime, fromDay, fromTime, toDay, toTime);
+
+    if (isActive) {
+      status = 'Active Now';
+      statusClass = 'alert-success';
+      nextChange = calculateNextDeactivation(currentDay, currentTime, toDay, toTime);
+    } else {
+      status = 'Inactive';
+      statusClass = 'alert-secondary';
+      nextChange = calculateNextActivation(currentDay, currentTime, fromDay, fromTime);
+    }
+
+    // Update preview
+    preview.className = `alert ${statusClass} border`;
+    preview.classList.remove('d-none');
+    patternEl.textContent = pattern;
+    statusEl.textContent = status;
+    nextChangeEl.textContent = nextChange;
+  }
+
+  function capitalizeFirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function formatTime12Hour(time24) {
+    const [hours, minutes] = time24.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+  }
+
+  function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function isCurrentlyActiveRecurring(currentDay, currentTime, fromDay, fromTime, toDay, toTime) {
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const currentDayIndex = dayOrder.indexOf(currentDay);
+    const fromDayIndex = dayOrder.indexOf(fromDay);
+    const toDayIndex = dayOrder.indexOf(toDay);
+    const fromTimeMinutes = timeToMinutes(fromTime);
+    const toTimeMinutes = timeToMinutes(toTime);
+
+    if (fromDayIndex === toDayIndex) {
+      // Same day schedule
+      return currentDayIndex === fromDayIndex &&
+             currentTime >= fromTimeMinutes &&
+             currentTime <= toTimeMinutes;
+    } else if (toDayIndex > fromDayIndex) {
+      // Within same week
+      return (currentDayIndex === fromDayIndex && currentTime >= fromTimeMinutes) ||
+             (currentDayIndex > fromDayIndex && currentDayIndex < toDayIndex) ||
+             (currentDayIndex === toDayIndex && currentTime <= toTimeMinutes);
+    } else {
+      // Spans week boundary
+      return (currentDayIndex === fromDayIndex && currentTime >= fromTimeMinutes) ||
+             (currentDayIndex > fromDayIndex) ||
+             (currentDayIndex < toDayIndex) ||
+             (currentDayIndex === toDayIndex && currentTime <= toTimeMinutes);
+    }
+  }
+
+  function calculateNextActivation(currentDay, currentTime, fromDay, fromTime) {
+    // This is a simplified calculation - you might want to make it more sophisticated
+    return `Next ${capitalizeFirst(fromDay)} at ${formatTime12Hour(fromTime)}`;
+  }
+
+  function calculateNextDeactivation(currentDay, currentTime, toDay, toTime) {
+    // This is a simplified calculation - you might want to make it more sophisticated
+    return `${capitalizeFirst(toDay)} at ${formatTime12Hour(toTime)}`;
+  }
+
+  // Product Type Selector Functionality
+  function initializeProductTypeSelector() {
+    const productTypeSelect = document.getElementById('product_type_select');
+    const productTypeCards = document.querySelectorAll('.product-type-card');
+
+    if (!productTypeSelect || productTypeCards.length === 0) return;
+
+    // Update card selection based on dropdown
+    function updateCardSelection() {
+      const selectedType = productTypeSelect.value;
+
+      productTypeCards.forEach(card => {
+        const cardType = card.dataset.type;
+
+        if (cardType === selectedType) {
+          card.classList.add('selected');
+          card.style.transform = 'scale(1.05)';
+          card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
+          card.style.borderWidth = '3px';
+        } else {
+          card.classList.remove('selected');
+          card.style.transform = 'scale(1)';
+          card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+          card.style.borderWidth = '2px';
+        }
+      });
+    }
+
+    // Handle dropdown change
+    productTypeSelect.addEventListener('change', function() {
+      updateCardSelection();
+
+      // Add visual feedback
+      this.style.borderColor = '#28a745';
+      setTimeout(() => {
+        this.style.borderColor = '';
+      }, 1000);
+    });
+
+    // Handle card click
+    productTypeCards.forEach(card => {
+      card.addEventListener('click', function() {
+        const cardType = this.dataset.type;
+        productTypeSelect.value = cardType;
+        updateCardSelection();
+
+        // Add click animation
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          this.style.transform = 'scale(1.05)';
+        }, 150);
+
+        // Trigger change event
+        productTypeSelect.dispatchEvent(new Event('change'));
+      });
+
+      // Add hover effects
+      card.addEventListener('mouseenter', function() {
+        if (!this.classList.contains('selected')) {
+          this.style.transform = 'scale(1.02)';
+          this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+        }
+      });
+
+      card.addEventListener('mouseleave', function() {
+        if (!this.classList.contains('selected')) {
+          this.style.transform = 'scale(1)';
+          this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+        }
+      });
+    });
+
+    // Initial setup
+    updateCardSelection();
+  }
+
+  // Subscription Toggle Functionality
+  function initializeSubscriptionToggle() {
+    const subscriptionToggle = document.getElementById('subscription_toggle');
+    const subscriptionInfo = document.getElementById('subscriptionInfo');
+    const subscriptionIconContainer = document.querySelector('.subscription-icon-container');
+
+    if (!subscriptionToggle || !subscriptionInfo) return;
+
+    // Handle toggle change
+    subscriptionToggle.addEventListener('change', function() {
+      const isEnabled = this.checked;
+
+      // Show/hide info section with smooth animation
+      if (isEnabled) {
+        subscriptionInfo.style.display = 'block';
+        subscriptionInfo.style.opacity = '0';
+        subscriptionInfo.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          subscriptionInfo.style.transition = 'all 0.3s ease';
+          subscriptionInfo.style.opacity = '1';
+          subscriptionInfo.style.transform = 'translateY(0)';
+        }, 10);
+      } else {
+        subscriptionInfo.style.transition = 'all 0.3s ease';
+        subscriptionInfo.style.opacity = '0';
+        subscriptionInfo.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          subscriptionInfo.style.display = 'none';
+        }, 300);
+      }
+
+      // Add visual feedback to toggle
+      if (isEnabled) {
+        this.classList.add('subscription-enabled');
+        if (subscriptionIconContainer) {
+          subscriptionIconContainer.classList.add('rotating');
+          setTimeout(() => {
+            subscriptionIconContainer.classList.remove('rotating');
+          }, 1000);
+        }
+      } else {
+        this.classList.remove('subscription-enabled');
+      }
+
+      // Show notification
+      showSubscriptionNotification(isEnabled);
+    });
+
+    // Initial state
+    if (subscriptionToggle.checked) {
+      subscriptionToggle.classList.add('subscription-enabled');
+    }
+  }
+
+  function showSubscriptionNotification(isEnabled) {
+    const message = isEnabled
+      ? 'Subscription feature enabled! Customers can now set up recurring orders.'
+      : 'Subscription feature disabled. This will be a one-time purchase product.';
+
+    const type = isEnabled ? 'success' : 'info';
+    showNotification(message, type);
+  }
+});
+
+// Global function for image preview modal
+function previewImage(src, filename) {
+  // Create modal for image preview
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Image Preview - ${filename}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img src="${src}" class="img-fluid" style="max-height: 70vh;">
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+
+  modal.addEventListener('hidden.bs.modal', function() {
+    modal.remove();
+  });
+}
+</script>
+
+<style>
+/* Image Upload Styling */
+.image-upload-container {
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.upload-dropzone {
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.upload-dropzone:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+}
+
+.upload-dropzone.drag-over {
+  background: #e7f3ff;
+  border-color: #007bff;
+  transform: scale(1.02);
+}
+
+.image-card {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.image-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.image-wrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-image {
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.product-image:hover {
+  border-color: #007bff;
+  transform: scale(1.05);
+}
+
+.image-actions {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-card:hover .image-actions {
+  opacity: 1;
+}
+
+.image-info {
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 0 0 8px 8px;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Badge Styling */
+.badge {
+  font-size: 0.7rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Button Styling */
+.btn-sm {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.75rem;
+  backdrop-filter: blur(10px);
+}
+
+/* Upload Guidelines */
+.upload-guidelines {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .image-card {
+    margin-bottom: 1rem;
+  }
+
+  .image-actions {
+    opacity: 1; /* Always show on mobile */
+  }
+
+  .btn-group-vertical {
+    flex-direction: row;
+  }
+}
+
+/* Animation for new image additions */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.image-card {
+  animation: slideInUp 0.3s ease;
+}
+
+/* Multiselect dropdown styling */
+.multiselect-states, .multiselect-cities {
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.3s ease;
+}
+
+.multiselect-states:focus, .multiselect-cities:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+  outline: 0;
+}
+
+.multiselect-states option, .multiselect-cities option {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f8f9fa;
+  background-color: #fff;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.multiselect-states option:hover, .multiselect-cities option:hover {
+  background-color: #f8f9fa;
+}
+
+.multiselect-states option:checked, .multiselect-cities option:checked {
+  background-color: #007bff;
+  color: #fff;
+  font-weight: 600;
+}
+
+.delivery-rule-row {
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.delivery-rule-row:hover {
+  background: #e9ecef;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Occasional Product Styling */
+#occasionalProductSettings {
+  transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.preset-btn.active,
+.preset-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#occasionalPreview {
+  transition: all 0.3s ease;
+}
+
+#occasionalPreview.alert-success {
+  border-left: 4px solid #28a745;
+}
+
+#occasionalPreview.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+
+#occasionalPreview.alert-danger {
+  border-left: 4px solid #dc3545;
+}
+
+.datetime-input-highlight {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25) !important;
+  transition: all 0.3s ease;
+}
+
+/* Calendar icon animation */
+.bi-calendar-event {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Category Search Dropdown Styling */
+.search-dropdown-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.search-input {
+  border: none;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  box-shadow: none;
+  border-color: #007bff;
+  outline: none;
+}
+
+.search-results {
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 0 0 6px 6px;
+}
+
+.search-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.search-item:hover {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item.text-muted {
+  cursor: default;
+  font-style: italic;
+}
+
+.search-item.text-muted:hover {
+  background-color: transparent;
+  color: #6c757d;
+}
+
+/* Enhance the select appearance when search is active */
+.searchable-select {
+  cursor: pointer;
+}
+
+.searchable-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Product Type Selector Styling */
+.product-type-selector {
+  position: relative;
+}
+
+.product-type-select {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+}
+
+.product-type-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.3rem rgba(0,123,255,0.25);
+  background: #ffffff;
+}
+
+.product-type-cards {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+.product-type-card {
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+}
+
+.product-type-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.product-type-card:hover::before {
+  left: 100%;
+}
+
+.product-type-card:hover {
+  cursor: pointer;
+}
+
+.product-type-card.selected {
+  position: relative;
+}
+
+.product-type-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.9);
+  color: #28a745;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.product-type-card i {
+  display: block;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease;
+}
+
+.product-type-card:hover i {
+  transform: scale(1.1);
+}
+
+.product-type-card:active {
+  transform: scale(0.95) !important;
+}
+
+/* Card specific styling */
+.product-type-card[data-type="Milk"] {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+  border-color: #2196f3 !important;
+}
+
+.product-type-card[data-type="Grocery"] {
+  background: linear-gradient(135deg, #f3e5f5, #e1bee7) !important;
+  border-color: #9c27b0 !important;
+}
+
+.product-type-card[data-type="Vegetable"] {
+  background: linear-gradient(135deg, #e8f5e8, #c8e6c9) !important;
+  border-color: #4caf50 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .product-type-cards .col-4 {
+    margin-bottom: 12px;
+  }
+
+  .product-type-card {
+    padding: 16px 8px;
+  }
+
+  .product-type-card i {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animation keyframes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.product-type-card.selected {
+  animation: pulse 0.6s ease-in-out;
+}
+
+/* Subscription Toggle Styling */
+.subscription-toggle-section {
+  margin-bottom: 1.5rem;
+}
+
+.subscription-toggle-section .card {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.subscription-toggle-section .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(13, 110, 253, 0.1), transparent);
+  transition: left 0.8s ease;
+}
+
+.subscription-toggle-section .card:hover::before {
+  left: 100%;
+}
+
+.subscription-icon-container {
+  width: 60px;
+  height: 60px;
+  background: rgba(13, 110, 253, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.subscription-icon-container i {
+  transition: transform 0.3s ease;
+}
+
+.subscription-icon-container.rotating i {
+  animation: rotate360 1s ease-in-out;
+}
+
+.subscription-toggle {
+  transform: scale(1.3);
+  accent-color: #28a745;
+  transition: all 0.3s ease;
+}
+
+.subscription-toggle:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.subscription-toggle.subscription-enabled {
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.subscription-info {
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-check-lg .form-check-input {
+  width: 3rem;
+  height: 1.5rem;
+}
+
+.form-check-lg .form-check-input:checked[type=checkbox] {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+
+/* Subscription card hover effects */
+.subscription-toggle-section .card:hover {
+  transform: translateY(-2px);
+  border-color: #007bff;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.subscription-toggle-section .card:hover .subscription-icon-container {
+  background: rgba(13, 110, 253, 0.2);
+  transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .subscription-toggle-section .card-body {
+    padding: 1.5rem !important;
+  }
+
+  .subscription-icon-container {
+    width: 50px;
+    height: 50px;
+    margin-right: 0.75rem !important;
+  }
+
+  .subscription-icon-container i {
+    font-size: 1.25rem !important;
+  }
+
+  .subscription-toggle {
+    transform: scale(1.1);
+  }
+}
+
+/* Animation keyframes for subscription */
+@keyframes rotate360 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subscription-info {
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Special styling when subscription is enabled */
+.subscription-enabled + .form-check-label::after {
+  content: '✓';
+  color: #28a745;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+</style>
+
+<!-- Template for new delivery rules -->
+<template id="delivery-rule-template">
+  <div class="delivery-rule-row border rounded p-3 mb-3">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Rule Type</label>
+        <select name="product[delivery_rules_attributes][NEW_RECORD][rule_type]" class="form-select">
+          <option value="">Select Type</option>
+          <option value="everywhere">All Locations</option>
+          <option value="state">Specific States</option>
+          <option value="city">Specific Cities</option>
+          <option value="pincode">Specific Pincodes</option>
+        </select>
+      </div>
+
+      <div class="col-md-4 location-data-group" style="display: none;">
+        <label class="form-label">Location Data</label>
+
+        <!-- State Multiselect -->
+        <div class="state-select-group" style="display: none;">
+          <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_states][]" multiple class="form-control multiselect-states" data-placeholder="Select states...">
+            <% indian_states.each do |state| %>
+              <option value="<%= state %>"><%= state %></option>
+            <% end %>
+          </select>
+          <div class="form-text">Select one or more states for delivery</div>
+        </div>
+
+        <!-- City Multiselect -->
+        <div class="city-select-group" style="display: none;">
+          <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_cities][]" multiple class="form-control multiselect-cities" data-placeholder="Select cities...">
+            <% all_indian_cities.each do |city| %>
+              <option value="<%= city %>"><%= city %></option>
+            <% end %>
+          </select>
+          <div class="form-text">Select one or more cities for delivery</div>
+        </div>
+
+        <!-- Pincode Input -->
+        <div class="pincode-input-group" style="display: none;">
+          <textarea name="product[delivery_rules_attributes][NEW_RECORD][location_data_pincodes]" class="form-control" rows="2" placeholder="Enter pincodes separated by commas (e.g., 560001, 560002)"></textarea>
+          <div class="form-text">Enter pincodes separated by commas</div>
+        </div>
+
+        <!-- Hidden field to store the final JSON data -->
+        <input type="hidden" name="product[delivery_rules_attributes][NEW_RECORD][location_data]" class="location-data-hidden">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Delivery Days</label>
+        <input type="number" name="product[delivery_rules_attributes][NEW_RECORD][delivery_days]" class="form-control" min="1" value="7">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Delivery Charge (₹)</label>
+        <input type="number" name="product[delivery_rules_attributes][NEW_RECORD][delivery_charge]" class="form-control" step="0.01" min="0" value="0">
+      </div>
+
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="button" class="btn btn-outline-danger remove-delivery-rule">
+          <i class="ri-delete-bin-line"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

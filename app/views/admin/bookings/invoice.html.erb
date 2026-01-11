@@ -1,0 +1,293 @@
+<!-- Invoice Header with Company Information -->
+<div class="invoice-header">
+    <div class="header-content">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="farm-logo">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <h1 class="company-name">Dhanvantari Farm</h1>
+                <p class="company-tagline">Pure • Organic • Sustainable Agriculture</p>
+                <div class="company-details">
+                    <div class="mb-2">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Village Dhanvantri, Organic Valley, Karnataka 560001
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-phone"></i>
+                        +91 98765 43210 | <i class="fas fa-whatsapp ms-3"></i>
+                        +91 98765 43210
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-envelope"></i>
+                        info@dhanvantarifarm.com | <i class="fas fa-globe ms-3"></i>
+                        www.dhanvantarifarm.com
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-certificate"></i>
+                        Organic Certified: NPOP/NAB/001 | <i class="fas fa-leaf ms-3"></i>
+                        100% Organic & Pesticide-Free
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="text-white">
+                    <div style="font-size: 18px; opacity: 0.9; margin-bottom: 10px;">GST: 29ABCDE1234F1Z5</div>
+                    <div style="font-size: 16px; opacity: 0.8;">FSSAI: 12345678901234</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Title and Meta Information -->
+<div class="invoice-title-section">
+    <h2 class="invoice-title">INVOICE</h2>
+    <div class="invoice-meta">
+        <div class="meta-group">
+            <h6>Invoice Number</h6>
+            <p><%= @booking.invoice_number || @booking.booking_number %></p>
+        </div>
+        <div class="meta-group">
+            <h6>Booking Number</h6>
+            <p><%= @booking.booking_number %></p>
+        </div>
+        <div class="meta-group">
+            <h6>Invoice Date</h6>
+            <p><%= Date.current.strftime("%d %B, %Y") %></p>
+        </div>
+        <div class="meta-group">
+            <h6>Due Date</h6>
+            <p><%= (Date.current + 30.days).strftime("%d %B, %Y") %></p>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Information -->
+<div class="customer-section">
+    <h3 class="section-title">
+        <i class="fas fa-user"></i>
+        Bill To
+    </h3>
+    <div class="customer-details">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 style="color: #2d3748; margin-bottom: 10px;">
+                    <%= @booking.customer_name || @booking.customer&.display_name %>
+                </h5>
+                <% if @booking.customer_email.present? %>
+                    <div class="mb-2">
+                        <i class="fas fa-envelope me-2" style="color: #667eea;"></i>
+                        <%= @booking.customer_email %>
+                    </div>
+                <% end %>
+                <% if @booking.customer_phone.present? %>
+                    <div class="mb-2">
+                        <i class="fas fa-phone me-2" style="color: #667eea;"></i>
+                        <%= @booking.customer_phone %>
+                    </div>
+                <% end %>
+            </div>
+            <div class="col-md-6">
+                <% if @booking.delivery_address.present? %>
+                    <h6 style="color: #4a5568; margin-bottom: 8px;">Delivery Address:</h6>
+                    <p style="color: #718096; line-height: 1.5; margin: 0;">
+                        <%= simple_format(@booking.delivery_address) %>
+                    </p>
+                <% end %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Items Section -->
+<div class="items-section">
+    <h3 class="section-title">
+        <i class="fas fa-list"></i>
+        Order Items
+    </h3>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 45%;">Product Details</th>
+                <th style="width: 15%;" class="text-center">Quantity</th>
+                <th style="width: 15%;" class="text-right">Unit Price</th>
+                <th style="width: 20%;" class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% @booking.booking_items.each_with_index do |item, index| %>
+                <tr>
+                    <td class="text-center" style="font-weight: 600; color: #667eea;">
+                        <%= index + 1 %>
+                    </td>
+                    <td>
+                        <div class="item-name">
+                            <%= item.product&.name || 'Product' %>
+                        </div>
+                        <div class="item-description">
+                            <% if item.product&.category %>
+                                Category: <%= item.product.category.name %>
+                            <% end %>
+                            <% if item.product&.sku %>
+                                | SKU: <%= item.product.sku %>
+                            <% end %>
+                        </div>
+                    </td>
+                    <td class="text-center" style="font-weight: 500;">
+                        <%= item.quantity %>
+                        <span style="color: #718096; font-size: 12px;">
+                            pcs
+                        </span>
+                    </td>
+                    <td class="text-right" style="font-weight: 500;">
+                        ₹<%= number_with_delimiter(item.price&.to_f || 0, delimiter: ',') %>
+                    </td>
+                    <td class="text-right" style="font-weight: 600; color: #2d3748;">
+                        ₹<%= number_with_delimiter((item.quantity * item.price)&.to_f || 0, delimiter: ',') %>
+                    </td>
+                </tr>
+            <% end %>
+
+            <% if @booking.booking_items.empty? %>
+                <tr>
+                    <td colspan="5" class="text-center" style="color: #a0aec0; font-style: italic; padding: 40px;">
+                        No items found in this booking
+                    </td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>
+
+<!-- Totals Section -->
+<div class="totals-section">
+    <div class="totals-container">
+        <div class="total-row subtotal">
+            <span>Subtotal:</span>
+            <span style="font-weight: 500;">₹<%= number_with_delimiter(@booking.calculated_subtotal, delimiter: ',') %></span>
+        </div>
+
+        <% if @booking.discount_amount.present? && @booking.discount_amount.to_f > 0 %>
+            <div class="total-row subtotal">
+                <span>Discount:</span>
+                <span style="font-weight: 500; color: #38a169;">
+                    -₹<%= number_with_delimiter(@booking.discount_amount&.to_f || 0, delimiter: ',') %>
+                </span>
+            </div>
+        <% end %>
+
+        <div class="total-row tax">
+            <span>GST (18%):</span>
+            <span style="font-weight: 500;">₹<%= number_with_delimiter(@booking.calculated_tax_amount, delimiter: ',') %></span>
+        </div>
+
+        <div class="total-row final-total">
+            <span>Total Amount:</span>
+            <span>₹<%= number_with_delimiter(@booking.calculated_total_amount, delimiter: ',') %></span>
+        </div>
+
+        <% if @booking.payment_status_paid? %>
+            <div style="margin-top: 15px; text-align: center;">
+                <span class="badge" style="background: linear-gradient(135deg, #38a169 0%, #48bb78 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">
+                    <i class="fas fa-check-circle me-1"></i>
+                    PAID
+                </span>
+            </div>
+        <% elsif @booking.payment_status_partially_paid? %>
+            <div style="margin-top: 15px; text-align: center;">
+                <span class="badge" style="background: linear-gradient(135deg, #ed8936 0%, #f6ad55 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    PARTIALLY PAID
+                </span>
+            </div>
+        <% else %>
+            <div style="margin-top: 15px; text-align: center;">
+                <span class="badge" style="background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">
+                    <i class="fas fa-clock me-1"></i>
+                    UNPAID
+                </span>
+            </div>
+        <% end %>
+    </div>
+</div>
+
+<!-- Notes Section (if applicable) -->
+<% if @booking.notes.present? %>
+    <div style="padding: 30px 40px; background: white; border-top: 1px solid #e2e8f0;">
+        <h3 class="section-title">
+            <i class="fas fa-sticky-note"></i>
+            Notes
+        </h3>
+        <div style="background: #f7fafc; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
+            <%= simple_format(@booking.notes) %>
+        </div>
+    </div>
+<% end %>
+
+<!-- Invoice Footer -->
+<div class="invoice-footer">
+    <div class="footer-note" style="background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+            <i class="fas fa-heart" style="color: #e53e3e; font-size: 20px;"></i>
+            <strong style="font-size: 18px; color: #2d3748;">Thank you for choosing Dhanvantri Farm!</strong>
+            <i class="fas fa-seedling" style="color: #38a169; font-size: 20px;"></i>
+        </div>
+        <p style="margin: 0; color: #4a5568; font-style: italic;">
+            "Supporting sustainable agriculture and nourishing communities with the finest organic produce,
+            straight from our fields to your table with love and care."
+        </p>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; margin-bottom: 20px;">
+        <!-- Contact Information -->
+        <div style="flex: 1;">
+            <h6 style="color: #4a5568; margin-bottom: 10px; font-weight: 600;">📞 Contact Information</h6>
+            <div style="font-size: 12px; color: #718096; line-height: 1.6;">
+                <div>📧 billing@dhanvantarifarm.com</div>
+                <div>📞 +91 98765 43210 (Call/WhatsApp)</div>
+                <div>🌐 www.dhanvantarifarm.com</div>
+                <div style="margin-top: 8px; font-weight: 500; color: #4a5568;">
+                    <strong>Terms:</strong> Payment due within 30 days
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code for UPI Payments -->
+        <div style="text-align: center;">
+            <div style="background: white; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <div style="font-size: 12px; color: #4a5568; margin-bottom: 8px; font-weight: 600;">
+                    <i class="fas fa-qrcode me-1" style="color: #667eea;"></i>
+                    Quick Pay via UPI
+                </div>
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; position: relative;">
+                    <i class="fas fa-qrcode" style="font-size: 24px; color: white;"></i>
+                    <div style="position: absolute; inset: 8px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px;"></div>
+                </div>
+                <div style="font-size: 11px; color: #667eea; margin-top: 8px; font-weight: 600;">
+                    dhanvantarifarm@paytm
+                </div>
+                <div style="font-size: 10px; color: #718096; margin-top: 4px;">
+                    Scan & Pay Instantly
+                </div>
+            </div>
+        </div>
+
+        <!-- Organic Certification Badge -->
+        <div style="text-align: center;">
+            <div style="background: linear-gradient(135deg, #38a169 0%, #48bb78 100%); color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(56,161,105,0.2);">
+                <i class="fas fa-certificate" style="font-size: 24px; margin-bottom: 8px;"></i>
+                <div style="font-size: 11px; font-weight: 600;">CERTIFIED</div>
+                <div style="font-size: 10px; opacity: 0.9;">100% Organic</div>
+                <div style="font-size: 9px; opacity: 0.8;">NPOP/NAB/001</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #a0aec0; font-size: 11px;">
+        This is a computer-generated invoice. No signature required.<br>
+        Generated on <%= Time.current.strftime("%d %B %Y at %I:%M %p") %>
+    </div>
+</div>

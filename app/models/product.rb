@@ -1,0 +1,625 @@
+class Product < ApplicationRecord
+  # Product Type Constants
+  PRODUCT_TYPES = [
+    ['Milk', 'Milk'],
+    ['Grocery', 'Grocery'],
+    ['Vegetable', 'Vegetable']
+  ].freeze
+
+  PRODUCT_TYPE_OPTIONS = {
+    'Milk' => { icon: 'bi-cup-straw', color: '#e3f2fd', border: '#2196f3', text: '#1976d2' },
+    'Grocery' => { icon: 'bi-basket', color: '#f3e5f5', border: '#9c27b0', text: '#7b1fa2' },
+    'Vegetable' => { icon: 'bi-flower1', color: '#e8f5e8', border: '#4caf50', text: '#388e3c' }
+  }.freeze
+
+  belongs_to :category
+  has_many :delivery_rules, dependent: :destroy
+  has_many :booking_items
+  has_many :order_items
+  has_many :bookings, through: :booking_items
+  has_many :orders, through: :order_items
+  has_many :product_reviews, dependent: :destroy
+  has_many :approved_reviews, -> { approved }, class_name: 'ProductReview'
+  # Keep old ratings for backward compatibility
+  has_many :product_ratings, dependent: :destroy
+  has_many :approved_ratings, -> { approved }, class_name: 'ProductRating'
+
+  has_many_attached :images
+
+  validates :name, presence: true
+  validates :sku, presence: true, uniqueness: { case_sensitive: false }
+  validates :price, presence: true, numericality: { greater_than: 0 }
+  validates :discount_price, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
+  validates :stock, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :status, presence: true
+  validates :product_type, presence: true, inclusion: { in: PRODUCT_TYPES.map(&:last) }
+  validates :weight, numericality: { greater_than: 0 }, allow_blank: true
+  validates :buying_price, numericality: { greater_than: 0 }, allow_blank: true
+  validates :discount_type, inclusion: { in: ['percentage', 'fixed'], message: 'must be percentage or fixed' }, allow_blank: true
+  validates :discount_value, numericality: { greater_than: 0 }, allow_blank: true
+  validates :original_price, numericality: { greater_than: 0 }, allow_blank: true
+  validates :occasional_start_date, presence: true, if: :is_occasional_product?
+  validates :occasional_end_date, presence: true, if: :is_occasional_product?
+
+  validate :discount_price_validation
+  validate :discount_value_validation
+  validate :occasional_dates_validation
+
+  accepts_nested_attributes_for :delivery_rules, allow_destroy: true, reject_if: :all_blank
+
+  enum :status, { active: 0, inactive: 1, draft: 2 }
+
+  scope :active, -> { where(status: :active) }
+  scope :inactive, -> { where(status: :inactive) }
+  scope :draft, -> { where(status: :draft) }
+  scope :in_stock, -> { where('stock > 0') }
+  scope :out_of_stock, -> { where(stock: 0) }
+  scope :by_category, ->(category_id) { where(category_id: category_id) }
+  scope :search, ->(query) { where('name ILIKE ? OR description ILIKE ? OR sku ILIKE ?', "%#{query}%", "%#{query}%", "%#{query}%") }
+  scope :recent, -> { order(created_at: :desc) }
+  scope :occasional, -> { where(is_occasional_product: true) }
+  scope :regular, -> { where(is_occasional_product: false) }
+  scope :occasional_active_now, -> { occasional.where('occasional_start_date <= ? AND occasional_end_date >= ?', Time.current, Time.current) }
+  scope :occasional_upcoming, -> { occasional.where('occasional_start_date > ?', Time.current) }
+  scope :occasional_expired, -> { occasional.where('occasional_end_date < ?', Time.current) }
+  scope :subscription_enabled, -> { where(is_subscription_enabled: true) }
+  scope :subscription_disabled, -> { where(is_subscription_enabled: false) }
+
+  before_validation :generate_sku, if: -> { sku.blank? }
+  before_validation :set_default_status, if: :new_record?
+  before_save :process_delivery_rules_location_data
+  before_save :calculate_discount_fields
+  before_save :update_price_tracking
+
+  def in_stock?
+    stock > 0
+  end
+
+  def out_of_stock?
+    stock == 0
+  end
+
+  def discounted?
+    is_discounted? || (discount_price.present? && discount_price > 0 && discount_price < price)
+  end
+
+  def selling_price
+    discounted? ? final_price_after_discount : price
+  end
+
+  def final_price_after_discount
+    return price unless discounted?
+
+    if discount_type.present? && discount_value.present?
+      calculate_discounted_price(original_price || price, discount_type, discount_value)
+    else
+      discount_price || price
+    end
+  end
+
+  def discount_percentage
+    return 0 unless discounted?
+
+    if discount_type == 'percentage' && discount_value.present?
+      discount_value
+    elsif discount_amount.present? && (original_price || price) > 0
+      ((discount_amount / (original_price || price)) * 100).round(2)
+    elsif discount_price.present?
+      ((price - discount_price) / price * 100).round(2)
+    else
+      0
+    end
+  end
+
+  def savings_amount
+    return 0 unless discounted?
+
+    if discount_amount.present?
+      discount_amount
+    elsif original_price.present?
+      original_price - final_price_after_discount
+    else
+      price - final_price_after_discount
+    end
+  end
+
+  # Profit margin calculations
+  def profit_amount
+    return 0 unless buying_price.present?
+    final_price_after_discount - buying_price
+  end
+
+  def profit_percentage
+    return 0 unless buying_price.present? && buying_price > 0
+    ((profit_amount / buying_price) * 100).round(2)
+  end
+
+  def profit_margin_percentage
+    return 0 unless buying_price.present? && final_price_after_discount > 0
+    ((profit_amount / final_price_after_discount) * 100).round(2)
+  end
+
+  def cost_percentage
+    return 0 unless buying_price.present? && final_price_after_discount > 0
+    ((buying_price / final_price_after_discount) * 100).round(2)
+  end
+
+  def profitable?
+    buying_price.present? && profit_amount > 0
+  end
+
+  def formatted_buying_price
+    buying_price.present? ? "₹#{buying_price}" : 'Not set'
+  end
+
+  def profit_status
+    return 'Unknown' unless buying_price.present?
+
+    if profit_amount > 0
+      'Profitable'
+    elsif profit_amount == 0
+      'Break Even'
+    else
+      'Loss Making'
+    end
+  end
+
+  def profit_status_class
+    return 'text-muted' unless buying_price.present?
+
+    if profit_amount > 0
+      'text-success'
+    elsif profit_amount == 0
+      'text-warning'
+    else
+      'text-danger'
+    end
+  end
+
+  # Review methods (using new ProductReview model)
+  def average_rating
+    return 0 if approved_reviews.empty?
+    (approved_reviews.average(:rating) || 0).round(1)
+  end
+
+  def total_reviews
+    approved_reviews.count
+  end
+
+  def review_distribution
+    return {} if approved_reviews.empty?
+
+    distribution = approved_reviews.group(:rating).count
+    (1..5).map { |rating| [rating, distribution[rating] || 0] }.to_h
+  end
+
+  def review_percentage_distribution
+    total = total_reviews
+    return {} if total == 0
+
+    review_distribution.transform_values { |count| ((count.to_f / total) * 100).round(1) }
+  end
+
+  def star_display
+    full_stars = average_rating.floor
+    half_star = (average_rating - full_stars) >= 0.5 ? 1 : 0
+    empty_stars = 5 - full_stars - half_star
+
+    ('⭐' * full_stars) + ('⭐' * half_star) + ('☆' * empty_stars)
+  end
+
+  def has_reviews?
+    total_reviews > 0
+  end
+
+  def highly_rated?
+    average_rating >= 4.0 && total_reviews >= 5
+  end
+
+  # Occasional product methods
+  def occasional_active?
+    return false unless is_occasional_product?
+    return false if occasional_start_date.blank? || occasional_end_date.blank?
+
+    current_time = Time.current
+    current_time >= occasional_start_date && current_time <= occasional_end_date
+  end
+
+  def occasional_upcoming?
+    return false unless is_occasional_product?
+    return false if occasional_start_date.blank?
+
+    Time.current < occasional_start_date
+  end
+
+  def occasional_expired?
+    return false unless is_occasional_product?
+    return false if occasional_end_date.blank?
+
+    Time.current > occasional_end_date
+  end
+
+  def occasional_status_text
+    return 'Regular Product' unless is_occasional_product?
+
+    if occasional_active?
+      'Active Now'
+    elsif occasional_upcoming?
+      "Starts #{occasional_start_date.strftime('%b %d, %Y at %I:%M %p')}"
+    elsif occasional_expired?
+      "Ended #{occasional_end_date.strftime('%b %d, %Y at %I:%M %p')}"
+    else
+      'Not Configured'
+    end
+  end
+
+  def occasional_days_remaining
+    return nil unless is_occasional_product? && occasional_active?
+
+    days = ((occasional_end_date - Time.current) / 1.day).ceil
+    days > 0 ? days : 0
+  end
+
+  def should_display_now?
+    return true unless is_occasional_product?
+
+    if occasional_auto_hide?
+      occasional_active?
+    else
+      true # Always show if auto-hide is disabled
+    end
+  end
+
+  def review_summary_text
+    return 'No reviews yet' unless has_reviews?
+    "#{average_rating}/5 (#{total_reviews} #{'review'.pluralize(total_reviews)})"
+  end
+
+  def latest_reviews(limit = 5)
+    approved_reviews.recent.limit(limit)
+  end
+
+  def featured_reviews(limit = 3)
+    approved_reviews.helpful.limit(limit)
+  end
+
+  # Product Type Methods
+  def product_type_icon
+    return 'bi-box' unless product_type.present?
+    PRODUCT_TYPE_OPTIONS[product_type]&.dig(:icon) || 'bi-box'
+  end
+
+  def product_type_color
+    return '#6c757d' unless product_type.present?
+    PRODUCT_TYPE_OPTIONS[product_type]&.dig(:text) || '#6c757d'
+  end
+
+  def product_type_badge_class
+    case product_type
+    when 'Milk'
+      'bg-primary-subtle text-primary'
+    when 'Grocery'
+      'bg-purple-subtle text-purple'
+    when 'Vegetable'
+      'bg-success-subtle text-success'
+    else
+      'bg-secondary-subtle text-secondary'
+    end
+  end
+
+  # Subscription Methods
+  def subscription_enabled?
+    is_subscription_enabled == true
+  end
+
+  def subscription_badge_class
+    subscription_enabled? ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'
+  end
+
+  def subscription_icon
+    subscription_enabled? ? 'bi-arrow-repeat' : 'bi-bag'
+  end
+
+  def subscription_status_text
+    subscription_enabled? ? 'Subscription Available' : 'One-time Purchase Only'
+  end
+
+  # Price tracking methods
+  def update_price_tracking
+    return unless price_changed? || yesterday_price.nil?
+
+    # Store current price as yesterday's price if it's a new day
+    if last_price_update.nil? || last_price_update < Date.current.beginning_of_day
+      self.yesterday_price = price_was || price
+      self.today_price = price
+      self.last_price_update = Time.current
+      calculate_price_change_percentage
+      update_price_history
+    elsif price_changed?
+      # Update today's price if changed within the same day
+      self.today_price = price
+      calculate_price_change_percentage
+      update_price_history
+    end
+  end
+
+  def price_trend
+    return 'stable' if yesterday_price.nil? || yesterday_price == today_price
+
+    today_price > yesterday_price ? 'up' : 'down'
+  end
+
+  def price_change_amount
+    return 0 if yesterday_price.nil?
+    (today_price || price) - yesterday_price
+  end
+
+  def formatted_price_change
+    change = price_change_amount
+    return '₹0' if change == 0
+
+    sign = change > 0 ? '+' : ''
+    "#{sign}₹#{change}"
+  end
+
+  def price_change_percentage_formatted
+    return '0%' if price_change_percentage.nil? || price_change_percentage == 0
+
+    sign = price_change_percentage > 0 ? '+' : ''
+    "#{sign}#{price_change_percentage}%"
+  end
+
+  def price_trend_class
+    case price_trend
+    when 'up'
+      'text-success'
+    when 'down'
+      'text-danger'
+    else
+      'text-muted'
+    end
+  end
+
+  def price_trend_icon
+    case price_trend
+    when 'up'
+      'bi-arrow-up'
+    when 'down'
+      'bi-arrow-down'
+    else
+      'bi-dash'
+    end
+  end
+
+  def get_price_history_array
+    return [] if price_history.blank?
+    JSON.parse(price_history)
+  rescue JSON::ParserError
+    []
+  end
+
+  def formatted_today_price
+    "₹#{today_price || price}"
+  end
+
+  def formatted_yesterday_price
+    return 'N/A' if yesterday_price.nil?
+    "₹#{yesterday_price}"
+  end
+
+  # Legacy methods for backward compatibility
+  alias_method :total_ratings, :total_reviews
+  alias_method :has_ratings?, :has_reviews?
+  alias_method :rating_summary_text, :review_summary_text
+
+  def main_image
+    images.attached? ? images.first : nil
+  end
+
+  def formatted_price
+    "₹#{price}"
+  end
+
+  def formatted_selling_price
+    "₹#{selling_price}"
+  end
+
+  def stock_status
+    case stock
+    when 0
+      'Out of Stock'
+    when 1..5
+      'Low Stock'
+    else
+      'In Stock'
+    end
+  end
+
+  def stock_status_class
+    case stock
+    when 0
+      'text-danger'
+    when 1..5
+      'text-warning'
+    else
+      'text-success'
+    end
+  end
+
+  # Check if product can be delivered to a specific pincode
+  def deliverable_to?(pincode)
+    return false if delivery_rules.empty?
+
+    # Check if there's an 'everywhere' rule
+    return true if delivery_rules.everywhere.exists?
+
+    # Check pincode-specific rules
+    pincode_rules = delivery_rules.pincode
+    pincode_rules.any? do |rule|
+      location_data = JSON.parse(rule.location_data || '[]')
+      location_data.include?(pincode.to_s)
+    end
+  rescue JSON::ParserError
+    false
+  end
+
+  # Get delivery information for a pincode
+  def delivery_info_for(pincode)
+    return { deliverable: false } unless deliverable_to?(pincode)
+
+    # Find the most specific rule that matches
+    rule = find_matching_rule(pincode)
+
+    {
+      deliverable: true,
+      delivery_days: rule&.delivery_days || 7,
+      delivery_charge: rule&.delivery_charge || 0
+    }
+  end
+
+  private
+
+  def generate_sku
+    # Generate SKU based on category and random number
+    category_prefix = category&.name&.first(3)&.upcase || 'PRD'
+    random_suffix = SecureRandom.hex(3).upcase
+    self.sku = "#{category_prefix}#{random_suffix}"
+
+    # Ensure uniqueness
+    while Product.exists?(sku: self.sku)
+      random_suffix = SecureRandom.hex(3).upcase
+      self.sku = "#{category_prefix}#{random_suffix}"
+    end
+  end
+
+  def set_default_status
+    self.status ||= :draft
+  end
+
+  def discount_price_validation
+    if discount_price.present? && discount_price >= price
+      errors.add(:discount_price, 'must be less than regular price')
+    end
+  end
+
+  def discount_value_validation
+    return unless discount_type.present? && discount_value.present?
+
+    case discount_type
+    when 'percentage'
+      if discount_value > 100
+        errors.add(:discount_value, 'percentage cannot be more than 100%')
+      end
+    when 'fixed'
+      base_price = original_price || price
+      if discount_value >= base_price
+        errors.add(:discount_value, 'fixed discount cannot be more than or equal to the product price')
+      end
+    end
+  end
+
+  def calculate_discount_fields
+    return unless discount_type.present? && discount_value.present?
+
+    base_price = original_price || price
+
+    # Calculate discount amount and final price
+    case discount_type
+    when 'percentage'
+      self.discount_amount = (base_price * discount_value / 100).round(2)
+    when 'fixed'
+      self.discount_amount = discount_value
+    end
+
+    # Calculate final price after discount
+    final_price = base_price - discount_amount
+
+    # Update discount_price for backward compatibility
+    self.discount_price = final_price
+
+    # Set discounted flag
+    self.is_discounted = discount_amount > 0
+  end
+
+  def calculate_discounted_price(base_price, type, value)
+    case type
+    when 'percentage'
+      base_price - (base_price * value / 100)
+    when 'fixed'
+      base_price - value
+    else
+      base_price
+    end
+  end
+
+  def find_matching_rule(pincode)
+    # Try to find the most specific rule
+
+    # First check for pincode-specific rules
+    pincode_rules = delivery_rules.pincode
+    matching_pincode_rule = pincode_rules.find do |rule|
+      location_data = JSON.parse(rule.location_data || '[]')
+      location_data.include?(pincode.to_s)
+    end
+    return matching_pincode_rule if matching_pincode_rule
+
+    # Then check for 'everywhere' rules
+    delivery_rules.everywhere.first
+  end
+
+  def process_delivery_rules_location_data
+    delivery_rules.each do |rule|
+      next if rule.everywhere? || rule.location_data.blank?
+
+      # If location_data is a string (from form), convert to JSON array
+      if rule.location_data.is_a?(String) && !rule.location_data.start_with?('[')
+        locations = rule.location_data.split(',').map(&:strip).reject(&:blank?)
+        rule.location_data = locations.to_json
+      end
+    end
+  end
+
+  def calculate_price_change_percentage
+    return if yesterday_price.nil? || yesterday_price == 0
+
+    current_price = today_price || price
+    change = ((current_price - yesterday_price) / yesterday_price * 100).round(2)
+    self.price_change_percentage = change
+  end
+
+  def update_price_history
+    current_price = today_price || price
+    history = get_price_history_array
+
+    # Add current price with timestamp
+    history << {
+      date: Date.current.to_s,
+      price: current_price,
+      timestamp: Time.current.to_i
+    }
+
+    # Keep only last 30 days of history
+    history = history.last(30)
+    self.price_history = history.to_json
+  end
+
+  def occasional_dates_validation
+    return unless is_occasional_product?
+
+    if occasional_start_date.present? && occasional_end_date.present?
+      if occasional_start_date >= occasional_end_date
+        errors.add(:occasional_end_date, 'must be after the start date')
+      end
+
+      # Warn if dates are in the past
+      if occasional_end_date < Time.current
+        errors.add(:occasional_end_date, 'should not be in the past for new occasional products')
+      end
+
+      # Check for reasonable duration (not more than 1 year)
+      if (occasional_end_date - occasional_start_date) > 1.year
+        errors.add(:occasional_end_date, 'duration cannot be more than 1 year')
+      end
+    end
+  end
+end

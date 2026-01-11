@@ -43,20 +43,6 @@
           </li>
         <% end %>
 
-        <!-- Customers -->
-        <% if show_sidebar_item?('customers') %>
-          <li class="nav-item">
-            <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-green">
-                  <i class="bi bi-people-fill"></i>
-                </div>
-              </div>
-              <span class="nav-text">Customers</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
 
         <!-- Helpdesk -->
         <% if show_sidebar_item?('helpdesk') %>
@@ -143,6 +129,70 @@
                 </div>
               </div>
               <span class="nav-text">Leads</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+
+    <!-- Master Data Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Master Data</div>
+      <ul class="nav-menu">
+        <!-- Customers -->
+        <% if show_sidebar_item?('customers') %>
+          <li class="nav-item">
+            <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-green">
+                  <i class="bi bi-people-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Customers</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Categories -->
+        <% if show_sidebar_item?('categories') %>
+          <li class="nav-item">
+            <%= link_to admin_categories_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/categories')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-amber">
+                  <i class="bi bi-tags-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Categories</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Pincodes (Placeholder - route not implemented) -->
+        <li class="nav-item">
+          <%= link_to "#", class: "nav-link-modern", onclick: "alert('Pincodes management coming soon!')" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-lime">
+                <i class="bi bi-geo-alt-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Pincodes</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Products -->
+        <% if show_sidebar_item?('products') %>
+          <li class="nav-item">
+            <%= link_to admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/products')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-sky">
+                  <i class="bi bi-box-seam-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Products</span>
               <div class="nav-indicator"></div>
             <% end %>
           </li>

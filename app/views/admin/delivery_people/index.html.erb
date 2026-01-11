@@ -1,0 +1,314 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Delivery Team Management</h2>
+    <p class="text-muted mb-0">Manage your delivery workforce and their information</p>
+  </div>
+  <div>
+    <%= link_to new_admin_delivery_person_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add Delivery Person
+    <% end %>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Team</h6>
+            <h4 class="mb-0"><%= number_with_delimiter(@total_delivery_people || 0) %></h4>
+          </div>
+          <div class="text-primary">
+            <i class="bi bi-people fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Drivers</h6>
+            <h4 class="mb-0"><%= number_with_delimiter(@active_delivery_people || 0) %></h4>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-person-check fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Inactive Drivers</h6>
+            <h4 class="mb-0"><%= number_with_delimiter(@inactive_delivery_people || 0) %></h4>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-person-x fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Popular Vehicle</h6>
+            <h4 class="mb-0"><%= (@vehicle_types_count.present? && @vehicle_types_count.any? ? (@vehicle_types_count.max_by { |k, v| v }&.first&.humanize || 'N/A') : 'N/A').to_s.truncate(8) %></h4>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-truck fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Delivery People Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Delivery Team Directory</h5>
+      <div class="d-flex gap-2">
+        <div class="position-relative">
+          <input type="text" class="form-control" placeholder="Search delivery team..." id="searchInput">
+          <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <% if @delivery_people.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0 fw-semibold">Delivery Person</th>
+              <th class="border-0 fw-semibold">Contact Info</th>
+              <th class="border-0 fw-semibold">Mobile Login</th>
+              <th class="border-0 fw-semibold">Vehicle Details</th>
+              <th class="border-0 fw-semibold">Location</th>
+              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @delivery_people.each do |person| %>
+              <tr>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-person text-primary"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0"><%= person.respond_to?(:display_name) ? person.display_name : "#{person.first_name} #{person.last_name}" %></h6>
+                      <small class="text-muted">ID: #<%= person.id %></small>
+                    </div>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <% if person.email.present? %>
+                      <div class="small">
+                        <i class="bi bi-envelope text-muted me-1"></i>
+                        <%= person.email %>
+                      </div>
+                    <% end %>
+                    <% if person.mobile.present? %>
+                      <div class="small">
+                        <i class="bi bi-telephone text-muted me-1"></i>
+                        <%= person.mobile %>
+                      </div>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div class="position-relative">
+                    <% if person.respond_to?(:auto_generated_password) && person.auto_generated_password.present? %>
+                      <div class="d-flex align-items-center">
+                        <code class="bg-light px-2 py-1 rounded text-primary" id="password-<%= person.id %>">
+                          <%= person.auto_generated_password %>
+                        </code>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary ms-2"
+                                onclick="copyPassword('<%= person.auto_generated_password %>', <%= person.id %>)"
+                                title="Copy password">
+                          <i class="bi bi-clipboard" id="copy-icon-<%= person.id %>"></i>
+                        </button>
+                      </div>
+                      <small class="text-muted d-block mt-1">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Auto-generated for mobile login
+                      </small>
+                    <% else %>
+                      <span class="text-muted">
+                        <i class="bi bi-x-circle me-1"></i>
+                        No password set
+                      </span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <span class="badge bg-secondary-subtle text-secondary"><%= person.respond_to?(:vehicle_type) ? person.vehicle_type&.humanize : 'N/A' %></span>
+                  <% if person.respond_to?(:vehicle_number) && person.vehicle_number.present? %>
+                    <div class="small text-muted mt-1"><%= person.vehicle_number %></div>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <%= person.respond_to?(:city) ? person.city || 'Not specified' : 'Not specified' %>
+                </td>
+                <td class="align-middle">
+                  <% if person.respond_to?(:status) && person.status %>
+                    <span class="badge bg-success-subtle text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Active
+                    </span>
+                  <% else %>
+                    <span class="badge bg-danger-subtle text-danger">
+                      <i class="bi bi-x-circle me-1"></i>
+                      Inactive
+                    </span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                      <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <%= link_to admin_delivery_person_path(person), class: "dropdown-item" do %>
+                          <i class="bi bi-eye me-2"></i>
+                          View Details
+                        <% end %>
+                      </li>
+                      <li>
+                        <%= link_to edit_admin_delivery_person_path(person), class: "dropdown-item" do %>
+                          <i class="bi bi-pencil me-2"></i>
+                          Edit Person
+                        <% end %>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <%= link_to admin_delivery_person_path(person), method: :delete,
+                            class: "dropdown-item text-danger",
+                            confirm: "Are you sure you want to delete this delivery person?",
+                            data: {
+                              confirm: "Are you sure you want to delete this delivery person? This action cannot be undone."
+                            } do %>
+                          <i class="bi bi-trash me-2"></i>
+                          Delete Person
+                        <% end %>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @delivery_people.respond_to?(:total_pages) %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @delivery_people %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-people fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Delivery Team Found</h5>
+        <p class="text-muted mb-4">Start building your delivery team by adding your first delivery person.</p>
+        <%= link_to "Add Delivery Person", new_admin_delivery_person_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Search functionality
+  const searchInput = document.getElementById('searchInput');
+  const tableRows = document.querySelectorAll('tbody tr');
+
+  searchInput?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+
+    tableRows.forEach(row => {
+      const personName = row.cells[0]?.textContent.toLowerCase() || '';
+      const contactInfo = row.cells[1]?.textContent.toLowerCase() || '';
+      const mobileLogin = row.cells[2]?.textContent.toLowerCase() || '';
+      const vehicleInfo = row.cells[3]?.textContent.toLowerCase() || '';
+      const location = row.cells[4]?.textContent.toLowerCase() || '';
+
+      if (personName.includes(searchTerm) ||
+          contactInfo.includes(searchTerm) ||
+          mobileLogin.includes(searchTerm) ||
+          vehicleInfo.includes(searchTerm) ||
+          location.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+});
+
+// Copy password functionality
+function copyPassword(password, personId) {
+  navigator.clipboard.writeText(password).then(function() {
+    // Show success feedback
+    const icon = document.getElementById(`copy-icon-${personId}`);
+    const originalClass = icon.className;
+
+    icon.className = 'bi bi-check-circle text-success';
+
+    // Reset icon after 2 seconds
+    setTimeout(function() {
+      icon.className = originalClass;
+    }, 2000);
+
+    // Optional: Show toast notification
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+      const toastEl = document.createElement('div');
+      toastEl.className = 'toast position-fixed top-0 end-0 m-3';
+      toastEl.innerHTML = `
+        <div class="toast-body bg-success text-white rounded">
+          <i class="bi bi-check-circle me-2"></i>
+          Password copied to clipboard!
+        </div>
+      `;
+      document.body.appendChild(toastEl);
+
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+
+      toastEl.addEventListener('hidden.bs.toast', function() {
+        document.body.removeChild(toastEl);
+      });
+    }
+  }).catch(function(err) {
+    console.error('Failed to copy password: ', err);
+    alert('Failed to copy password. Please copy manually: ' + password);
+  });
+}
+</script>

@@ -1,0 +1,521 @@
+<%= form_with model: [:admin, @delivery_person], local: true, multipart: true, class: "row g-4" do |form| %>
+  <% if @delivery_person.errors.any? %>
+    <div class="col-12">
+      <div class="alert alert-danger border-0 shadow-sm">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+          <div>
+            <h6 class="alert-heading mb-1">Please fix the following errors:</h6>
+            <ul class="mb-0 small">
+              <% @delivery_person.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Personal Details Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-person text-primary"></i>
+          </div>
+          <h5 class="card-title mb-0">Personal Details</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <%= form.label :first_name, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-person-fill text-muted"></i>
+              </span>
+              <%= form.text_field :first_name, class: "form-control border-start-0 ps-0", placeholder: "Enter first name", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :last_name, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-person text-muted"></i>
+              </span>
+              <%= form.text_field :last_name, class: "form-control border-start-0 ps-0", placeholder: "Enter last name", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :mobile, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-telephone text-muted"></i>
+              </span>
+              <%= form.telephone_field :mobile, class: "form-control border-start-0 ps-0", placeholder: "Enter 10-digit mobile number", pattern: "[0-9]{10}", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :email, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-envelope text-muted"></i>
+              </span>
+              <%= form.email_field :email, class: "form-control border-start-0 ps-0", placeholder: "Enter email address", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :joining_date, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-calendar-event text-muted"></i>
+              </span>
+              <%= form.date_field :joining_date, class: "form-control border-start-0 ps-0", value: @delivery_person.joining_date || Date.current, required: true %>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :address, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                <i class="bi bi-geo-alt text-muted"></i>
+              </span>
+              <%= form.text_area :address, class: "form-control border-start-0 ps-0", rows: 3, placeholder: "Enter complete address", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :city, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-building text-muted"></i>
+              </span>
+              <%= form.text_field :city, class: "form-control border-start-0 ps-0", placeholder: "Enter city", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :state, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-map text-muted"></i>
+              </span>
+              <%= form.text_field :state, class: "form-control border-start-0 ps-0", placeholder: "Enter state", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :pincode, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-mailbox text-muted"></i>
+              </span>
+              <%= form.text_field :pincode, class: "form-control border-start-0 ps-0", placeholder: "Enter 6-digit pincode", pattern: "[0-9]{6}", required: true %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Credentials Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-success bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-shield-lock text-success"></i>
+          </div>
+          <h5 class="card-title mb-0">Login Credentials</h5>
+          <small class="text-muted ms-3">For mobile app access</small>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="alert alert-info border-0 shadow-sm">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <div>
+                  <strong>Auto-Generated Password:</strong> If you don't provide a password, one will be automatically generated using the person's first name and last 4 digits of their mobile number.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :password, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-lock text-muted"></i>
+              </span>
+              <%= form.password_field :password, class: "form-control border-start-0 ps-0", placeholder: "Enter password (leave blank for auto-generation)" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Minimum 6 characters recommended for security
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :password_confirmation, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-lock-fill text-muted"></i>
+              </span>
+              <%= form.password_field :password_confirmation, class: "form-control border-start-0 ps-0", placeholder: "Confirm password" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Re-enter the same password
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Details Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-info bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-truck text-info"></i>
+          </div>
+          <h5 class="card-title mb-0">Vehicle Details</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <%= form.label :vehicle_type, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-truck text-muted"></i>
+              </span>
+              <%= form.select :vehicle_type,
+                  options_for_select([
+                    ['Select Vehicle Type', ''],
+                    ['Bike', 'bike'],
+                    ['Scooter', 'scooter'],
+                    ['Car', 'car'],
+                    ['Truck', 'truck'],
+                    ['Van', 'van']
+                  ], @delivery_person.vehicle_type),
+                  {},
+                  { class: "form-select border-start-0", required: true } %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :vehicle_number, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-car-front text-muted"></i>
+              </span>
+              <%= form.text_field :vehicle_number, class: "form-control border-start-0 ps-0", placeholder: "Enter vehicle number (e.g., MH01AB1234)", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :license_number, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-card-text text-muted"></i>
+              </span>
+              <%= form.text_field :license_number, class: "form-control border-start-0 ps-0", placeholder: "Enter driving license number", required: true %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Emergency Contact Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-warning bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-exclamation-triangle text-warning"></i>
+          </div>
+          <h5 class="card-title mb-0">Emergency Contact</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :emergency_contact_name, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-person-exclamation text-muted"></i>
+              </span>
+              <%= form.text_field :emergency_contact_name, class: "form-control border-start-0 ps-0", placeholder: "Enter emergency contact name", required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :emergency_contact_mobile, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-telephone-plus text-muted"></i>
+              </span>
+              <%= form.telephone_field :emergency_contact_mobile, class: "form-control border-start-0 ps-0", placeholder: "Enter emergency contact mobile", pattern: "[0-9]{10}", required: true %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employment Details Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-success bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-currency-rupee text-success"></i>
+          </div>
+          <h5 class="card-title mb-0">Employment Details</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :salary, class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-currency-rupee text-muted"></i>
+              </span>
+              <%= form.number_field :salary, class: "form-control border-start-0 ps-0", placeholder: "Enter monthly salary", min: 1, step: 0.01, required: true %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :delivery_areas, "Delivery Areas (comma separated)", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-geo text-muted"></i>
+              </span>
+              <%= form.text_field :delivery_areas, class: "form-control border-start-0 ps-0", placeholder: "Enter delivery areas (e.g., Pune, Mumbai, Nashik)" %>
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Specify areas where this person can make deliveries
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :notes, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                <i class="bi bi-sticky text-muted"></i>
+              </span>
+              <%= form.text_area :notes, class: "form-control border-start-0 ps-0", rows: 3, placeholder: "Additional notes about the delivery person" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :status, "Status", class: "form-label fw-medium" %>
+            <div class="mt-2">
+              <div class="form-check form-switch">
+                <%= form.check_box :status, { class: "form-check-input", checked: @delivery_person.status != false }, "true", "false" %>
+                <%= form.label :status, class: "form-check-label fw-medium" do %>
+                  <i class="bi bi-check-circle text-success me-1"></i>
+                  Active
+                <% end %>
+              </div>
+              <div class="form-text">Toggle to activate/deactivate this delivery person</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bank Details Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-secondary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-bank text-secondary"></i>
+          </div>
+          <h5 class="card-title mb-0">Bank Details</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :bank_name, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-bank text-muted"></i>
+              </span>
+              <%= form.text_field :bank_name, class: "form-control border-start-0 ps-0", placeholder: "Enter bank name" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :account_holder_name, class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-person-check text-muted"></i>
+              </span>
+              <%= form.text_field :account_holder_name, class: "form-control border-start-0 ps-0", placeholder: "Enter account holder name" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :account_no, "Account Number", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-hash text-muted"></i>
+              </span>
+              <%= form.text_field :account_no, class: "form-control border-start-0 ps-0", placeholder: "Enter account number" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :ifsc_code, "IFSC Code", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-upc text-muted"></i>
+              </span>
+              <%= form.text_field :ifsc_code, class: "form-control border-start-0 ps-0", placeholder: "Enter IFSC code" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents Upload Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-file-earmark-arrow-up text-primary"></i>
+          </div>
+          <h5 class="card-title mb-0">Document Uploads</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <%= form.label :profile_picture, class: "form-label fw-medium" %>
+            <%= form.file_field :profile_picture, class: "form-control", accept: "image/*" %>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Profile picture (JPG, PNG - Max 2MB)
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :license_document, "License Document", class: "form-label fw-medium" %>
+            <%= form.file_field :license_document, class: "form-control", accept: "image/*,application/pdf" %>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              License document (PDF, JPG, PNG - Max 5MB)
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :vehicle_document, "Vehicle Document", class: "form-label fw-medium" %>
+            <%= form.file_field :vehicle_document, class: "form-control", accept: "image/*,application/pdf" %>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Vehicle RC/Registration (PDF, JPG, PNG - Max 5MB)
+            </div>
+          </div>
+
+          <% if @delivery_person.persisted? %>
+            <div class="col-12">
+              <div class="row g-3">
+                <% if @delivery_person.profile_picture.attached? %>
+                  <div class="col-md-4">
+                    <label class="form-label fw-medium">Current Profile Picture</label>
+                    <div class="current-image p-3 border border-2 border-dashed rounded bg-light">
+                      <%= image_tag @delivery_person.profile_picture, class: "img-thumbnail shadow-sm", style: "max-width: 150px; max-height: 150px;" %>
+                    </div>
+                  </div>
+                <% end %>
+
+                <% if @delivery_person.license_document.attached? %>
+                  <div class="col-md-4">
+                    <label class="form-label fw-medium">Current License Document</label>
+                    <div class="current-document p-3 border border-2 border-dashed rounded bg-light">
+                      <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-pdf fs-3 text-danger me-2"></i>
+                        <div>
+                          <div class="fw-medium">License Document</div>
+                          <small class="text-muted">Click to view/download</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
+                <% if @delivery_person.vehicle_document.attached? %>
+                  <div class="col-md-4">
+                    <label class="form-label fw-medium">Current Vehicle Document</label>
+                    <div class="current-document p-3 border border-2 border-dashed rounded bg-light">
+                      <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-pdf fs-3 text-danger me-2"></i>
+                        <div>
+                          <div class="fw-medium">Vehicle Document</div>
+                          <small class="text-muted">Click to view/download</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-end gap-2">
+          <%= link_to admin_delivery_people_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-x-lg me-1"></i> Cancel
+          <% end %>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-<%= @delivery_person.new_record? ? 'plus-circle' : 'check-circle' %> me-1"></i>
+            <%= @delivery_person.new_record? ? 'Create Delivery Person' : 'Update Delivery Person' %>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

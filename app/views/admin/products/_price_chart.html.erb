@@ -1,0 +1,674 @@
+<!-- Price Chart Sidebar -->
+<div class="price-chart-sidebar">
+  <div class="card border-0 shadow-lg h-100">
+    <div class="card-header bg-gradient-primary text-white">
+      <div class="d-flex align-items-center">
+        <div class="price-chart-icon">
+          <i class="bi bi-graph-up-arrow fs-4"></i>
+        </div>
+        <div class="ms-3">
+          <h5 class="mb-0 fw-bold">Price Tracking</h5>
+          <small class="opacity-75">Real-time price monitoring</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <!-- Current Price Display -->
+      <div class="price-display-section">
+        <div class="current-price-container">
+          <div class="price-main">
+            <span class="currency-symbol">₹</span>
+            <span class="price-value"><%= @product.today_price || @product.price %></span>
+          </div>
+          <div class="price-label">Current Price</div>
+        </div>
+
+        <% if @product.yesterday_price.present? %>
+          <div class="price-change-indicator">
+            <div class="change-badge <%= @product.price_trend == 'up' ? 'price-up' : (@product.price_trend == 'down' ? 'price-down' : 'price-stable') %>">
+              <i class="bi <%= @product.price_trend_icon %> me-1"></i>
+              <span class="change-amount"><%= @product.formatted_price_change %></span>
+              <span class="change-percentage">(<%= @product.price_change_percentage_formatted %>)</span>
+            </div>
+            <small class="change-timeframe">Since yesterday</small>
+          </div>
+        <% else %>
+          <div class="price-change-indicator">
+            <div class="change-badge price-stable">
+              <i class="bi bi-dash me-1"></i>
+              <span class="change-amount">No change data</span>
+            </div>
+            <small class="change-timeframe">Price tracking started</small>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Price Comparison Table -->
+      <div class="price-comparison-section">
+        <h6 class="section-title">
+          <i class="bi bi-bar-chart-line me-2"></i>
+          Price Comparison
+        </h6>
+
+        <div class="comparison-table">
+          <div class="comparison-row">
+            <div class="comparison-label">
+              <div class="label-icon today"></div>
+              <span>Today's Price</span>
+            </div>
+            <div class="comparison-value">
+              <span class="price-amount"><%= @product.formatted_today_price %></span>
+            </div>
+          </div>
+
+          <div class="comparison-row">
+            <div class="comparison-label">
+              <div class="label-icon yesterday"></div>
+              <span>Yesterday's Price</span>
+            </div>
+            <div class="comparison-value">
+              <span class="price-amount">
+                <%= @product.yesterday_price.present? ? @product.formatted_yesterday_price : 'N/A' %>
+              </span>
+            </div>
+          </div>
+
+          <% if @product.yesterday_price.present? %>
+            <div class="comparison-row highlight">
+              <div class="comparison-label">
+                <div class="label-icon change"></div>
+                <span>Price Change</span>
+              </div>
+              <div class="comparison-value">
+                <span class="price-amount <%= @product.price_trend_class %>">
+                  <%= @product.formatted_price_change %>
+                </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Mini Price Chart -->
+      <% if @product.get_price_history_array.length > 1 %>
+        <div class="mini-chart-section">
+          <h6 class="section-title">
+            <i class="bi bi-graph-up me-2"></i>
+            Price Trend (Last 7 Days)
+          </h6>
+
+          <div class="mini-chart-container">
+            <canvas id="price-chart-<%= @product.id %>" width="280" height="120"></canvas>
+          </div>
+
+          <div class="chart-stats">
+            <div class="stat-item">
+              <small class="stat-label">Trend</small>
+              <div class="stat-value <%= @product.price_trend_class %>">
+                <i class="bi <%= @product.price_trend_icon %> me-1"></i>
+                <%= @product.price_trend.humanize %>
+              </div>
+            </div>
+            <div class="stat-item">
+              <small class="stat-label">Change</small>
+              <div class="stat-value <%= @product.price_trend_class %>">
+                <%= @product.price_change_percentage_formatted %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <div class="mini-chart-section">
+          <h6 class="section-title">
+            <i class="bi bi-graph-up me-2"></i>
+            Price Trend
+          </h6>
+
+          <div class="no-data-message">
+            <div class="no-data-icon">
+              <i class="bi bi-graph-up text-muted"></i>
+            </div>
+            <p class="text-muted mb-0">
+              Not enough data to show price trend.<br>
+              <small>Chart will appear after a few price updates.</small>
+            </p>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Price Insights -->
+      <div class="price-insights-section">
+        <h6 class="section-title">
+          <i class="bi bi-lightbulb me-2"></i>
+          Price Insights
+        </h6>
+
+        <div class="insights-list">
+          <% if @product.discounted? %>
+            <div class="insight-item discount">
+              <div class="insight-icon">
+                <i class="bi bi-tag-fill"></i>
+              </div>
+              <div class="insight-content">
+                <div class="insight-title">Active Discount</div>
+                <div class="insight-desc"><%= @product.discount_percentage.round(0) %>% off original price</div>
+              </div>
+            </div>
+          <% end %>
+
+          <% if @product.yesterday_price.present? %>
+            <% if @product.price_trend == 'up' %>
+              <div class="insight-item price-increase">
+                <div class="insight-icon">
+                  <i class="bi bi-arrow-up-circle"></i>
+                </div>
+                <div class="insight-content">
+                  <div class="insight-title">Price Increased</div>
+                  <div class="insight-desc">Price went up by <%= @product.price_change_percentage_formatted %></div>
+                </div>
+              </div>
+            <% elsif @product.price_trend == 'down' %>
+              <div class="insight-item price-decrease">
+                <div class="insight-icon">
+                  <i class="bi bi-arrow-down-circle"></i>
+                </div>
+                <div class="insight-content">
+                  <div class="insight-title">Price Dropped</div>
+                  <div class="insight-desc">Great time to buy! Down <%= @product.price_change_percentage_formatted %></div>
+                </div>
+              </div>
+            <% else %>
+              <div class="insight-item price-stable">
+                <div class="insight-icon">
+                  <i class="bi bi-dash-circle"></i>
+                </div>
+                <div class="insight-content">
+                  <div class="insight-title">Price Stable</div>
+                  <div class="insight-desc">No price change since yesterday</div>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+
+          <% if @product.stock <= 5 && @product.stock > 0 %>
+            <div class="insight-item low-stock">
+              <div class="insight-icon">
+                <i class="bi bi-exclamation-triangle"></i>
+              </div>
+              <div class="insight-content">
+                <div class="insight-title">Low Stock Alert</div>
+                <div class="insight-desc">Only <%= @product.stock %> items remaining</div>
+              </div>
+            </div>
+          <% elsif @product.stock == 0 %>
+            <div class="insight-item out-of-stock">
+              <div class="insight-icon">
+                <i class="bi bi-x-circle"></i>
+              </div>
+              <div class="insight-content">
+                <div class="insight-title">Out of Stock</div>
+                <div class="insight-desc">Product currently unavailable</div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-light border-0">
+      <div class="footer-stats">
+        <small class="text-muted">
+          <i class="bi bi-clock me-1"></i>
+          Last updated: <%= @product.last_price_update ? time_ago_in_words(@product.last_price_update) + ' ago' : 'Never' %>
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Price Chart Sidebar Styles */
+.price-chart-sidebar {
+  position: sticky;
+  top: 20px;
+}
+
+.price-chart-sidebar .card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.price-chart-sidebar .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.price-chart-icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+/* Current Price Display */
+.price-display-section {
+  padding: 24px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.current-price-container {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.price-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.currency-symbol {
+  font-size: 24px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-right: 4px;
+}
+
+.price-value {
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.price-label {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.price-change-indicator {
+  text-align: center;
+}
+
+.change-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.change-badge.price-up {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.change-badge.price-down {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.change-badge.price-stable {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: white;
+}
+
+.change-timeframe {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+/* Price Comparison Section */
+.price-comparison-section, .mini-chart-section, .price-insights-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.section-title {
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.comparison-table {
+  space-y: 12px;
+}
+
+.comparison-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.comparison-row:hover {
+  background: #e9ecef;
+  transform: translateX(2px);
+}
+
+.comparison-row.highlight {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+}
+
+.comparison-label {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: #374151;
+}
+
+.label-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.label-icon.today {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.label-icon.yesterday {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+.label-icon.change {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.comparison-value .price-amount {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Mini Chart Section */
+.mini-chart-container {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.chart-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-label {
+  display: block;
+  color: #6c757d;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.no-data-icon {
+  font-size: 48px;
+  color: #e5e7eb;
+  margin-bottom: 16px;
+}
+
+/* Price Insights Section */
+.insights-list {
+  space-y: 12px;
+}
+
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.insight-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.insight-item.discount {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.insight-item.price-increase {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-left: 4px solid #10b981;
+}
+
+.insight-item.price-decrease {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-left: 4px solid #ef4444;
+}
+
+.insight-item.price-stable {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-left: 4px solid #64748b;
+}
+
+.insight-item.low-stock {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+}
+
+.insight-item.out-of-stock {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-left: 4px solid #ef4444;
+}
+
+.insight-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.insight-item.discount .insight-icon {
+  background: #3b82f6;
+  color: white;
+}
+
+.insight-item.price-increase .insight-icon {
+  background: #10b981;
+  color: white;
+}
+
+.insight-item.price-decrease .insight-icon {
+  background: #ef4444;
+  color: white;
+}
+
+.insight-item.price-stable .insight-icon {
+  background: #64748b;
+  color: white;
+}
+
+.insight-item.low-stock .insight-icon {
+  background: #f59e0b;
+  color: white;
+}
+
+.insight-item.out-of-stock .insight-icon {
+  background: #ef4444;
+  color: white;
+}
+
+.insight-content {
+  flex: 1;
+}
+
+.insight-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+.insight-desc {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Footer */
+.footer-stats {
+  text-align: center;
+  padding: 4px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .price-chart-sidebar {
+    position: static;
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .price-display-section, .price-comparison-section, .mini-chart-section, .price-insights-section {
+    padding: 16px 20px;
+  }
+
+  .price-value {
+    font-size: 28px;
+  }
+
+  .comparison-row {
+    padding: 10px 12px;
+  }
+}
+</style>
+
+<% if @product.get_price_history_array.length > 1 %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('price-chart-<%= @product.id %>').getContext('2d');
+    const priceHistory = <%= @product.get_price_history_array.to_json.html_safe %>;
+
+    if (priceHistory.length > 1) {
+      // Get last 7 days of data
+      const last7Days = priceHistory.slice(-7);
+
+      const labels = last7Days.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+
+      const data = last7Days.map(item => item.price);
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Price',
+            data: data,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  size: 10
+                },
+                color: '#6b7280'
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(107, 114, 128, 0.1)'
+              },
+              ticks: {
+                font: {
+                  size: 10
+                },
+                color: '#6b7280',
+                callback: function(value) {
+                  return '₹' + value;
+                }
+              }
+            }
+          },
+          elements: {
+            point: {
+              hoverBackgroundColor: '#667eea'
+            }
+          }
+        }
+      });
+    }
+  });
+  </script>
+<% end %>

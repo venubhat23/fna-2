@@ -78,26 +78,26 @@
   </div>
 </div>
 
-<!-- Tabs for DrWise vs Non-DrWise -->
+<!-- Tabs for Dhanvantari Farm vs Non-Dhanvantari Farm -->
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body p-0">
     <ul class="nav nav-tabs border-0" role="tablist">
       <li class="nav-item" role="presentation">
-        <%= link_to admin_life_insurances_path(tab: 'drwise', search: params[:search], status: params[:status], payment_mode: params[:payment_mode]),
-            class: "nav-link #{'active' if @current_tab == 'drwise'}",
+        <%= link_to admin_life_insurances_path(tab: 'dhanvantri', search: params[:search], status: params[:status], payment_mode: params[:payment_mode]),
+            class: "nav-link #{'active' if @current_tab == 'dhanvantri'}",
             role: "tab" do %>
           <i class="bi bi-check-circle me-2"></i>
-          DrWise Policies
-          <span class="badge bg-success ms-2"><%= @drwise_count %></span>
+          Dhanvantari Farm Policies
+          <span class="badge bg-success ms-2"><%= @dhanvantri_count %></span>
         <% end %>
       </li>
       <li class="nav-item" role="presentation">
-        <%= link_to admin_life_insurances_path(tab: 'non_drwise', search: params[:search], status: params[:status], payment_mode: params[:payment_mode]),
-            class: "nav-link #{'active' if @current_tab == 'non_drwise'}",
+        <%= link_to admin_life_insurances_path(tab: 'non_dhanvantri', search: params[:search], status: params[:status], payment_mode: params[:payment_mode]),
+            class: "nav-link #{'active' if @current_tab == 'non_dhanvantri'}",
             role: "tab" do %>
           <i class="bi bi-x-circle me-2"></i>
-          Non-DrWise Policies
-          <span class="badge bg-warning ms-2"><%= @non_drwise_count %></span>
+          Non-Dhanvantari Farm Policies
+          <span class="badge bg-warning ms-2"><%= @non_dhanvantri_count %></span>
         <% end %>
       </li>
     </ul>
@@ -139,10 +139,10 @@
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-transparent border-0">
     <h5 class="mb-0">
-      <% if @current_tab == 'drwise' %>
-        <i class="bi bi-check-circle text-success me-2"></i>DrWise Life Insurance Policies
+      <% if @current_tab == 'dhanvantri' %>
+        <i class="bi bi-check-circle text-success me-2"></i>Dhanvantari Farm Life Insurance Policies
       <% else %>
-        <i class="bi bi-x-circle text-warning me-2"></i>Non-DrWise Life Insurance Policies
+        <i class="bi bi-x-circle text-warning me-2"></i>Non-Dhanvantari Farm Life Insurance Policies
       <% end %>
     </h5>
   </div>
@@ -208,9 +208,9 @@
                     <!-- Type Badge -->
                     <div>
                       <span class="badge <%= policy.policy_classification_badge_class %>">
-                        <% if policy.drwise_policy? %>
+                        <% if policy.dhanvantri_policy? %>
                           <i class="bi bi-check-circle me-1"></i>
-                        <% elsif policy.non_drwise_policy? %>
+                        <% elsif policy.non_dhanvantri_policy? %>
                           <i class="bi bi-x-circle me-1"></i>
                         <% else %>
                           <i class="bi bi-question-circle me-1"></i>
@@ -277,33 +277,33 @@
       <% end %>
     <% else %>
       <div class="text-center py-5">
-        <% if @current_tab == 'drwise' %>
+        <% if @current_tab == 'dhanvantri' %>
           <i class="bi bi-check-circle fs-1 text-success d-block mb-3"></i>
-          <h5 class="text-muted">No DrWise life insurance policies found</h5>
+          <h5 class="text-muted">No Dhanvantari Farm life insurance policies found</h5>
         <% else %>
           <i class="bi bi-x-circle fs-1 text-warning d-block mb-3"></i>
-          <h5 class="text-muted">No Non-DrWise life insurance policies found</h5>
+          <h5 class="text-muted">No Non-Dhanvantari Farm life insurance policies found</h5>
         <% end %>
         <p class="text-muted mb-3">
           <% if params[:search].present? || params[:status].present? || params[:payment_mode].present? %>
             Try adjusting your search criteria or
             <%= link_to "view all #{@current_tab} policies", admin_life_insurances_path(tab: @current_tab), class: "text-decoration-none" %>.
           <% else %>
-            <% if @current_tab == 'drwise' %>
-              DrWise policies are created from the admin panel.
+            <% if @current_tab == 'dhanvantri' %>
+              Dhanvantari Farm policies are created from the admin panel.
             <% else %>
-              Non-DrWise policies are added by customers or agents.
+              Non-Dhanvantari Farm policies are added by customers or agents.
             <% end %>
           <% end %>
         </p>
-        <% if @current_tab == 'drwise' %>
+        <% if @current_tab == 'dhanvantri' %>
           <%= link_to new_admin_life_insurance_path, class: "btn btn-primary" do %>
             <i class="bi bi-plus-lg me-1"></i>
-            Add DrWise Life Policy
+            Add Dhanvantari Farm Life Policy
           <% end %>
         <% else %>
           <div class="text-muted small">
-            Non-DrWise policies are typically added through customer or agent portals.
+            Non-Dhanvantari Farm policies are typically added through customer or agent portals.
           </div>
         <% end %>
       </div>

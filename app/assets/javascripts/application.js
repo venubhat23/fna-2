@@ -1,7 +1,7 @@
-// Modern Drwise Admin JavaScript
+// Modern Dhanvantri Admin JavaScript
 
 // Global app object
-window.DrwiseAdmin = {
+window.DhanvantriAdmin = {
 
   // Initialize the application
   init() {
@@ -140,7 +140,7 @@ function toggleSidebar() {
 
   if (sidebar.classList.contains('show')) {
     sidebar.classList.remove('show');
-    DrwiseAdmin.removeBackdrop();
+    DhanvantriAdmin.removeBackdrop();
   } else {
     sidebar.classList.add('show');
 
@@ -171,7 +171,7 @@ function toggleSidebar() {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  DrwiseAdmin.init();
+  DhanvantriAdmin.init();
 });
 
 // Enhanced dropdown functionality

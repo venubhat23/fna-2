@@ -1,0 +1,612 @@
+<!-- Supply Bill Header -->
+<div class="bill-header d-flex justify-content-between align-items-start">
+  <div class="bill-type">
+    <span class="bill-label">BILL OF SUPPLY</span>
+    <span class="recipient-badge">ORIGINAL FOR RECIPIENT</span>
+  </div>
+</div>
+
+<!-- Company Header with Logo and Details -->
+<div class="company-header d-flex align-items-start gap-4">
+  <!-- Company Logo -->
+  <div class="company-logo">
+    <div class="logo-circle">
+      <i class="fas fa-seedling"></i>
+    </div>
+  </div>
+
+  <!-- Company Information -->
+  <div class="company-info flex-grow-1">
+    <h1 class="company-name">Atma Nirbhar Farm</h1>
+    <div class="company-details">
+      <p class="company-address">
+        #827 4th main 9th Block 2nd Stage Near Hanumagiri temple Nagarbhavi, Bangalore, Karnataka, 560072
+      </p>
+      <div class="contact-row">
+        <span><strong>Mobile:</strong> 9972808044</span>
+        <span><strong>GSTIN:</strong> 29AOIPTB113K1ZC</span>
+        <span><strong>PAN Number:</strong> AOIPTB113K</span>
+      </div>
+      <div class="email-row">
+        <span><strong>Email:</strong> atmanirbharfarm@gmail.com</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Meta Information -->
+<div class="invoice-meta-section">
+  <div class="row">
+    <div class="col-4">
+      <div class="meta-item">
+        <span class="meta-label">Invoice No:</span>
+        <span class="meta-value"><%= @booking.invoice_number || @booking.booking_number %></span>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="meta-item">
+        <span class="meta-label">Invoice Date:</span>
+        <span class="meta-value"><%= Date.current.strftime("%d/%m/%Y") %></span>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="meta-item">
+        <span class="meta-label">Due Date:</span>
+        <span class="meta-value"><%= (Date.current + 30.days).strftime("%d/%m/%Y") %></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bill To and Ship To Section -->
+<div class="customer-section">
+  <div class="row">
+    <div class="col-6">
+      <div class="customer-block">
+        <h4 class="customer-title">BILL TO</h4>
+        <div class="customer-name">
+          <%= @booking.customer_name || @booking.customer&.display_name || 'Sridevi' %>
+        </div>
+        <div class="customer-details">
+          <div><%= @booking.customer_name || @booking.customer&.display_name || 'Sheshadri Puram' %></div>
+          <% if @booking.customer_phone.present? %>
+            <div><strong>Mobile:</strong> <%= @booking.customer_phone %></div>
+          <% else %>
+            <div><strong>Mobile:</strong> 9980403848</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="customer-block">
+        <h4 class="customer-title">SHIP TO</h4>
+        <div class="customer-name">
+          <%= @booking.customer_name || @booking.customer&.display_name || 'Sridevi' %>
+        </div>
+        <div class="customer-details">
+          <div><%= @booking.delivery_address || 'Sheshadri Puram' %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Items Table -->
+<div class="items-section">
+  <table class="items-table table">
+    <thead>
+      <tr>
+        <th class="text-start">ITEMS</th>
+        <th class="text-center">HSN</th>
+        <th class="text-center">QTY.</th>
+        <th class="text-end">RATE</th>
+        <th class="text-center">TAX</th>
+        <th class="text-end">AMOUNT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @booking.booking_items.each do |item| %>
+        <tr>
+          <td class="text-start">
+            <%= item.product&.name || 'Desi cow milk packet' %>
+          </td>
+          <td class="text-center">
+            <%= item.product&.sku || '18.0 liters' %>
+          </td>
+          <td class="text-center">
+            <%= item.quantity %>
+          </td>
+          <td class="text-end">
+            ₹<%= number_with_delimiter(item.price&.to_f || 0, delimiter: ',') %>
+          </td>
+          <td class="text-center tax-cell">
+            ₹0<br><span class="tax-percentage">(0%)</span>
+          </td>
+          <td class="text-end amount-cell">
+            ₹<%= number_with_delimiter((item.quantity * item.price)&.to_f || 0, delimiter: ',') %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Totals Section -->
+<div class="totals-section">
+  <div class="row">
+    <!-- Left side - Bank Details -->
+    <div class="col-7">
+      <div class="bank-details-section">
+        <h5 class="section-heading">BANK DETAILS</h5>
+        <table class="bank-table">
+          <tr>
+            <td><strong>Name:</strong></td>
+            <td>Atma Nirbhar Farm</td>
+          </tr>
+          <tr>
+            <td><strong>IFSC Code:</strong></td>
+            <td>CNRB0003194</td>
+          </tr>
+          <tr>
+            <td><strong>Account No:</strong></td>
+            <td>3194201000718</td>
+          </tr>
+          <tr>
+            <td><strong>Bank:</strong></td>
+            <td>Canara Bank</td>
+          </tr>
+        </table>
+
+        <!-- Payment QR Code Section -->
+        <div class="payment-section">
+          <h5 class="section-heading">PAYMENT QR CODE</h5>
+          <div class="qr-section">
+            <div class="qr-placeholder">
+              <i class="fas fa-qrcode qr-icon"></i>
+            </div>
+            <div class="payment-apps">
+              <span class="payment-app">PhonePe</span>
+              <span class="payment-app">Google Pay</span>
+              <span class="payment-app">Paytm</span>
+              <span class="payment-app">UPI</span>
+            </div>
+            <div class="upi-id">UPI ID: 9972808044@ybl</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side - Amount Details -->
+    <div class="col-5">
+      <div class="amounts-section">
+        <div class="subtotal-row">
+          <span>SUBTOTAL</span>
+          <span>₹ <%= number_with_delimiter(@booking.calculated_subtotal, delimiter: ',') %></span>
+        </div>
+
+        <div class="tax-details">
+          <div class="tax-row">
+            <span><strong>TAXABLE AMOUNT</strong></span>
+            <span><strong>₹ 0</strong></span>
+          </div>
+          <div class="tax-row">
+            <span><strong>TOTAL AMOUNT</strong></span>
+            <span><strong>₹ <%= number_with_delimiter(@booking.calculated_total_amount, delimiter: ',') %></strong></span>
+          </div>
+          <div class="tax-row">
+            <span><strong>Received Amount</strong></span>
+            <span><strong>₹ 0</strong></span>
+          </div>
+        </div>
+
+        <div class="amount-words">
+          <div class="words-label">Total Amount (in words)</div>
+          <div class="words-text"><%= @booking.amount_in_words || 'One Thousand Eight Hundred Rupees Only' %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Terms and Signature Section -->
+<div class="footer-section">
+  <div class="row">
+    <div class="col-8">
+      <div class="terms-section">
+        <h5 class="section-heading">TERMS AND CONDITIONS</h5>
+        <ol class="terms-list">
+          <li>Kindly Do Make Every Month Payment on or Before the 10th of The Month</li>
+          <li>Kindly Share the Screenshot Immediately Once the Payment is Done to Confirm Your Payment</li>
+        </ol>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="signature-section">
+        <div class="signature-box">
+          <!-- Empty signature box -->
+        </div>
+        <div class="signature-text">
+          <strong>AUTHORISED SIGNATORY FOR</strong><br>
+          Atma Nirbhar Farm
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom CSS for the new invoice style -->
+<style>
+/* Bill Header Styles */
+.bill-header {
+  margin-bottom: 30px;
+}
+
+.bill-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-right: 20px;
+}
+
+.recipient-badge {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #6c757d;
+  border-radius: 3px;
+}
+
+/* Company Header Styles */
+.company-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #6f42c1;
+}
+
+.company-logo .logo-circle {
+  width: 80px;
+  height: 80px;
+  background: #6f42c1;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.company-name {
+  font-size: 32px;
+  font-weight: bold;
+  color: #6f42c1;
+  margin-bottom: 15px;
+  margin-top: 0;
+}
+
+.company-details {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.company-address {
+  margin-bottom: 8px;
+  font-weight: normal;
+}
+
+.contact-row, .email-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 5px;
+}
+
+.contact-row span, .email-row span {
+  font-size: 12px;
+}
+
+/* Invoice Meta Section */
+.invoice-meta-section {
+  background: #f8f9fa;
+  padding: 15px;
+  margin-bottom: 30px;
+  border: 1px solid #dee2e6;
+}
+
+.meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meta-label {
+  font-weight: bold;
+  color: #333;
+  font-size: 13px;
+}
+
+.meta-value {
+  font-weight: normal;
+  color: #333;
+  font-size: 13px;
+}
+
+/* Customer Section */
+.customer-section {
+  margin-bottom: 30px;
+}
+
+.customer-block {
+  padding: 15px;
+  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.customer-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 5px;
+}
+
+.customer-name {
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.customer-details {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Items Table */
+.items-section {
+  margin-bottom: 30px;
+}
+
+.items-table {
+  border: 1px solid #dee2e6;
+  margin-bottom: 0;
+}
+
+.items-table thead th {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+  padding: 12px 8px;
+}
+
+.items-table tbody td {
+  border: 1px solid #dee2e6;
+  font-size: 12px;
+  padding: 12px 8px;
+  color: #333;
+}
+
+.tax-cell {
+  font-size: 11px;
+}
+
+.tax-percentage {
+  font-size: 10px;
+  color: #666;
+}
+
+.amount-cell {
+  font-weight: bold;
+}
+
+/* Totals Section */
+.totals-section {
+  margin-bottom: 30px;
+}
+
+/* Bank Details */
+.bank-details-section {
+  border: 1px solid #dee2e6;
+  padding: 15px;
+  background: #f8f9fa;
+}
+
+.section-heading {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 5px;
+}
+
+.bank-table {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.bank-table td {
+  font-size: 12px;
+  padding: 3px 5px;
+  color: #333;
+}
+
+.bank-table td:first-child {
+  width: 40%;
+}
+
+/* Payment QR Section */
+.payment-section {
+  margin-top: 20px;
+}
+
+.qr-section {
+  text-align: center;
+}
+
+.qr-placeholder {
+  width: 100px;
+  height: 100px;
+  border: 1px solid #dee2e6;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.qr-icon {
+  font-size: 40px;
+  color: #666;
+}
+
+.payment-apps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.payment-app {
+  background: #007bff;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.upi-id {
+  font-size: 11px;
+  color: #333;
+  font-weight: bold;
+}
+
+/* Amounts Section */
+.amounts-section {
+  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: #e9ecef;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.tax-details {
+  padding: 15px;
+}
+
+.tax-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.amount-words {
+  border-top: 1px solid #dee2e6;
+  padding: 10px 15px;
+  background: #e9ecef;
+}
+
+.words-label {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.words-text {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Footer Section */
+.footer-section {
+  margin-top: 30px;
+}
+
+.terms-section {
+  border: 1px solid #dee2e6;
+  padding: 15px;
+  background: #f8f9fa;
+}
+
+.terms-list {
+  font-size: 11px;
+  color: #333;
+  line-height: 1.4;
+  margin: 0;
+  padding-left: 15px;
+}
+
+.terms-list li {
+  margin-bottom: 5px;
+}
+
+.signature-section {
+  text-align: center;
+  padding: 15px;
+  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.signature-box {
+  height: 60px;
+  border: 1px solid #ccc;
+  background: white;
+  margin-bottom: 15px;
+}
+
+.signature-text {
+  font-size: 11px;
+  color: #333;
+  line-height: 1.3;
+}
+
+/* Print Styles */
+@media print {
+  .action-buttons {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .invoice-container {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .contact-row, .email-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .payment-apps {
+    gap: 5px;
+  }
+
+  .company-name {
+    font-size: 24px;
+  }
+}
+</style>
