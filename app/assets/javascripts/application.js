@@ -1,7 +1,7 @@
-// Modern Dhanvantri Admin JavaScript
+// Modern DemoFarm Admin JavaScript
 
 // Global app object
-window.DhanvantriAdmin = {
+window.DemoFarmAdmin = {
 
   // Initialize the application
   init() {
@@ -140,7 +140,7 @@ function toggleSidebar() {
 
   if (sidebar.classList.contains('show')) {
     sidebar.classList.remove('show');
-    DhanvantriAdmin.removeBackdrop();
+    DemoFarmAdmin.removeBackdrop();
   } else {
     sidebar.classList.add('show');
 
@@ -171,7 +171,7 @@ function toggleSidebar() {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  DhanvantriAdmin.init();
+  DemoFarmAdmin.init();
 });
 
 // Enhanced dropdown functionality
