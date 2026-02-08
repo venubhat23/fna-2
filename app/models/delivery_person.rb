@@ -12,7 +12,8 @@ class DeliveryPerson < ApplicationRecord
   validates :first_name, presence: true, length: { minimum: 2, maximum: 50 }
   validates :last_name, presence: true, length: { minimum: 2, maximum: 50 }
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :mobile, presence: true, uniqueness: true, format: { with: /\A[0-9]{10}\z/, message: "must be a 10-digit number" }
+  validates :mobile, presence: true, uniqueness: true
+  validate :mobile_number_format
   validates :vehicle_type, presence: true
   validates :vehicle_number, presence: true, uniqueness: { case_sensitive: false }
   validates :license_number, presence: true, uniqueness: { case_sensitive: false }
@@ -21,7 +22,8 @@ class DeliveryPerson < ApplicationRecord
   validates :state, presence: true
   validates :pincode, presence: true, format: { with: /\A[0-9]{6}\z/, message: "must be a 6-digit number" }
   validates :emergency_contact_name, presence: true
-  validates :emergency_contact_mobile, presence: true, format: { with: /\A[0-9]{10}\z/, message: "must be a 10-digit number" }
+  validates :emergency_contact_mobile, presence: true
+  validate :emergency_contact_mobile_format
   validates :joining_date, presence: true
   validates :salary, presence: true, numericality: { greater_than: 0 }
 
@@ -86,7 +88,8 @@ class DeliveryPerson < ApplicationRecord
 
   def normalize_attributes
     self.email = email&.downcase&.strip
-    self.mobile = mobile&.strip
+    self.mobile = normalize_mobile_number(mobile)
+    self.emergency_contact_mobile = normalize_mobile_number(emergency_contact_mobile)
     self.vehicle_number = vehicle_number&.upcase&.strip
     self.license_number = license_number&.upcase&.strip
     self.first_name = first_name&.strip&.titleize
@@ -106,5 +109,62 @@ class DeliveryPerson < ApplicationRecord
     self.auto_generated_password = generated_password
     self.password = generated_password
     self.password_confirmation = generated_password
+  end
+
+  def mobile_number_format
+    return if mobile.blank?
+
+    unless mobile.match?(/\A[6-9][0-9]{9}\z/)
+      errors.add(:mobile, 'must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9')
+    end
+  end
+
+  def emergency_contact_mobile_format
+    return if emergency_contact_mobile.blank?
+
+    unless emergency_contact_mobile.match?(/\A[6-9][0-9]{9}\z/)
+      errors.add(:emergency_contact_mobile, 'must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9')
+    end
+  end
+
+  def normalize_mobile_number(number)
+    return nil if number.blank?
+
+    # Remove all non-digit characters
+    cleaned = number.to_s.gsub(/\D/, '')
+
+    # Handle different formats
+    case cleaned.length
+    when 10
+      # Already 10 digits, validate it starts with 6-9
+      cleaned.match?(/\A[6-9]/) ? cleaned : nil
+    when 13
+      # +91XXXXXXXXXX format - remove country code
+      if cleaned.start_with?('91')
+        mobile = cleaned[2..-1]
+        mobile.match?(/\A[6-9]/) ? mobile : nil
+      else
+        nil
+      end
+    when 12
+      # 91XXXXXXXXXX format (12 digits) - remove country code
+      if cleaned.start_with?('91')
+        mobile = cleaned[2..-1]
+        mobile.match?(/\A[6-9]/) ? mobile : nil
+      else
+        nil
+      end
+    when 11
+      # 91XXXXXXXXXX format - remove country code
+      if cleaned.start_with?('91')
+        mobile = cleaned[2..-1]
+        mobile.match?(/\A[6-9]/) ? mobile : nil
+      else
+        nil
+      end
+    else
+      # Return nil if we can't normalize
+      nil
+    end
   end
 end

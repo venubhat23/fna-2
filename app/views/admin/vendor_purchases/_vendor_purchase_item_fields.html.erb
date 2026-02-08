@@ -1,0 +1,129 @@
+<div class="product-item border rounded p-3 mb-3" style="background: #f8f9fa;">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <%= f.label :product_id, "Product", class: "form-label" %>
+      <span class="text-danger">*</span>
+      <%= f.select :product_id,
+          options_from_collection_for_select(@products, :id, :name, f.object.product_id),
+          { prompt: 'Select Product' },
+          {
+            class: "form-select product-select",
+            required: true,
+            data: {
+              products: @products.map { |p| {
+                id: p.id,
+                name: p.name,
+                unit_type: p.unit_type || 'units',
+                default_selling_price: p.default_selling_price
+              }}.to_json
+            }
+          } %>
+    </div>
+
+    <div class="col-md-2">
+      <%= f.label :quantity, class: "form-label" %>
+      <span class="text-danger">*</span>
+      <div class="input-group">
+        <%= f.number_field :quantity,
+            class: "form-control quantity-input",
+            placeholder: "0",
+            step: 0.01,
+            min: 0.01,
+            required: true %>
+        <span class="input-group-text unit-type">units</span>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <%= f.label :purchase_price, "Purchase Price (₹)", class: "form-label" %>
+      <span class="text-danger">*</span>
+      <%= f.number_field :purchase_price,
+          class: "form-control purchase-price-input",
+          placeholder: "0.00",
+          step: 0.01,
+          min: 0.01,
+          required: true %>
+    </div>
+
+    <div class="col-md-2">
+      <%= f.label :selling_price, "Selling Price (₹)", class: "form-label" %>
+      <span class="text-danger">*</span>
+      <%= f.number_field :selling_price,
+          class: "form-control selling-price-input",
+          placeholder: "0.00",
+          step: 0.01,
+          min: 0.01,
+          required: true %>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Line Total</label>
+      <div class="form-control-plaintext">
+        <strong class="line-total">₹0.00</strong>
+      </div>
+    </div>
+
+    <div class="col-md-1">
+      <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Profit Margin Display -->
+  <div class="row mt-2">
+    <div class="col-12">
+      <small class="text-muted">
+        Profit Margin: <span class="profit-margin">-</span> |
+        Profit per unit: <span class="profit-per-unit">-</span>
+      </small>
+    </div>
+  </div>
+
+  <%= f.hidden_field :_destroy, class: "destroy-field" %>
+</div>
+
+<script>
+// Calculate profit margin when prices change
+document.addEventListener('DOMContentLoaded', function() {
+  function updateProfitCalculation(row) {
+    const purchasePrice = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
+    const sellingPrice = parseFloat(row.querySelector('.selling-price-input')?.value) || 0;
+    const profitMarginSpan = row.querySelector('.profit-margin');
+    const profitPerUnitSpan = row.querySelector('.profit-per-unit');
+
+    if (purchasePrice > 0 && sellingPrice > 0) {
+      const profitPerUnit = sellingPrice - purchasePrice;
+      const profitMargin = ((profitPerUnit / purchasePrice) * 100).toFixed(1);
+
+      if (profitMarginSpan) {
+        profitMarginSpan.textContent = `${profitMargin}%`;
+        profitMarginSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+      }
+
+      if (profitPerUnitSpan) {
+        profitPerUnitSpan.textContent = `₹${profitPerUnit.toFixed(2)}`;
+        profitPerUnitSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+      }
+    } else {
+      if (profitMarginSpan) profitMarginSpan.textContent = '-';
+      if (profitPerUnitSpan) profitPerUnitSpan.textContent = '-';
+    }
+  }
+
+  // Initialize profit calculation for existing rows
+  document.querySelectorAll('.product-item').forEach(row => {
+    const purchaseInput = row.querySelector('.purchase-price-input');
+    const sellingInput = row.querySelector('.selling-price-input');
+
+    [purchaseInput, sellingInput].forEach(input => {
+      if (input) {
+        input.addEventListener('input', () => updateProfitCalculation(row));
+      }
+    });
+
+    // Initial calculation
+    updateProfitCalculation(row);
+  });
+});
+</script>

@@ -465,6 +465,73 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <!-- Stores -->
+        <li class="nav-item">
+          <%= link_to admin_stores_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/stores')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-orange">
+                <i class="bi bi-shop"></i>
+              </div>
+            </div>
+            <span class="nav-text">Stores</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Inventory Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Inventory</div>
+      <ul class="nav-menu">
+        <!-- Vendors -->
+        <li class="nav-item">
+          <%= link_to admin_vendors_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/vendors')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-indigo">
+                <i class="bi bi-building"></i>
+              </div>
+            </div>
+            <span class="nav-text">Vendors</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <!-- Vendor Purchases -->
+        <li class="nav-item dropdown-menu-item">
+          <a href="#" class="nav-link-modern dropdown-toggle #{'active' if request.path.include?('/admin/vendor_purchases')}" data-bs-toggle="collapse" data-bs-target="#vendorPurchasesSubmenu" aria-expanded="false">
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-emerald">
+                <i class="bi bi-receipt-cutoff"></i>
+              </div>
+            </div>
+            <span class="nav-text">Vendor Purchase</span>
+            <span class="dropdown-arrow ms-auto">
+              <i class="bi bi-chevron-down"></i>
+            </span>
+          </a>
+          <div class="submenu collapse" id="vendorPurchasesSubmenu">
+            <ul class="submenu-list">
+              <li>
+                <%= link_to new_admin_vendor_purchase_path, class: "submenu-link #{'active' if current_page?(new_admin_vendor_purchase_path)}" do %>
+                  <span class="submenu-bullet">•</span>
+                  <span>New Purchase</span>
+                <% end %>
+              </li>
+              <li>
+                <%= link_to admin_vendor_purchases_path, class: "submenu-link #{'active' if current_page?(admin_vendor_purchases_path)}" do %>
+                  <span class="submenu-bullet">•</span>
+                  <span>Purchase History</span>
+                <% end %>
+              </li>
+              <li>
+                <%= link_to batch_inventory_admin_vendor_purchases_path, class: "submenu-link #{'active' if current_page?(batch_inventory_admin_vendor_purchases_path)}" do %>
+                  <span class="submenu-bullet">•</span>
+                  <span>Batch Inventory</span>
+                <% end %>
+              </li>
+            </ul>
+          </div>
+        </li>
       </ul>
     </div>
 
@@ -618,7 +685,7 @@
       <div class="nav-section">
         <div class="nav-section-title">Reports & Analytics</div>
         <ul class="nav-menu">
-          <!-- Sales Reports -->
+          <!-- Reports -->
           <% if show_sidebar_item?('reports') %>
             <li class="nav-item">
               <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
@@ -627,111 +694,7 @@
                     <i class="bi bi-graph-up"></i>
                   </div>
                 </div>
-                <span class="nav-text">Commission Reports</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Product Analytics -->
-            <li class="nav-item">
-              <%= link_to admin_reports_products_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/products')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-sky">
-                    <i class="bi bi-pie-chart-fill"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Product Analytics</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Customer Reports -->
-            <li class="nav-item">
-              <%= link_to admin_reports_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/customers')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-purple">
-                    <i class="bi bi-people-fill"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Customer Reports</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Revenue Analytics -->
-            <li class="nav-item">
-              <%= link_to admin_reports_revenue_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/revenue')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-amber">
-                    <i class="bi bi-currency-dollar"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Revenue Analytics</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Inventory Reports -->
-            <li class="nav-item">
-              <%= link_to admin_reports_inventory_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/inventory')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-orange">
-                    <i class="bi bi-box-seam"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Inventory Reports</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Order Analytics -->
-            <li class="nav-item">
-              <%= link_to admin_reports_orders_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/orders')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-indigo">
-                    <i class="bi bi-bag-check-fill"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Order Analytics</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Financial Reports -->
-            <li class="nav-item">
-              <%= link_to admin_reports_financial_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/financial')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-teal">
-                    <i class="bi bi-calculator-fill"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Financial Reports</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Performance Dashboard -->
-            <li class="nav-item">
-              <%= link_to admin_reports_performance_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/performance')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-pink">
-                    <i class="bi bi-speedometer2"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Performance Dashboard</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-
-            <!-- Commission Report (Legacy) -->
-            <li class="nav-item">
-              <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-violet">
-                    <i class="bi bi-percent"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Commission Report</span>
+                <span class="nav-text">Reports</span>
                 <div class="nav-indicator"></div>
               <% end %>
             </li>

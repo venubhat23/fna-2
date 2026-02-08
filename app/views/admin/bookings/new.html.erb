@@ -106,17 +106,38 @@
                     <% end %>
                   </div>
 
-                  <%# Stock Status %>
+                  <%# Enhanced Inventory Status %>
                   <div class="mb-3">
                     <% if product.stock > 0 %>
-                      <small class="text-success">
-                        <i class="bi bi-check-circle-fill"></i>
-                        In Stock (<%= product.stock %> available)
-                      </small>
+                      <div class="d-flex flex-column">
+                        <small class="text-success mb-1">
+                          <i class="bi bi-check-circle-fill"></i>
+                          <%= product.inventory_status_text %>
+                        </small>
+                        <% if product.initial_stock.present? && product.initial_stock > 0 %>
+                          <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: <%= product.inventory_percentage_available %>%"
+                                 title="<%= product.inventory_percentage_available %>% available">
+                            </div>
+                            <div class="progress-bar bg-danger" role="progressbar"
+                                 style="width: <%= product.inventory_percentage_sold %>%"
+                                 title="<%= product.inventory_percentage_sold %>% sold">
+                            </div>
+                          </div>
+                          <small class="text-muted">
+                            <span class="badge bg-success-subtle text-success"><%= product.inventory_percentage_available %>% available</span>
+                            <span class="badge bg-danger-subtle text-danger"><%= product.inventory_percentage_sold %>% sold</span>
+                          </small>
+                        <% end %>
+                      </div>
                     <% else %>
                       <small class="text-danger">
                         <i class="bi bi-x-circle-fill"></i>
-                        Out of Stock
+                        <strong>SOLD OUT</strong>
+                        <% if product.initial_stock.present? && product.initial_stock > 0 %>
+                          (0 / <%= product.initial_stock %> available)
+                        <% end %>
                       </small>
                     <% end %>
                   </div>
@@ -126,16 +147,22 @@
                     <% if product.stock > 0 %>
                       <!-- Quantity Selector -->
                       <div class="mb-3">
-                        <label class="form-label fw-bold small">Quantity:</label>
+                        <label class="form-label fw-bold small">Quantity (Max: <%= product.stock %>):</label>
                         <div class="d-flex align-items-center gap-2">
                           <button class="btn btn-outline-secondary btn-sm" type="button" onclick="decreaseQuantity(<%= product.id %>)" style="width: 35px; height: 35px;">
                             <i class="bi bi-dash"></i>
                           </button>
-                          <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="<%= product.stock %>" class="form-control text-center" style="width: 60px; height: 35px;">
+                          <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="<%= product.stock %>" class="form-control text-center" style="width: 80px; height: 35px;" onchange="validateQuantity(<%= product.id %>, <%= product.stock %>)">
                           <button class="btn btn-outline-secondary btn-sm" type="button" onclick="increaseQuantity(<%= product.id %>)" style="width: 35px; height: 35px;">
                             <i class="bi bi-plus"></i>
                           </button>
                         </div>
+                        <% if product.stock <= 5 %>
+                          <small class="text-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Only <%= product.stock %> items remaining!
+                          </small>
+                        <% end %>
                       </div>
 
                       <!-- Add to Cart Button -->
@@ -143,9 +170,12 @@
                         <i class="bi bi-cart-plus me-2"></i>Add to Cart
                       </button>
                     <% else %>
-                      <button class="btn btn-secondary w-100" disabled>
-                        <i class="bi bi-bell me-2"></i>Notify When Available
-                      </button>
+                      <div class="text-center">
+                        <button class="btn btn-danger w-100" disabled>
+                          <i class="bi bi-x-circle me-2"></i>SOLD OUT
+                        </button>
+                        <small class="text-muted mt-1 d-block">Product is currently out of stock</small>
+                      </div>
                     <% end %>
                   </div>
                 </div>
@@ -194,12 +224,23 @@
               <h6 class="mb-3"><i class="bi bi-person me-2"></i>Customer Information</h6>
 
               <div class="row g-3">
-                <div class="col-md-8">
+                <div class="col-md-4">
                   <label class="form-label">Existing Customer</label>
                   <%= f.select :customer_id,
                       options_for_select([['Select existing customer', '']] + @customers.map { |c| ["#{c.respond_to?(:display_name) ? c.display_name : "#{c.first_name} #{c.last_name}"} - #{c.mobile}", c.id] }),
                       {},
                       { class: 'form-select', onchange: 'fillCustomerDetails(this)' } %>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Store (Optional)</label>
+                  <%= f.select :store_id,
+                      options_for_select([['Select Store (Optional)', '']] + Store.active.map { |s| [s.display_name, s.id] }),
+                      {},
+                      { class: 'form-select' } %>
+                  <div class="form-text">
+                    <small><i class="bi bi-shop me-1"></i>Tag this sale to a store</small>
+                  </div>
                 </div>
 
                 <div class="col-md-4">
@@ -632,6 +673,19 @@ function decreaseQuantity(productId) {
   const current = parseInt(input.value) || 1;
   if (current > 1) {
     input.value = current - 1;
+  }
+}
+
+// Validate quantity doesn't exceed available stock
+function validateQuantity(productId, maxStock) {
+  const input = document.getElementById(`qty-${productId}`);
+  const value = parseInt(input.value) || 1;
+
+  if (value > maxStock) {
+    input.value = maxStock;
+    showNotification(`Maximum ${maxStock} items available for this product`, 'warning');
+  } else if (value < 1) {
+    input.value = 1;
   }
 }
 

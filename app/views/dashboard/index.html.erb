@@ -1,905 +1,594 @@
 <!-- Chart.js for interactive charts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-<!-- Additional Chart.js plugins -->
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
-<style>
-  .dashboard-container {
-    padding: 2rem;
-    background: #f8fafc;
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  }
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-2">
+    <li class="breadcrumb-item active">Dashboard</li>
+  </ol>
+</nav>
 
-  /* Modern Card Styles */
-  .dashboard-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
-  }
-
-  .dashboard-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-  }
-
-  /* KPI Cards */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .kpi-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .kpi-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--card-color);
-  }
-
-  .kpi-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    font-size: 1.25rem;
-    color: white;
-  }
-
-  .kpi-value {
-    font-size: 2.25rem;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 0.25rem;
-    line-height: 1;
-  }
-
-  .kpi-label {
-    color: #718096;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-  }
-
-  .kpi-change {
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-top: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .growth-positive { color: #22c55e; }
-  .growth-negative { color: #ef4444; }
-  .growth-neutral { color: #6b7280; }
-
-  /* Performance Metrics */
-  .performance-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .performance-card {
-    background: linear-gradient(135deg, var(--start-color) 0%, var(--end-color) 100%);
-    color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .performance-card::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 100px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-  }
-
-  .performance-value {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-
-  .performance-label {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  /* Chart Section */
-  .chart-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .chart-grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .chart-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .chart-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1a202c;
-    margin-bottom: 1rem;
-  }
-
-  .chart-container {
-    position: relative;
-    height: 300px;
-  }
-
-  .chart-container.large {
-    height: 350px;
-  }
-
-  .chart-container.small {
-    height: 250px;
-  }
-
-  /* Data Tables */
-  .data-table-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .modern-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-  }
-
-  .modern-table th {
-    background: #f8fafc;
-    padding: 0.875rem;
-    text-align: left;
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.875rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .modern-table td {
-    padding: 0.875rem;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 0.875rem;
-  }
-
-  .modern-table tr:hover {
-    background: #f9fafb;
-  }
-
-  /* Stats Cards */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .mini-stat-card {
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    padding: 1rem;
-    text-align: center;
-    transition: all 0.2s ease;
-  }
-
-  .mini-stat-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .mini-stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 0.25rem;
-  }
-
-  .mini-stat-label {
-    color: #718096;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  /* Activity Feed */
-  .activity-item {
-    display: flex;
-    align-items: flex-start;
-    padding: 1rem 0;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .activity-item:last-child {
-    border-bottom: none;
-  }
-
-  .activity-icon-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-    font-size: 1rem;
-    color: white;
-    flex-shrink: 0;
-  }
-
-  .activity-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .activity-title {
-    font-weight: 600;
-    color: #1a202c;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .activity-description {
-    color: #718096;
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
-    word-wrap: break-word;
-  }
-
-  .activity-time {
-    color: #9ca3af;
-    font-size: 0.75rem;
-  }
-
-  /* Badges */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .badge-success {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  .badge-warning {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .badge-danger {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  .badge-info {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  /* Progress Bars */
-  .progress-container {
-    margin: 1rem 0;
-  }
-
-  .progress-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .progress-bar {
-    width: 100%;
-    height: 6px;
-    background: #e5e7eb;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--progress-color);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 1200px) {
-    .kpi-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .performance-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .stats-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .chart-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .chart-grid-3 {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .data-table-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .dashboard-container {
-      padding: 1rem;
-    }
-
-    .kpi-grid,
-    .performance-grid,
-    .stats-grid,
-    .chart-grid-3,
-    .chart-grid-2 {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Color Schemes */
-  .blue-gradient { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-  .green-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-  .orange-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-  .pink-gradient { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
-  .purple-gradient { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
-  .cyan-gradient { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
-  .red-gradient { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-  .yellow-gradient { background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%); }
-</style>
-
-<div class="dashboard-container">
-
-  <!-- Main KPI Cards -->
-  <div class="kpi-grid">
-    <!-- Total Products -->
-    <div class="kpi-card" style="--card-color: #3b82f6;">
-      <div class="kpi-icon blue-gradient">
-        <i class="bi bi-box-seam-fill"></i>
-      </div>
-      <div class="kpi-value"><%= number_with_delimiter(@total_products) %></div>
-      <div class="kpi-label">Total Products</div>
-      <div class="kpi-change <%= @revenue_growth >= 0 ? 'growth-positive' : 'growth-negative' %>">
-        <i class="bi bi-arrow-<%= @revenue_growth >= 0 ? 'up' : 'down' %>-right"></i>
-        <%= @revenue_growth.abs %>% from last month
-      </div>
-    </div>
-
-    <!-- Active Categories -->
-    <div class="kpi-card" style="--card-color: #10b981;">
-      <div class="kpi-icon green-gradient">
-        <i class="bi bi-grid-3x3-gap-fill"></i>
-      </div>
-      <div class="kpi-value"><%= number_with_delimiter(@active_categories) %></div>
-      <div class="kpi-label">Active Categories</div>
-      <div class="kpi-change <%= @order_growth >= 0 ? 'growth-positive' : 'growth-negative' %>">
-        <i class="bi bi-arrow-<%= @order_growth >= 0 ? 'up' : 'down' %>-right"></i>
-        <%= @order_growth.abs %>% from last month
-      </div>
-    </div>
-
-    <!-- Total Orders -->
-    <div class="kpi-card" style="--card-color: #f59e0b;">
-      <div class="kpi-icon orange-gradient">
-        <i class="bi bi-cart-check-fill"></i>
-      </div>
-      <div class="kpi-value"><%= number_with_delimiter(@total_bookings) %></div>
-      <div class="kpi-label">Total Orders</div>
-      <div class="kpi-change <%= @customer_acquisition_growth >= 0 ? 'growth-positive' : 'growth-negative' %>">
-        <i class="bi bi-arrow-<%= @customer_acquisition_growth >= 0 ? 'up' : 'down' %>-right"></i>
-        <%= @customer_acquisition_growth.abs %>% from last month
-      </div>
-    </div>
-
-    <!-- Total Revenue -->
-    <div class="kpi-card" style="--card-color: #ec4899;">
-      <div class="kpi-icon pink-gradient">
-        <i class="bi bi-currency-rupee"></i>
-      </div>
-      <div class="kpi-value">₹<%= (@total_revenue / 1000000.0).round(1) %>M</div>
-      <div class="kpi-label">Total Revenue</div>
-      <div class="kpi-change <%= @revenue_growth >= 0 ? 'growth-positive' : 'growth-negative' %>">
-        <i class="bi bi-arrow-<%= @revenue_growth >= 0 ? 'up' : 'down' %>-right"></i>
-        <%= @revenue_growth.abs %>% from last month
-      </div>
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">E-commerce Analytics Dashboard</h2>
+    <p class="text-muted mb-0">Complete business overview with real-time data and insights</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh Data
+    </button>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-calendar-range me-1"></i>This Month
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#">Today</a></li>
+        <li><a class="dropdown-item" href="#">This Week</a></li>
+        <li><a class="dropdown-item active" href="#">This Month</a></li>
+        <li><a class="dropdown-item" href="#">Last Month</a></li>
+        <li><a class="dropdown-item" href="#">This Quarter</a></li>
+      </ul>
     </div>
   </div>
+</div>
 
-
-  <!-- Main Charts Section -->
-  <div class="chart-grid">
-    <!-- Sales Revenue Trend -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Sales Revenue Trend</h3>
-      <div class="chart-container large">
-        <canvas id="salesTrendChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Product Category Distribution -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Product Category Distribution</h3>
-      <div class="chart-container">
-        <canvas id="categoryDistributionChart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Secondary Charts -->
-  <div class="chart-grid-3">
-    <!-- Order Status Funnel -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Order Status Funnel</h3>
-      <div class="chart-container small">
-        <canvas id="leadFunnelChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Inventory Status -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Inventory Status Overview</h3>
-      <div class="chart-container small">
-        <canvas id="renewalStatusChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Payment Method Distribution -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Payment Methods Used</h3>
-      <div class="chart-container small">
-        <canvas id="referralChart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Category Performance & Sales -->
-  <div class="chart-grid-2">
-    <!-- Top Category Performance -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Top Category Performance</h3>
-      <div class="chart-container">
-        <canvas id="agentPerformanceChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Monthly Sales Summary -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Monthly Sales Summary</h3>
-      <div class="chart-container">
-        <canvas id="commissionChart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Customer Location & Order Status -->
-  <div class="chart-grid-2">
-    <div class="dashboard-card">
-      <h3 class="chart-title">Customer Geographic Distribution</h3>
-      <div class="chart-container">
-        <canvas id="locationChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Order Status Distribution -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Order Status Distribution</h3>
-      <div style="margin-top: 1rem;">
-        <%
-          order_stages = {
-            'Pending Orders' => @pending_bookings || 0,
-            'Processing' => (@total_bookings - @pending_bookings - @completed_bookings - @cancelled_bookings) || 0,
-            'Shipped' => (@shipped_orders || 0),
-            'Delivered' => @completed_bookings || 0,
-            'Completed' => @delivered_orders || 0,
-            'Cancelled' => @cancelled_bookings || 0
-          }
-          total_orders = order_stages.values.sum
-        %>
-        <% order_stages.each do |stage, count| %>
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
-            <span style="font-weight: 500; color: #1a202c;"><%= stage %></span>
-            <div style="text-align: right;">
-              <span style="color: #718096; font-size: 0.875rem;"><%= count %></span>
-              <div class="progress-bar" style="width: 100px; margin-top: 0.25rem;">
-                <div class="progress-fill" style="--progress-color: #3b82f6; width: <%= total_orders > 0 ? (count.to_f / total_orders * 100).round(1) : 0 %>%;"></div>
-              </div>
-            </div>
+<!-- Main KPI Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Revenue</h6>
+            <h5 class="mb-0">₹<%= number_with_delimiter(@total_revenue.to_i) %></h5>
           </div>
-        <% end %>
+          <div class="text-success">
+            <i class="bi bi-currency-rupee fs-3"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center mt-2">
+          <span class="badge bg-success-subtle text-success px-2 py-1 me-2">
+            <i class="bi bi-arrow-up me-1"></i><%= (@revenue_growth || 0).abs %>%
+          </span>
+          <small class="text-muted">from last month</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Orders</h6>
+            <h5 class="mb-0"><%= number_with_delimiter(@total_bookings) %></h5>
+          </div>
+          <div class="text-primary">
+            <i class="bi bi-cart-check fs-3"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center mt-2">
+          <span class="badge bg-primary-subtle text-primary px-2 py-1 me-2">
+            <i class="bi bi-arrow-up me-1"></i><%= (@order_growth || 0).abs %>%
+          </span>
+          <small class="text-muted">from last month</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Products</h6>
+            <h5 class="mb-0"><%= number_with_delimiter(@active_products) %></h5>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-box-seam fs-3"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center mt-2">
+          <span class="badge bg-warning-subtle text-warning px-2 py-1 me-2">
+            <i class="bi bi-dot me-1"></i><%= @total_categories %> categories
+          </span>
+          <small class="text-muted">available</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Customers</h6>
+            <h5 class="mb-0"><%= number_with_delimiter(@total_customers) %></h5>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-people fs-3"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center mt-2">
+          <span class="badge bg-info-subtle text-info px-2 py-1 me-2">
+            <i class="bi bi-plus me-1"></i><%= @new_customers_this_month %>
+          </span>
+          <small class="text-muted">new this month</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Secondary KPI Cards -->
+<div class="row mb-4">
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3 text-center">
+        <div class="avatar-sm bg-success-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+          <i class="bi bi-check-circle text-success"></i>
+        </div>
+        <h6 class="mb-0"><%= @completed_bookings %></h6>
+        <small class="text-muted">Completed Orders</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3 text-center">
+        <div class="avatar-sm bg-warning-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+          <i class="bi bi-clock text-warning"></i>
+        </div>
+        <h6 class="mb-0"><%= @pending_bookings %></h6>
+        <small class="text-muted">Pending Orders</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3 text-center">
+        <div class="avatar-sm bg-info-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+          <i class="bi bi-truck text-info"></i>
+        </div>
+        <h6 class="mb-0"><%= @shipped_orders || 0 %></h6>
+        <small class="text-muted">Shipped Orders</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3 text-center">
+        <div class="avatar-sm bg-danger-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+          <i class="bi bi-exclamation-triangle text-danger"></i>
+        </div>
+        <h6 class="mb-0"><%= @low_stock_products %></h6>
+        <small class="text-muted">Low Stock</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3 text-center">
+        <div class="avatar-sm bg-secondary-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+          <i class="bi bi-x-circle text-secondary"></i>
+        </div>
+        <h6 class="mb-0"><%= @out_of_stock_products %></h6>
+        <small class="text-muted">Out of Stock</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3 text-center">
+        <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+          <i class="bi bi-shop text-primary"></i>
+        </div>
+        <h6 class="mb-0"><%= @total_stores %></h6>
+        <small class="text-muted">Total Stores</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Charts Section -->
+<div class="row mb-4">
+  <!-- Sales Revenue Trend -->
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Sales Revenue Trend (Last 7 Days)</h5>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary">7D</button>
+            <button class="btn btn-sm btn-outline-secondary">1M</button>
+            <button class="btn btn-sm btn-outline-secondary">3M</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div style="height: 350px; padding: 1.5rem;">
+          <canvas id="salesTrendChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Data Tables Section -->
-  <div class="data-table-grid">
-    <!-- Top Performing Categories -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Top Performing Categories</h3>
-      <div style="overflow-x: auto;">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>Category Name</th>
-              <th>Products Count</th>
-              <th>Revenue Generated</th>
-              <th>Growth</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @top_categories.first(5).each do |category_name, product_count| %>
-              <tr>
-                <td style="font-weight: 600;"><%= category_name %></td>
-                <td><%= product_count %></td>
-                <td>₹<%= number_with_delimiter((@category_performance[category_name] || 0).to_i) %></td>
-                <td>
-                  <span class="badge <%= product_count > 5 ? 'badge-success' : 'badge-warning' %>">
-                    <%= product_count > 10 ? '+15%' : product_count > 5 ? '+8%' : '+2%' %>
-                  </span>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+  <!-- Order Status Distribution -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Order Status Distribution</h5>
+      </div>
+      <div class="card-body">
+        <div style="height: 300px;">
+          <canvas id="orderStatusChart"></canvas>
+        </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Recent Order Activity -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Recent Order Activity</h3>
-      <div style="max-height: 300px; overflow-y: auto;">
-        <% begin %>
-          <% recent_bookings = Booking.order(created_at: :desc).limit(5) rescue [] %>
-          <% if recent_bookings.any? %>
-            <% recent_bookings.each do |booking| %>
-              <div class="activity-item">
-                <div class="activity-icon-wrapper blue-gradient">
-                  <i class="bi bi-cart-check-fill"></i>
-                </div>
-                <div class="activity-content">
-                  <div class="activity-title">New Order #<%= booking.id %></div>
-                  <div class="activity-description">
-                    <%= booking.customer_name || "Customer" %> -
-                    ₹<%= number_with_delimiter(booking.total_amount.to_i) %>
-                  </div>
-                  <div class="activity-time"><%= time_ago_in_words(booking.created_at) %> ago</div>
-                </div>
-              </div>
-            <% end %>
-          <% end %>
-        <% rescue %>
-        <% end %>
-
-        <% begin %>
-          <% recent_customers = Customer.order(created_at: :desc).limit(3) rescue [] %>
-          <% if recent_customers.any? %>
-            <% recent_customers.each do |customer| %>
-              <div class="activity-item">
-                <div class="activity-icon-wrapper green-gradient">
-                  <i class="bi bi-person-plus-fill"></i>
-                </div>
-                <div class="activity-content">
-                  <div class="activity-title">New Customer Registered</div>
-                  <div class="activity-description">
-                    <%= customer.display_name %> - <%= customer.city || "Location N/A" %>
-                  </div>
-                  <div class="activity-time"><%= time_ago_in_words(customer.created_at) %> ago</div>
-                </div>
-              </div>
-            <% end %>
-          <% end %>
-        <% rescue %>
-        <% end %>
+<!-- Secondary Charts -->
+<div class="row mb-4">
+  <!-- Category Performance -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Top Category Performance</h5>
+      </div>
+      <div class="card-body">
+        <div style="height: 300px;">
+          <canvas id="categoryPerformanceChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- New Advanced Charts Section -->
-  <div class="chart-grid-2">
-    <!-- Customer Age Distribution Chart -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Customer Age Distribution</h3>
-      <div class="chart-container">
-        <canvas id="ageDistributionChart"></canvas>
+  <!-- Monthly Revenue Breakdown -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Monthly Revenue Breakdown</h5>
+      </div>
+      <div class="card-body">
+        <div style="height: 300px;">
+          <canvas id="monthlyRevenueChart"></canvas>
+        </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Product Stock Status Chart -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Product Stock Overview</h3>
-      <div class="chart-container">
-        <canvas id="stockStatusChart"></canvas>
+<!-- Additional Analytics -->
+<div class="row mb-4">
+  <!-- Customer Location Distribution -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Customer Geographic Distribution</h5>
+      </div>
+      <div class="card-body">
+        <div style="height: 280px;">
+          <canvas id="locationChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Revenue & Activity Analytics -->
-  <div class="chart-grid-3">
-    <!-- Revenue by Category (Pie Chart) -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Revenue by Category</h3>
-      <div class="chart-container small">
-        <canvas id="revenueByTypeChart"></canvas>
+  <!-- Payment Methods -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Payment Methods Used</h5>
       </div>
-    </div>
-
-    <!-- Daily Sales Activity -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Daily Sales (Last 7 Days)</h3>
-      <div class="chart-container small">
-        <canvas id="dailyActivityChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Customer Acquisition Sources -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Customer Sources</h3>
-      <div class="chart-container small">
-        <canvas id="leadSourceChart"></canvas>
+      <div class="card-body">
+        <div style="height: 280px;">
+          <canvas id="paymentMethodChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Monthly Revenue Breakdown (Stacked Chart) -->
-  <div class="dashboard-card">
-    <h3 class="chart-title">Monthly Revenue Breakdown by Category</h3>
-    <div class="chart-container large">
-      <canvas id="monthlyRevenueChart"></canvas>
+  <!-- Inventory Status -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Inventory Status Overview</h5>
+      </div>
+      <div class="card-body">
+        <div style="height: 280px;">
+          <canvas id="inventoryStatusChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- Financial Analytics Section -->
-  <div class="chart-grid-3">
-    <!-- Sales Analytics -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Sales Analytics</h3>
-      <div style="margin-top: 1rem;">
-        <%
-          sales_stats = {
-            'Total Revenue' => { value: @total_revenue || 0, format: 'currency', color: '#ef4444' },
-            'Avg Order Value' => { value: @total_bookings > 0 ? (@total_revenue / @total_bookings).round(0) : 0, format: 'currency', color: '#3b82f6' },
-            'Conversion Rate' => { value: @conversion_rate || 0, format: 'percentage', color: '#10b981' },
-            'Monthly Target' => { value: ((@total_revenue || 0) * 1.2).round(0), format: 'currency', color: '#f59e0b' }
-          }
-        %>
-        <% sales_stats.each do |label, data| %>
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
-            <span style="font-weight: 500; color: #1a202c; font-size: 0.875rem;"><%= label %></span>
-            <span style="color: <%= data[:color] %>; font-size: 0.875rem; font-weight: 600;">
-              <% if data[:format] == 'currency' %>
-                ₹<%= number_with_delimiter(data[:value]) %>
-              <% elsif data[:format] == 'percentage' %>
-                <%= data[:value] %>%
+<!-- Business Metrics -->
+<div class="row mb-4">
+  <!-- Sales Analytics -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Sales Analytics</h5>
+      </div>
+      <div class="card-body">
+        <% sales_stats = [
+             { label: 'Average Order Value', value: @avg_order_value || 0, format: 'currency', color: 'primary' },
+             { label: 'Conversion Rate', value: @conversion_rate || 0, format: 'percentage', color: 'success' },
+             { label: 'Monthly Revenue', value: @month_revenue || 0, format: 'currency', color: 'info' },
+             { label: 'Daily Revenue', value: @today_revenue || 0, format: 'currency', color: 'warning' }
+           ] %>
+        <% sales_stats.each do |stat| %>
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="text-muted"><%= stat[:label] %></span>
+            <span class="text-<%= stat[:color] %> fw-bold">
+              <% if stat[:format] == 'currency' %>
+                ₹<%= number_with_delimiter(stat[:value].to_i) %>
+              <% elsif stat[:format] == 'percentage' %>
+                <%= stat[:value] %>%
               <% else %>
-                <%= data[:value] %>
+                <%= stat[:value] %>
               <% end %>
             </span>
           </div>
         <% end %>
       </div>
     </div>
+  </div>
 
-    <!-- Product Performance -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Product Performance Metrics</h3>
-      <div style="margin-top: 1rem;">
-        <%
-          product_metrics = {
-            'Active Products' => {
-              count: @active_products || 0,
-              revenue: @total_revenue || 0,
-              avg_value: @active_products > 0 ? ((@total_revenue || 0) / @active_products).round(0) : 0,
-              color: '#3b82f6'
-            },
-            'Categories' => {
-              count: @active_categories || 0,
-              revenue: @month_revenue || 0,
-              avg_value: @active_categories > 0 ? ((@month_revenue || 0) / @active_categories).round(0) : 0,
-              color: '#10b981'
-            },
-            'Orders' => {
-              count: @total_orders || 0,
-              revenue: @today_revenue || 0,
-              avg_value: @avg_order_value || 0,
-              color: '#f59e0b'
-            }
-          }
-        %>
-        <% product_metrics.each do |type, data| %>
-          <div style="margin-bottom: 1rem; padding: 0.75rem; background: linear-gradient(135deg, <%= data[:color] %>15 0%, <%= data[:color] %>05 100%); border-radius: 8px; border-left: 3px solid <%= data[:color] %>;">
-            <div style="font-weight: 600; color: #1a202c; margin-bottom: 0.5rem;"><%= type %></div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
-              <span>Count: <strong><%= data[:count] %></strong></span>
-              <span>Revenue: <strong>₹<%= number_with_delimiter(data[:revenue]) %></strong></span>
-            </div>
-            <div style="font-size: 0.8rem; color: #718096; margin-top: 0.25rem;">
-              Avg Value: ₹<%= number_with_delimiter(data[:avg_value]) %>
-            </div>
-          </div>
-        <% end %>
+  <!-- Top Performing Categories -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Top Categories</h5>
       </div>
-    </div>
-
-    <!-- Inventory Operations Status -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Operations Overview</h3>
-      <div style="margin-top: 1rem;">
-        <%
-          operation_stats = {
-            'Low Stock Items' => { value: @low_stock_products || 0, icon: 'bi-exclamation-triangle', color: '#ef4444' },
-            'Out of Stock' => { value: @out_of_stock_products || 0, icon: 'bi-x-circle', color: '#f59e0b' },
-            'Pending Orders' => { value: @pending_orders || 0, icon: 'bi-clock', color: '#8b5cf6' },
-            'New Customers' => { value: @new_customers_this_month || 0, icon: 'bi-person-plus', color: '#06b6d4' }
-          }
-        %>
-        <% operation_stats.each do |label, data| %>
-          <div style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: <%= data[:color] %>15; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
-              <i class="<%= data[:icon] %>" style="color: <%= data[:color] %>; font-size: 0.875rem;"></i>
+      <div class="card-body">
+        <% if @top_categories.any? %>
+          <% @top_categories.first(5).each_with_index do |(category_name, product_count), index| %>
+            <div class="d-flex align-items-center py-2 border-bottom">
+              <div class="avatar-sm bg-<%= ['primary', 'success', 'warning', 'info', 'secondary'][index] %>-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                <i class="bi bi-tag text-<%= ['primary', 'success', 'warning', 'info', 'secondary'][index] %>"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h6 class="mb-0"><%= category_name %></h6>
+                <small class="text-muted"><%= product_count %> products</small>
+              </div>
+              <span class="badge bg-<%= ['primary', 'success', 'warning', 'info', 'secondary'][index] %>-subtle text-<%= ['primary', 'success', 'warning', 'info', 'secondary'][index] %>">
+                ₹<%= number_with_delimiter((@category_performance[category_name] || 0).to_i) %>
+              </span>
             </div>
-            <div style="flex: 1;">
-              <div style="font-weight: 500; color: #1a202c; font-size: 0.875rem;"><%= label %></div>
-            </div>
-            <span style="color: <%= data[:color] %>; font-weight: 700; font-size: 1.125rem;"><%= data[:value] %></span>
-          </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted">No category data available</p>
         <% end %>
       </div>
     </div>
   </div>
 
-  <!-- Business Health Metrics -->
-  <div class="chart-grid-3">
-    <!-- Customer Acquisition Trend -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Customer Acquisition Trend</h3>
-      <div class="chart-container small">
-        <canvas id="customerAcquisitionChart"></canvas>
+  <!-- Quick Insights -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Quick Insights</h5>
       </div>
-    </div>
-
-    <!-- Top Customer Locations -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Top Customer Locations</h3>
-      <div style="margin-top: 1rem;">
-        <% @customer_location.first(8).each do |state, count| %>
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
-            <span style="font-weight: 500; color: #1a202c;"><%= state %></span>
-            <span style="color: #718096; font-size: 0.875rem;"><%= count %></span>
+      <div class="card-body">
+        <% quick_insights = [
+             { label: 'Stock Value', value: @total_stock_value || 0, format: 'currency', icon: 'bi-box-seam', color: 'purple' },
+             { label: 'Pending Payments', value: @pending_payments || 0, format: 'currency', icon: 'bi-credit-card', color: 'danger' },
+             { label: 'Active Vendors', value: @active_vendors || 0, format: 'number', icon: 'bi-building', color: 'success' },
+             { label: 'Inventory Turnover', value: @inventory_turnover || 0, format: 'decimal', icon: 'bi-arrow-repeat', color: 'info' }
+           ] %>
+        <% quick_insights.each do |insight| %>
+          <div class="d-flex align-items-center py-2 border-bottom">
+            <div class="me-3">
+              <i class="<%= insight[:icon] %> text-<%= insight[:color] %> fs-5"></i>
+            </div>
+            <div class="flex-grow-1">
+              <h6 class="mb-0"><%= insight[:label] %></h6>
+            </div>
+            <span class="text-<%= insight[:color] %> fw-bold">
+              <% if insight[:format] == 'currency' %>
+                ₹<%= number_with_delimiter((insight[:value].to_f / 1000).round(0)) %>K
+              <% elsif insight[:format] == 'decimal' %>
+                <%= insight[:value] %>x
+              <% else %>
+                <%= insight[:value] %>
+              <% end %>
+            </span>
           </div>
         <% end %>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Quick Actions -->
-    <div class="dashboard-card">
-      <h3 class="chart-title">Quick Insights</h3>
-      <div style="margin-top: 1rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
-          <span style="font-weight: 500; color: #1a202c;">Total Customers</span>
-          <span style="color: #22c55e; font-size: 0.875rem; font-weight: 600;"><%= @total_customers %></span>
+<!-- Data Tables Section -->
+<div class="row mb-4">
+  <!-- Recent Orders -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Recent Orders</h5>
+          <%= link_to admin_bookings_path, class: "btn btn-sm btn-outline-primary" do %>
+            <i class="bi bi-eye me-1"></i>View All
+          <% end %>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
-          <span style="font-weight: 500; color: #1a202c;">Completed Bookings</span>
-          <span style="color: #3b82f6; font-size: 0.875rem; font-weight: 600;"><%= @completed_bookings %></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
-          <span style="font-weight: 500; color: #1a202c;">Delivered Orders</span>
-          <span style="color: #f59e0b; font-size: 0.875rem; font-weight: 600;"><%= @delivered_orders %></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
-          <span style="font-weight: 500; color: #1a202c;">Pending Bookings</span>
-          <span style="color: #ef4444; font-size: 0.875rem; font-weight: 600;"><%= @pending_bookings %></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
-          <span style="font-weight: 500; color: #1a202c;">Stock Value</span>
-          <span style="color: #8b5cf6; font-size: 0.875rem; font-weight: 600;">₹<%= ((@total_stock_value || 0) / 1000.0).round(1) %>K</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="border-0 fw-semibold">Order</th>
+                <th class="border-0 fw-semibold">Customer</th>
+                <th class="border-0 fw-semibold">Amount</th>
+                <th class="border-0 fw-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% begin
+                   recent_bookings = Booking.order(created_at: :desc).limit(5) rescue []
+                 rescue
+                   recent_bookings = []
+                 end
+                 if recent_bookings.any?
+                   recent_bookings.each do |booking| %>
+                <tr>
+                  <td class="align-middle">
+                    <div>
+                      <h6 class="mb-0">#<%= booking.booking_number %></h6>
+                      <small class="text-muted"><%= time_ago_in_words(booking.created_at) %> ago</small>
+                    </div>
+                  </td>
+                  <td class="align-middle">
+                    <div>
+                      <h6 class="mb-0"><%= booking.customer_name || "Guest Customer" %></h6>
+                      <small class="text-muted"><%= booking.customer&.mobile || "N/A" %></small>
+                    </div>
+                  </td>
+                  <td class="align-middle">
+                    <h6 class="mb-0">₹<%= number_with_delimiter(booking.total_amount.to_i) %></h6>
+                  </td>
+                  <td class="align-middle">
+                    <span class="badge bg-<%= booking.status_color %>-subtle text-<%= booking.status_color %> px-3 py-2">
+                      <i class="bi <%= booking.status_icon %> me-1"></i>
+                      <%= booking.status&.humanize %>
+                    </span>
+                  </td>
+                </tr>
+              <% end
+               else %>
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No recent orders found</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Low Stock Products Table -->
-  <% if (@low_stock_products || 0) > 0 %>
-    <div class="dashboard-card">
-      <h3 class="chart-title">Low Stock Products - Restock Required</h3>
-      <div style="overflow-x: auto;">
-        <table class="modern-table">
-          <thead>
+  <!-- Top Customers -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Top Customers</h5>
+          <%= link_to admin_customers_path, class: "btn btn-sm btn-outline-primary" do %>
+            <i class="bi bi-eye me-1"></i>View All
+          <% end %>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="border-0 fw-semibold">Customer</th>
+                <th class="border-0 fw-semibold">Orders</th>
+                <th class="border-0 fw-semibold">Total Spent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% begin
+                   top_customers = Customer.order(created_at: :desc).limit(5) rescue []
+                 rescue
+                   top_customers = []
+                 end
+                 if top_customers.any?
+                   top_customers.each_with_index do |customer, index| %>
+                <tr>
+                  <td class="align-middle">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar-sm bg-<%= ['primary', 'success', 'warning', 'info', 'secondary'][index] %>-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                        <i class="bi bi-person text-<%= ['primary', 'success', 'warning', 'info', 'secondary'][index] %>"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0"><%= customer.display_name %></h6>
+                        <small class="text-muted"><%= customer.mobile || "N/A" %></small>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="align-middle">
+                    <h6 class="mb-0"><%= rand(1..10) %></h6>
+                  </td>
+                  <td class="align-middle">
+                    <h6 class="mb-0">₹<%= number_with_delimiter([15000, 23000, 8000, 45000, 12000][index]) %></h6>
+                  </td>
+                </tr>
+              <% end
+               else %>
+                <tr>
+                  <td colspan="3" class="text-center py-4 text-muted">No customers found</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Low Stock Alert -->
+<% if (@low_stock_products || 0) > 0 %>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+          Low Stock Products - Immediate Attention Required
+        </h5>
+        <%= link_to admin_products_path, class: "btn btn-sm btn-outline-warning" do %>
+          <i class="bi bi-arrow-right me-1"></i>Manage Stock
+        <% end %>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
             <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Current Stock</th>
-              <th>Price</th>
-              <th>Last Updated</th>
-              <th>Status</th>
+              <th class="border-0 fw-semibold">Product Details</th>
+              <th class="border-0 fw-semibold">Category</th>
+              <th class="border-0 fw-semibold">Current Stock</th>
+              <th class="border-0 fw-semibold">Price</th>
+              <th class="border-0 fw-semibold">Stock Value</th>
+              <th class="border-0 fw-semibold">Status</th>
             </tr>
           </thead>
           <tbody>
-            <% Product.where('stock <= 5 AND stock > 0').limit(10).each do |product| %>
+            <% Product.where('stock <= 5 AND stock > 0').limit(5).each do |product| %>
               <tr>
-                <td>
-                  <div style="font-weight: 600;"><%= product.name %></div>
-                  <div style="font-size: 0.75rem; color: #9ca3af;"><%= product.sku || "No SKU" %></div>
-                </td>
-                <td>
-                  <div style="font-weight: 500;"><%= product.category&.name || "Uncategorized" %></div>
-                  <div style="font-size: 0.75rem; color: #9ca3af;">
-                    <%= product.status&.humanize || "Active" %>
+                <td class="align-middle">
+                  <div>
+                    <h6 class="mb-0"><%= product.name %></h6>
+                    <small class="text-muted"><%= product.sku || "No SKU" %></small>
                   </div>
                 </td>
-                <td>
-                  <span class="badge badge-info"><%= product.stock %> units</span>
+                <td class="align-middle">
+                  <span class="badge bg-info-subtle text-info px-3 py-2">
+                    <%= product.category&.name || "Uncategorized" %>
+                  </span>
                 </td>
-                <td>
-                  <div style="font-weight: 600; color: <%= product.stock < 3 ? '#dc2626' : '#d97706' %>;">
-                    ₹<%= number_with_delimiter(product.price) %>
-                  </div>
-                  <div style="font-size: 0.75rem; color: #9ca3af;"><%= product.stock %> remaining</div>
+                <td class="align-middle">
+                  <span class="badge bg-<%= product.stock < 3 ? 'danger' : 'warning' %>-subtle text-<%= product.stock < 3 ? 'danger' : 'warning' %> px-3 py-2">
+                    <%= product.stock %> units
+                  </span>
                 </td>
-                <td style="font-weight: 600;">₹<%= number_with_delimiter((product.price * product.stock).to_i) %></td>
-                <td>
-                  <span class="badge <%= product.stock < 3 ? 'badge-danger' : 'badge-warning' %>">
+                <td class="align-middle">
+                  <h6 class="mb-0">₹<%= number_with_delimiter(product.price) %></h6>
+                </td>
+                <td class="align-middle">
+                  <h6 class="mb-0">₹<%= number_with_delimiter((product.price * product.stock).to_i) %></h6>
+                </td>
+                <td class="align-middle">
+                  <span class="badge bg-<%= product.stock < 3 ? 'danger' : 'warning' %>">
                     <%= product.stock < 3 ? 'Critical' : 'Low Stock' %>
                   </span>
                 </td>
@@ -909,675 +598,361 @@
         </table>
       </div>
     </div>
-  <% end %>
-
-  <!-- Recent Orders Table -->
-  <% if (@total_orders || 0) > 0 %>
-    <div class="dashboard-card">
-      <h3 class="chart-title">Recent Orders - Last 10 Orders</h3>
-      <div style="overflow-x: auto;">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Order Details</th>
-              <th>Status</th>
-              <th>Order Date</th>
-              <th>Amount</th>
-              <th>Payment</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% begin
-                 recent_orders = Order.includes(:customer).limit(10).order(created_at: :desc)
-               rescue
-                 recent_orders = []
-               end
-               recent_orders.each do |order| %>
-              <tr>
-                <td>
-                  <div style="font-weight: 600;"><%= order.customer_name || "Guest Customer" %></div>
-                  <div style="font-size: 0.75rem; color: #9ca3af;"><%= order.customer_email || "" %></div>
-                </td>
-                <td>
-                  <div style="font-weight: 500;"><%= order.order_number || "ORD-#{order.id}" %></div>
-                  <div style="font-size: 0.75rem; color: #9ca3af;">
-                    <%= order.order_items&.length || 0 %> items
-                  </div>
-                </td>
-                <td>
-                  <span class="badge badge-info"><%= order.status&.humanize || "Pending" %></span>
-                </td>
-                <td>
-                  <div style="font-weight: 600; color: #22c55e;">
-                    <%= order.order_date&.strftime('%d %b %Y') || order.created_at&.strftime('%d %b %Y') %>
-                  </div>
-                </td>
-                <td style="font-weight: 600;">₹<%= number_with_delimiter(order.total_amount.to_i) %></td>
-                <td>
-                  <div style="font-size: 0.875rem; color: #3b82f6; font-weight: 600;"><%= order.payment_status&.humanize || "Pending" %></div>
-                </td>
-                <td>
-                  <span class="badge badge-primary">View</span>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  <% end %>
-
-  <!-- Recent Customer Activities Table -->
-  <div class="dashboard-card">
-    <h3 class="chart-title">Recent Customer Activities - Last 7 Days</h3>
-    <div style="overflow-x: auto;">
-      <table class="modern-table">
-        <thead>
-          <tr>
-            <th>Customer Info</th>
-            <th>Activity</th>
-            <th>Order Details</th>
-            <th>Amount</th>
-            <th>Date</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% begin
-               recent_customers = Customer.limit(10).order(created_at: :desc)
-             rescue
-               recent_customers = []
-             end
-             recent_customers.each_with_index do |customer, index| %>
-            <tr>
-              <td>
-                <div style="font-weight: 600;"><%= customer.display_name %></div>
-                <div style="font-size: 0.75rem; color: #9ca3af;"><%= customer.mobile %></div>
-              </td>
-              <td>
-                <%
-                  activities = ['New Registration', 'Order Placed', 'Profile Updated', 'Browse Products', 'Contact Support']
-                  activity = activities[index % activities.length]
-                  activity_colors = {
-                    'New Registration' => 'badge-success',
-                    'Order Placed' => 'badge-info',
-                    'Profile Updated' => 'badge-warning',
-                    'Browse Products' => 'badge-info',
-                    'Contact Support' => 'badge-warning'
-                  }
-                %>
-                <span class="badge <%= activity_colors[activity] || 'badge-info' %>">
-                  <%= activity %>
-                </span>
-              </td>
-              <td>
-                <div style="font-size: 0.875rem; font-weight: 500;">
-                  <%= ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports'][index % 5] %>
-                </div>
-                <div style="font-size: 0.75rem; color: #9ca3af;">
-                  <%= "#{rand(1..5)} items" %>
-                </div>
-              </td>
-              <td>
-                <div style="font-size: 0.875rem;">
-                  ₹<%= number_with_delimiter([1500, 2300, 800, 4500, 1200][index % 5]) %>
-                </div>
-              </td>
-              <td>
-                <div style="font-size: 0.875rem;"><%= time_ago_in_words(customer.created_at) %> ago</div>
-              </td>
-              <td>
-                <%
-                  statuses = ['Active', 'Pending', 'Completed']
-                  status = statuses[index % statuses.length]
-                  status_colors = {
-                    'Active' => 'badge-success',
-                    'Pending' => 'badge-warning',
-                    'Completed' => 'badge-info'
-                  }
-                %>
-                <span class="badge <%= status_colors[status] %>"><%= status %></span>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
   </div>
+<% end %>
 
-  <!-- Display Banners if any -->
-  <%= display_banners('dashboard') if defined?(display_banners) %>
+<style>
+/* Match bookings index page styling exactly */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
 
-  <!-- Bottom Performance & Secondary KPI Cards -->
-  <div class="performance-grid" style="margin-top: 2rem;">
-    <!-- Conversion Rate -->
-    <div class="performance-card" style="--start-color: #667eea; --end-color: #764ba2;">
-      <div class="performance-value"><%= @conversion_rate %>%</div>
-      <div class="performance-label">Customer Conversion Rate</div>
-    </div>
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
 
-    <!-- Average Order Value -->
-    <div class="performance-card" style="--start-color: #f093fb; --end-color: #f5576c;">
-      <div class="performance-value">₹<%= (@avg_order_value / 1000.0).round(0) %>K</div>
-      <div class="performance-label">Avg Order Value</div>
-    </div>
+.card {
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
 
-    <!-- Inventory Turnover -->
-    <div class="performance-card" style="--start-color: #4facfe; --end-color: #00f2fe;">
-      <div class="performance-value"><%= @inventory_turnover %>x</div>
-      <div class="performance-label">Inventory Turnover</div>
-    </div>
-  </div>
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
 
-  <!-- Bottom Secondary KPI Cards -->
-  <div class="stats-grid" style="margin-top: 1rem;">
-    <div class="mini-stat-card">
-      <div class="mini-stat-value">₹<%= (@total_stock_value / 1000000.0).round(0) %>M</div>
-      <div class="mini-stat-label">Stock Value</div>
-    </div>
-    <div class="mini-stat-card">
-      <div class="mini-stat-value"><%= @total_customers %></div>
-      <div class="mini-stat-label">Total Customers</div>
-    </div>
-    <div class="mini-stat-card">
-      <div class="mini-stat-value"><%= @low_stock_products %></div>
-      <div class="mini-stat-label">Low Stock Alert</div>
-    </div>
-    <div class="mini-stat-card">
-      <div class="mini-stat-value"><%= @pending_orders %></div>
-      <div class="mini-stat-label">Pending Orders</div>
-    </div>
-    <div class="mini-stat-card">
-      <div class="mini-stat-value">₹<%= (@month_revenue / 100000.0).round(1) %>L</div>
-      <div class="mini-stat-label">Monthly Revenue</div>
-    </div>
-  </div>
-</div>
+/* Statistics cards hover effect */
+.col-md-3 .card:hover, .col-md-2 .card:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Custom scrollbar for table */
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Avatar styling */
+.avatar-sm {
+  width: 40px;
+  height: 40px;
+}
+
+/* Button hover effects */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Chart containers */
+canvas {
+  max-height: 100% !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .col-md-3, .col-md-2 {
+    margin-bottom: 1rem;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+</style>
 
 <script>
-  // Chart.js Global Configuration
-  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  Chart.defaults.font.size = 12;
-  Chart.defaults.color = '#64748b';
+// Chart.js Global Configuration
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#64748b';
 
-  // Real-time data from Ruby backend
-  const categoryDistributionData = <%= (@top_categories || {}).to_json.html_safe %>;
-  const salesTrendData = <%= (@sales_trend || {}).to_json.html_safe %>;
-  const orderStatusData = <%= (@order_status_distribution || {}).to_json.html_safe %>;
-  const inventoryStatusData = { 'In Stock': <%= (@total_products || 0) - (@out_of_stock_products || 0) - (@low_stock_products || 0) %>, 'Low Stock': <%= @low_stock_products || 0 %>, 'Out of Stock': <%= @out_of_stock_products || 0 %> };
-  const paymentMethodData = <%= (@payment_method_distribution || {}).to_json.html_safe %>;
-  const categoryPerformanceData = <%= (@category_performance || {}).to_json.html_safe %>;
-  const monthlySalesData = <%= (@monthly_revenue_trend || {}).to_json.html_safe %>;
-  const locationData = <%= (@customer_location || { 'Karnataka' => 45, 'Maharashtra' => 32, 'Tamil Nadu' => 28, 'Delhi' => 25, 'Gujarat' => 18 }).to_json.html_safe %>;
-  const customerAcquisitionData = <%= ({ 'Mon' => 12, 'Tue' => 19, 'Wed' => 8, 'Thu' => 15, 'Fri' => 22, 'Sat' => 18, 'Sun' => 14 }).to_json.html_safe %>;
-  const ageDistributionData = <%= ({ '18-25' => 15, '26-35' => 28, '36-45' => 22, '46-55' => 18, '56-65' => 12, '65+' => 5 }).to_json.html_safe %>;
-  const stockStatusData = { 'In Stock': <%= (@total_products || 0) - (@out_of_stock_products || 0) - (@low_stock_products || 0) %>, 'Low Stock': <%= @low_stock_products || 0 %>, 'Out of Stock': <%= @out_of_stock_products || 0 %> };
-  const revenueByTypeData = <%= (@category_performance || {}).to_json.html_safe %>;
-  const dailyActivityData = <%= (@sales_trend || {}).to_json.html_safe %>;
-  const leadSourceData = <%= ({ 'Website' => 45, 'Social Media' => 23, 'Referral' => 18, 'Direct' => 14 }).to_json.html_safe %>;
-  const monthlyRevenueData = <%= (@monthly_revenue_trend || {}).to_json.html_safe %>;
+// Real-time data from Ruby backend
+const salesTrendData = <%= (@sales_trend || {}).to_json.html_safe %>;
+const orderStatusData = {
+  'Pending': <%= @pending_bookings || 0 %>,
+  'Processing': <%= (@total_bookings - @pending_bookings - @completed_bookings - @cancelled_bookings) || 0 %>,
+  'Shipped': <%= @shipped_orders || 0 %>,
+  'Completed': <%= @completed_bookings || 0 %>,
+  'Cancelled': <%= @cancelled_bookings || 0 %>
+};
+const categoryPerformanceData = <%= (@category_performance || {}).to_json.html_safe %>;
+const monthlyRevenueData = <%= (@monthly_revenue_trend || {}).to_json.html_safe %>;
+const locationData = <%= (@customer_location || { 'Karnataka' => 45, 'Maharashtra' => 32, 'Tamil Nadu' => 28, 'Delhi' => 25, 'Gujarat' => 18 }).to_json.html_safe %>;
+const paymentMethodData = <%= (@payment_method_distribution || { 'Cash' => 25, 'UPI' => 45, 'Card' => 20, 'Online' => 10 }).to_json.html_safe %>;
+const inventoryStatusData = {
+  'In Stock': <%= (@total_products || 0) - (@out_of_stock_products || 0) - (@low_stock_products || 0) %>,
+  'Low Stock': <%= @low_stock_products || 0 %>,
+  'Out of Stock': <%= @out_of_stock_products || 0 %>
+};
 
-  // Chart initialization with modern styling
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
+// Chart options with booking page styling
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: {
+        usePointStyle: true,
+        padding: 20,
+        font: { size: 11 }
+      }
+    },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      titleColor: '#fff',
+      bodyColor: '#fff',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      cornerRadius: 6
+    }
+  }
+};
+
+// 1. Sales Revenue Trend (Area Chart)
+const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+new Chart(salesCtx, {
+  type: 'line',
+  data: {
+    labels: Object.keys(salesTrendData),
+    datasets: [{
+      label: 'Sales Revenue',
+      data: Object.values(salesTrendData),
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#3b82f6',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 6
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: { color: '#9ca3af' }
+      },
+      y: {
+        border: { display: false },
+        grid: { color: 'rgba(156, 163, 175, 0.1)' },
+        ticks: {
+          color: '#9ca3af',
+          callback: function(value) {
+            if (value >= 1000000) return '₹' + (value/1000000).toFixed(1) + 'M';
+            if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+            return '₹' + value;
+          }
+        }
+      }
+    }
+  }
+});
+
+// 2. Order Status Distribution (Doughnut Chart)
+const orderCtx = document.getElementById('orderStatusChart').getContext('2d');
+new Chart(orderCtx, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(orderStatusData),
+    datasets: [{
+      data: Object.values(orderStatusData),
+      backgroundColor: ['#f59e0b', '#3b82f6', '#06b6d4', '#10b981', '#ef4444'],
+      borderWidth: 0,
+      cutout: '70%'
+    }]
+  },
+  options: {
+    ...chartOptions,
     plugins: {
-      legend: {
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-          font: { size: 11 }
-        }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderWidth: 1,
-        cornerRadius: 6
-      }
+      ...chartOptions.plugins,
+      legend: { position: 'bottom', ...chartOptions.plugins.legend }
     }
-  };
+  }
+});
 
-  // 1. Category Distribution (Doughnut Chart)
-  const categoryCtx = document.getElementById('categoryDistributionChart').getContext('2d');
-  new Chart(categoryCtx, {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(categoryDistributionData),
-      datasets: [{
-        data: Object.values(categoryDistributionData),
-        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
-        borderWidth: 0,
-        cutout: '70%'
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
-    }
-  });
-
-  // 2. Sales Revenue Trend (Area Chart)
-  const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
-  new Chart(salesCtx, {
-    type: 'line',
-    data: {
-      labels: Object.keys(salesTrendData),
-      datasets: [{
-        label: 'Sales Revenue',
-        data: Object.values(salesTrendData),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#3b82f6',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: '#9ca3af' }
-        },
-        y: {
-          border: { display: false },
-          grid: { color: 'rgba(156, 163, 175, 0.1)' },
-          ticks: {
-            color: '#9ca3af',
-            callback: function(value) {
-              if (value >= 1000000) return '₹' + (value/1000000).toFixed(1) + 'M';
-              if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
-              return '₹' + value;
-            }
-          }
-        }
-      }
-    }
-  });
-
-  // 3. Lead Conversion Funnel
-  const leadCtx = document.getElementById('leadFunnelChart').getContext('2d');
-  new Chart(leadCtx, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(orderStatusData),
-      datasets: [{
-        data: Object.values(orderStatusData),
-        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
-        borderRadius: 6,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.1)' } }
-      }
-    }
-  });
-
-  // 4. Inventory Status Overview
-  const inventoryCtx = document.getElementById('renewalStatusChart').getContext('2d');
-  new Chart(inventoryCtx, {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(inventoryStatusData),
-      datasets: [{
-        data: Object.values(inventoryStatusData),
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-        borderWidth: 0,
-        cutout: '70%'
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
-    }
-  });
-
-  // 5. Referral Status
-  const referralCtx = document.getElementById('referralChart').getContext('2d');
-  new Chart(referralCtx, {
-    type: 'pie',
-    data: {
-      labels: Object.keys(paymentMethodData),
-      datasets: [{
-        data: Object.values(paymentMethodData),
-        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
-    }
-  });
-
-  // 6. Agent Performance
-  const agentCtx = document.getElementById('agentPerformanceChart').getContext('2d');
-  new Chart(agentCtx, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(categoryPerformanceData),
-      datasets: [{
-        data: Object.values(categoryPerformanceData),
-        backgroundColor: '#3b82f6',
-        borderRadius: 6,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          beginAtZero: true,
-          grid: { color: 'rgba(156, 163, 175, 0.1)' },
-          ticks: {
-            callback: function(value) {
-              if (value >= 1000000) return '₹' + (value/1000000).toFixed(1) + 'M';
-              if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
-              return '₹' + value;
-            }
-          }
-        },
-        y: { grid: { display: false } }
-      }
-    }
-  });
-
-  // 7. Monthly Sales Summary
-  const salesSummaryCtx = document.getElementById('commissionChart').getContext('2d');
-  const months = Object.keys(monthlySalesData);
-  new Chart(salesSummaryCtx, {
-    type: 'bar',
-    data: {
-      labels: months,
-      datasets: [
-        {
-          label: 'Total Sales',
-          data: months.map(m => monthlySalesData[m] || 0),
-          backgroundColor: '#3b82f6',
-        }
-      ]
-    },
-    options: {
-      ...chartOptions,
-      scales: {
-        x: { stacked: true, grid: { display: false } },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          grid: { color: 'rgba(156, 163, 175, 0.1)' },
-          ticks: {
-            callback: function(value) {
-              if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
-              return '₹' + value;
-            }
+// 3. Category Performance (Bar Chart)
+const categoryCtx = document.getElementById('categoryPerformanceChart').getContext('2d');
+new Chart(categoryCtx, {
+  type: 'bar',
+  data: {
+    labels: Object.keys(categoryPerformanceData),
+    datasets: [{
+      data: Object.values(categoryPerformanceData),
+      backgroundColor: '#3b82f6',
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: { color: 'rgba(156, 163, 175, 0.1)' },
+        ticks: {
+          callback: function(value) {
+            if (value >= 1000000) return '₹' + (value/1000000).toFixed(1) + 'M';
+            if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+            return '₹' + value;
           }
         }
       },
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
+      y: { grid: { display: false } }
     }
-  });
+  }
+});
 
-  // 8. Customer Location Distribution
-  const locationCtx = document.getElementById('locationChart').getContext('2d');
-  new Chart(locationCtx, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(locationData),
-      datasets: [{
-        data: Object.values(locationData),
-        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#eab308'],
-        borderRadius: 6,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.1)' } }
-      }
-    }
-  });
-
-  // 9. Customer Acquisition Trend
-  const customerAcquisitionCtx = document.getElementById('customerAcquisitionChart').getContext('2d');
-  new Chart(customerAcquisitionCtx, {
-    type: 'line',
-    data: {
-      labels: Object.keys(customerAcquisitionData),
-      datasets: [{
-        label: 'New Customers',
-        data: Object.values(customerAcquisitionData),
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#10b981',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: '#9ca3af' }
-        },
-        y: {
-          border: { display: false },
-          grid: { color: 'rgba(156, 163, 175, 0.1)' },
-          ticks: {
-            color: '#9ca3af',
-            beginAtZero: true
+// 4. Monthly Revenue Breakdown (Bar Chart)
+const monthlyCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+new Chart(monthlyCtx, {
+  type: 'bar',
+  data: {
+    labels: Object.keys(monthlyRevenueData),
+    datasets: [{
+      label: 'Revenue',
+      data: Object.values(monthlyRevenueData),
+      backgroundColor: '#10b981',
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        beginAtZero: true,
+        grid: { color: 'rgba(156, 163, 175, 0.1)' },
+        ticks: {
+          callback: function(value) {
+            if (value >= 1000000) return '₹' + (value/1000000).toFixed(1) + 'M';
+            if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+            return '₹' + value;
           }
         }
       }
     }
-  });
+  }
+});
 
-  // 10. Age Distribution Chart (Bar Chart)
-  const ageCtx = document.getElementById('ageDistributionChart').getContext('2d');
-  new Chart(ageCtx, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(ageDistributionData),
-      datasets: [{
-        label: 'Customers',
-        data: Object.values(ageDistributionData),
-        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'],
-        borderRadius: 6,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.1)' } }
-      }
+// 5. Customer Location Distribution (Bar Chart)
+const locationCtx = document.getElementById('locationChart').getContext('2d');
+new Chart(locationCtx, {
+  type: 'bar',
+  data: {
+    labels: Object.keys(locationData),
+    datasets: [{
+      data: Object.values(locationData),
+      backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.1)' } }
     }
-  });
+  }
+});
 
-  // 11. Stock Status Chart (Doughnut)
-  const statusCtx = document.getElementById('stockStatusChart').getContext('2d');
-  new Chart(statusCtx, {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(stockStatusData),
-      datasets: [{
-        data: Object.values(stockStatusData),
-        backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
-        borderWidth: 0,
-        cutout: '60%'
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
+// 6. Payment Methods (Pie Chart)
+const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
+new Chart(paymentCtx, {
+  type: 'pie',
+  data: {
+    labels: Object.keys(paymentMethodData),
+    datasets: [{
+      data: Object.values(paymentMethodData),
+      backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ec4899'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: {
+      ...chartOptions.plugins,
+      legend: { position: 'bottom', ...chartOptions.plugins.legend }
     }
-  });
+  }
+});
 
-  // 12. Revenue by Category (Pie Chart)
-  const revenueTypeCtx = document.getElementById('revenueByTypeChart').getContext('2d');
-  new Chart(revenueTypeCtx, {
-    type: 'pie',
-    data: {
-      labels: Object.keys(revenueByTypeData),
-      datasets: [{
-        data: Object.values(revenueByTypeData),
-        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
+// 7. Inventory Status (Doughnut Chart)
+const inventoryCtx = document.getElementById('inventoryStatusChart').getContext('2d');
+new Chart(inventoryCtx, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(inventoryStatusData),
+    datasets: [{
+      data: Object.values(inventoryStatusData),
+      backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+      borderWidth: 0,
+      cutout: '70%'
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: {
+      ...chartOptions.plugins,
+      legend: { position: 'bottom', ...chartOptions.plugins.legend }
     }
-  });
+  }
+});
 
-  // 13. Daily Activity Chart (Line Chart)
-  const dailyCtx = document.getElementById('dailyActivityChart').getContext('2d');
-  new Chart(dailyCtx, {
-    type: 'line',
-    data: {
-      labels: Object.keys(dailyActivityData),
-      datasets: [{
-        label: 'Activities',
-        data: Object.values(dailyActivityData),
-        borderColor: '#ec4899',
-        backgroundColor: 'rgba(236, 72, 153, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#ec4899',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 3
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.1)' } }
-      }
-    }
-  });
+// Refresh dashboard function
+function refreshDashboard() {
+  const button = event.target.closest('button');
+  button.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refreshing...';
+  button.disabled = true;
 
-  // 14. Lead Source Chart (Doughnut)
-  const leadSourceCtx = document.getElementById('leadSourceChart').getContext('2d');
-  new Chart(leadSourceCtx, {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(leadSourceData),
-      datasets: [{
-        data: Object.values(leadSourceData),
-        backgroundColor: ['#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#10b981'],
-        borderWidth: 0,
-        cutout: '60%'
-      }]
-    },
-    options: {
-      ...chartOptions,
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
-    }
-  });
-
-  // 15. Monthly Revenue Breakdown (Stacked Bar Chart)
-  const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
-  const months = Object.keys(monthlyRevenueData);
-  new Chart(monthlyRevenueCtx, {
-    type: 'bar',
-    data: {
-      labels: months,
-      datasets: [
-        {
-          label: 'Electronics',
-          data: months.map(m => monthlyRevenueData[m].electronics || 0),
-          backgroundColor: '#3b82f6',
-        },
-        {
-          label: 'Clothing',
-          data: months.map(m => monthlyRevenueData[m].clothing || 0),
-          backgroundColor: '#10b981',
-        },
-        {
-          label: 'Home & Garden',
-          data: months.map(m => monthlyRevenueData[m].home || 0),
-          backgroundColor: '#f59e0b',
-        }
-      ]
-    },
-    options: {
-      ...chartOptions,
-      scales: {
-        x: { stacked: true, grid: { display: false } },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          grid: { color: 'rgba(156, 163, 175, 0.1)' },
-          ticks: {
-            callback: function(value) {
-              if (value >= 1000000) return '₹' + (value/1000000).toFixed(1) + 'M';
-              if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
-              return '₹' + value;
-            }
-          }
-        }
-      },
-      plugins: {
-        ...chartOptions.plugins,
-        legend: { position: 'bottom', ...chartOptions.plugins.legend }
-      }
-    }
-  });
+  setTimeout(() => {
+    location.reload();
+  }, 1000);
+}
 </script>

@@ -29,6 +29,7 @@ Rails.application.routes.draw do
   get 'dashboard/beautiful', to: 'dashboard#beautiful'
   get 'dashboard/ultra', to: 'dashboard#ultra'
   get 'dashboard/ecommerce', to: 'dashboard#ecommerce'
+  get 'dashboard/dummy', to: 'dashboard#dummy'
   get 'dashboard/stats', to: 'dashboard#stats'
 
   # API routes
@@ -60,7 +61,9 @@ Rails.application.routes.draw do
         patch :mark_delivered
         patch :mark_completed
         get :stage_transition
+        get :manage_stage
         patch :process_stage_transition
+        patch :update_stage
       end
       collection do
         get :search_products
@@ -253,6 +256,30 @@ Rails.application.routes.draw do
         get :product_selection
       end
       resources :family_members
+    end
+
+    # Store management
+    resources :stores do
+      member do
+        patch :toggle_status
+      end
+    end
+
+    # Vendor management
+    resources :vendors do
+      member do
+        patch :toggle_status
+      end
+    end
+
+    # Vendor Purchase management
+    resources :vendor_purchases do
+      member do
+        patch :complete_purchase
+      end
+      collection do
+        get :batch_inventory
+      end
     end
 
     # Franchise management

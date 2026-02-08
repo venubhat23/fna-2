@@ -1,0 +1,118 @@
+<% content_for :title, "Vendors" %>
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>Vendors</h2>
+      <p class="text-muted mb-0">Manage your vendor relationships</p>
+    </div>
+    <%= link_to "Add New Vendor", new_admin_vendor_path, class: "btn btn-primary" %>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <%= form_with url: admin_vendors_path, method: :get, local: true, class: "row g-3" do |f| %>
+        <div class="col-md-4">
+          <%= f.text_field :search, value: params[:search], placeholder: "Search vendors...", class: "form-control" %>
+        </div>
+        <div class="col-md-3">
+          <%= f.select :status, options_for_select([
+            ['All Status', ''],
+            ['Active', 'true'],
+            ['Inactive', 'false']
+          ], params[:status]), {}, { class: "form-select" } %>
+        </div>
+        <div class="col-md-2">
+          <%= f.submit "Filter", class: "btn btn-outline-primary" %>
+        </div>
+        <div class="col-md-3 text-end">
+          <%= link_to "Clear Filters", admin_vendors_path, class: "btn btn-outline-secondary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Vendors Table -->
+  <div class="card">
+    <div class="card-body">
+      <% if @vendors.any? %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>Vendor Name</th>
+                <th>Contact Info</th>
+                <th>Payment Type</th>
+                <th>Total Purchases</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @vendors.each do |vendor| %>
+                <tr>
+                  <td>
+                    <div class="fw-bold"><%= vendor.name %></div>
+                    <div class="small text-muted">Added <%= vendor.created_at.strftime('%b %d, %Y') %></div>
+                  </td>
+                  <td>
+                    <div><%= vendor.phone.present? ? vendor.phone : '-' %></div>
+                    <div class="small text-muted"><%= vendor.email.present? ? vendor.email : '-' %></div>
+                  </td>
+                  <td>
+                    <span class="badge <%= vendor.payment_type_badge_class %>">
+                      <%= vendor.payment_type %>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-bold">₹<%= number_with_delimiter(vendor.total_purchases.to_i) %></div>
+                    <div class="small text-muted"><%= vendor.vendor_purchases.count %> purchases</div>
+                  </td>
+                  <td>
+                    <div class="fw-bold text-<%= vendor.outstanding_balance > 0 ? 'danger' : 'success' %>">
+                      ₹<%= number_with_delimiter(vendor.outstanding_balance.to_i) %>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge <%= vendor.status_badge_class %>">
+                      <%= vendor.status_text %>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <%= link_to "View", admin_vendor_path(vendor), class: "btn btn-outline-primary btn-sm" %>
+                      <%= link_to "Edit", edit_admin_vendor_path(vendor), class: "btn btn-outline-warning btn-sm" %>
+                      <% if vendor.can_be_deleted? %>
+                        <%= link_to "Delete", admin_vendor_path(vendor),
+                            method: :delete,
+                            confirm: "Are you sure?",
+                            class: "btn btn-outline-danger btn-sm" %>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted">
+            Showing <%= @vendors.offset_value + 1 %> to <%= [@vendors.offset_value + @vendors.limit_value, @vendors.total_count].min %> of <%= @vendors.total_count %> vendors
+          </div>
+          <%= paginate @vendors if respond_to?(:paginate) %>
+        </div>
+      <% else %>
+        <div class="text-center py-5">
+          <i class="bi bi-people display-1 text-muted"></i>
+          <h4 class="mt-3">No Vendors Found</h4>
+          <p class="text-muted">Get started by adding your first vendor.</p>
+          <%= link_to "Add New Vendor", new_admin_vendor_path, class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -1,6 +1,20 @@
 class CreateUsers < ActiveRecord::Migration[8.0]
   def change
-    # Add missing fields to existing users table
+    # Create users table if it doesn't exist
+    unless table_exists?(:users)
+      create_table :users do |t|
+        t.string :first_name, null: false
+        t.string :last_name, null: false
+        t.string :email, null: false
+        t.string :mobile, null: false
+
+        t.timestamps
+      end
+
+      add_index :users, :email, unique: true
+    end
+
+    # Add missing fields to users table
     add_column :users, :middle_name, :string unless column_exists?(:users, :middle_name)
     add_column :users, :password_digest, :string unless column_exists?(:users, :password_digest)
     add_column :users, :user_type, :string, default: 'admin' unless column_exists?(:users, :user_type)

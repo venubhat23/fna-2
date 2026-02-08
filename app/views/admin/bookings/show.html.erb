@@ -205,6 +205,15 @@
             <strong class="text-muted d-block">Customer Name</strong>
             <%= @booking.customer_name || @booking.customer&.display_name %>
           </div>
+          <% if @booking.store.present? %>
+            <div class="col-md-6">
+              <strong class="text-muted d-block">Store</strong>
+              <span class="badge bg-info">
+                <i class="bi bi-shop me-1"></i>
+                <%= @booking.store.display_name %>
+              </span>
+            </div>
+          <% end %>
           <% if @booking.customer_email.present? %>
             <div class="col-md-6">
               <strong class="text-muted d-block">Email</strong>
@@ -338,7 +347,7 @@
           <span class="fw-bold fs-5 text-primary">₹<%= number_with_delimiter(@booking.total_amount&.to_f || 0) %></span>
         </div>
 
-        <% if @booking.cash_received&.to_f > 0 %>
+        <% if (@booking.cash_received&.to_f || 0) > 0 %>
           <div class="bg-light p-3 rounded">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <span class="text-muted">Cash Received:</span>

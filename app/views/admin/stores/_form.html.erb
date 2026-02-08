@@ -1,0 +1,68 @@
+<%= form_with(model: [:admin, store], local: true) do |form| %>
+  <% if store.errors.any? %>
+    <div class="alert alert-danger alert-dismissible" role="alert">
+      <h6 class="alert-heading mb-1">Please fix the following errors:</h6>
+      <ul class="mb-0">
+        <% store.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% end %>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label class="form-label">Store Name <span class="text-danger">*</span></label>
+      <%= form.text_field :name, class: "form-control", placeholder: "Enter store name", required: true %>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Contact Person <span class="text-danger">*</span></label>
+      <%= form.text_field :contact_person, class: "form-control", placeholder: "Enter contact person name", required: true %>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label class="form-label">Contact Mobile <span class="text-danger">*</span></label>
+      <%= form.text_field :contact_mobile, class: "form-control", placeholder: "Enter 10-digit mobile number", required: true %>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Status</label>
+      <div class="form-check form-switch mt-2">
+        <%= form.check_box :status, class: "form-check-input", checked: store.new_record? ? true : store.status %>
+        <label class="form-check-label">Active</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Address</label>
+    <%= form.text_area :address, class: "form-control", rows: 3, placeholder: "Enter complete address" %>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <label class="form-label">City <span class="text-danger">*</span></label>
+      <%= form.text_field :city, class: "form-control", placeholder: "Enter city", required: true %>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">State <span class="text-danger">*</span></label>
+      <%= form.text_field :state, class: "form-control", placeholder: "Enter state", required: true %>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Pincode <span class="text-danger">*</span></label>
+      <%= form.text_field :pincode, class: "form-control", placeholder: "6-digit pincode", required: true %>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Description</label>
+    <%= form.text_area :description, class: "form-control", rows: 3, placeholder: "Enter store description (optional)" %>
+  </div>
+
+  <div class="pt-4">
+    <%= form.submit store.new_record? ? "Create Store" : "Update Store", class: "btn btn-primary me-2" %>
+    <%= link_to "Cancel", admin_stores_path, class: "btn btn-label-secondary" %>
+  </div>
+<% end %>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_11_105247) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_08_103125) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -159,7 +159,40 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_11_105247) do
     t.integer "booking_items_count", default: 0, null: false
     t.bigint "booking_schedule_id"
     t.string "stage"
+    t.string "courier_service"
+    t.string "tracking_number"
+    t.decimal "shipping_charges", precision: 10, scale: 2
+    t.date "expected_delivery_date"
+    t.string "delivery_person"
+    t.string "delivery_contact"
+    t.string "delivered_to"
+    t.datetime "delivery_time"
+    t.integer "customer_satisfaction"
+    t.string "processing_team"
+    t.datetime "expected_completion_time"
+    t.string "estimated_processing_time"
+    t.string "estimated_delivery_time"
+    t.decimal "package_weight", precision: 8, scale: 2
+    t.string "package_dimensions"
+    t.string "quality_status"
+    t.string "cancellation_reason"
+    t.string "return_reason"
+    t.string "return_condition"
+    t.decimal "refund_amount", precision: 10, scale: 2
+    t.string "refund_method"
+    t.text "transition_notes"
+    t.text "stage_history"
+    t.datetime "stage_updated_at"
+    t.integer "stage_updated_by"
+    t.bigint "store_id"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
+    t.index ["courier_service"], name: "index_bookings_on_courier_service"
+    t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
+    t.index ["expected_delivery_date"], name: "index_bookings_on_expected_delivery_date"
+    t.index ["stage_updated_at"], name: "index_bookings_on_stage_updated_at"
+    t.index ["stage_updated_by"], name: "index_bookings_on_stage_updated_by"
+    t.index ["store_id"], name: "index_bookings_on_store_id"
+    t.index ["tracking_number"], name: "index_bookings_on_tracking_number"
   end
 
   create_table "brokers", force: :cascade do |t|
@@ -435,35 +468,4 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_11_105247) do
     t.index ["distributor_id"], name: "index_distributor_payouts_on_distributor_id"
     t.index ["policy_type", "policy_id"], name: "index_distributor_payouts_on_policy_type_and_policy_id"
     t.index ["status"], name: "index_distributor_payouts_on_status"
-  end
-
-  create_table "distributors", force: :cascade do |t|
-    t.string "first_name", null: false
-    t.string "middle_name"
-    t.string "last_name", null: false
-    t.string "mobile", null: false
-    t.string "email", null: false
-    t.integer "role_id", null: false
-    t.integer "state_id"
-    t.integer "city_id"
-    t.date "birth_date"
-    t.string "gender"
-    t.string "pan_no"
-    t.string "gst_no"
-    t.string "company_name"
-    t.text "address"
-    t.string "bank_name"
-    t.string "account_no"
-    t.string "ifsc_code"
-    t.string "account_holder_name"
-    t.string "account_type"
-    t.string "upi_id"
-    t.integer "status", default: 0
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "affiliate_count", default: 0, null: false
-    t.index ["email"], name: "index_distributors_on_email", unique: true
-    t.index ["mobile"], name: "index_distributors_on_mobile", unique: true
-    t.index ["role_id"], name: "index_distributors_on_role_id"
-    t.index ["status"], name: "index_distributors_on_status"
   end

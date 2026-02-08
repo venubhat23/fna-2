@@ -2,9 +2,11 @@ class Booking < ApplicationRecord
   belongs_to :customer, optional: true
   belongs_to :user, optional: true # Admin who created the booking
   belongs_to :booking_schedule, optional: true # For subscription bookings
+  belongs_to :store, optional: true
   has_many :booking_items, dependent: :destroy
   has_one :order, dependent: :nullify
   has_many :booking_invoices, dependent: :destroy
+  has_many :sale_items, dependent: :destroy
 
   accepts_nested_attributes_for :booking_items, allow_destroy: true
 
@@ -45,6 +47,7 @@ class Booking < ApplicationRecord
 
   before_validation :generate_booking_number, on: :create
   before_validation :calculate_totals
+  after_update :allocate_inventory, if: :saved_change_to_status?
 
   scope :recent, -> { order(created_at: :desc) }
   scope :today, -> { where(created_at: Date.current.all_day) }
@@ -297,6 +300,103 @@ class Booking < ApplicationRecord
     end
 
     result.join(" ")
+  end
+
+  def allocate_inventory
+    # Only allocate when order is confirmed
+    if status == 'confirmed' && status_previously_was != 'confirmed'
+      begin
+        inventory_service = InventoryService.new
+
+        # Prepare items for allocation
+        items = booking_items.map do |item|
+          {
+            product_id: item.product_id,
+            quantity: item.quantity
+          }
+        end
+
+        # Check availability first
+        insufficient_items = []
+        allocation_data = []
+
+        items.each do |item|
+          availability = inventory_service.check_availability(item[:product_id], item[:quantity])
+          if availability[:available]
+            allocations = inventory_service.allocate_stock(item[:product_id], item[:quantity])
+            allocation_data << allocations
+          else
+            insufficient_items << {
+              product: Product.find(item[:product_id]).name,
+              available: availability[:available_stock],
+              requested: item[:quantity],
+              shortage: availability[:shortage]
+            }
+          end
+        end
+
+        if insufficient_items.any?
+          # Revert status if inventory is insufficient
+          update_column(:status, status_previously_was)
+          errors.add(:status, "Insufficient inventory: #{insufficient_items.map { |item|
+            "#{item[:product]} (need #{item[:requested]}, have #{item[:available]})"
+          }.join(', ')}")
+          return false
+        else
+          # Reduce stock and create sale items
+          allocation_data.flatten.each_with_index do |allocation, index|
+            inventory_service.reduce_stock([allocation])
+
+            # Create sale item for tracking
+            SaleItem.create!(
+              booking: self,
+              product: allocation[:batch].product,
+              stock_batch: allocation[:batch],
+              quantity: allocation[:quantity],
+              selling_price: allocation[:selling_price],
+              purchase_price: allocation[:purchase_price]
+            )
+          end
+
+          Rails.logger.info "Inventory allocated successfully for booking ##{booking_number}"
+        end
+      rescue InventoryService::InsufficientStockError => e
+        # Revert status if inventory allocation fails
+        update_column(:status, status_previously_was)
+        errors.add(:status, "Inventory allocation failed: #{e.message}")
+        return false
+      rescue => e
+        Rails.logger.error "Error allocating inventory for booking ##{booking_number}: #{e.message}"
+        # Don't revert status for other errors, just log them
+      end
+    end
+
+    # Free up inventory when order is cancelled or returned
+    if %w[cancelled returned].include?(status) && !%w[cancelled returned].include?(status_previously_was)
+      begin
+        release_allocated_inventory
+      rescue => e
+        Rails.logger.error "Error releasing inventory for booking ##{booking_number}: #{e.message}"
+      end
+    end
+  end
+
+  def release_allocated_inventory
+    # Find all sale items for this booking and restore the stock
+    SaleItem.where(booking: self).find_each do |sale_item|
+      stock_batch = sale_item.stock_batch
+      if stock_batch
+        # Restore the quantity to the batch
+        stock_batch.quantity_remaining += sale_item.quantity
+        stock_batch.status = 'active' if stock_batch.exhausted? && stock_batch.quantity_remaining > 0
+        stock_batch.save!
+
+        Rails.logger.info "Restored #{sale_item.quantity} units to batch #{stock_batch.batch_number}"
+      end
+
+      # Mark the sale item as refunded/returned
+      sale_item.destroy
+    end
   end
 
 end

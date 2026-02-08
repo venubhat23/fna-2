@@ -12,6 +12,17 @@ class Product < ApplicationRecord
     'Vegetable' => { icon: 'bi-flower1', color: '#e8f5e8', border: '#4caf50', text: '#388e3c' }
   }.freeze
 
+  # Unit Type Constants for Vendor Management
+  UNIT_TYPES = [
+    ['Kg', 'Kg'],
+    ['Liter', 'Liter'],
+    ['Piece', 'Piece'],
+    ['Gram', 'Gram'],
+    ['Dozen', 'Dozen'],
+    ['Box', 'Box'],
+    ['Packet', 'Packet']
+  ].freeze
+
   belongs_to :category
   has_many :delivery_rules, dependent: :destroy
   has_many :booking_items
@@ -24,6 +35,13 @@ class Product < ApplicationRecord
   has_many :product_ratings, dependent: :destroy
   has_many :approved_ratings, -> { approved }, class_name: 'ProductRating'
 
+  # Vendor management associations
+  has_many :vendor_purchase_items, dependent: :destroy
+  has_many :vendor_purchases, through: :vendor_purchase_items
+  has_many :vendors, through: :vendor_purchases
+  has_many :stock_batches, dependent: :destroy
+  has_many :sale_items, dependent: :destroy
+
   has_many_attached :images
 
   validates :name, presence: true
@@ -35,6 +53,9 @@ class Product < ApplicationRecord
   validates :product_type, presence: true, inclusion: { in: PRODUCT_TYPES.map(&:last) }
   validates :weight, numericality: { greater_than: 0 }, allow_blank: true
   validates :buying_price, numericality: { greater_than: 0 }, allow_blank: true
+  validates :unit_type, inclusion: { in: UNIT_TYPES.map(&:last) }, allow_blank: true
+  validates :minimum_stock_alert, numericality: { greater_than: 0 }, allow_blank: true
+  validates :default_selling_price, numericality: { greater_than: 0 }, allow_blank: true
   validates :discount_type, inclusion: { in: ['percentage', 'fixed'], message: 'must be percentage or fixed' }, allow_blank: true
   validates :discount_value, numericality: { greater_than: 0 }, allow_blank: true
   validates :original_price, numericality: { greater_than: 0 }, allow_blank: true
@@ -77,6 +98,43 @@ class Product < ApplicationRecord
 
   def out_of_stock?
     stock == 0
+  end
+
+  # Inventory tracking methods
+  def total_sold_quantity
+    # Get total quantity sold from booking items
+    booking_items.joins(:booking)
+                 .where(bookings: { status: ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'completed'] })
+                 .sum(:quantity)
+  end
+
+  def available_quantity
+    # Current stock is the available quantity
+    stock
+  end
+
+  def sold_quantity
+    # Calculate sold quantity as initial_stock - current_stock
+    return 0 if initial_stock.nil? || initial_stock == 0
+    [initial_stock - stock, 0].max
+  end
+
+  def inventory_status_text
+    if initial_stock.present? && initial_stock > 0
+      "#{available_quantity} available / #{sold_quantity} sold / #{initial_stock} total"
+    else
+      "#{available_quantity} available"
+    end
+  end
+
+  def inventory_percentage_sold
+    return 0 if initial_stock.nil? || initial_stock == 0
+    ((sold_quantity.to_f / initial_stock) * 100).round(1)
+  end
+
+  def inventory_percentage_available
+    return 100 if initial_stock.nil? || initial_stock == 0
+    ((available_quantity.to_f / initial_stock) * 100).round(1)
   end
 
   def discounted?
@@ -405,6 +463,71 @@ class Product < ApplicationRecord
   def formatted_yesterday_price
     return 'N/A' if yesterday_price.nil?
     "₹#{yesterday_price}"
+  end
+
+  # Vendor Management Methods
+  def total_batch_stock
+    stock_batches.active.sum(:quantity_remaining)
+  end
+
+  def total_batch_value
+    stock_batches.active.sum { |batch| batch.quantity_remaining * batch.purchase_price }
+  end
+
+  def average_purchase_price
+    active_batches = stock_batches.active
+    return 0 if active_batches.empty?
+
+    total_cost = active_batches.sum { |batch| batch.quantity_remaining * batch.purchase_price }
+    total_quantity = active_batches.sum(:quantity_remaining)
+
+    return 0 if total_quantity.zero?
+    (total_cost / total_quantity).round(2)
+  end
+
+  def below_minimum_stock?
+    return false unless minimum_stock_alert.present?
+    total_batch_stock < minimum_stock_alert
+  end
+
+  def stock_alert_message
+    return nil unless below_minimum_stock?
+    "Stock is below minimum level of #{minimum_stock_alert} #{unit_type || 'units'}"
+  end
+
+  def unit_display
+    unit_type || 'units'
+  end
+
+  def can_fulfill_order?(requested_quantity)
+    total_batch_stock >= requested_quantity
+  end
+
+  def get_fifo_allocation(requested_quantity)
+    StockBatch.fifo_allocation(id, requested_quantity)
+  end
+
+  def vendor_count
+    vendors.distinct.count
+  end
+
+  def latest_purchase_price
+    stock_batches.by_fifo.last&.purchase_price || 0
+  end
+
+  def earliest_batch_date
+    stock_batches.active.minimum(:batch_date)
+  end
+
+  def batch_summary
+    {
+      total_batches: stock_batches.count,
+      active_batches: stock_batches.active.count,
+      exhausted_batches: stock_batches.exhausted.count,
+      total_quantity: total_batch_stock,
+      total_value: total_batch_value,
+      vendors: vendor_count
+    }
   end
 
   # Legacy methods for backward compatibility

@@ -2,32 +2,32 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: 5
-  host: dpg-d5f0h3juibrs7391pjog-a.oregon-postgres.render.com
+  host: dpg-d6420nvfte5s73fsn8ug-a.oregon-postgres.render.com
   port: 5432
-  username: dhanvantari_farm_user
-  password: pgY343DQx4wfkDUnLJScdnqkTxmV6H8t
+  username: drwise_admin_db_user
+  password: Pp8oA9j9IXD22lbOyQQS5S6kZ4mf6SAJ
 
 development:
   <<: *default
-  database: dhanvantari_farm
+  database: drwise_admin_db
 
 test:
   <<: *default
-  database: dhanvantari_farm_test
+  database: drwise_admin_db_test
 
 production:
   primary:
     <<: *default
-    database: dhanvantari_farm
+    database: drwise_admin_db
 
   cable:
     <<: *default
-    database: dhanvantari_farm
+    database: drwise_admin_db
 
   queue:
     <<: *default
-    database: dhanvantari_farm
+    database: drwise_admin_db
 
   cache:
     <<: *default
-    database: dhanvantari_farm
+    database: drwise_admin_db

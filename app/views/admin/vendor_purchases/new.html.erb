@@ -1,0 +1,73 @@
+<% content_for :title, "New Vendor Purchase" %>
+
+<div class="container-fluid">
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "Dashboard", admin_dashboard_path if defined?(admin_dashboard_path) %></li>
+        <li class="breadcrumb-item"><%= link_to "Vendor Purchases", admin_vendor_purchases_path %></li>
+        <li class="breadcrumb-item active">New Purchase</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="mb-0"><i class="bi bi-cart-plus me-2"></i>New Vendor Purchase</h2>
+        <p class="text-muted mb-0">Record a new purchase from a vendor</p>
+      </div>
+      <%= link_to "Back to Purchases", admin_vendor_purchases_path, class: "btn btn-outline-secondary" %>
+    </div>
+  </div>
+
+  <%= render 'form' %>
+</div>
+
+<style>
+/* Custom styles for purchase form */
+.sticky-top {
+  top: 20px;
+}
+
+.product-item {
+  transition: all 0.3s ease;
+}
+
+.product-item:hover {
+  background-color: #e9ecef !important;
+}
+
+.remove-item-btn:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .sticky-top {
+    position: relative !important;
+  }
+}
+
+/* Loading state */
+.btn-loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.btn-loading::after {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.5rem;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

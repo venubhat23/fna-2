@@ -388,10 +388,10 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
   def get_terms_content
     # You can store this in database or return static content
     <<~TERMS
-      Terms and Conditions for Dhanvantri Admin
+      Terms and Conditions for DemoFarm Admin
 
       1. General Terms
-      These terms and conditions govern your use of Dhanvantri Admin mobile application.
+      These terms and conditions govern your use of DemoFarm Admin mobile application.
 
       2. Privacy Policy
       We are committed to protecting your privacy and personal information.

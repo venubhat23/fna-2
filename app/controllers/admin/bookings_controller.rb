@@ -1,10 +1,10 @@
 class Admin::BookingsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_booking, only: [:show, :edit, :update, :destroy, :generate_invoice, :invoice, :convert_to_order, :update_status, :cancel_order, :mark_delivered, :mark_completed]
+  before_action :set_booking, only: [:show, :edit, :update, :destroy, :generate_invoice, :invoice, :convert_to_order, :update_status, :cancel_order, :mark_delivered, :mark_completed, :manage_stage, :update_stage]
 
   def index
     # Start with base query for statistics (before filtering)
-    @all_bookings = Booking.includes(:customer, :user, :booking_items, :order)
+    @all_bookings = Booking.includes(:customer, :user, :booking_items, :order, :store)
 
     # Apply filters
     @bookings = @all_bookings.recent
@@ -236,12 +236,18 @@ class Admin::BookingsController < ApplicationController
   end
 
   def process_stage_transition
-    @target_stage = params[:booking][:target_stage]
+    @target_stage = params[:target_stage]
 
     unless @target_stage.present?
       redirect_to admin_booking_path(@booking), alert: 'Target stage not specified'
       return
     end
+
+    # Build stage transition data
+    transition_data = build_transition_data
+
+    # Update booking with stage-specific fields and transition history
+    update_booking_with_transition(transition_data)
 
     case @target_stage
     when 'confirmed'
@@ -346,216 +352,378 @@ class Admin::BookingsController < ApplicationController
     }
   end
 
+  def manage_stage
+    # This will render the manage_stage.html.erb view
+    @available_statuses = Booking.statuses.keys.map { |status| [status.humanize, status] }
+    @next_stages = @booking.next_possible_statuses
+  end
+
+  def update_stage
+    @target_stage = params[:target_stage] || params[:booking][:status]
+
+    unless @target_stage.present?
+      redirect_to manage_stage_admin_booking_path(@booking), alert: "Please select a target stage."
+      return
+    end
+
+    begin
+      # Build transition data
+      transition_data = build_stage_transition_data
+
+      # Update booking with new status and transition data
+      if update_booking_with_stage_transition(transition_data)
+        redirect_to admin_bookings_path, notice: "Booking stage updated to #{@target_stage.humanize} successfully."
+      else
+        redirect_to manage_stage_admin_booking_path(@booking), alert: "Failed to update stage: #{@booking.errors.full_messages.join(', ')}"
+      end
+    rescue => e
+      Rails.logger.error "Error in update_stage: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      redirect_to manage_stage_admin_booking_path(@booking), alert: "Failed to update stage: #{e.message}"
+    end
+  end
+
   private
 
   def set_booking
     @booking = Booking.find(params[:id])
   end
 
+  # Build transition data from form parameters
+  def build_transition_data
+    transition_data = {
+      from_stage: @booking.status,
+      to_stage: @target_stage,
+      timestamp: Time.current,
+      user_id: current_user.id,
+      user_name: current_user.full_name || current_user.email
+    }
+
+    # Add stage-specific data based on target stage
+    case @target_stage
+    when 'shipped'
+      transition_data[:courier_service] = params[:courier_service]
+      transition_data[:tracking_number] = params[:tracking_number]
+      transition_data[:shipping_charges] = params[:shipping_charges]
+      transition_data[:expected_delivery_date] = params[:expected_delivery_date]
+    when 'processing'
+      transition_data[:processing_team] = params[:processing_team]
+      transition_data[:expected_completion_time] = params[:expected_completion_time]
+      transition_data[:estimated_processing_time] = params[:estimated_processing_time]
+    when 'packed'
+      transition_data[:package_weight] = params[:package_weight]
+      transition_data[:package_dimensions] = params[:package_dimensions]
+      transition_data[:quality_status] = params[:quality_status]
+    when 'delivered'
+      transition_data[:delivery_person] = params[:delivery_person]
+      transition_data[:delivery_contact] = params[:delivery_contact]
+      transition_data[:delivered_to] = params[:delivered_to]
+      transition_data[:delivery_time] = params[:delivery_time]
+      transition_data[:customer_satisfaction] = params[:customer_satisfaction]
+    when 'cancelled'
+      transition_data[:cancellation_reason] = params[:cancellation_reason]
+    when 'returned'
+      transition_data[:return_reason] = params[:return_reason]
+      transition_data[:return_condition] = params[:return_condition]
+      transition_data[:refund_amount] = params[:refund_amount]
+      transition_data[:refund_method] = params[:refund_method]
+    end
+
+    # Add transition notes
+    transition_data[:transition_notes] = params[:transition_notes] if params[:transition_notes].present?
+
+    transition_data
+  end
+
+  # Update booking with stage transition data
+  def update_booking_with_transition(transition_data)
+    # Get current stage history or initialize empty array
+    current_history = @booking.stage_history.present? ? JSON.parse(@booking.stage_history) : []
+
+    # Add new transition to history
+    current_history << transition_data
+
+    # Prepare update attributes
+    update_attrs = {
+      status: @target_stage,
+      stage_history: current_history.to_json,
+      stage_updated_at: Time.current,
+      stage_updated_by: current_user.id,
+      transition_notes: transition_data[:transition_notes]
+    }
+
+    # Add stage-specific fields to booking
+    case @target_stage
+    when 'shipped'
+      update_attrs[:courier_service] = params[:courier_service] if params[:courier_service].present?
+      update_attrs[:tracking_number] = params[:tracking_number] if params[:tracking_number].present?
+      update_attrs[:shipping_charges] = params[:shipping_charges] if params[:shipping_charges].present?
+      update_attrs[:expected_delivery_date] = params[:expected_delivery_date] if params[:expected_delivery_date].present?
+    when 'processing'
+      update_attrs[:processing_team] = params[:processing_team] if params[:processing_team].present?
+      update_attrs[:expected_completion_time] = params[:expected_completion_time] if params[:expected_completion_time].present?
+      update_attrs[:estimated_processing_time] = params[:estimated_processing_time] if params[:estimated_processing_time].present?
+    when 'packed'
+      update_attrs[:package_weight] = params[:package_weight] if params[:package_weight].present?
+      update_attrs[:package_dimensions] = params[:package_dimensions] if params[:package_dimensions].present?
+      update_attrs[:quality_status] = params[:quality_status] if params[:quality_status].present?
+    when 'delivered'
+      update_attrs[:delivery_person] = params[:delivery_person] if params[:delivery_person].present?
+      update_attrs[:delivery_contact] = params[:delivery_contact] if params[:delivery_contact].present?
+      update_attrs[:delivered_to] = params[:delivered_to] if params[:delivered_to].present?
+      update_attrs[:delivery_time] = params[:delivery_time] if params[:delivery_time].present?
+      update_attrs[:customer_satisfaction] = params[:customer_satisfaction] if params[:customer_satisfaction].present?
+    when 'cancelled'
+      update_attrs[:cancellation_reason] = params[:cancellation_reason] if params[:cancellation_reason].present?
+    when 'returned'
+      update_attrs[:return_reason] = params[:return_reason] if params[:return_reason].present?
+      update_attrs[:return_condition] = params[:return_condition] if params[:return_condition].present?
+      update_attrs[:refund_amount] = params[:refund_amount] if params[:refund_amount].present?
+      update_attrs[:refund_method] = params[:refund_method] if params[:refund_method].present?
+    end
+
+    @booking.update!(update_attrs)
+  rescue => e
+    Rails.logger.error "Error updating booking with transition data: #{e.message}"
+    raise e
+  end
+
+  def build_stage_transition_data
+    transition_data = {
+      from_stage: @booking.status,
+      to_stage: @target_stage,
+      timestamp: Time.current,
+      user_id: current_user.id,
+      user_name: current_user.try(:full_name) || current_user.email
+    }
+
+    # Add stage-specific data
+    case @target_stage
+    when 'shipped'
+      transition_data[:courier_service] = params[:courier_service]
+      transition_data[:tracking_number] = params[:tracking_number]
+      transition_data[:shipping_charges] = params[:shipping_charges]
+      transition_data[:expected_delivery_date] = params[:expected_delivery_date]
+    when 'delivered'
+      transition_data[:delivery_person] = params[:delivery_person]
+      transition_data[:delivery_time] = params[:delivery_time]
+      transition_data[:customer_satisfaction] = params[:customer_satisfaction]
+    when 'cancelled'
+      transition_data[:cancellation_reason] = params[:cancellation_reason]
+      transition_data[:refund_amount] = params[:refund_amount]
+    when 'returned'
+      transition_data[:return_reason] = params[:return_reason]
+      transition_data[:refund_amount] = params[:refund_amount]
+    end
+
+    transition_data[:notes] = params[:transition_notes] if params[:transition_notes].present?
+    transition_data
+  end
+
+  def update_booking_with_stage_transition(transition_data)
+    @booking.status = @target_stage
+
+    # Store transition-specific fields
+    case @target_stage
+    when 'shipped'
+      @booking.tracking_number = transition_data[:tracking_number] if transition_data[:tracking_number].present?
+      @booking.shipping_charges = transition_data[:shipping_charges] if transition_data[:shipping_charges].present?
+      @booking.expected_delivery_date = transition_data[:expected_delivery_date] if transition_data[:expected_delivery_date].present?
+      @booking.courier_service = transition_data[:courier_service] if transition_data[:courier_service].present?
+    when 'delivered'
+      @booking.delivery_time = transition_data[:delivery_time] if transition_data[:delivery_time].present?
+      @booking.customer_satisfaction = transition_data[:customer_satisfaction] if transition_data[:customer_satisfaction].present?
+      @booking.delivery_person = transition_data[:delivery_person] if transition_data[:delivery_person].present?
+      @booking.delivered_to = transition_data[:delivered_to] if transition_data[:delivered_to].present?
+    when 'cancelled'
+      @booking.cancellation_reason = transition_data[:cancellation_reason] if transition_data[:cancellation_reason].present?
+      @booking.refund_amount = transition_data[:refund_amount] if transition_data[:refund_amount].present?
+    when 'returned'
+      @booking.return_reason = transition_data[:return_reason] if transition_data[:return_reason].present?
+      @booking.refund_amount = transition_data[:refund_amount] if transition_data[:refund_amount].present?
+      @booking.return_condition = transition_data[:return_condition] if transition_data[:return_condition].present?
+    when 'processing'
+      @booking.processing_team = transition_data[:processing_team] if transition_data[:processing_team].present?
+      @booking.estimated_processing_time = transition_data[:estimated_processing_time] if transition_data[:estimated_processing_time].present?
+    when 'packed'
+      @booking.package_weight = transition_data[:package_weight] if transition_data[:package_weight].present?
+      @booking.package_dimensions = transition_data[:package_dimensions] if transition_data[:package_dimensions].present?
+      @booking.quality_status = transition_data[:quality_status] if transition_data[:quality_status].present?
+    when 'out_for_delivery'
+      @booking.delivery_person = transition_data[:delivery_person] if transition_data[:delivery_person].present?
+      @booking.delivery_contact = transition_data[:delivery_contact] if transition_data[:delivery_contact].present?
+    end
+
+    # Update stage history - parse existing JSON and add new entry
+    begin
+      history = @booking.stage_history.present? ? JSON.parse(@booking.stage_history) : []
+    rescue JSON::ParserError
+      history = []
+    end
+
+    history << transition_data.stringify_keys
+    @booking.stage_history = history.to_json
+    @booking.stage_updated_at = Time.current
+    @booking.stage_updated_by = current_user.id
+
+    # Add notes if provided
+    if transition_data[:notes].present?
+      @booking.transition_notes = [@booking.transition_notes, transition_data[:notes]].compact.join("\n---\n")
+    end
+
+    @booking.save!
+  rescue => e
+    Rails.logger.error "Failed to update booking stage: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    raise e
+  end
+
   def booking_params
     params.require(:booking).permit(
       :customer_id, :customer_name, :customer_email, :customer_phone,
       :payment_method, :payment_status, :discount_amount, :notes,
-      :delivery_address, :cash_received, :change_amount, :status,
+      :delivery_address, :cash_received, :change_amount, :status, :store_id,
       booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
     )
   end
 
   # Stage transition processing methods
   def process_confirmed_transition
-    notes_addition = params[:booking][:notes].present? ?
-      "\nConfirmation Notes: #{params[:booking][:notes]}" : ""
+    # The booking status and data have already been updated in update_booking_with_transition
+    # Just need to provide the redirect response
 
-    @booking.update!(
-      status: :confirmed,
-      notes: "#{@booking.notes}#{notes_addition}\nConfirmed at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Booking confirmed successfully!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking confirmed successfully!' }
+      format.json { render json: { success: true, message: 'Booking confirmed successfully!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'confirmed'),
-                alert: "Error confirming booking: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error confirming booking: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_processing_transition
-    processing_notes = params[:booking][:processing_notes] || ""
-    estimated_completion = params[:booking][:estimated_completion]
-
-    notes_addition = "\nProcessing Notes: #{processing_notes}" if processing_notes.present?
-    notes_addition += "\nEstimated Completion: #{estimated_completion}" if estimated_completion.present?
-
-    @booking.update!(
-      status: :processing,
-      notes: "#{@booking.notes}#{notes_addition}\nProcessing started at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Booking moved to processing!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking moved to processing!' }
+      format.json { render json: { success: true, message: 'Booking moved to processing!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'processing'),
-                alert: "Error processing booking: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error processing booking: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_packed_transition
-    packaging_notes = params[:booking][:packaging_notes] || ""
-    package_weight = params[:booking][:package_weight]
-    package_dimensions = params[:booking][:package_dimensions]
-
-    notes_addition = ""
-    notes_addition += "\nPackaging Notes: #{packaging_notes}" if packaging_notes.present?
-    notes_addition += "\nPackage Weight: #{package_weight}kg" if package_weight.present?
-    notes_addition += "\nDimensions: #{package_dimensions}" if package_dimensions.present?
-
-    @booking.update!(
-      status: :packed,
-      notes: "#{@booking.notes}#{notes_addition}\nPacked at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Booking marked as packed!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking marked as packed!' }
+      format.json { render json: { success: true, message: 'Booking marked as packed!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'packed'),
-                alert: "Error packing booking: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error packing booking: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_shipped_transition
-    shipping_partner = params[:booking][:shipping_partner]
-    partner_id = params[:booking][:partner_id]
-    tracking_number = params[:booking][:tracking_number]
-    delivery_person_id = params[:booking][:delivery_person_id]
-    expected_delivery_date = params[:booking][:expected_delivery_date]
-    shipping_instructions = params[:booking][:shipping_instructions] || ""
-
-    unless shipping_partner.present? && tracking_number.present?
-      redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'shipped'),
-                  alert: 'Shipping partner and tracking number are required'
+    # Validation for required fields
+    unless params[:courier_service].present? && params[:tracking_number].present?
+      respond_to do |format|
+        format.html { redirect_to admin_bookings_path, alert: 'Courier service and tracking number are required for shipping' }
+        format.json { render json: { success: false, error: 'Courier service and tracking number are required for shipping' } }
+      end
       return
     end
 
-    delivery_person_info = ""
-    if delivery_person_id.present?
-      delivery_person = DeliveryPerson.find_by(id: delivery_person_id)
-      delivery_person_info = "\nDelivery Person: #{delivery_person.first_name} #{delivery_person.last_name} (#{delivery_person.mobile})" if delivery_person
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking marked as shipped with tracking details!' }
+      format.json { render json: { success: true, message: 'Booking marked as shipped with tracking details!', status: @booking.status } }
     end
-
-    notes_addition = "\nShipping Partner: #{shipping_partner.humanize}"
-    notes_addition += "\nPartner ID: #{partner_id}" if partner_id.present?
-    notes_addition += "\nTracking Number: #{tracking_number}"
-    notes_addition += delivery_person_info
-    notes_addition += "\nExpected Delivery: #{expected_delivery_date}" if expected_delivery_date.present?
-    notes_addition += "\nShipping Instructions: #{shipping_instructions}" if shipping_instructions.present?
-
-    @booking.update!(
-      status: :shipped,
-      notes: "#{@booking.notes}#{notes_addition}\nShipped at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Booking marked as shipped with tracking details!'
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'shipped'),
-                alert: "Error shipping booking: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error shipping booking: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_out_for_delivery_transition
-    delivery_notes = params[:booking][:delivery_notes] || ""
-
-    notes_addition = "\nDelivery Notes: #{delivery_notes}" if delivery_notes.present?
-
-    @booking.update!(
-      status: :out_for_delivery,
-      notes: "#{@booking.notes}#{notes_addition}\nOut for delivery at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Booking marked as out for delivery!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking marked as out for delivery!' }
+      format.json { render json: { success: true, message: 'Booking marked as out for delivery!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'out_for_delivery'),
-                alert: "Error updating delivery status: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error updating delivery status: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_delivered_transition
-    delivery_date = params[:booking][:delivery_date] || Time.current
-    delivered_to = params[:booking][:delivered_to] || ""
-    delivery_confirmation_notes = params[:booking][:delivery_confirmation_notes] || ""
-
-    notes_addition = "\nDelivered to: #{delivered_to}" if delivered_to.present?
-    notes_addition += "\nDelivery Confirmation: #{delivery_confirmation_notes}" if delivery_confirmation_notes.present?
-    notes_addition += "\nDelivered at: #{delivery_date}"
-
-    @booking.update!(
-      status: :delivered,
-      notes: "#{@booking.notes}#{notes_addition}"
-    )
-
     # Auto-transition to completed as per original logic
-    @booking.mark_as_completed!
+    @booking.update!(status: :completed)
 
-    redirect_to admin_bookings_path, notice: 'Booking marked as delivered and completed!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking marked as delivered and completed!' }
+      format.json { render json: { success: true, message: 'Booking marked as delivered and completed!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'delivered'),
-                alert: "Error marking as delivered: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error marking as delivered: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_cancelled_transition
-    cancellation_reason = params[:booking][:cancellation_reason]
-    cancellation_notes = params[:booking][:cancellation_notes]
-
-    unless cancellation_reason.present? && cancellation_notes.present?
-      redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'cancelled'),
-                  alert: 'Cancellation reason and notes are required'
+    unless params[:cancellation_reason].present?
+      respond_to do |format|
+        format.html { redirect_to admin_bookings_path, alert: 'Cancellation reason is required' }
+        format.json { render json: { success: false, error: 'Cancellation reason is required' } }
+      end
       return
     end
 
-    cancel_reason_text = cancellation_reason.humanize
-    notes_addition = "\nCancellation Reason: #{cancel_reason_text}"
-    notes_addition += "\nCancellation Details: #{cancellation_notes}"
-
-    @booking.update!(
-      status: :cancelled,
-      notes: "#{@booking.notes}#{notes_addition}\nCancelled at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Booking cancelled successfully!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Booking cancelled successfully!' }
+      format.json { render json: { success: true, message: 'Booking cancelled successfully!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'cancelled'),
-                alert: "Error cancelling booking: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error cancelling booking: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_returned_transition
-    return_reason = params[:booking][:return_reason]
-    return_notes = params[:booking][:return_notes]
-
-    unless return_reason.present? && return_notes.present?
-      redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'returned'),
-                  alert: 'Return reason and notes are required'
+    unless params[:return_reason].present?
+      respond_to do |format|
+        format.html { redirect_to admin_bookings_path, alert: 'Return reason is required' }
+        format.json { render json: { success: false, error: 'Return reason is required' } }
+      end
       return
     end
 
-    return_reason_text = return_reason.humanize
-    notes_addition = "\nReturn Reason: #{return_reason_text}"
-    notes_addition += "\nReturn Details: #{return_notes}"
-
-    @booking.update!(
-      status: :returned,
-      notes: "#{@booking.notes}#{notes_addition}\nReturned at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: 'Return processed successfully!'
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: 'Return processed successfully!' }
+      format.json { render json: { success: true, message: 'Return processed successfully!', status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: 'returned'),
-                alert: "Error processing return: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error processing return: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 
   def process_general_transition
-    general_notes = params[:booking][:general_notes] || ""
-
-    notes_addition = "\nUpdate Notes: #{general_notes}" if general_notes.present?
-
-    @booking.update!(
-      status: @target_stage,
-      notes: "#{@booking.notes}#{notes_addition}\nUpdated to #{@target_stage.humanize} at: #{Time.current.strftime('%d/%m/%Y %I:%M %p')}"
-    )
-
-    redirect_to admin_bookings_path, notice: "Booking updated to #{@target_stage.humanize}!"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, notice: "Booking updated to #{@target_stage.humanize}!" }
+      format.json { render json: { success: true, message: "Booking updated to #{@target_stage.humanize}!", status: @booking.status } }
+    end
   rescue => e
-    redirect_to stage_transition_admin_booking_path(@booking, target_stage: @target_stage),
-                alert: "Error updating booking: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_to admin_bookings_path, alert: "Error updating booking: #{e.message}" }
+      format.json { render json: { success: false, error: e.message } }
+    end
   end
 end

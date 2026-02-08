@@ -1,0 +1,257 @@
+<% content_for :title, "#{@vendor.name} - Vendor Details" %>
+
+<div class="container-fluid">
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "Dashboard", admin_dashboard_path if defined?(admin_dashboard_path) %></li>
+        <li class="breadcrumb-item"><%= link_to "Vendors", admin_vendors_path %></li>
+        <li class="breadcrumb-item active"><%= @vendor.name %></li>
+      </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="mb-0"><i class="bi bi-person-circle me-2"></i><%= @vendor.name %></h2>
+        <p class="text-muted mb-0">Vendor Details & Purchase History</p>
+      </div>
+      <div class="d-flex gap-2">
+        <%= link_to "Edit Vendor", edit_admin_vendor_path(@vendor), class: "btn btn-warning" %>
+        <%= link_to "New Purchase", new_admin_vendor_purchase_path(vendor_id: @vendor.id), class: "btn btn-success" %>
+        <%= link_to "Back to Vendors", admin_vendors_path, class: "btn btn-outline-secondary" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Vendor Information -->
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="card-title mb-0">Vendor Information</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless table-sm">
+            <tr>
+              <td class="text-muted">Name:</td>
+              <td class="fw-bold"><%= @vendor.name %></td>
+            </tr>
+            <tr>
+              <td class="text-muted">Phone:</td>
+              <td><%= @vendor.phone.present? ? @vendor.phone : '-' %></td>
+            </tr>
+            <tr>
+              <td class="text-muted">Email:</td>
+              <td><%= @vendor.email.present? ? @vendor.email : '-' %></td>
+            </tr>
+            <tr>
+              <td class="text-muted">Payment Type:</td>
+              <td>
+                <span class="badge <%= @vendor.payment_type_badge_class %>">
+                  <%= @vendor.payment_type %>
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted">Status:</td>
+              <td>
+                <span class="badge <%= @vendor.status_badge_class %>">
+                  <%= @vendor.status_text %>
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted">Joined:</td>
+              <td><%= @vendor.created_at.strftime('%b %d, %Y') %></td>
+            </tr>
+          </table>
+
+          <% if @vendor.address.present? %>
+            <hr>
+            <h6 class="text-muted mb-2">Address</h6>
+            <p class="mb-0"><%= simple_format(@vendor.address) %></p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="col-md-8 mb-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="card-title mb-0">Financial Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-3">
+              <div class="border rounded p-3 h-100">
+                <h3 class="text-primary mb-1">₹<%= number_with_delimiter(@vendor.total_purchases.to_i) %></h3>
+                <small class="text-muted">Total Purchases</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="border rounded p-3 h-100">
+                <h3 class="text-success mb-1">₹<%= number_with_delimiter(@vendor.total_paid.to_i) %></h3>
+                <small class="text-muted">Amount Paid</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="border rounded p-3 h-100">
+                <h3 class="text-<%= @vendor.outstanding_balance > 0 ? 'danger' : 'success' %> mb-1">
+                  ₹<%= number_with_delimiter(@vendor.outstanding_balance.to_i) %>
+                </h3>
+                <small class="text-muted">Outstanding Balance</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="border rounded p-3 h-100">
+                <h3 class="text-info mb-1"><%= @vendor.vendor_purchases.count %></h3>
+                <small class="text-muted">Total Purchases</small>
+              </div>
+            </div>
+          </div>
+
+          <% if @vendor.opening_balance.present? && @vendor.opening_balance > 0 %>
+            <hr>
+            <div class="alert alert-info">
+              <small><strong>Opening Balance:</strong> ₹<%= number_with_delimiter(@vendor.opening_balance.to_i) %></small>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Summary -->
+  <% if @stock_summary[:total_quantity] > 0 %>
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">Current Stock Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-3">
+              <div class="border rounded p-3">
+                <h4 class="text-primary mb-1"><%= @stock_summary[:total_products] %></h4>
+                <small class="text-muted">Products</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="border rounded p-3">
+                <h4 class="text-success mb-1"><%= @stock_summary[:total_quantity] %></h4>
+                <small class="text-muted">Total Stock</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="border rounded p-3">
+                <h4 class="text-info mb-1">₹<%= number_with_delimiter(@stock_summary[:total_value].to_i) %></h4>
+                <small class="text-muted">Stock Value</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="border rounded p-3">
+                <h4 class="text-warning mb-1"><%= @stock_summary[:batches_count] %></h4>
+                <small class="text-muted">Active Batches</small>
+              </div>
+            </div>
+          </div>
+
+          <% if @stock_summary[:products_summary].any? %>
+            <hr>
+            <h6>Product Breakdown:</h6>
+            <div class="row">
+              <% @stock_summary[:products_summary].each do |product| %>
+                <div class="col-md-6 col-lg-4 mb-2">
+                  <div class="small border rounded p-2">
+                    <strong><%= product[:product_name] %></strong>:
+                    <span class="text-success"><%= product[:total_quantity] %> units</span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="mt-3">
+            <%= link_to "View Batch Inventory", batch_inventory_admin_vendor_purchases_path(vendor_id: @vendor.id),
+                class: "btn btn-outline-primary btn-sm" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% end %>
+
+  <!-- Recent Purchases -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Recent Purchases</h5>
+          <%= link_to "View All Purchases", admin_vendor_purchases_path(vendor_id: @vendor.id),
+              class: "btn btn-outline-primary btn-sm" %>
+        </div>
+        <div class="card-body">
+          <% if @purchases.any? %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Purchase #</th>
+                    <th>Date</th>
+                    <th>Products</th>
+                    <th>Amount</th>
+                    <th>Payment Status</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @purchases.each do |purchase| %>
+                    <tr>
+                      <td>
+                        <strong><%= purchase.purchase_number %></strong>
+                      </td>
+                      <td><%= purchase.purchase_date.strftime('%b %d, %Y') %></td>
+                      <td>
+                        <small class="text-muted">
+                          <%= pluralize(purchase.vendor_purchase_items.count, 'item') %>
+                        </small>
+                      </td>
+                      <td>
+                        <strong>₹<%= number_with_delimiter(purchase.total_amount.to_i) %></strong>
+                      </td>
+                      <td>
+                        <span class="badge <%= purchase.payment_status_badge_class %>">
+                          <%= purchase.payment_status.titleize %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge <%= purchase.status_badge_class %>">
+                          <%= purchase.status.titleize %>
+                        </span>
+                      </td>
+                      <td>
+                        <%= link_to "View", admin_vendor_purchase_path(purchase),
+                            class: "btn btn-outline-primary btn-sm" %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <i class="bi bi-cart display-4 text-muted"></i>
+              <h5 class="mt-3">No Purchases Yet</h5>
+              <p class="text-muted">This vendor has no purchase history.</p>
+              <%= link_to "Create First Purchase", new_admin_vendor_purchase_path(vendor_id: @vendor.id),
+                  class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

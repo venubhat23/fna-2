@@ -148,49 +148,9 @@
                       </small>
                     </div>
                     <div class="mb-1">
-                      <% if user.original_password.present? %>
-                        <small class="text-info d-flex align-items-center">
-                          <i class="bi bi-key me-1"></i>
-                          <span>Password: </span>
-                          <span class="password-field ms-1 me-2" data-password="<%= user.original_password %>" id="password-<%= user.id %>">
-                            <%= "*" * user.original_password.length %>
-                          </span>
-                          <button class="btn btn-sm btn-outline-info btn-xs me-1 toggle-password-btn"
-                                  data-target="password-<%= user.id %>"
-                                  data-password="<%= user.original_password %>"
-                                  title="Show/Hide Password">
-                            <i class="bi bi-eye"></i>
-                          </button>
-                          <button class="btn btn-sm btn-outline-success btn-xs copy-password-btn"
-                                  data-password="<%= user.original_password %>"
-                                  title="Copy Password">
-                            <i class="bi bi-copy"></i>
-                          </button>
-                        </small>
-                      <% elsif user.plain_password.present? %>
-                        <small class="text-info d-flex align-items-center">
-                          <i class="bi bi-key me-1"></i>
-                          <span>Password: </span>
-                          <span class="password-field ms-1 me-2" data-password="<%= user.plain_password %>" id="password-<%= user.id %>">
-                            <%= "*" * user.plain_password.length %>
-                          </span>
-                          <button class="btn btn-sm btn-outline-info btn-xs me-1 toggle-password-btn"
-                                  data-target="password-<%= user.id %>"
-                                  data-password="<%= user.plain_password %>"
-                                  title="Show/Hide Password">
-                            <i class="bi bi-eye"></i>
-                          </button>
-                          <button class="btn btn-sm btn-outline-success btn-xs copy-password-btn"
-                                  data-password="<%= user.plain_password %>"
-                                  title="Copy Password">
-                            <i class="bi bi-copy"></i>
-                          </button>
-                        </small>
-                      <% else %>
-                        <small class="text-muted">
-                          <i class="bi bi-lock me-1"></i>Password: Not available
-                        </small>
-                      <% end %>
+                      <small class="text-muted">
+                        <i class="bi bi-lock me-1"></i>Password: Encrypted
+                      </small>
                     </div>
                     <div>
                       <small class="text-muted">

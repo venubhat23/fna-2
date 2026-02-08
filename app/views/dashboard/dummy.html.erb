@@ -1,0 +1,899 @@
+<!-- Beautiful Dummy Dashboard -->
+<style>
+  .dashboard-container {
+    padding: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .dashboard-header {
+    color: white;
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .dashboard-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+
+  .dashboard-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+  }
+
+  /* Modern Card Styles */
+  .dashboard-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+  }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .kpi-card {
+    background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+    color: white;
+    border-radius: 25px;
+    padding: 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+  }
+
+  .kpi-card:hover::before {
+    transform: scale(1.2) rotate(45deg);
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+  }
+
+  .kpi-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+  }
+
+  .kpi-value {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .kpi-label {
+    font-size: 1.1rem;
+    font-weight: 500;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+  }
+
+  .kpi-change {
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    display: inline-block;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Chart Section */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .chart-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+  }
+
+  .chart-container.small {
+    height: 300px;
+  }
+
+  .chart-container.large {
+    height: 500px;
+  }
+
+  /* Stats Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent-color);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    color: #718096;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  /* Activity Feed */
+  .activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+  }
+
+  .activity-item:hover {
+    background: #f7fafc;
+    border-radius: 10px;
+    margin: 0 -1rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .activity-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--icon-bg);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .activity-content {
+    flex: 1;
+  }
+
+  .activity-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+  }
+
+  .activity-time {
+    color: #9ca3af;
+    font-size: 0.8rem;
+  }
+
+  /* Progress Bars */
+  .progress-item {
+    margin-bottom: 2rem;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #4a5568;
+  }
+
+  .progress-bar-custom {
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--progress-start), var(--progress-end));
+    border-radius: 6px;
+    transition: width 1s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 1rem;
+    }
+
+    .dashboard-title {
+      font-size: 2rem;
+    }
+
+    .chart-grid,
+    .chart-grid-2,
+    .chart-grid-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .kpi-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Color Themes */
+  .blue-theme { --bg-start: #3b82f6; --bg-end: #1e40af; }
+  .green-theme { --bg-start: #10b981; --bg-end: #059669; }
+  .purple-theme { --bg-start: #8b5cf6; --bg-end: #7c3aed; }
+  .orange-theme { --bg-start: #f59e0b; --bg-end: #d97706; }
+  .pink-theme { --bg-start: #ec4899; --bg-end: #db2777; }
+  .cyan-theme { --bg-start: #06b6d4; --bg-end: #0891b2; }
+  .red-theme { --bg-start: #ef4444; --bg-end: #dc2626; }
+  .indigo-theme { --bg-start: #6366f1; --bg-end: #4f46e5; }
+
+  .stat-blue { --accent-color: #3b82f6; }
+  .stat-green { --accent-color: #10b981; }
+  .stat-purple { --accent-color: #8b5cf6; }
+  .stat-orange { --accent-color: #f59e0b; }
+  .stat-pink { --accent-color: #ec4899; }
+  .stat-cyan { --accent-color: #06b6d4; }
+</style>
+
+<!-- Chart.js for charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+
+<div class="dashboard-container">
+
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">📊 Analytics Dashboard</h1>
+    <p class="dashboard-subtitle">Beautiful insights and stunning visualizations</p>
+  </div>
+
+  <!-- Main KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue-theme">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-value">₹2.4M</div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-change">↗ +23% from last month</div>
+    </div>
+
+    <div class="kpi-card green-theme">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-value">1,247</div>
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-change">↗ +18% from last month</div>
+    </div>
+
+    <div class="kpi-card purple-theme">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-value">8,432</div>
+      <div class="kpi-label">Active Customers</div>
+      <div class="kpi-change">↗ +12% from last month</div>
+    </div>
+
+    <div class="kpi-card orange-theme">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-value">94.2%</div>
+      <div class="kpi-label">Customer Satisfaction</div>
+      <div class="kpi-change">↗ +3.2% from last month</div>
+    </div>
+  </div>
+
+  <!-- Main Charts Section -->
+  <div class="chart-grid">
+    <!-- Sales Trend Chart -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">📈 Sales Trend (Last 6 Months)</h3>
+      <div class="chart-container large">
+        <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Category Performance -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">🏷️ Category Performance</h3>
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Charts -->
+  <div class="chart-grid-3">
+    <!-- Revenue Distribution -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">💸 Revenue Sources</h3>
+      <div class="chart-container small">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Customer Growth -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">👤 Customer Growth</h3>
+      <div class="chart-container small">
+        <canvas id="customerChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Product Performance -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">🛍️ Top Products</h3>
+      <div class="chart-container small">
+        <canvas id="productChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Grid -->
+  <div class="chart-grid-2">
+    <!-- Geographic Distribution -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">🌍 Geographic Distribution</h3>
+      <div class="chart-container">
+        <canvas id="geoChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">⚡ Performance Metrics</h3>
+      <div style="padding: 2rem 0;">
+
+        <div class="progress-item">
+          <div class="progress-header">
+            <span>Conversion Rate</span>
+            <span>87%</span>
+          </div>
+          <div class="progress-bar-custom">
+            <div class="progress-fill" style="width: 87%; --progress-start: #3b82f6; --progress-end: #1e40af;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-header">
+            <span>Customer Retention</span>
+            <span>92%</span>
+          </div>
+          <div class="progress-bar-custom">
+            <div class="progress-fill" style="width: 92%; --progress-start: #10b981; --progress-end: #059669;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-header">
+            <span>Market Share</span>
+            <span>76%</span>
+          </div>
+          <div class="progress-bar-custom">
+            <div class="progress-fill" style="width: 76%; --progress-start: #8b5cf6; --progress-end: #7c3aed;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-header">
+            <span>Brand Recognition</span>
+            <span>84%</span>
+          </div>
+          <div class="progress-bar-custom">
+            <div class="progress-fill" style="width: 84%; --progress-start: #f59e0b; --progress-end: #d97706;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-header">
+            <span>Product Quality</span>
+            <span>96%</span>
+          </div>
+          <div class="progress-bar-custom">
+            <div class="progress-fill" style="width: 96%; --progress-start: #ec4899; --progress-end: #db2777;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-blue">
+      <div class="stat-value">4.2K</div>
+      <div class="stat-label">Products Sold</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-value">₹1.8M</div>
+      <div class="stat-label">Monthly Revenue</div>
+    </div>
+    <div class="stat-card stat-purple">
+      <div class="stat-value">342</div>
+      <div class="stat-label">New Customers</div>
+    </div>
+    <div class="stat-card stat-orange">
+      <div class="stat-value">98.5%</div>
+      <div class="stat-label">Uptime</div>
+    </div>
+    <div class="stat-card stat-pink">
+      <div class="stat-value">2.3s</div>
+      <div class="stat-label">Avg Load Time</div>
+    </div>
+    <div class="stat-card stat-cyan">
+      <div class="stat-value">145</div>
+      <div class="stat-label">Support Tickets</div>
+    </div>
+  </div>
+
+  <!-- Activity Feed & Monthly Overview -->
+  <div class="chart-grid-2">
+    <!-- Recent Activity -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">🔔 Recent Activity</h3>
+      <div>
+        <div class="activity-item">
+          <div class="activity-icon" style="--icon-bg: linear-gradient(135deg, #3b82f6, #1e40af);">💳</div>
+          <div class="activity-content">
+            <div class="activity-title">New payment received</div>
+            <div class="activity-time">2 minutes ago</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="--icon-bg: linear-gradient(135deg, #10b981, #059669);">📦</div>
+          <div class="activity-content">
+            <div class="activity-title">Order #12547 shipped</div>
+            <div class="activity-time">15 minutes ago</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="--icon-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);">👤</div>
+          <div class="activity-content">
+            <div class="activity-title">5 new customers registered</div>
+            <div class="activity-time">1 hour ago</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="--icon-bg: linear-gradient(135deg, #f59e0b, #d97706);">⭐</div>
+          <div class="activity-content">
+            <div class="activity-title">Product review: 5 stars</div>
+            <div class="activity-time">2 hours ago</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="--icon-bg: linear-gradient(135deg, #ec4899, #db2777);">📈</div>
+          <div class="activity-content">
+            <div class="activity-title">Sales target achieved</div>
+            <div class="activity-time">3 hours ago</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="--icon-bg: linear-gradient(135deg, #06b6d4, #0891b2);">🛡️</div>
+          <div class="activity-content">
+            <div class="activity-title">Security scan completed</div>
+            <div class="activity-time">4 hours ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Overview -->
+    <div class="dashboard-card">
+      <h3 class="chart-title">📅 Monthly Overview</h3>
+      <div class="chart-container">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Performance Cards -->
+  <div class="kpi-grid" style="margin-top: 3rem;">
+    <div class="kpi-card cyan-theme">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-value">127%</div>
+      <div class="kpi-label">Goal Achievement</div>
+      <div class="kpi-change">🔥 Exceeded target by 27%</div>
+    </div>
+
+    <div class="kpi-card red-theme">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-value">2.8s</div>
+      <div class="kpi-label">Avg Response Time</div>
+      <div class="kpi-change">🚀 Improved by 0.4s</div>
+    </div>
+
+    <div class="kpi-card indigo-theme">
+      <div class="kpi-icon">🌟</div>
+      <div class="kpi-value">4.9</div>
+      <div class="kpi-label">Customer Rating</div>
+      <div class="kpi-change">⭐ +0.3 from last month</div>
+    </div>
+
+    <div class="kpi-card pink-theme">
+      <div class="kpi-icon">🚀</div>
+      <div class="kpi-value">189%</div>
+      <div class="kpi-label">Growth Rate</div>
+      <div class="kpi-change">📈 Best performance ever</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Chart.js configuration
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#64748b';
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: {
+        usePointStyle: true,
+        padding: 20,
+        font: { size: 12, weight: '500' }
+      }
+    },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      titleColor: '#fff',
+      bodyColor: '#fff',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      cornerRadius: 10
+    }
+  }
+};
+
+// 1. Sales Trend Chart
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [{
+      label: 'Revenue',
+      data: [420000, 580000, 720000, 650000, 890000, 950000],
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderWidth: 4,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#3b82f6',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 3,
+      pointRadius: 6,
+      pointHoverRadius: 8
+    }, {
+      label: 'Orders',
+      data: [180, 220, 280, 240, 320, 350],
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      borderWidth: 4,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#10b981',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 3,
+      pointRadius: 6,
+      pointHoverRadius: 8
+    }]
+  },
+  options: {
+    ...chartOptions,
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { display: false }
+      },
+      y: {
+        border: { display: false },
+        grid: { color: 'rgba(156, 163, 175, 0.1)' },
+        ticks: {
+          callback: function(value) {
+            return '₹' + (value/1000) + 'K';
+          }
+        }
+      }
+    }
+  }
+});
+
+// 2. Category Performance (Doughnut)
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(categoryCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Electronics', 'Clothing', 'Home & Garden', 'Books', 'Sports'],
+    datasets: [{
+      data: [35, 25, 20, 12, 8],
+      backgroundColor: [
+        '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'
+      ],
+      borderWidth: 0,
+      cutout: '70%'
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: {
+      ...chartOptions.plugins,
+      legend: { position: 'bottom' }
+    }
+  }
+});
+
+// 3. Revenue Sources (Pie)
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+  type: 'pie',
+  data: {
+    labels: ['Online Sales', 'Mobile App', 'Store', 'Wholesale'],
+    datasets: [{
+      data: [45, 30, 15, 10],
+      backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: {
+      ...chartOptions.plugins,
+      legend: { position: 'bottom' }
+    }
+  }
+});
+
+// 4. Customer Growth (Line)
+const customerCtx = document.getElementById('customerChart').getContext('2d');
+new Chart(customerCtx, {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [{
+      label: 'New Customers',
+      data: [120, 180, 220, 280, 320, 380],
+      borderColor: '#8b5cf6',
+      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#8b5cf6',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      pointRadius: 5
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: 'rgba(156, 163, 175, 0.1)' }, beginAtZero: true }
+    }
+  }
+});
+
+// 5. Top Products (Bar)
+const productCtx = document.getElementById('productChart').getContext('2d');
+new Chart(productCtx, {
+  type: 'bar',
+  data: {
+    labels: ['iPhone 15', 'Laptop Pro', 'Smartwatch', 'Headphones', 'Tablet'],
+    datasets: [{
+      data: [450, 380, 320, 280, 220],
+      backgroundColor: [
+        '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'
+      ],
+      borderRadius: 8,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(156, 163, 175, 0.1)' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// 6. Geographic Distribution (Bar)
+const geoCtx = document.getElementById('geoChart').getContext('2d');
+new Chart(geoCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Karnataka', 'Maharashtra', 'Delhi', 'Tamil Nadu', 'Gujarat'],
+    datasets: [{
+      data: [1200, 980, 750, 650, 420],
+      backgroundColor: [
+        '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'
+      ],
+      borderRadius: 8,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: 'rgba(156, 163, 175, 0.1)' }, beginAtZero: true }
+    }
+  }
+});
+
+// 7. Monthly Overview (Mixed Chart)
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+    datasets: [{
+      label: 'Sales',
+      data: [85000, 92000, 78000, 95000],
+      backgroundColor: '#3b82f6',
+      borderRadius: 8
+    }, {
+      label: 'Profit',
+      data: [25000, 28000, 22000, 32000],
+      backgroundColor: '#10b981',
+      borderRadius: 8
+    }]
+  },
+  options: {
+    ...chartOptions,
+    plugins: {
+      ...chartOptions.plugins,
+      legend: { position: 'bottom' }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        grid: { color: 'rgba(156, 163, 175, 0.1)' },
+        ticks: {
+          callback: function(value) {
+            return '₹' + (value/1000) + 'K';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Add animation on scroll
+window.addEventListener('scroll', function() {
+  const cards = document.querySelectorAll('.dashboard-card, .kpi-card, .stat-card');
+  cards.forEach(card => {
+    const cardTop = card.offsetTop;
+    const cardBottom = cardTop + card.offsetHeight;
+    const viewportTop = window.scrollY;
+    const viewportBottom = viewportTop + window.innerHeight;
+
+    if (cardBottom > viewportTop && cardTop < viewportBottom) {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }
+  });
+});
+
+// Initialize animations
+document.querySelectorAll('.dashboard-card, .kpi-card, .stat-card').forEach((card, index) => {
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(30px)';
+  card.style.transition = 'all 0.6s ease';
+
+  setTimeout(() => {
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+  }, index * 100);
+});
+
+</script>

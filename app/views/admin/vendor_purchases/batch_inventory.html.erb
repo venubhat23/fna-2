@@ -1,0 +1,433 @@
+<% content_for :title, "Batch Inventory" %>
+
+<div class="container-fluid">
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "Dashboard", admin_dashboard_path if defined?(admin_dashboard_path) %></li>
+        <li class="breadcrumb-item"><%= link_to "Vendor Purchases", admin_vendor_purchases_path %></li>
+        <li class="breadcrumb-item active">Batch Inventory</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="mb-0"><i class="bi bi-boxes me-2"></i>Batch Inventory</h2>
+        <p class="text-muted mb-0">FIFO-based stock management system</p>
+      </div>
+      <div class="d-flex gap-2">
+        <%= link_to "New Purchase", new_admin_vendor_purchase_path, class: "btn btn-success" %>
+        <%= link_to "Back to Purchases", admin_vendor_purchases_path, class: "btn btn-outline-secondary" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Batches</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @total_batches %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-boxes fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Unique Products</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @total_products %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-bag-check fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Stock Value</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">₹<%= number_with_delimiter(@total_stock_value.to_i) %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-currency-rupee fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Active Vendors</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @vendors.count %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-people fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <%= form_with url: batch_inventory_admin_vendor_purchases_path, method: :get, local: true, class: "row g-3" do |f| %>
+        <div class="col-md-3">
+          <%= f.text_field :search, value: params[:search], placeholder: "Search products...", class: "form-control" %>
+        </div>
+        <div class="col-md-3">
+          <%= f.select :vendor_id, options_from_collection_for_select(@vendors, :id, :name, params[:vendor_id]),
+              { prompt: 'All Vendors' }, { class: "form-select" } %>
+        </div>
+        <div class="col-md-2">
+          <div class="form-check form-switch">
+            <%= f.check_box :in_stock, { checked: params[:in_stock] == 'true', class: "form-check-input" } %>
+            <%= f.label :in_stock, "In Stock Only", class: "form-check-label" %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <%= f.submit "Filter", class: "btn btn-outline-primary w-100" %>
+        </div>
+        <div class="col-md-2">
+          <%= link_to "Clear", batch_inventory_admin_vendor_purchases_path, class: "btn btn-outline-secondary w-100" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Batch Inventory Table -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="card-title mb-0">Stock Batches (FIFO Order)</h5>
+    </div>
+    <div class="card-body">
+      <% if @stock_batches.any? %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>Batch Info</th>
+                <th>Product</th>
+                <th>Vendor</th>
+                <th>Purchase Details</th>
+                <th>Stock Status</th>
+                <th>Financial Info</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @stock_batches.each do |batch| %>
+                <tr class="batch-row" data-batch-id="<%= batch.id %>">
+                  <td>
+                    <div class="fw-bold text-primary"><%= batch.batch_number %></div>
+                    <div class="small text-muted">
+                      <i class="bi bi-calendar3"></i> <%= batch.batch_date.strftime('%b %d, %Y') %>
+                    </div>
+                    <div class="small text-muted">
+                      FIFO Order: #<%= batch.id %>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="fw-bold"><%= batch.product.name %></div>
+                    <div class="small text-muted">
+                      SKU: <%= batch.product.sku %>
+                    </div>
+                    <div class="small">
+                      <span class="badge <%= batch.product.product_type_badge_class %>">
+                        <%= batch.product.product_type %>
+                      </span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="fw-bold"><%= batch.vendor.name %></div>
+                    <div class="small text-muted">
+                      <span class="badge <%= batch.vendor.payment_type_badge_class %>">
+                        <%= batch.vendor.payment_type %>
+                      </span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div>
+                      <strong>Purchase:</strong> ₹<%= batch.purchase_price %>
+                    </div>
+                    <div>
+                      <strong>Selling:</strong> ₹<%= batch.selling_price %>
+                    </div>
+                    <div class="small text-<%= batch.profit_margin >= 0 ? 'success' : 'danger' %>">
+                      Margin: <%= batch.profit_margin %>%
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="mb-2">
+                      <div class="d-flex justify-content-between small">
+                        <span>Purchased: <%= batch.quantity_purchased %></span>
+                        <span>Remaining: <%= batch.quantity_remaining %></span>
+                      </div>
+                      <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-<%= batch.quantity_remaining > (batch.quantity_purchased * 0.5) ? 'success' : batch.quantity_remaining > (batch.quantity_purchased * 0.2) ? 'warning' : 'danger' %>"
+                             role="progressbar"
+                             style="width: <%= batch.remaining_percentage %>%"
+                             aria-valuenow="<%= batch.remaining_percentage %>"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                      </div>
+                      <div class="small text-muted text-center mt-1">
+                        <%= batch.remaining_percentage %>% remaining
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div>
+                      <strong>Value:</strong> ₹<%= number_with_delimiter(batch.total_value.to_i) %>
+                    </div>
+                    <div class="small text-success">
+                      Potential Profit: ₹<%= number_with_delimiter(batch.potential_profit.to_i) %>
+                    </div>
+                    <div class="small text-muted">
+                      Sold: <%= batch.quantity_sold %> units
+                    </div>
+                  </td>
+
+                  <td>
+                    <span class="badge <%= batch.status_badge_class %>">
+                      <%= batch.status.titleize %>
+                    </span>
+
+                    <% if batch.quantity_remaining <= (batch.quantity_purchased * 0.1) && batch.active? %>
+                      <div class="mt-1">
+                        <span class="badge bg-warning">
+                          <i class="bi bi-exclamation-triangle"></i> Low Stock
+                        </span>
+                      </div>
+                    <% end %>
+                  </td>
+                </tr>
+
+                <!-- Expandable Row Details -->
+                <tr class="batch-details" id="details-<%= batch.id %>" style="display: none;">
+                  <td colspan="7">
+                    <div class="card border-0 bg-light">
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-6">
+                            <h6>Purchase Information</h6>
+                            <table class="table table-sm table-borderless">
+                              <tr>
+                                <td>Purchase Date:</td>
+                                <td><%= batch.vendor_purchase.purchase_date.strftime('%B %d, %Y') %></td>
+                              </tr>
+                              <tr>
+                                <td>Purchase #:</td>
+                                <td><%= batch.vendor_purchase.purchase_number %></td>
+                              </tr>
+                              <tr>
+                                <td>Unit Type:</td>
+                                <td><%= batch.product.unit_type || 'units' %></td>
+                              </tr>
+                              <tr>
+                                <td>Created:</td>
+                                <td><%= batch.created_at.strftime('%b %d, %Y at %I:%M %p') %></td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <div class="col-md-6">
+                            <h6>Financial Breakdown</h6>
+                            <table class="table table-sm table-borderless">
+                              <tr>
+                                <td>Cost per Unit:</td>
+                                <td>₹<%= batch.purchase_price %></td>
+                              </tr>
+                              <tr>
+                                <td>Selling per Unit:</td>
+                                <td>₹<%= batch.selling_price %></td>
+                              </tr>
+                              <tr>
+                                <td>Profit per Unit:</td>
+                                <td class="text-<%= batch.selling_price - batch.purchase_price >= 0 ? 'success' : 'danger' %>">
+                                  ₹<%= (batch.selling_price - batch.purchase_price).round(2) %>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>Total Investment:</td>
+                                <td>₹<%= (batch.quantity_purchased * batch.purchase_price).round(2) %></td>
+                              </tr>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div class="mt-3">
+                          <div class="btn-toolbar">
+                            <%= link_to "View Purchase", admin_vendor_purchase_path(batch.vendor_purchase),
+                                class: "btn btn-outline-primary btn-sm me-2" %>
+                            <%= link_to "View Vendor", admin_vendor_path(batch.vendor),
+                                class: "btn btn-outline-info btn-sm me-2" %>
+                            <%= link_to "View Product", edit_admin_product_path(batch.product),
+                                class: "btn btn-outline-secondary btn-sm" %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted">
+            Showing <%= @stock_batches.offset_value + 1 %> to <%= [@stock_batches.offset_value + @stock_batches.limit_value, @stock_batches.total_count].min %> of <%= @stock_batches.total_count %> batches
+          </div>
+          <%= paginate @stock_batches if respond_to?(:paginate) %>
+        </div>
+      <% else %>
+        <div class="text-center py-5">
+          <i class="bi bi-boxes display-1 text-muted"></i>
+          <h4 class="mt-3">No Stock Batches Found</h4>
+          <p class="text-muted">Start by creating your first vendor purchase to generate stock batches.</p>
+          <%= link_to "New Purchase", new_admin_vendor_purchase_path, class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Custom styling for batch inventory */
+.border-left-primary {
+  border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+  border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+  border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+  border-left: 0.25rem solid #f6c23e !important;
+}
+
+.batch-row {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.batch-row:hover {
+  background-color: #f8f9fa;
+  transform: translateX(5px);
+}
+
+.batch-details {
+  background-color: #f8f9fa !important;
+}
+
+.progress {
+  background-color: #e9ecef;
+}
+
+.table-hover tbody tr:hover {
+  color: inherit;
+}
+
+.card {
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  border: 1px solid #e3e6f0;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e3e6f0;
+}
+
+/* Status badges */
+.badge {
+  font-size: 0.8em;
+}
+
+/* Financial colors */
+.text-profit {
+  color: #1cc88a !important;
+}
+
+.text-loss {
+  color: #e74a3b !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .batch-row:hover {
+    transform: none;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Toggle batch details
+  document.querySelectorAll('.batch-row').forEach(row => {
+    row.addEventListener('click', function() {
+      const batchId = this.dataset.batchId;
+      const detailsRow = document.getElementById('details-' + batchId);
+
+      if (detailsRow.style.display === 'none') {
+        // Hide all other details
+        document.querySelectorAll('.batch-details').forEach(detail => {
+          detail.style.display = 'none';
+        });
+        // Show this details
+        detailsRow.style.display = 'table-row';
+        this.classList.add('table-active');
+      } else {
+        detailsRow.style.display = 'none';
+        this.classList.remove('table-active');
+      }
+    });
+  });
+
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    const currentUrl = new URL(window.location);
+    const hasFilters = currentUrl.search.length > 0;
+    if (!hasFilters) {
+      // Only auto-refresh if no filters are applied
+      window.location.reload();
+    }
+  }, 30000);
+});
+</script>

@@ -3,6 +3,7 @@ class Order < ApplicationRecord
   belongs_to :customer, optional: true
   belongs_to :user, optional: true
   has_many :order_items, dependent: :destroy
+  has_many :sale_items, dependent: :destroy
 
   # Enums - Complete workflow matching Booking
   enum :status, {

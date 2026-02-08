@@ -457,4 +457,34 @@ module ApplicationHelper
       'Enter comma-separated values'
     end
   end
+
+  # Booking stage helpers
+  def stage_description_full(stage)
+    case stage.to_s
+    when 'draft'
+      'Set order as draft for preparation and review'
+    when 'ordered_and_delivery_pending'
+      'Order placed and waiting for processing setup'
+    when 'confirmed'
+      'Confirm order and notify customer'
+    when 'processing'
+      'Start processing the order'
+    when 'packed'
+      'Mark order as packed and ready'
+    when 'shipped'
+      'Ship order with tracking details'
+    when 'out_for_delivery'
+      'Assign for delivery'
+    when 'delivered'
+      'Confirm successful delivery'
+    when 'completed'
+      'Complete the order transaction'
+    when 'cancelled'
+      'Cancel this order'
+    when 'returned'
+      'Process return request'
+    else
+      'Update order stage'
+    end
+  end
 end

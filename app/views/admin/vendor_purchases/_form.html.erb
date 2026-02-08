@@ -1,0 +1,253 @@
+<%= form_with model: [:admin, @vendor_purchase], local: true, id: "vendor-purchase-form" do |f| %>
+  <% if @vendor_purchase.errors.any? %>
+    <div class="alert alert-danger">
+      <h6>Please fix the following errors:</h6>
+      <ul class="mb-0">
+        <% @vendor_purchase.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="card sticky-top mb-4" style="z-index: 1000;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <%= f.label :vendor_id, "Vendor", class: "form-label" %>
+          <span class="text-danger">*</span>
+          <%= f.select :vendor_id,
+              options_from_collection_for_select(@vendors, :id, :name, @vendor_purchase.vendor_id || params[:vendor_id]),
+              { prompt: 'Select Vendor' },
+              { class: "form-select", required: true, id: "vendor_select" } %>
+        </div>
+        <div class="col-md-4">
+          <%= f.label :purchase_date, class: "form-label" %>
+          <span class="text-danger">*</span>
+          <%= f.date_field :purchase_date,
+              class: "form-control",
+              value: @vendor_purchase.purchase_date&.strftime('%Y-%m-%d') || Date.current.strftime('%Y-%m-%d'),
+              required: true %>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Total Amount</label>
+          <div class="form-control-plaintext">
+            <strong id="total-amount">₹0.00</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products Section -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">Purchase Items</h5>
+      <button type="button" class="btn btn-success btn-sm" id="add-product-btn">
+        <i class="bi bi-plus-circle me-1"></i>Add Product
+      </button>
+    </div>
+    <div class="card-body">
+      <div id="products-container">
+        <%= f.fields_for :vendor_purchase_items do |item_form| %>
+          <%= render 'vendor_purchase_item_fields', f: item_form %>
+        <% end %>
+
+        <% if @vendor_purchase.vendor_purchase_items.empty? %>
+          <%= f.fields_for :vendor_purchase_items, @vendor_purchase.vendor_purchase_items.build do |item_form| %>
+            <%= render 'vendor_purchase_item_fields', f: item_form %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes Section -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title mb-0">Additional Information</h5>
+    </div>
+    <div class="card-body">
+      <%= f.label :notes, class: "form-label" %>
+      <%= f.text_area :notes, class: "form-control", rows: 3, placeholder: "Add any notes or comments about this purchase..." %>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1">Total Purchase Amount: <span id="final-total" class="text-primary">₹0.00</span></h5>
+          <small class="text-muted">Stock batches will be automatically created upon saving</small>
+        </div>
+        <div class="d-flex gap-2">
+          <%= f.submit @vendor_purchase.new_record? ? "Create Purchase" : "Update Purchase",
+              class: "btn btn-primary", id: "submit-btn" %>
+          <%= link_to "Cancel", admin_vendor_purchases_path, class: "btn btn-outline-secondary" %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Product Item Template (hidden) -->
+<template id="product-item-template">
+  <%= f.fields_for :vendor_purchase_items, VendorPurchaseItem.new, child_index: 'NEW_RECORD' do |item_form| %>
+    <%= render 'vendor_purchase_item_fields', f: item_form %>
+  <% end %>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('vendor-purchase-form');
+  const container = document.getElementById('products-container');
+  const addBtn = document.getElementById('add-product-btn');
+  const template = document.getElementById('product-item-template');
+
+  let itemIndex = <%= @vendor_purchase.vendor_purchase_items.length %>;
+
+  // Add product row
+  addBtn.addEventListener('click', function() {
+    const newItem = template.content.cloneNode(true);
+    const newIndex = new Date().getTime(); // Unique index
+
+    // Replace NEW_RECORD with actual index
+    newItem.innerHTML = newItem.innerHTML.replace(/NEW_RECORD/g, newIndex);
+
+    container.appendChild(newItem);
+    itemIndex++;
+
+    // Initialize the new row
+    const newRow = container.lastElementChild;
+    initializeProductRow(newRow);
+  });
+
+  // Initialize existing rows
+  document.querySelectorAll('.product-item').forEach(initializeProductRow);
+
+  function initializeProductRow(row) {
+    const productSelect = row.querySelector('.product-select');
+    const quantityInput = row.querySelector('.quantity-input');
+    const purchasePriceInput = row.querySelector('.purchase-price-input');
+    const sellingPriceInput = row.querySelector('.selling-price-input');
+    const lineTotalSpan = row.querySelector('.line-total');
+    const removeBtn = row.querySelector('.remove-item-btn');
+    const unitTypeSpan = row.querySelector('.unit-type');
+
+    // Product selection change
+    if (productSelect) {
+      productSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+          const unitType = selectedOption.dataset.unitType || 'units';
+          if (unitTypeSpan) {
+            unitTypeSpan.textContent = unitType;
+          }
+
+          // Set default selling price if available
+          const defaultPrice = selectedOption.dataset.defaultPrice;
+          if (defaultPrice && sellingPriceInput) {
+            sellingPriceInput.value = defaultPrice;
+          }
+        }
+        calculateLineTotal();
+      });
+    }
+
+    // Calculate line total when inputs change
+    [quantityInput, purchasePriceInput, sellingPriceInput].forEach(input => {
+      if (input) {
+        input.addEventListener('input', calculateLineTotal);
+      }
+    });
+
+    // Remove row
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        row.remove();
+        calculateGrandTotal();
+      });
+    }
+
+    function calculateLineTotal() {
+      const quantity = parseFloat(quantityInput?.value) || 0;
+      const purchasePrice = parseFloat(purchasePriceInput?.value) || 0;
+      const lineTotal = quantity * purchasePrice;
+
+      if (lineTotalSpan) {
+        lineTotalSpan.textContent = formatCurrency(lineTotal);
+      }
+
+      calculateGrandTotal();
+    }
+  }
+
+  function calculateGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('.product-item:not([style*="display: none"])').forEach(row => {
+      const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+      const price = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
+      total += quantity * price;
+    });
+
+    document.getElementById('total-amount').textContent = formatCurrency(total);
+    document.getElementById('final-total').textContent = formatCurrency(total);
+
+    // Enable/disable submit button
+    const submitBtn = document.getElementById('submit-btn');
+    const hasItems = document.querySelectorAll('.product-item:not([style*="display: none"])').length > 0;
+    const vendorSelected = document.getElementById('vendor_select').value;
+
+    if (submitBtn) {
+      submitBtn.disabled = !hasItems || !vendorSelected || total === 0;
+    }
+  }
+
+  function formatCurrency(amount) {
+    return '₹' + amount.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  // Vendor selection change
+  const vendorSelect = document.getElementById('vendor_select');
+  if (vendorSelect) {
+    vendorSelect.addEventListener('change', calculateGrandTotal);
+  }
+
+  // Initial calculation
+  calculateGrandTotal();
+
+  // Form validation
+  form.addEventListener('submit', function(e) {
+    const hasItems = document.querySelectorAll('.product-item:not([style*="display: none"])').length > 0;
+    if (!hasItems) {
+      e.preventDefault();
+      alert('Please add at least one product to the purchase.');
+      return;
+    }
+
+    // Validate all product rows
+    let hasErrors = false;
+    document.querySelectorAll('.product-item:not([style*="display: none"])').forEach(row => {
+      const productSelect = row.querySelector('.product-select');
+      const quantity = row.querySelector('.quantity-input');
+      const purchasePrice = row.querySelector('.purchase-price-input');
+      const sellingPrice = row.querySelector('.selling-price-input');
+
+      if (!productSelect?.value || !quantity?.value || !purchasePrice?.value || !sellingPrice?.value) {
+        hasErrors = true;
+        row.style.border = '2px solid #dc3545';
+        setTimeout(() => row.style.border = '', 3000);
+      }
+    });
+
+    if (hasErrors) {
+      e.preventDefault();
+      alert('Please fill in all required fields for each product.');
+    }
+  });
+});
+</script>
