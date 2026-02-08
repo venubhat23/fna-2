@@ -82,18 +82,20 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
       'Main Menu' => [
         { key: 'dashboard', name: 'Dashboard' },
         { key: 'customers', name: 'Customers' },
-        { key: 'sub_agents', name: 'Affiliate' },
-        { key: 'distributors', name: 'Ambassadors' },
+        { key: 'affiliate', name: 'Affiliate' },
+        { key: 'ambassadors', name: 'Ambassadors' },
         { key: 'investors', name: 'Investors' }
       ],
       'Payouts & Commission' => [
         { key: 'affiliate_payouts', name: 'Affiliate Payouts' },
-        { key: 'distributor_payouts', name: 'Ambassador Payouts' },
-        { key: 'payouts', name: 'Payout' }
+        { key: 'ambassador_payouts', name: 'Ambassador Payouts' },
+        { key: 'payout', name: 'Payout' }
       ],
       'Business Partners' => [
         { key: 'brokers', name: 'Brokers' },
-        { key: 'agency_codes', name: 'Agency Code' },
+        { key: 'agency_code', name: 'Agency Code' }
+      ],
+      'Leads' => [
         { key: 'leads', name: 'Leads' }
       ],
       'Insurance Products' => [
@@ -113,9 +115,9 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
       ],
       'Management' => [
         { key: 'client_requests', name: 'Client Requests' },
-        { key: 'insurance_companies', name: 'Companies' },
-        { key: 'agency_brokers', name: 'Agency/Broker' },
-        { key: 'banners', name: 'Banner Management' },
+        { key: 'companies', name: 'Companies' },
+        { key: 'agency_broker', name: 'Agency/Broker' },
+        { key: 'banner_management', name: 'Banner Management' },
         { key: 'imports', name: 'Imports' },
         { key: 'roles_permissions', name: 'Roles & Permissions' }
       ],

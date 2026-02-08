@@ -1,118 +1,585 @@
-<% content_for :title, "Vendors" %>
-
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>Vendors</h2>
-      <p class="text-muted mb-0">Manage your vendor relationships</p>
-    </div>
-    <%= link_to "Add New Vendor", new_admin_vendor_path, class: "btn btn-primary" %>
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Vendor Management</h2>
+    <p class="text-muted mb-0">Manage your vendor relationships and partnerships</p>
   </div>
-
-  <!-- Filters -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <%= form_with url: admin_vendors_path, method: :get, local: true, class: "row g-3" do |f| %>
-        <div class="col-md-4">
-          <%= f.text_field :search, value: params[:search], placeholder: "Search vendors...", class: "form-control" %>
-        </div>
-        <div class="col-md-3">
-          <%= f.select :status, options_for_select([
-            ['All Status', ''],
-            ['Active', 'true'],
-            ['Inactive', 'false']
-          ], params[:status]), {}, { class: "form-select" } %>
-        </div>
-        <div class="col-md-2">
-          <%= f.submit "Filter", class: "btn btn-outline-primary" %>
-        </div>
-        <div class="col-md-3 text-end">
-          <%= link_to "Clear Filters", admin_vendors_path, class: "btn btn-outline-secondary" %>
-        </div>
-      <% end %>
-    </div>
+  <div class="d-flex gap-2 align-items-center">
+    <%= link_to new_admin_vendor_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Add New Vendor
+    <% end %>
   </div>
+</div>
 
-  <!-- Vendors Table -->
-  <div class="card">
-    <div class="card-body">
-      <% if @vendors.any? %>
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-dark">
-              <tr>
-                <th>Vendor Name</th>
-                <th>Contact Info</th>
-                <th>Payment Type</th>
-                <th>Total Purchases</th>
-                <th>Outstanding</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @vendors.each do |vendor| %>
-                <tr>
-                  <td>
-                    <div class="fw-bold"><%= vendor.name %></div>
-                    <div class="small text-muted">Added <%= vendor.created_at.strftime('%b %d, %Y') %></div>
-                  </td>
-                  <td>
-                    <div><%= vendor.phone.present? ? vendor.phone : '-' %></div>
-                    <div class="small text-muted"><%= vendor.email.present? ? vendor.email : '-' %></div>
-                  </td>
-                  <td>
-                    <span class="badge <%= vendor.payment_type_badge_class %>">
-                      <%= vendor.payment_type %>
-                    </span>
-                  </td>
-                  <td>
-                    <div class="fw-bold">₹<%= number_with_delimiter(vendor.total_purchases.to_i) %></div>
-                    <div class="small text-muted"><%= vendor.vendor_purchases.count %> purchases</div>
-                  </td>
-                  <td>
-                    <div class="fw-bold text-<%= vendor.outstanding_balance > 0 ? 'danger' : 'success' %>">
-                      ₹<%= number_with_delimiter(vendor.outstanding_balance.to_i) %>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="badge <%= vendor.status_badge_class %>">
-                      <%= vendor.status_text %>
-                    </span>
-                  </td>
-                  <td>
-                    <div class="btn-group btn-group-sm" role="group">
-                      <%= link_to "View", admin_vendor_path(vendor), class: "btn btn-outline-primary btn-sm" %>
-                      <%= link_to "Edit", edit_admin_vendor_path(vendor), class: "btn btn-outline-warning btn-sm" %>
-                      <% if vendor.can_be_deleted? %>
-                        <%= link_to "Delete", admin_vendor_path(vendor),
-                            method: :delete,
-                            confirm: "Are you sure?",
-                            class: "btn btn-outline-danger btn-sm" %>
-                      <% end %>
-                    </div>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div class="text-muted">
-            Showing <%= @vendors.offset_value + 1 %> to <%= [@vendors.offset_value + @vendors.limit_value, @vendors.total_count].min %> of <%= @vendors.total_count %> vendors
+<!-- Vendor Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Vendors</h6>
+            <h5 class="mb-0"><%= @vendors.count %></h5>
           </div>
-          <%= paginate @vendors if respond_to?(:paginate) %>
+          <div class="text-primary">
+            <i class="bi bi-people fs-3"></i>
+          </div>
         </div>
-      <% else %>
-        <div class="text-center py-5">
-          <i class="bi bi-people display-1 text-muted"></i>
-          <h4 class="mt-3">No Vendors Found</h4>
-          <p class="text-muted">Get started by adding your first vendor.</p>
-          <%= link_to "Add New Vendor", new_admin_vendor_path, class: "btn btn-primary" %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Vendors</h6>
+            <h5 class="mb-0"><%= @vendors.active.count %></h5>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-check-circle fs-3"></i>
+          </div>
         </div>
-      <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Purchases</h6>
+            <h5 class="mb-0">₹<%= number_with_delimiter(@vendors.sum(&:total_purchases).to_i) %></h5>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-cart fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Outstanding</h6>
+            <h5 class="mb-0">₹<%= number_with_delimiter(@vendors.sum(&:outstanding_balance).to_i) %></h5>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-exclamation-triangle fs-3"></i>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- Vendors Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Vendor List</h5>
+      <div class="d-flex gap-2">
+        <!-- Filters -->
+        <%= form_with url: admin_vendors_path, method: :get, local: true, class: "d-flex gap-2 align-items-center" do |form| %>
+          <%= form.select :status,
+              options_for_select([
+                ['All Status', ''],
+                ['Active', 'true'],
+                ['Inactive', 'false']
+              ], params[:status]),
+              {},
+              {
+                class: "form-select",
+                style: "width: 150px;",
+                onchange: "this.form.submit();"
+              } %>
+
+          <!-- Search Input -->
+          <div class="position-relative">
+            <%= form.text_field :search,
+                value: params[:search],
+                class: "form-control",
+                placeholder: "Search vendors...",
+                id: "searchInput",
+                style: "width: 250px;" %>
+            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+          </div>
+
+          <!-- Search Button (hidden, form submits automatically) -->
+          <%= form.submit "Search", class: "btn btn-outline-primary d-none" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <% if @vendors.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0 fw-semibold">Vendor Details</th>
+              <th class="border-0 fw-semibold">Contact Info</th>
+              <th class="border-0 fw-semibold">Payment Type</th>
+              <th class="border-0 fw-semibold">Purchase Summary</th>
+              <th class="border-0 fw-semibold">Outstanding Balance</th>
+              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @vendors.each do |vendor| %>
+              <tr>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-building text-primary"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0"><%= vendor.name %></h6>
+                      <small class="text-muted">Added <%= vendor.created_at.strftime("%d %b %Y") %></small>
+                    </div>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <% if vendor.phone.present? %>
+                      <div class="mb-1">
+                        <i class="bi bi-telephone me-1 text-muted"></i>
+                        <%= vendor.phone %>
+                      </div>
+                    <% end %>
+                    <% if vendor.email.present? %>
+                      <div>
+                        <i class="bi bi-envelope me-1 text-muted"></i>
+                        <small class="text-muted"><%= vendor.email %></small>
+                      </div>
+                    <% else %>
+                      <small class="text-muted">No contact info</small>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <span class="badge <%= vendor.payment_type_badge_class %> px-3 py-2">
+                    <i class="bi bi-<%= vendor.payment_type == 'Cash' ? 'cash-coin' : 'credit-card' %> me-1"></i>
+                    <%= vendor.payment_type %>
+                  </span>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <div class="fw-medium text-success">₹<%= number_with_delimiter(vendor.total_purchases.to_i) %></div>
+                    <small class="text-muted">
+                      <%= pluralize(vendor.vendor_purchases.count, 'purchase') %>
+                    </small>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div class="fw-medium text-<%= vendor.outstanding_balance > 0 ? 'danger' : 'success' %>">
+                    ₹<%= number_with_delimiter(vendor.outstanding_balance.to_i) %>
+                  </div>
+                  <% if vendor.outstanding_balance > 0 %>
+                    <small class="text-danger">
+                      <i class="bi bi-exclamation-circle me-1"></i>
+                      Payment Due
+                    </small>
+                  <% else %>
+                    <small class="text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      All Clear
+                    </small>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <span class="badge <%= vendor.status_badge_class %> px-3 py-2">
+                    <i class="bi bi-<%= vendor.status ? 'check-circle' : 'x-circle' %> me-1"></i>
+                    <%= vendor.status_text %>
+                  </span>
+                </td>
+                <td class="align-middle">
+                  <div class="d-flex gap-2 align-items-center">
+                    <!-- View Button -->
+                    <%= link_to admin_vendor_path(vendor),
+                        class: "btn btn-sm btn-outline-primary",
+                        title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+
+                    <!-- Action Dropdown -->
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="dropdown-header">
+                          <i class="bi bi-tools me-1"></i>Vendor Actions
+                        </li>
+                        <li>
+                          <%= link_to edit_admin_vendor_path(vendor), class: "dropdown-item" do %>
+                            <i class="bi bi-pencil me-2"></i>
+                            Edit Vendor
+                          <% end %>
+                        </li>
+                        <li>
+                          <%= link_to new_admin_vendor_purchase_path(vendor_id: vendor.id), class: "dropdown-item" do %>
+                            <i class="bi bi-cart-plus me-2 text-info"></i>
+                            New Purchase
+                          <% end %>
+                        </li>
+                        <li>
+                          <%= link_to toggle_status_admin_vendor_path(vendor), class: "dropdown-item", method: :patch do %>
+                            <i class="bi bi-<%= vendor.status ? 'pause' : 'play' %>-circle me-2 text-warning"></i>
+                            <%= vendor.status ? 'Deactivate' : 'Activate' %>
+                          <% end %>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <% if vendor.can_be_deleted? %>
+                          <li>
+                            <%= link_to admin_vendor_path(vendor), method: :delete,
+                                class: "dropdown-item text-danger",
+                                confirm: "Are you sure you want to delete this vendor?",
+                                data: {
+                                  confirm: "Are you sure you want to delete #{vendor.name}? This action cannot be undone."
+                                } do %>
+                              <i class="bi bi-trash me-2"></i>
+                              Delete Vendor
+                            <% end %>
+                          </li>
+                        <% else %>
+                          <li>
+                            <span class="dropdown-item text-muted">
+                              <i class="bi bi-info-circle me-2"></i>
+                              Cannot delete (has purchases)
+                            </span>
+                          </li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @vendors.respond_to?(:total_pages) %>
+        <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">
+              Showing <%= @vendors.offset_value + 1 %> - <%= [@vendors.offset_value + @vendors.length, @vendors.total_count].min %> of <%= @vendors.total_count %> vendors
+            </small>
+          </div>
+          <div>
+            <%= paginate @vendors %>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-building fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Vendors Found</h5>
+        <p class="text-muted mb-4">Start building your vendor network by adding your first vendor partner.</p>
+        <%= link_to "Add New Vendor", new_admin_vendor_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Custom CSS for Enhanced Vendor Management -->
+<style>
+.card {
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+/* Vendor Statistics Cards Hover Effects */
+.col-md-3 .card:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Custom scrollbar for table */
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Avatar styling */
+.avatar-sm {
+  width: 40px;
+  height: 40px;
+}
+
+/* Enhanced form styling */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Button enhancements */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Enhanced pagination styling */
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  border-radius: 8px;
+  margin: 0 2px;
+  border: none;
+  color: #007bff;
+  background-color: transparent;
+}
+
+.page-link:hover {
+  background-color: #f8f9fa;
+  color: #0056b3;
+}
+
+.page-item.active .page-link {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+/* Dropdown enhancements */
+.dropdown-menu {
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+
+.dropdown-item {
+  border-radius: 4px;
+  margin: 2px 4px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  transform: translateX(4px);
+}
+
+.dropdown-header {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.dropdown-divider {
+  margin: 0.5rem 0;
+}
+
+/* Badge enhancements */
+.badge-success {
+  background-color: #d4edda !important;
+  color: #155724 !important;
+  border: 1px solid #c3e6cb;
+}
+
+.badge-warning {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border: 1px solid #ffeaa7;
+}
+
+.badge-danger {
+  background-color: #f8d7da !important;
+  color: #721c24 !important;
+  border: 1px solid #f5c6cb;
+}
+
+.badge-secondary {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6;
+}
+
+/* Icon enhancements */
+.bi {
+  transition: all 0.2s ease;
+}
+
+/* Search input enhancement */
+.position-relative .bi-search {
+  pointer-events: none;
+  color: #6c757d;
+}
+
+/* Empty state styling */
+.text-center .bi {
+  opacity: 0.6;
+}
+
+/* Statistics cards number animation */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-body h5 {
+  animation: countUp 0.5s ease-out;
+}
+
+/* Table header enhancements */
+.table-light th {
+  background-color: #f8f9fa !important;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+}
+
+/* Card header enhancements */
+.card-header {
+  background-color: #fff !important;
+  border-bottom: 1px solid #f1f3f4;
+  padding: 1.25rem 1.5rem;
+}
+
+.card-header h5 {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0;
+}
+
+/* Form enhancements */
+.form-select option {
+  padding: 0.5rem;
+}
+
+/* Loading and transition effects */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive design enhancements */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .col-md-3 .card {
+    margin-bottom: 1rem;
+  }
+
+  .d-flex.gap-2 {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .form-control, .form-select {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .avatar-sm {
+    width: 32px;
+    height: 32px;
+  }
+
+  .card-header .d-flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Print styles */
+@media print {
+  .btn, .dropdown, .pagination {
+    display: none !important;
+  }
+
+  .card {
+    border: 1px solid #dee2e6 !important;
+    box-shadow: none !important;
+  }
+}
+</style>

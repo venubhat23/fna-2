@@ -89,33 +89,111 @@
       </div>
     </div>
   </div>
+
 <% end %>
 
-<!-- Product Item Template (hidden) -->
-<template id="product-item-template">
-  <%= f.fields_for :vendor_purchase_items, VendorPurchaseItem.new, child_index: 'NEW_RECORD' do |item_form| %>
-    <%= render 'vendor_purchase_item_fields', f: item_form %>
-  <% end %>
-</template>
+<script>
+// Store product data for JavaScript template
+window.productData = <%= raw @products.map { |p| {
+  id: p.id,
+  name: p.name,
+  unit_type: p.unit_type || 'units',
+  default_selling_price: p.default_selling_price || 0
+}}.to_json %>;
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('vendor-purchase-form');
   const container = document.getElementById('products-container');
   const addBtn = document.getElementById('add-product-btn');
-  const template = document.getElementById('product-item-template');
 
   let itemIndex = <%= @vendor_purchase.vendor_purchase_items.length %>;
 
+  // Create product options HTML
+  function createProductOptionsHtml(selectedId = '') {
+    let html = '<option value="">Select Product</option>';
+    window.productData.forEach(product => {
+      const selected = product.id == selectedId ? 'selected' : '';
+      html += `<option value="${product.id}"
+                      data-unit-type="${product.unit_type}"
+                      data-default-price="${product.default_selling_price}"
+                      ${selected}>
+                 ${product.name}
+               </option>`;
+    });
+    return html;
+  }
+
+  // Create new product item HTML
+  function createProductItemHtml(index) {
+    return `
+      <div class="product-item border rounded p-3 mb-3" style="background: #f8f9fa;">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">Product <span class="text-danger">*</span></label>
+            <select name="vendor_purchase[vendor_purchase_items_attributes][${index}][product_id]"
+                    class="form-select product-select" required>
+              ${createProductOptionsHtml()}
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Quantity <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][quantity]"
+                     class="form-control quantity-input" placeholder="0" step="0.01" min="0.01" required>
+              <span class="input-group-text unit-type">units</span>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Purchase Price (₹) <span class="text-danger">*</span></label>
+            <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][purchase_price]"
+                   class="form-control purchase-price-input" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Selling Price (₹) <span class="text-danger">*</span></label>
+            <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][selling_price]"
+                   class="form-control selling-price-input" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Line Total</label>
+            <div class="form-control-plaintext">
+              <strong class="line-total">₹0.00</strong>
+            </div>
+          </div>
+
+          <div class="col-md-1">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col-12">
+            <small class="text-muted">
+              Profit Margin: <span class="profit-margin">-</span> |
+              Profit per unit: <span class="profit-per-unit">-</span>
+            </small>
+          </div>
+        </div>
+
+        <input type="hidden" name="vendor_purchase[vendor_purchase_items_attributes][${index}][_destroy]"
+               class="destroy-field" value="false">
+      </div>
+    `;
+  }
+
   // Add product row
   addBtn.addEventListener('click', function() {
-    const newItem = template.content.cloneNode(true);
     const newIndex = new Date().getTime(); // Unique index
+    const newItemHtml = createProductItemHtml(newIndex);
 
-    // Replace NEW_RECORD with actual index
-    newItem.innerHTML = newItem.innerHTML.replace(/NEW_RECORD/g, newIndex);
-
-    container.appendChild(newItem);
+    container.insertAdjacentHTML('beforeend', newItemHtml);
     itemIndex++;
 
     // Initialize the new row
@@ -152,13 +230,17 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
         calculateLineTotal();
+        updateProfitCalculation();
       });
     }
 
-    // Calculate line total when inputs change
+    // Calculate line total and profit when inputs change
     [quantityInput, purchasePriceInput, sellingPriceInput].forEach(input => {
       if (input) {
-        input.addEventListener('input', calculateLineTotal);
+        input.addEventListener('input', function() {
+          calculateLineTotal();
+          updateProfitCalculation();
+        });
       }
     });
 
@@ -181,6 +263,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
       calculateGrandTotal();
     }
+
+    function updateProfitCalculation() {
+      const purchasePrice = parseFloat(purchasePriceInput?.value) || 0;
+      const sellingPrice = parseFloat(sellingPriceInput?.value) || 0;
+      const profitMarginSpan = row.querySelector('.profit-margin');
+      const profitPerUnitSpan = row.querySelector('.profit-per-unit');
+
+      if (purchasePrice > 0 && sellingPrice > 0) {
+        const profitPerUnit = sellingPrice - purchasePrice;
+        const profitMargin = ((profitPerUnit / purchasePrice) * 100).toFixed(1);
+
+        if (profitMarginSpan) {
+          profitMarginSpan.textContent = `${profitMargin}%`;
+          profitMarginSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+        }
+
+        if (profitPerUnitSpan) {
+          profitPerUnitSpan.textContent = `₹${profitPerUnit.toFixed(2)}`;
+          profitPerUnitSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+        }
+      } else {
+        if (profitMarginSpan) profitMarginSpan.textContent = '-';
+        if (profitPerUnitSpan) profitPerUnitSpan.textContent = '-';
+      }
+    }
+
+    // Initial calculations
+    calculateLineTotal();
+    updateProfitCalculation();
   }
 
   function calculateGrandTotal() {
