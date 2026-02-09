@@ -17,6 +17,9 @@ Rails.application.routes.draw do
     get '/users/sign_out' => 'devise/sessions#destroy'
   end
 
+  # Custom sessions for login
+  resource :sessions, only: [:new, :create, :destroy]
+
   # Root route
   root "dashboard#index"
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_08_103030) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -184,12 +184,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_103030) do
     t.text "stage_history"
     t.datetime "stage_updated_at"
     t.integer "stage_updated_by"
+    t.bigint "store_id"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
     t.index ["expected_delivery_date"], name: "index_bookings_on_expected_delivery_date"
     t.index ["stage_updated_at"], name: "index_bookings_on_stage_updated_at"
     t.index ["stage_updated_by"], name: "index_bookings_on_stage_updated_by"
+    t.index ["store_id"], name: "index_bookings_on_store_id"
     t.index ["tracking_number"], name: "index_bookings_on_tracking_number"
   end
 

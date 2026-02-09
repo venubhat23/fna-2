@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login - DemoFarm</title>
+  <title>Login - Dhanvantari Naturals</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
@@ -37,8 +37,9 @@
       <!-- Logo Section -->
       <div class="text-center mb-4">
         <div class="simple-logo">
+          <img src="/logo.jpeg" alt="Dhanvantari Naturals" class="login-logo-img" />
         </div>
-        <h2 class="simple-title">DemoFarm</h2>
+        <h2 class="simple-title">Dhanvantari Naturals</h2>
       </div>
 
       <!-- Login Banners -->
@@ -47,14 +48,14 @@
       <!-- Simple Login Form -->
       <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
         <div class="mb-3">
-          <%= f.label :login, "Email Address or Mobile Number", class: "form-label" %>
+          <%= f.label :login, "Email", class: "form-label" %>
           <div class="input-group">
             <span class="input-group-text">
-              <i class="fas fa-user"></i>
+              <i class="fas fa-envelope"></i>
             </span>
-            <%= f.text_field :login, autofocus: true, autocomplete: "username", class: "form-control", placeholder: "pramodbha8@gmail.com or 44444 44444" %>
+            <%= f.email_field :login, autofocus: true, autocomplete: "email", class: "form-control", placeholder: "email@example.com" %>
           </div>
-          <small class="text-muted">You can login with email or mobile number (with or without +91)</small>
+          <small class="text-muted">Please enter your email address</small>
         </div>
 
         <div class="mb-3">
@@ -74,20 +75,12 @@
               <%= f.label :remember_me, "Remember me", class: "form-check-label" %>
             </div>
           <% end %>
-          <%- if devise_mapping.recoverable? && controller_name != 'passwords' && controller_name != 'registrations' %>
-            <%= link_to "Forgot password?", new_password_path(resource_name), class: "text-primary text-decoration-none" %>
-          <% end %>
+
         </div>
 
         <%= f.submit "Sign In", class: "btn btn-primary w-100 py-3 fs-5 fw-semibold" %>
       <% end %>
 
-      <%- if devise_mapping.registerable? && controller_name != 'registrations' %>
-        <div class="text-center mt-4">
-          <span class="text-muted">Don't have an account? </span>
-          <%= link_to "Create account", new_registration_path(resource_name), class: "text-primary text-decoration-none fw-semibold" %>
-        </div>
-      <% end %>
     </div>
   </div>
 </div>

@@ -125,7 +125,6 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
         { key: 'invoices', name: 'Invoices' }
       ],
       'Settings' => [
-        { key: 'user_roles', name: 'User Roles' },
         { key: 'system_settings', name: 'System Settings' }
       ]
     }
