@@ -18,3 +18,301 @@
     <%= render 'form' %>
   </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+  <div class="loading-container">
+    <div class="loading-animation">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+      </div>
+      <div class="loading-icon">
+        <i class="bi bi-box-seam"></i>
+      </div>
+    </div>
+    <div class="loading-content">
+      <h4 class="loading-title">Creating Product...</h4>
+      <p class="loading-message">Please wait while we set up your new product in the backend</p>
+      <div class="loading-progress">
+        <div class="progress">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.loading-overlay.show {
+  opacity: 1;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  max-width: 400px;
+  width: 90%;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.loading-animation {
+  position: relative;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+}
+
+.loading-spinner {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 2s linear infinite;
+}
+
+.spinner-ring:nth-child(1) {
+  border-top-color: #0d6efd;
+  animation-delay: 0s;
+  width: 100px;
+  height: 100px;
+}
+
+.spinner-ring:nth-child(2) {
+  border-top-color: #198754;
+  animation-delay: -0.4s;
+  width: 80px;
+  height: 80px;
+  top: 10px;
+  left: 10px;
+}
+
+.spinner-ring:nth-child(3) {
+  border-top-color: #fd7e14;
+  animation-delay: -0.8s;
+  width: 60px;
+  height: 60px;
+  top: 20px;
+  left: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  color: #0d6efd;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.loading-content {
+  margin-top: 1rem;
+}
+
+.loading-title {
+  color: #212529;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.loading-message {
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.loading-progress {
+  margin-top: 1rem;
+}
+
+.progress {
+  height: 8px;
+  border-radius: 10px;
+  background: #e9ecef;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #0d6efd, #198754, #fd7e14);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+/* Responsive design */
+@media (max-width: 576px) {
+  .loading-container {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .loading-title {
+    font-size: 1.25rem;
+  }
+
+  .loading-message {
+    font-size: 0.9rem;
+  }
+
+  .loading-animation {
+    height: 100px;
+  }
+
+  .loading-spinner {
+    width: 80px;
+    height: 80px;
+  }
+
+  .spinner-ring:nth-child(1) {
+    width: 80px;
+    height: 80px;
+  }
+
+  .spinner-ring:nth-child(2) {
+    width: 65px;
+    height: 65px;
+    top: 7.5px;
+    left: 7.5px;
+  }
+
+  .spinner-ring:nth-child(3) {
+    width: 50px;
+    height: 50px;
+    top: 15px;
+    left: 15px;
+  }
+
+  .loading-icon {
+    font-size: 2rem;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .loading-overlay {
+    background: rgba(33, 37, 41, 0.95);
+  }
+
+  .loading-container {
+    background: #212529;
+    border-color: #495057;
+  }
+
+  .loading-title {
+    color: #f8f9fa;
+  }
+
+  .loading-message {
+    color: #adb5bd;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form[data-remote]') || document.querySelector('form');
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const progressBar = loadingOverlay.querySelector('.progress-bar');
+
+  if (form && loadingOverlay) {
+    form.addEventListener('submit', function(e) {
+      // Show loading overlay
+      loadingOverlay.style.display = 'flex';
+      setTimeout(() => loadingOverlay.classList.add('show'), 10);
+
+      // Animate progress bar
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) {
+          progress = 90; // Keep at 90% until actual completion
+          clearInterval(progressInterval);
+        }
+        progressBar.style.width = progress + '%';
+      }, 200);
+
+      // Optional: If you want to hide loading on form errors (for non-AJAX forms)
+      // This will only work if the form redirects on success
+      setTimeout(() => {
+        // If we're still on the same page after 10 seconds, something might be wrong
+        if (loadingOverlay.classList.contains('show')) {
+          progressBar.style.width = '100%';
+          setTimeout(() => {
+            loadingOverlay.classList.remove('show');
+            setTimeout(() => {
+              loadingOverlay.style.display = 'none';
+              progressBar.style.width = '0%';
+            }, 300);
+          }, 500);
+        }
+      }, 10000);
+    });
+  }
+
+  // Hide loading on page unload (for successful submissions)
+  window.addEventListener('beforeunload', function() {
+    if (progressBar) {
+      progressBar.style.width = '100%';
+    }
+  });
+});
+</script>

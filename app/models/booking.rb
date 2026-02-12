@@ -4,7 +4,7 @@ class Booking < ApplicationRecord
   belongs_to :booking_schedule, optional: true # For subscription bookings
   belongs_to :store, optional: true
   has_many :booking_items, dependent: :destroy
-  has_one :order, dependent: :nullify
+  # has_one :order, dependent: :nullify  # Temporarily disabled until booking_id column is added to orders table
   has_many :booking_invoices, dependent: :destroy
   has_many :sale_items, dependent: :destroy
 
@@ -43,10 +43,11 @@ class Booking < ApplicationRecord
 
   # Validations
   validates :booking_number, presence: true, uniqueness: true
-  validates :total_amount, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :total_amount, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
   before_validation :generate_booking_number, on: :create
   before_validation :calculate_totals
+  after_validation :ensure_total_amount_present
   after_update :allocate_inventory, if: :saved_change_to_status?
 
   scope :recent, -> { order(created_at: :desc) }
@@ -250,7 +251,30 @@ class Booking < ApplicationRecord
     end
   end
 
+  # Method to provide booking_items_count functionality
+  def booking_items_count
+    booking_items.size
+  end
+
+  # Temporary method to handle missing booking_id column in orders table
+  def order
+    # TODO: Remove this method once booking_id column is added to orders table
+    # Return nil for now to avoid association errors
+    return nil
+  end
+
+  # Also define as a method to prevent Rails from trying to load association
+  def order=(value)
+    # Do nothing for now
+  end
+
   private
+
+  def ensure_total_amount_present
+    if total_amount.blank? || total_amount <= 0
+      errors.add(:base, "Please add at least one item to the booking")
+    end
+  end
 
   def convert_to_words(number)
     return "Zero" if number == 0
@@ -385,6 +409,8 @@ class Booking < ApplicationRecord
     # Find all sale items for this booking and restore the stock
     SaleItem.where(booking: self).find_each do |sale_item|
       stock_batch = sale_item.stock_batch
+      product = sale_item.product
+
       if stock_batch
         # Restore the quantity to the batch
         stock_batch.quantity_remaining += sale_item.quantity
@@ -392,6 +418,11 @@ class Booking < ApplicationRecord
         stock_batch.save!
 
         Rails.logger.info "Restored #{sale_item.quantity} units to batch #{stock_batch.batch_number}"
+
+        # Update product stock for backward compatibility
+        if product
+          product.update_column(:stock, product.total_batch_stock)
+        end
       end
 
       # Mark the sale item as refunded/returned

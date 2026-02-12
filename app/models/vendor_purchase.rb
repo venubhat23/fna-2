@@ -6,11 +6,12 @@ class VendorPurchase < ApplicationRecord
   has_many :vendor_payments, dependent: :destroy
 
   validates :purchase_date, presence: true
-  validates :total_amount, presence: true, numericality: { greater_than: 0 }
   validates :paid_amount, numericality: { greater_than_or_equal_to: 0 }
+  validate :must_have_items
+  validate :validate_total_amount
   validates :status, inclusion: { in: %w[pending completed cancelled] }
 
-  accepts_nested_attributes_for :vendor_purchase_items, reject_if: :all_blank, allow_destroy: true
+  accepts_nested_attributes_for :vendor_purchase_items, reject_if: lambda { |attrs| attrs['product_id'].blank? && attrs['quantity'].blank? }, allow_destroy: true
 
   scope :pending, -> { where(status: 'pending') }
   scope :completed, -> { where(status: 'completed') }
@@ -71,17 +72,36 @@ class VendorPurchase < ApplicationRecord
 
   private
 
+  def must_have_items
+    if vendor_purchase_items.reject(&:marked_for_destruction?).empty?
+      errors.add(:base, "Purchase must have at least one item")
+    end
+  end
+
+  def validate_total_amount
+    # Calculate total manually for validation
+    calculate_totals
+
+    if total_amount.blank?
+      errors.add(:total_amount, "can't be blank")
+    elsif total_amount <= 0
+      errors.add(:total_amount, "must be greater than 0. Please add at least one item.")
+    end
+  end
+
   def calculate_totals
     # Calculate total from items (both saved and unsaved)
     total = 0
 
     # Include both persisted and new items
-    all_items = vendor_purchase_items.to_a
+    all_items = vendor_purchase_items.reject(&:marked_for_destruction?)
 
     all_items.each do |item|
       if item.quantity.present? && item.purchase_price.present?
-        line_total = item.quantity * item.purchase_price
-        total += line_total
+        quantity = item.quantity.to_f
+        price = item.purchase_price.to_f
+        line_total = quantity * price
+        total += line_total if line_total > 0
       end
     end
 
@@ -91,6 +111,10 @@ class VendorPurchase < ApplicationRecord
 
   def create_stock_batches
     vendor_purchase_items.each do |item|
+      product = item.product
+      current_stock = product.total_batch_stock
+
+      # Create stock batch
       StockBatch.create!(
         product: item.product,
         vendor: vendor,
@@ -102,6 +126,22 @@ class VendorPurchase < ApplicationRecord
         batch_date: purchase_date,
         status: 'active'
       )
+
+      # Update product stock field for backward compatibility
+      # Use update_column to skip validations since we're only updating stock
+      new_stock = product.total_batch_stock
+      product.update_column(:stock, new_stock)
+
+      # Create stock movement record
+      product.stock_movements.create!(
+        reference_type: 'vendor_purchase',
+        reference_id: id,
+        movement_type: 'added',
+        quantity: item.quantity.to_f, # Positive for addition
+        stock_before: current_stock,
+        stock_after: new_stock,
+        notes: "Stock added from vendor purchase: #{purchase_number} - #{product.name} (Qty: #{item.quantity})"
+      )
     end
   end
 
@@ -110,12 +150,38 @@ class VendorPurchase < ApplicationRecord
     vendor_purchase_items.each do |item|
       batch = stock_batches.find_by(product: item.product)
       if batch
+        product = item.product
+        current_stock = product.total_batch_stock
+        old_quantity = batch.quantity_purchased.to_f
+        new_quantity = item.quantity.to_f
+        quantity_difference = new_quantity - old_quantity
+
         batch.update!(
           quantity_purchased: item.quantity,
           quantity_remaining: item.quantity,
           purchase_price: item.purchase_price,
           selling_price: item.selling_price
         )
+
+        # Update product stock field for backward compatibility
+        # Use update_column to skip validations since we're only updating stock
+        new_stock = product.total_batch_stock
+        product.update_column(:stock, new_stock)
+
+        # Create stock movement record if quantity changed
+        if quantity_difference != 0
+          movement_type = quantity_difference > 0 ? 'added' : 'adjusted'
+
+          product.stock_movements.create!(
+            reference_type: 'vendor_purchase',
+            reference_id: id,
+            movement_type: movement_type,
+            quantity: quantity_difference,
+            stock_before: current_stock,
+            stock_after: new_stock,
+            notes: "Vendor purchase updated: #{purchase_number} - #{product.name} quantity changed by #{quantity_difference}"
+          )
+        end
       end
     end
   end

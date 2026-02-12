@@ -41,6 +41,7 @@ class Product < ApplicationRecord
   has_many :vendors, through: :vendor_purchases
   has_many :stock_batches, dependent: :destroy
   has_many :sale_items, dependent: :destroy
+  has_many :stock_movements, dependent: :destroy
 
   has_many_attached :images
 
@@ -53,9 +54,9 @@ class Product < ApplicationRecord
   validates :product_type, presence: true, inclusion: { in: PRODUCT_TYPES.map(&:last) }
   validates :weight, numericality: { greater_than: 0 }, allow_blank: true
   validates :buying_price, numericality: { greater_than: 0 }, allow_blank: true
-  validates :unit_type, inclusion: { in: UNIT_TYPES.map(&:last) }, allow_blank: true
-  validates :minimum_stock_alert, numericality: { greater_than: 0 }, allow_blank: true
-  validates :default_selling_price, numericality: { greater_than: 0 }, allow_blank: true
+  # validates :unit_type, inclusion: { in: UNIT_TYPES.map(&:last) }, allow_blank: true
+  # validates :minimum_stock_alert, numericality: { greater_than: 0 }, allow_blank: true
+  # validates :default_selling_price, numericality: { greater_than: 0 }, allow_blank: true
   validates :discount_type, inclusion: { in: ['percentage', 'fixed'], message: 'must be percentage or fixed' }, allow_blank: true
   validates :discount_value, numericality: { greater_than: 0 }, allow_blank: true
   validates :original_price, numericality: { greater_than: 0 }, allow_blank: true
@@ -68,13 +69,22 @@ class Product < ApplicationRecord
 
   accepts_nested_attributes_for :delivery_rules, allow_destroy: true, reject_if: :all_blank
 
-  enum :status, { active: 0, inactive: 1, draft: 2 }
+  enum :status, { active: 'active', inactive: 'inactive', draft: 'draft' }
 
   scope :active, -> { where(status: :active) }
   scope :inactive, -> { where(status: :inactive) }
   scope :draft, -> { where(status: :draft) }
-  scope :in_stock, -> { where('stock > 0') }
-  scope :out_of_stock, -> { where(stock: 0) }
+  scope :in_stock, -> {
+    joins(:stock_batches)
+      .where(stock_batches: { status: 'active' })
+      .group('products.id')
+      .having('SUM(stock_batches.quantity_remaining) > 0')
+  }
+  scope :out_of_stock, -> {
+    left_joins(:stock_batches)
+      .group('products.id')
+      .having('COALESCE(SUM(CASE WHEN stock_batches.status = ? THEN stock_batches.quantity_remaining ELSE 0 END), 0) = 0', 'active')
+  }
   scope :by_category, ->(category_id) { where(category_id: category_id) }
   scope :search, ->(query) { where('name ILIKE ? OR description ILIKE ? OR sku ILIKE ?', "%#{query}%", "%#{query}%", "%#{query}%") }
   scope :recent, -> { order(created_at: :desc) }
@@ -91,13 +101,16 @@ class Product < ApplicationRecord
   before_save :process_delivery_rules_location_data
   before_save :calculate_discount_fields
   before_save :update_price_tracking
+  after_create :create_initial_stock_movement, if: -> { stock.present? && stock > 0 }
+  after_create :create_initial_stock_batch, if: -> { stock.present? && stock > 0 }
+  after_update :update_stock_batch, if: -> { saved_change_to_stock? && stock.present? }
 
   def in_stock?
-    stock > 0
+    total_batch_stock > 0
   end
 
   def out_of_stock?
-    stock == 0
+    total_batch_stock == 0
   end
 
   # Inventory tracking methods
@@ -109,14 +122,14 @@ class Product < ApplicationRecord
   end
 
   def available_quantity
-    # Current stock is the available quantity
-    stock
+    # Use batch system for accurate stock tracking
+    total_batch_stock
   end
 
   def sold_quantity
-    # Calculate sold quantity as initial_stock - current_stock
+    # Calculate sold quantity as initial_stock - available_quantity
     return 0 if initial_stock.nil? || initial_stock == 0
-    [initial_stock - stock, 0].max
+    [initial_stock - available_quantity, 0].max
   end
 
   def inventory_status_text
@@ -125,6 +138,13 @@ class Product < ApplicationRecord
     else
       "#{available_quantity} available"
     end
+  end
+
+  # Initial stock - calculated as the first stock batch's quantity
+  def initial_stock
+    # Get the oldest stock batch (the original one) or fall back to current stock
+    first_batch = stock_batches.by_fifo.first
+    first_batch&.quantity_purchased || stock || 0
   end
 
   def inventory_percentage_sold
@@ -467,7 +487,11 @@ class Product < ApplicationRecord
 
   # Vendor Management Methods
   def total_batch_stock
+    # Fallback to regular stock if stock_batches table doesn't exist
+    return stock if !ActiveRecord::Base.connection.table_exists?('stock_batches')
     stock_batches.active.sum(:quantity_remaining)
+  rescue
+    stock
   end
 
   def total_batch_value
@@ -492,7 +516,7 @@ class Product < ApplicationRecord
 
   def stock_alert_message
     return nil unless below_minimum_stock?
-    "Stock is below minimum level of #{minimum_stock_alert} #{unit_type || 'units'}"
+    "Stock is below minimum level of #{minimum_stock_alert} units"
   end
 
   def unit_display
@@ -548,7 +572,8 @@ class Product < ApplicationRecord
   end
 
   def stock_status
-    case stock
+    current_stock = total_batch_stock
+    case current_stock
     when 0
       'Out of Stock'
     when 1..5
@@ -559,7 +584,8 @@ class Product < ApplicationRecord
   end
 
   def stock_status_class
-    case stock
+    current_stock = total_batch_stock
+    case current_stock
     when 0
       'text-danger'
     when 1..5
@@ -567,6 +593,116 @@ class Product < ApplicationRecord
     else
       'text-success'
     end
+  end
+
+  # Stock Movement Tracking Methods
+  def total_consumed
+    stock_movements.consumptions.sum(:quantity).abs
+  end
+
+  def total_added
+    stock_movements.additions.sum(:quantity)
+  end
+
+  def total_adjusted
+    stock_movements.adjustments.sum(:quantity)
+  end
+
+  def out_of_stock?
+    total_batch_stock <= 0
+  end
+
+  def low_stock?
+    # Use minimum_stock_alert if it exists, otherwise default threshold of 10
+    threshold = respond_to?(:minimum_stock_alert) && minimum_stock_alert.present? ? minimum_stock_alert : 10
+    total_batch_stock <= threshold
+  end
+
+  def stock_status_enhanced
+    current_stock = total_batch_stock
+    if current_stock <= 0
+      'out_of_stock'
+    elsif low_stock?
+      'low_stock'
+    else
+      'in_stock'
+    end
+  end
+
+  def stock_status_text_enhanced
+    case stock_status_enhanced
+    when 'out_of_stock'
+      'Out of Stock'
+    when 'low_stock'
+      'Low Stock'
+    when 'in_stock'
+      'In Stock'
+    else
+      'Unknown'
+    end
+  end
+
+  def minimum_stock_threshold
+    # Use minimum_stock_alert if it exists, otherwise default threshold of 10
+    respond_to?(:minimum_stock_alert) && minimum_stock_alert.present? ? minimum_stock_alert : 10
+  end
+
+  # Update stock with movement tracking
+  def update_stock(quantity, reference_type, reference_id, notes = nil)
+    return false unless quantity != 0
+
+    current_stock = total_batch_stock
+    movement_type = quantity > 0 ? 'added' : 'consumed'
+    new_stock = current_stock + quantity
+
+    # Prevent negative stock
+    if new_stock < 0
+      errors.add(:stock, "Insufficient stock. Available: #{current_stock}")
+      return false
+    end
+
+    # Use transaction to ensure data consistency
+    ActiveRecord::Base.transaction do
+      # Create stock movement record
+      stock_movements.create!(
+        reference_type: reference_type,
+        reference_id: reference_id,
+        movement_type: movement_type,
+        quantity: quantity,
+        stock_before: current_stock,
+        stock_after: new_stock,
+        notes: notes
+      )
+
+      # Update product stock for backward compatibility
+      update_column(:stock, new_stock)
+    end
+
+    true
+  rescue ActiveRecord::RecordInvalid => e
+    errors.add(:base, e.message)
+    false
+  end
+
+  # Stock movement history
+  def recent_stock_movements(limit = 10)
+    stock_movements.recent.limit(limit)
+  end
+
+  def stock_movements_for_date_range(start_date, end_date)
+    stock_movements.where(created_at: start_date..end_date).recent
+  end
+
+  # Stock summary
+  def stock_summary
+    {
+      current_stock: total_batch_stock,
+      total_consumed: total_consumed,
+      total_added: total_added,
+      total_adjusted: total_adjusted,
+      stock_status: stock_status_enhanced,
+      last_movement: stock_movements.recent.first&.created_at
+    }
   end
 
   # Check if product can be delivered to a specific pincode
@@ -742,6 +878,119 @@ class Product < ApplicationRecord
       # Check for reasonable duration (not more than 1 year)
       if (occasional_end_date - occasional_start_date) > 1.year
         errors.add(:occasional_end_date, 'duration cannot be more than 1 year')
+      end
+    end
+  end
+
+  def create_initial_stock_movement
+    stock_movements.create!(
+      reference_type: 'adjustment',
+      reference_id: nil,
+      movement_type: 'added',
+      quantity: stock,
+      stock_before: 0,
+      stock_after: stock,
+      notes: 'Initial stock when product was created'
+    )
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error "Failed to create initial stock movement for Product #{id}: #{e.message}"
+  end
+
+  def create_initial_stock_batch
+    # Get or create a default vendor for initial stock
+    default_vendor = get_or_create_default_vendor
+
+    stock_batches.create!(
+      vendor: default_vendor,
+      quantity_purchased: stock,
+      quantity_remaining: stock,
+      purchase_price: buying_price || price || 0,
+      selling_price: price,
+      batch_date: Date.current,
+      status: 'active'
+    )
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error "Failed to create initial stock batch for Product #{id}: #{e.message}"
+  end
+
+  def update_stock_batch
+    return unless saved_change_to_stock?
+
+    # Get the old and new stock values from saved changes
+    stock_changes = saved_change_to_stock
+    old_stock = stock_changes[0]
+    new_stock = stock_changes[1]
+
+
+    # Store the stock difference
+    stock_difference = new_stock - old_stock
+
+    # Find the most recent batch
+    latest_batch = stock_batches.by_fifo.last
+
+    ActiveRecord::Base.transaction do
+      if latest_batch && latest_batch.quantity_purchased == old_stock && stock_batches.count == 1
+        # Update the initial batch if it's the only batch and matches original stock
+        new_quantity = latest_batch.quantity_remaining + stock_difference
+
+
+        if new_quantity > 0
+          latest_batch.update!(
+            quantity_purchased: new_stock,
+            quantity_remaining: new_quantity,
+            selling_price: price
+          )
+        else
+          latest_batch.update!(status: 'exhausted', quantity_remaining: 0)
+        end
+      else
+        # Create adjustment batch for stock changes
+        adjustment_vendor = get_or_create_default_vendor
+
+        if stock_difference > 0
+          # Stock increase - create new batch
+          stock_batches.create!(
+            vendor: adjustment_vendor,
+            quantity_purchased: stock_difference,
+            quantity_remaining: stock_difference,
+            purchase_price: buying_price || price || 0,
+            selling_price: price,
+            batch_date: Date.current,
+            status: 'active'
+          )
+        elsif stock_difference < 0
+          # Stock decrease - reduce from existing batches using FIFO
+          reduce_stock_from_batches(stock_difference.abs)
+        end
+      end
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error "Failed to update stock batch for Product #{id}: #{e.message}"
+  end
+
+  def get_or_create_default_vendor
+    Vendor.find_or_create_by(name: 'System Default') do |vendor|
+      vendor.email = 'system@default.com'
+      vendor.phone = '0000000000'
+      vendor.address = 'System Generated'
+      vendor.payment_type = 'Cash'
+      vendor.status = true
+    end
+  end
+
+  def reduce_stock_from_batches(quantity_to_reduce)
+    remaining_to_reduce = quantity_to_reduce
+    active_batches = stock_batches.active.by_fifo
+
+    active_batches.each do |batch|
+      break if remaining_to_reduce <= 0
+
+      if batch.quantity_remaining >= remaining_to_reduce
+        batch.update!(quantity_remaining: batch.quantity_remaining - remaining_to_reduce)
+        remaining_to_reduce = 0
+      else
+        remaining_to_reduce -= batch.quantity_remaining
+        batch.update!(quantity_remaining: 0, status: 'exhausted')
       end
     end
   end

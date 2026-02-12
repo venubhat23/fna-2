@@ -1,0 +1,265 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1">
+      <i class="bi bi-arrow-left-right me-2 text-primary"></i>Stock Movements
+    </h3>
+    <p class="text-muted mb-0">Track all stock additions, consumptions, and adjustments</p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_stock_movements_summary_path, class: "btn btn-outline-primary" do %>
+      <i class="bi bi-graph-up me-1"></i>Stock Summary
+    <% end %>
+    <%= link_to admin_products_path, class: "btn btn-primary" do %>
+      <i class="bi bi-box-seam me-1"></i>Manage Products
+    <% end %>
+  </div>
+</div>
+
+<%# Filters %>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <%= form_tag admin_stock_movements_path, method: :get, local: true, class: "row g-3 align-items-end" do %>
+      <div class="col-md-3">
+        <label class="form-label small fw-medium">Search</label>
+        <%= text_field_tag :search, params[:search],
+            class: "form-control",
+            placeholder: "Product name, SKU, or notes..." %>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-medium">Product</label>
+        <%= select_tag :product_id,
+            options_for_select([['All Products', '']] + @products.map { |p| [p.name, p.id] }, params[:product_id]),
+            class: "form-select" %>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-medium">Movement Type</label>
+        <%= select_tag :movement_type,
+            options_for_select([['All Types', '']] + @movement_types.map { |t| [t.humanize, t] }, params[:movement_type]),
+            class: "form-select" %>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label small fw-medium">Reference Type</label>
+        <%= select_tag :reference_type,
+            options_for_select([['All References', '']] + @reference_types.map { |t| [t.humanize, t] }, params[:reference_type]),
+            class: "form-select" %>
+      </div>
+
+      <div class="col-md-1-5">
+        <label class="form-label small fw-medium">From Date</label>
+        <%= date_field_tag :date_from, params[:date_from], class: "form-control" %>
+      </div>
+
+      <div class="col-md-1-5">
+        <label class="form-label small fw-medium">To Date</label>
+        <%= date_field_tag :date_to, params[:date_to], class: "form-control" %>
+      </div>
+
+      <div class="col-auto">
+        <%= submit_tag "Filter", class: "btn btn-primary" %>
+        <%= link_to "Clear", admin_stock_movements_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%# Summary Cards %>
+<% if @selected_product %>
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <% if @selected_product.images.attached? && @selected_product.images.any? %>
+              <%= image_tag @selected_product.images.first, class: "rounded", style: "width: 60px; height: 60px; object-fit: cover;" %>
+            <% else %>
+              <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                <i class="bi bi-box-seam text-muted"></i>
+              </div>
+            <% end %>
+          </div>
+          <div class="flex-grow-1">
+            <h5 class="mb-1"><%= @selected_product.name %></h5>
+            <div class="d-flex gap-3 small text-muted">
+              <span><i class="bi bi-tag me-1"></i>SKU: <%= @selected_product.sku %></span>
+              <span><i class="bi bi-folder me-1"></i><%= @selected_product.category&.name || 'No Category' %></span>
+            </div>
+          </div>
+          <div class="text-end">
+            <div class="row g-2">
+              <div class="col-auto">
+                <div class="text-center">
+                  <div class="h4 text-primary mb-0"><%= @selected_product.total_batch_stock.to_i %></div>
+                  <small class="text-muted">Current Stock</small>
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="text-center">
+                  <div class="h4 text-success mb-0">+<%= @selected_product.total_added.to_i %></div>
+                  <small class="text-muted">Total Added</small>
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="text-center">
+                  <div class="h4 text-danger mb-0"><%= @selected_product.total_consumed.to_i %></div>
+                  <small class="text-muted">Total Consumed</small>
+                </div>
+              </div>
+              <div class="col-auto">
+                <span class="badge <%= @selected_product.stock_status_class %> fs-6">
+                  <%= @selected_product.stock_status_text_enhanced %>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>
+
+<%# Stock Movements Table %>
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <% if @stock_movements.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 15%;">Date & Time</th>
+              <th style="width: 20%;">Product</th>
+              <th style="width: 12%;">Movement</th>
+              <th style="width: 10%;">Quantity</th>
+              <th style="width: 10%;">Before</th>
+              <th style="width: 10%;">After</th>
+              <th style="width: 15%;">Reference</th>
+              <th style="width: 8%;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @stock_movements.each do |movement| %>
+              <tr>
+                <td>
+                  <div class="small">
+                    <div class="fw-medium"><%= movement.created_at.strftime('%d %b %Y') %></div>
+                    <div class="text-muted"><%= movement.created_at.strftime('%I:%M %p') %></div>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="me-2">
+                      <% if movement.product.images.attached? && movement.product.images.any? %>
+                        <%= image_tag movement.product.images.first, class: "rounded", style: "width: 35px; height: 35px; object-fit: cover;" %>
+                      <% else %>
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                          <i class="bi bi-box-seam text-muted small"></i>
+                        </div>
+                      <% end %>
+                    </div>
+                    <div>
+                      <div class="fw-medium small"><%= movement.product.name %></div>
+                      <div class="text-muted small">SKU: <%= movement.product.sku %></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge <%= movement.movement_type_badge_class %>">
+                    <i class="<%= movement.movement_type_icon %> me-1"></i>
+                    <%= movement.movement_type.humanize %>
+                  </span>
+                </td>
+                <td>
+                  <span class="fw-medium <%= movement.quantity > 0 ? 'text-success' : 'text-danger' %>">
+                    <%= movement.formatted_quantity %>
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary-subtle text-secondary">
+                    <%= movement.stock_before.to_i %>
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">
+                    <%= movement.stock_after.to_i %>
+                  </span>
+                </td>
+                <td>
+                  <div class="small">
+                    <div class="fw-medium"><%= movement.reference_description %></div>
+                    <div class="text-muted">
+                      <%= movement.reference_type.humanize %>
+                      <% if movement.reference_id %>
+                        #<%= movement.reference_id %>
+                      <% end %>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_stock_movement_path(movement),
+                        class: "btn btn-sm btn-outline-primary",
+                        title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%# Pagination %>
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+          Showing <%= @stock_movements.offset_value + 1 %>-<%= [@stock_movements.offset_value + @stock_movements.limit_value, @stock_movements.total_count].min %>
+          of <%= @stock_movements.total_count %> movements
+        </div>
+        <%= paginate @stock_movements, theme: 'twitter-bootstrap-5' if @stock_movements.respond_to?(:current_page) %>
+      </div>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="bi bi-arrow-left-right fs-1 text-muted mb-3"></i>
+        <h5 class="text-muted">No Stock Movements Found</h5>
+        <p class="text-muted">
+          <% if params.any? { |k, v| k != 'action' && k != 'controller' && v.present? } %>
+            No movements match your current filters. Try adjusting the search criteria.
+          <% else %>
+            Stock movements will appear here when products are purchased or booked.
+          <% end %>
+        </p>
+        <div class="mt-3">
+          <% if params.any? { |k, v| k != 'action' && k != 'controller' && v.present? } %>
+            <%= link_to admin_stock_movements_path, class: "btn btn-primary" do %>
+              <i class="bi bi-arrow-clockwise me-1"></i>Clear Filters
+            <% end %>
+          <% else %>
+            <%= link_to new_admin_booking_path, class: "btn btn-primary me-2" do %>
+              <i class="bi bi-plus-circle me-1"></i>Create Booking
+            <% end %>
+            <%= link_to admin_products_path, class: "btn btn-outline-primary" do %>
+              <i class="bi bi-box-seam me-1"></i>Manage Products
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.col-md-1-5 {
+  flex: 0 0 auto;
+  width: 12.5%;
+}
+
+@media (max-width: 768px) {
+  .col-md-1-5 {
+    width: 100%;
+  }
+}
+</style>

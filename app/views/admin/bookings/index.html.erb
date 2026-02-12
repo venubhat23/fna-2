@@ -177,7 +177,7 @@
               <th class="border-0 fw-semibold">Store</th>
               <th class="border-0 fw-semibold">Items & Amount</th>
               <th class="border-0 fw-semibold">Payment</th>
-              <th class="border-0 fw-semibold">Current Stage</th>
+              <th class="border-0 fw-semibold text-dark">Current Stage</th>
               <th class="border-0 fw-semibold">Progress</th>
               <th class="border-0 fw-semibold">Actions</th>
             </tr>
@@ -246,9 +246,10 @@
                 </td>
                 <td class="align-middle">
                   <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-<%= booking.status_color %> px-3 py-2">
+                    <span class="badge bg-<%= booking.status_color %> px-3 py-2" title="<%= booking.status&.humanize || 'Unknown' %>">
                       <i class="bi <%= booking.status_icon %> me-1"></i>
-                      <%= booking.status&.humanize || 'Unknown' %>
+                      <% status_text = booking.status&.humanize || 'Unknown' %>
+                      <%= status_text.length > 15 ? status_text[0..14] + '...' : status_text %>
                     </span>
 
                     <% if booking.next_possible_statuses.any? %>
@@ -380,22 +381,23 @@
                           </li>
                         <% end %>
 
-                        <!-- Order Conversion -->
-                        <% if booking.order.present? %>
-                          <li>
-                            <%= link_to admin_order_path(booking.order), class: "dropdown-item" do %>
-                              <i class="bi bi-box me-2 text-info"></i>
-                              View Order
-                            <% end %>
-                          </li>
-                        <% elsif booking.payment_status_paid? %>
-                          <li>
-                            <%= link_to convert_to_order_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
-                              <i class="bi bi-arrow-right me-2 text-warning"></i>
-                              Convert to Order
-                            <% end %>
-                          </li>
-                        <% end %>
+                        <%# Order Conversion - Disabled until order association is properly set up %>
+                        <%# TODO: Re-enable when booking_id column is added to orders table and association is uncommented %>
+                        <%# <% if booking.order.present? %>
+                        <%#   <li> %>
+                        <%#     <%= link_to admin_order_path(booking.order), class: "dropdown-item" do %>
+                        <%#       <i class="bi bi-box me-2 text-info"></i> %>
+                        <%#       View Order %>
+                        <%#     <% end %>
+                        <%#   </li> %>
+                        <%# <% elsif booking.payment_status_paid? %>
+                        <%#   <li> %>
+                        <%#     <%= link_to convert_to_order_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
+                        <%#       <i class="bi bi-arrow-right me-2 text-warning"></i> %>
+                        <%#       Convert to Order %>
+                        <%#     <% end %>
+                        <%#   </li> %>
+                        <%# <% end %>
 
                         <li><hr class="dropdown-divider"></li>
                         <li>
@@ -1234,6 +1236,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Custom CSS for Booking Stage Progress -->
 <style>
+/* Ensure table headers are always visible */
+.table-light th {
+  color: #212529 !important;
+  background-color: #f8f9fa !important;
+}
+
+/* Ensure badge text is always visible */
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+  color: #fff !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+  color: #fff !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #212529 !important;
+}
+
+/* Add subtle badge styles */
+.badge.bg-info-subtle {
+  background-color: rgba(13, 202, 240, 0.1) !important;
+  color: #0dcaf0 !important;
+  border: 1px solid rgba(13, 202, 240, 0.3);
+}
+
 .progress-container {
   min-width: 150px;
 }

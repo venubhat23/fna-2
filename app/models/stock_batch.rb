@@ -1,7 +1,7 @@
 class StockBatch < ApplicationRecord
   belongs_to :product
   belongs_to :vendor
-  belongs_to :vendor_purchase
+  belongs_to :vendor_purchase, optional: true
   has_many :sale_items, dependent: :restrict_with_error
 
   validates :quantity_purchased, presence: true, numericality: { greater_than: 0 }

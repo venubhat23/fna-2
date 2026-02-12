@@ -372,7 +372,8 @@ html, body {
   color: #5a6fd8 !important;
 }
 
-.alert {
+.simple-login-wrapper .alert,
+.auth-wrapper .alert {
   border-radius: 12px;
   border: none;
   padding: 12px 16px;
@@ -380,13 +381,15 @@ html, body {
   font-size: 14px;
 }
 
-.alert-success {
+.simple-login-wrapper .alert-success,
+.auth-wrapper .alert-success {
   background: rgba(67, 233, 123, 0.1);
   color: #047857;
   border-left: 4px solid #10b981;
 }
 
-.alert-danger {
+.simple-login-wrapper .alert-danger,
+.auth-wrapper .alert-danger {
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
   border-left: 4px solid #ef4444;

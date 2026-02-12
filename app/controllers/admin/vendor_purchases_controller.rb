@@ -36,6 +36,8 @@ class Admin::VendorPurchasesController < ApplicationController
       redirect_to admin_vendor_purchase_path(@vendor_purchase),
                   notice: 'Purchase was successfully created and stock batches have been generated.'
     else
+      Rails.logger.error "VendorPurchase creation failed: #{@vendor_purchase.errors.full_messages.join(', ')}"
+      flash.now[:alert] = "Error creating purchase: #{@vendor_purchase.errors.full_messages.join(', ')}"
       render :new, status: :unprocessable_entity
     end
   end
@@ -105,7 +107,7 @@ class Admin::VendorPurchasesController < ApplicationController
   end
 
   def vendor_purchase_params
-    params.require(:vendor_purchase).permit(:vendor_id, :purchase_date, :notes, :status,
+    params.require(:vendor_purchase).permit(:vendor_id, :purchase_date, :notes, :status, :paid_amount,
       vendor_purchase_items_attributes: [
         :id, :product_id, :quantity, :purchase_price, :selling_price, :_destroy
       ]

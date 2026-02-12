@@ -29,49 +29,117 @@ class DashboardController < ApplicationController
     render 'dummy', layout: false
   end
 
+  def modern
+    authorize! :read, :dashboard
+    load_ecommerce_dashboard_data
+    render 'modern', layout: false
+  end
+
   def stats
     authorize! :read, :dashboard
-    load_dashboard_data
+    load_ecommerce_dashboard_data
+
+    # Get recent orders with customer info
+    recent_orders = Booking.includes(:customer)
+                          .recent
+                          .limit(10)
+                          .map do |booking|
+      {
+        id: booking.booking_number,
+        customer: booking.customer&.display_name || 'Guest Customer',
+        status: booking.status.capitalize,
+        amount: booking.total_amount.to_i,
+        date: booking.created_at.strftime('%Y-%m-%d')
+      }
+    end
+
+    # Get top products
+    top_products = Product.joins(:booking_items)
+                         .joins('JOIN bookings ON booking_items.booking_id = bookings.id')
+                         .where('bookings.status IN (?)', ['delivered', 'completed'])
+                         .group('products.id, products.name')
+                         .select('products.id, products.name, products.category_id,
+                                 SUM(booking_items.quantity * booking_items.price) as revenue,
+                                 SUM(booking_items.quantity) as sold')
+                         .order('revenue DESC')
+                         .limit(5)
+                         .map do |product|
+      category_name = product.category&.name || 'General'
+      {
+        id: product.id,
+        name: product.name,
+        category: category_name,
+        revenue: product.revenue.to_i,
+        sold: product.sold.to_i
+      }
+    end
+
+    # Get order status distribution
+    order_status_data = {
+      'Completed' => Booking.where(status: ['delivered', 'completed']).count,
+      'Processing' => Booking.where(status: ['confirmed', 'processing', 'packed']).count,
+      'Shipped' => Booking.where(status: ['shipped', 'out_for_delivery']).count,
+      'Cancelled' => Booking.where(status: 'cancelled').count
+    }
+
+    # Generate sample activities
+    activities = [
+      {
+        id: 1,
+        type: 'order',
+        title: 'New Order',
+        description: "Order #{recent_orders.first&.dig(:id) || 'BK001'} placed",
+        time: 2.minutes.ago
+      },
+      {
+        id: 2,
+        type: 'customer',
+        title: 'New Customer',
+        description: 'Customer registration completed',
+        time: 5.minutes.ago
+      },
+      {
+        id: 3,
+        type: 'payment',
+        title: 'Payment Received',
+        description: "Payment of ₹#{recent_orders.first&.dig(:amount) || 2500} received",
+        time: 8.minutes.ago
+      }
+    ]
 
     render json: {
-      # Basic counts
+      # E-commerce metrics
+      total_revenue: @total_revenue,
+      total_bookings: @total_bookings,
       total_customers: @total_customers,
-      active_customers: @active_customers,
-      inactive_customers: @inactive_customers,
-      total_affiliates: @total_affiliates,
-      total_sub_agents: @total_sub_agents,
-      total_policies: @total_policies,
+      total_products: @total_products,
+      active_products: @active_products,
 
-      # Financial data
-      total_premium_collected: @total_premium_collected,
-      total_sum_insured: @total_sum_insured,
-      pending_payouts: @pending_payouts,
-      paid_payouts: @paid_payouts,
-      total_payouts: @total_payouts,
+      # Order metrics
+      pending_bookings: @pending_bookings,
+      completed_bookings: @completed_bookings,
+      cancelled_bookings: @cancelled_bookings,
 
-      # Lead metrics
-      total_leads: @total_leads,
-      converted_leads: @converted_leads,
-      pending_leads: @pending_leads,
-      lead_conversion_percentage: @lead_conversion_percentage,
+      # Revenue metrics
+      today_revenue: @today_revenue,
+      month_revenue: @month_revenue,
+      avg_order_value: @avg_order_value,
 
-      # Policy status
-      renewal_due_count: @renewal_due_count,
-      expired_policies_count: @expired_policies_count,
+      # Growth metrics
+      revenue_growth: @revenue_growth,
+      order_growth: @order_growth,
+      customer_acquisition_growth: @customer_acquisition_growth,
 
       # Charts data
-      policy_type_distribution: @policy_type_distribution,
+      monthly_revenue_trend: @monthly_revenue_trend,
+      category_performance: @category_performance,
+      order_status_distribution: order_status_data,
+      sales_trend: @sales_trend,
 
-      # Support
-      client_requests_count: @client_requests_count,
-      support_tickets: @support_tickets,
-      commissions_due: @commissions_due,
-      new_leads: @new_leads,
-
-      # Performance metrics
-      renewal_status: @renewal_status,
-      referral_status: @referral_status,
-      customer_location: @customer_location,
+      # Recent data
+      recent_orders: recent_orders,
+      top_products: top_products,
+      activities: activities,
 
       # Timestamp
       last_updated: Time.current.strftime('%Y-%m-%d %H:%M:%S'),

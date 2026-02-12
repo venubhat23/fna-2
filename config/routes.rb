@@ -32,6 +32,7 @@ Rails.application.routes.draw do
   get 'dashboard/beautiful', to: 'dashboard#beautiful'
   get 'dashboard/ultra', to: 'dashboard#ultra'
   get 'dashboard/ecommerce', to: 'dashboard#ecommerce'
+  get 'dashboard/modern', to: 'dashboard#modern'
   get 'dashboard/dummy', to: 'dashboard#dummy'
   get 'dashboard/stats', to: 'dashboard#stats'
 
@@ -482,6 +483,14 @@ Rails.application.routes.draw do
         post :bulk_action
         get :categories_for_select
         get :products_chart
+      end
+    end
+
+    # Stock Movements Management
+    resources :stock_movements, only: [:index, :show] do
+      collection do
+        get :summary
+        get 'products/:product_id/movements', to: 'stock_movements#product_movements', as: :product_movements
       end
     end
 

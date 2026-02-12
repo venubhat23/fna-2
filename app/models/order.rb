@@ -1,5 +1,5 @@
 class Order < ApplicationRecord
-  belongs_to :booking, optional: true
+  # belongs_to :booking, optional: true  # Temporarily disabled until booking_id column is added
   belongs_to :customer, optional: true
   belongs_to :user, optional: true
   has_many :order_items, dependent: :destroy

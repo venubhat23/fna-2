@@ -18,6 +18,14 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  def after_sign_in_path_for(resource)
+    if resource.admin? || resource.user_type == 'admin'
+      admin_bookings_path
+    else
+      admin_bookings_path  # Redirect all users to bookings page for now
+    end
+  end
+
   def configure_permitted_parameters
     devise_parameter_sanitizer.permit(:sign_in, keys: [:login])
     devise_parameter_sanitizer.permit(:sign_up, keys: [:first_name, :last_name, :mobile, :user_type, :role, :status])

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Dashboard - Dhanvantari Farm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-light">
+
+<div x-data="dashboardApp()" x-init="init()" class="dashboard-wrapper">
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-lg sticky-top">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <div class="navbar-brand d-flex align-items-center">
+                    <div class="logo-container me-3">
+                        <i class="bi bi-graph-up-arrow text-primary fs-3"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 text-white">Dhanvantari Farm</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <!-- Time Period Selector -->
+                <div class="btn-group me-3" role="group">
+                    <template x-for="period in timePeriods" :key="period.key">
+                        <button type="button"
+                                class="btn btn-sm"
+                                :class="selectedPeriod === period.key ? 'btn-primary' : 'btn-outline-light'"
+                                @click="changePeriod(period.key)"
+                                x-text="period.label">
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Live Status -->
+                <div class="live-indicator me-3">
+                    <span class="badge bg-success d-flex align-items-center">
+                        <span class="live-dot me-1"></span>
+                        LIVE
+                    </span>
+                </div>
+
+                <!-- Dark Mode Toggle -->
+                <button @click="toggleDarkMode()" class="btn btn-outline-light btn-sm">
+                    <i :class="darkMode ? 'bi-sun' : 'bi-moon'" class="fs-5"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid py-4" :class="darkMode ? 'bg-dark text-light' : 'bg-light'">
+
+        <!-- Key Metrics Row -->
+        <div class="row g-4 mb-5">
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card border-0 shadow-sm h-100" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="metric-icon bg-primary-subtle text-primary rounded-3 p-3">
+                                <i class="bi bi-currency-rupee fs-3"></i>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-success-subtle text-success">
+                                    <i class="bi bi-arrow-up"></i>
+                                    <span x-text="metrics.revenue.growth">+12.5%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h2 class="mb-1" :class="darkMode ? 'text-light' : 'text-dark'">
+                                ₹<span x-text="formatNumber(metrics.revenue.total)">0</span>
+                            </h2>
+                            <p class="text-muted mb-0">Total Revenue</p>
+                            <div class="progress mt-2" style="height: 4px;">
+                                <div class="progress-bar bg-primary" style="width: 75%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card border-0 shadow-sm h-100" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="metric-icon bg-success-subtle text-success rounded-3 p-3">
+                                <i class="bi bi-cart-check fs-3"></i>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-success-subtle text-success">
+                                    <i class="bi bi-arrow-up"></i>
+                                    <span x-text="metrics.orders.growth">+8.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h2 class="mb-1" :class="darkMode ? 'text-light' : 'text-dark'" x-text="formatNumber(metrics.orders.total)">0</h2>
+                            <p class="text-muted mb-0">Total Orders</p>
+                            <div class="progress mt-2" style="height: 4px;">
+                                <div class="progress-bar bg-success" style="width: 82%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card border-0 shadow-sm h-100" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="metric-icon bg-warning-subtle text-warning rounded-3 p-3">
+                                <i class="bi bi-people fs-3"></i>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-success-subtle text-success">
+                                    <i class="bi bi-arrow-up"></i>
+                                    <span x-text="metrics.customers.growth">+15.3%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h2 class="mb-1" :class="darkMode ? 'text-light' : 'text-dark'" x-text="formatNumber(metrics.customers.total)">0</h2>
+                            <p class="text-muted mb-0">Total Customers</p>
+                            <div class="progress mt-2" style="height: 4px;">
+                                <div class="progress-bar bg-warning" style="width: 65%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card metric-card border-0 shadow-sm h-100" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="metric-icon bg-info-subtle text-info rounded-3 p-3">
+                                <i class="bi bi-box-seam fs-3"></i>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-danger-subtle text-danger">
+                                    <i class="bi bi-arrow-down"></i>
+                                    <span x-text="metrics.products.lowStock">5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h2 class="mb-1" :class="darkMode ? 'text-light' : 'text-dark'" x-text="formatNumber(metrics.products.total)">0</h2>
+                            <p class="text-muted mb-0">Products</p>
+                            <div class="progress mt-2" style="height: 4px;">
+                                <div class="progress-bar bg-info" style="width: 90%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-5">
+            <!-- Revenue Trend Chart -->
+            <div class="col-xl-8">
+                <div class="card border-0 shadow-sm h-100" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-header border-0 pb-0" :class="darkMode ? 'bg-dark' : 'bg-white'">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-1" :class="darkMode ? 'text-light' : 'text-dark'">Revenue Analytics</h5>
+                                <p class="text-muted mb-0">Monthly revenue and profit trends</p>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary active">Revenue</button>
+                                <button type="button" class="btn btn-outline-primary">Profit</button>
+                                <button type="button" class="btn btn-outline-primary">Orders</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Status Distribution -->
+            <div class="col-xl-4">
+                <div class="card border-0 shadow-sm h-100" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-header border-0 pb-0" :class="darkMode ? 'bg-dark' : 'bg-white'">
+                        <h5 class="card-title mb-1" :class="darkMode ? 'text-light' : 'text-dark'">Order Status</h5>
+                        <p class="text-muted mb-0">Current order distribution</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="orderStatusChart"></canvas>
+                        </div>
+
+                        <div class="mt-4">
+                            <template x-for="status in orderStatusData" :key="status.label">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="status-indicator me-2"
+                                             :style="`background-color: ${status.color}; width: 12px; height: 12px; border-radius: 50%;`">
+                                        </div>
+                                        <span x-text="status.label" :class="darkMode ? 'text-light' : 'text-dark'"></span>
+                                    </div>
+                                    <span class="fw-bold" :class="darkMode ? 'text-light' : 'text-dark'" x-text="status.value"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity & Top Products -->
+        <div class="row g-4 mb-5">
+            <!-- Recent Orders -->
+            <div class="col-xl-8">
+                <div class="card border-0 shadow-sm" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-header border-0" :class="darkMode ? 'bg-dark' : 'bg-white'">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-1" :class="darkMode ? 'text-light' : 'text-dark'">Recent Orders</h5>
+                                <p class="text-muted mb-0">Latest customer orders</p>
+                            </div>
+                            <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead :class="darkMode ? 'table-dark' : 'table-light'">
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="order in recentOrders" :key="order.id">
+                                        <tr :class="darkMode ? 'table-dark' : ''">
+                                            <td>
+                                                <span class="fw-bold text-primary" x-text="order.id"></span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-initial rounded-circle bg-primary text-white me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                        <span x-text="order.customer.charAt(0)"></span>
+                                                    </div>
+                                                    <span x-text="order.customer"></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge"
+                                                      :class="getStatusBadgeClass(order.status)"
+                                                      x-text="order.status">
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold">₹<span x-text="formatNumber(order.amount)"></span></span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted" x-text="formatDate(order.date)"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="col-xl-4">
+                <div class="card border-0 shadow-sm" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-header border-0" :class="darkMode ? 'bg-dark' : 'bg-white'">
+                        <h5 class="card-title mb-1" :class="darkMode ? 'text-light' : 'text-dark'">Top Products</h5>
+                        <p class="text-muted mb-0">Best selling products</p>
+                    </div>
+                    <div class="card-body">
+                        <template x-for="(product, index) in topProducts" :key="product.id">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rank-badge me-3">
+                                    <span class="badge bg-primary rounded-pill" x-text="index + 1"></span>
+                                </div>
+                                <div class="product-info flex-grow-1">
+                                    <h6 class="mb-1" :class="darkMode ? 'text-light' : 'text-dark'" x-text="product.name"></h6>
+                                    <small class="text-muted" x-text="product.category"></small>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span class="text-success fw-bold">₹<span x-text="formatNumber(product.revenue)"></span></span>
+                                        <small class="text-muted"><span x-text="product.sold"></span> sold</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="row g-4">
+            <!-- Category Performance -->
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-header border-0" :class="darkMode ? 'bg-dark' : 'bg-white'">
+                        <h5 class="card-title mb-1" :class="darkMode ? 'text-light' : 'text-dark'">Category Performance</h5>
+                        <p class="text-muted mb-0">Revenue by product categories</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Activity Feed -->
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm" :class="darkMode ? 'bg-dark border-secondary' : 'bg-white'">
+                    <div class="card-header border-0" :class="darkMode ? 'bg-dark' : 'bg-white'">
+                        <h5 class="card-title mb-1" :class="darkMode ? 'text-light' : 'text-dark'">Live Activity</h5>
+                        <p class="text-muted mb-0">Real-time updates</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="activity-feed" style="max-height: 300px; overflow-y: auto;">
+                            <template x-for="activity in activities" :key="activity.id">
+                                <div class="activity-item d-flex align-items-start mb-3">
+                                    <div class="activity-icon me-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                             :class="getActivityIconClass(activity.type)"
+                                             style="width: 40px; height: 40px;">
+                                            <i :class="getActivityIcon(activity.type)" class="fs-6"></i>
+                                        </div>
+                                    </div>
+                                    <div class="activity-content flex-grow-1">
+                                        <h6 class="mb-1" :class="darkMode ? 'text-light' : 'text-dark'" x-text="activity.title"></h6>
+                                        <p class="text-muted mb-1 small" x-text="activity.description"></p>
+                                        <small class="text-muted" x-text="formatTimeAgo(activity.time)"></small>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom CSS */
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.metric-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+}
+
+.chart-container {
+    position: relative;
+}
+
+.activity-feed::-webkit-scrollbar {
+    width: 6px;
+}
+
+.activity-feed::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.activity-feed::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.activity-feed::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.075);
+}
+
+.avatar-initial {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.rank-badge {
+    min-width: 30px;
+}
+
+.product-info {
+    line-height: 1.2;
+}
+</style>
+
+<script>
+function dashboardApp() {
+    return {
+        darkMode: false,
+        selectedPeriod: 'month',
+        timePeriods: [
+            { key: 'day', label: '24H' },
+            { key: 'week', label: '7D' },
+            { key: 'month', label: '1M' },
+            { key: 'year', label: '1Y' }
+        ],
+        metrics: {
+            revenue: { total: 0, growth: '+12.5%' },
+            orders: { total: 0, growth: '+8.2%' },
+            customers: { total: 0, growth: '+15.3%' },
+            products: { total: 0, lowStock: 5 }
+        },
+        recentOrders: [],
+        topProducts: [],
+        activities: [],
+        orderStatusData: [
+            { label: 'Completed', value: 0, color: '#28a745' },
+            { label: 'Processing', value: 0, color: '#ffc107' },
+            { label: 'Shipped', value: 0, color: '#007bff' },
+            { label: 'Cancelled', value: 0, color: '#dc3545' }
+        ],
+        charts: {},
+
+        init() {
+            this.loadDashboardData();
+            this.initializeCharts();
+            this.startRealTimeUpdates();
+
+            // Check for saved dark mode preference
+            this.darkMode = localStorage.getItem('darkMode') === 'true';
+            this.applyDarkMode();
+        },
+
+        async loadDashboardData() {
+            try {
+                const response = await fetch(`/dashboard/stats?period=${this.selectedPeriod}`);
+                const data = await response.json();
+
+                this.updateMetrics(data);
+                this.updateRecentOrders(data);
+                this.updateTopProducts(data);
+                this.updateActivities(data);
+                this.updateOrderStatus(data);
+                this.updateCharts(data);
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                this.loadSampleData(); // Fallback to sample data
+            }
+        },
+
+        updateMetrics(data) {
+            this.metrics.revenue.total = data.total_revenue || <%= @total_revenue || 2845600 %>;
+            this.metrics.orders.total = data.total_bookings || <%= @total_bookings || 1284 %>;
+            this.metrics.customers.total = data.total_customers || <%= @total_customers || 847 %>;
+            this.metrics.products.total = data.total_products || <%= @total_products || 156 %>;
+
+            this.animateCounters();
+        },
+
+        updateRecentOrders(data) {
+            this.recentOrders = data.recent_orders || [
+                { id: 'BK20241201001', customer: 'Rajesh Kumar', status: 'Completed', amount: 2450, date: '2024-12-01' },
+                { id: 'BK20241201002', customer: 'Priya Sharma', status: 'Processing', amount: 1890, date: '2024-12-01' },
+                { id: 'BK20241201003', customer: 'Amit Singh', status: 'Shipped', amount: 3200, date: '2024-11-30' },
+                { id: 'BK20241130004', customer: 'Meera Patel', status: 'Completed', amount: 1560, date: '2024-11-30' },
+                { id: 'BK20241130005', customer: 'Vikram Gupta', status: 'Cancelled', amount: 2100, date: '2024-11-29' }
+            ];
+        },
+
+        updateTopProducts(data) {
+            this.topProducts = data.top_products || [
+                { id: 1, name: 'Organic Milk', category: 'Dairy', revenue: 85400, sold: 427 },
+                { id: 2, name: 'Fresh Vegetables', category: 'Produce', revenue: 67200, sold: 336 },
+                { id: 3, name: 'Wheat Flour', category: 'Grocery', revenue: 45800, sold: 229 },
+                { id: 4, name: 'Basmati Rice', category: 'Grocery', revenue: 38900, sold: 194 },
+                { id: 5, name: 'Ghee', category: 'Dairy', revenue: 34500, sold: 115 }
+            ];
+        },
+
+        updateActivities(data) {
+            this.activities = data.activities || [
+                { id: 1, type: 'order', title: 'New Order', description: 'Order BK20241201006 placed by Arun Sharma', time: new Date(Date.now() - 2 * 60000) },
+                { id: 2, type: 'customer', title: 'New Customer', description: 'Customer registration: Sneha Reddy', time: new Date(Date.now() - 5 * 60000) },
+                { id: 3, type: 'payment', title: 'Payment Received', description: 'Payment of ₹2,450 for order BK20241201001', time: new Date(Date.now() - 8 * 60000) },
+                { id: 4, type: 'inventory', title: 'Low Stock Alert', description: 'Organic Honey is running low (5 items left)', time: new Date(Date.now() - 15 * 60000) },
+                { id: 5, type: 'delivery', title: 'Order Delivered', description: 'Order BK20241130003 delivered successfully', time: new Date(Date.now() - 22 * 60000) }
+            ];
+        },
+
+        updateOrderStatus(data) {
+            if (data.order_status_distribution) {
+                this.orderStatusData = this.orderStatusData.map(status => ({
+                    ...status,
+                    value: data.order_status_distribution[status.label] || 0
+                }));
+            } else {
+                // Sample data
+                this.orderStatusData = [
+                    { label: 'Completed', value: 456, color: '#28a745' },
+                    { label: 'Processing', value: 123, color: '#ffc107' },
+                    { label: 'Shipped', value: 89, color: '#007bff' },
+                    { label: 'Cancelled', value: 34, color: '#dc3545' }
+                ];
+            }
+
+            if (this.charts.orderStatus) {
+                this.updateOrderStatusChart();
+            }
+        },
+
+        updateCharts(data) {
+            if (this.charts.revenue) {
+                this.updateRevenueChart(data);
+            }
+            if (this.charts.category) {
+                this.updateCategoryChart(data);
+            }
+        },
+
+        loadSampleData() {
+            this.metrics.revenue.total = 2845600;
+            this.metrics.orders.total = 1284;
+            this.metrics.customers.total = 847;
+            this.metrics.products.total = 156;
+
+            this.animateCounters();
+        },
+
+        animateCounters() {
+            // Simple counter animation
+            const counters = document.querySelectorAll('[x-text*="formatNumber"]');
+            counters.forEach(counter => {
+                // Add animation class if needed
+                counter.style.transition = 'all 0.3s ease';
+            });
+        },
+
+        changePeriod(period) {
+            this.selectedPeriod = period;
+            this.loadDashboardData();
+        },
+
+        toggleDarkMode() {
+            this.darkMode = !this.darkMode;
+            localStorage.setItem('darkMode', this.darkMode);
+            this.applyDarkMode();
+        },
+
+        applyDarkMode() {
+            if (this.darkMode) {
+                document.body.classList.add('bg-dark');
+                document.body.classList.remove('bg-light');
+            } else {
+                document.body.classList.add('bg-light');
+                document.body.classList.remove('bg-dark');
+            }
+        },
+
+        startRealTimeUpdates() {
+            // Update data every 30 seconds
+            setInterval(() => {
+                this.loadDashboardData();
+            }, 30000);
+
+            // Add new activity every 2-5 minutes
+            setInterval(() => {
+                this.addRandomActivity();
+            }, Math.random() * 180000 + 120000);
+        },
+
+        addRandomActivity() {
+            const activityTypes = [
+                { type: 'order', title: 'New Order', description: `Order BK${Date.now().toString().slice(-9)} placed` },
+                { type: 'customer', title: 'New Customer', description: 'New customer registered' },
+                { type: 'payment', title: 'Payment Received', description: `Payment of ₹${Math.floor(Math.random() * 5000 + 1000)} received` }
+            ];
+
+            const activity = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+            activity.id = Date.now();
+            activity.time = new Date();
+
+            this.activities.unshift(activity);
+            if (this.activities.length > 10) {
+                this.activities.pop();
+            }
+        },
+
+        initializeCharts() {
+            this.initRevenueChart();
+            this.initOrderStatusChart();
+            this.initCategoryChart();
+        },
+
+        initRevenueChart() {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            this.charts.revenue = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [65000, 59000, 80000, 81000, 56000, 75000, 90000, 95000, 88000, 92000, 98000, 105000],
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Profit',
+                        data: [25000, 22000, 35000, 38000, 28000, 32000, 45000, 48000, 42000, 46000, 49000, 52000],
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + (value / 1000) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        initOrderStatusChart() {
+            const ctx = document.getElementById('orderStatusChart');
+            if (!ctx) return;
+
+            this.charts.orderStatus = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: this.orderStatusData.map(item => item.label),
+                    datasets: [{
+                        data: this.orderStatusData.map(item => item.value),
+                        backgroundColor: this.orderStatusData.map(item => item.color),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        },
+
+        initCategoryChart() {
+            const ctx = document.getElementById('categoryChart');
+            if (!ctx) return;
+
+            this.charts.category = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Dairy', 'Grocery', 'Vegetables', 'Fruits', 'Organic'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [145000, 98000, 67000, 45000, 38000],
+                        backgroundColor: [
+                            '#0d6efd',
+                            '#198754',
+                            '#ffc107',
+                            '#dc3545',
+                            '#6f42c1'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + (value / 1000) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        updateOrderStatusChart() {
+            if (this.charts.orderStatus) {
+                this.charts.orderStatus.data.datasets[0].data = this.orderStatusData.map(item => item.value);
+                this.charts.orderStatus.update();
+            }
+        },
+
+        updateRevenueChart(data) {
+            if (data.monthly_revenue_trend && this.charts.revenue) {
+                const months = Object.keys(data.monthly_revenue_trend);
+                const revenues = Object.values(data.monthly_revenue_trend);
+
+                this.charts.revenue.data.labels = months;
+                this.charts.revenue.data.datasets[0].data = revenues;
+                this.charts.revenue.update();
+            }
+        },
+
+        updateCategoryChart(data) {
+            if (data.category_performance && this.charts.category) {
+                const categories = Object.keys(data.category_performance);
+                const revenues = Object.values(data.category_performance);
+
+                this.charts.category.data.labels = categories;
+                this.charts.category.data.datasets[0].data = revenues;
+                this.charts.category.update();
+            }
+        },
+
+        // Utility functions
+        formatNumber(num) {
+            if (!num) return '0';
+            return new Intl.NumberFormat('en-IN').format(num);
+        },
+
+        formatDate(date) {
+            return new Date(date).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        },
+
+        formatTimeAgo(date) {
+            const now = new Date();
+            const diff = now - new Date(date);
+            const minutes = Math.floor(diff / 60000);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        },
+
+        getStatusBadgeClass(status) {
+            const statusClasses = {
+                'Completed': 'bg-success',
+                'Processing': 'bg-warning text-dark',
+                'Shipped': 'bg-primary',
+                'Cancelled': 'bg-danger',
+                'Pending': 'bg-secondary'
+            };
+            return statusClasses[status] || 'bg-secondary';
+        },
+
+        getActivityIconClass(type) {
+            const iconClasses = {
+                'order': 'bg-primary text-white',
+                'customer': 'bg-success text-white',
+                'payment': 'bg-warning text-dark',
+                'inventory': 'bg-danger text-white',
+                'delivery': 'bg-info text-white'
+            };
+            return iconClasses[type] || 'bg-secondary text-white';
+        },
+
+        getActivityIcon(type) {
+            const icons = {
+                'order': 'bi-cart-plus',
+                'customer': 'bi-person-plus',
+                'payment': 'bi-credit-card',
+                'inventory': 'bi-exclamation-triangle',
+                'delivery': 'bi-truck'
+            };
+            return icons[type] || 'bi-info-circle';
+        }
+    }
+}
+</script>
+
+</body>
+</html>

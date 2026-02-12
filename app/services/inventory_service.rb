@@ -29,6 +29,8 @@ class InventoryService
 
   def reduce_stock(allocations)
     ActiveRecord::Base.transaction do
+      products_to_update = Set.new
+
       allocations.each do |allocation|
         batch = allocation[:batch]
         quantity = allocation[:quantity]
@@ -38,6 +40,12 @@ class InventoryService
         end
 
         batch.reduce_stock!(quantity)
+        products_to_update.add(batch.product)
+      end
+
+      # Update product stock for all affected products
+      products_to_update.each do |product|
+        product.update_column(:stock, product.total_batch_stock)
       end
     end
   rescue => e

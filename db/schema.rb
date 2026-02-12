@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_12_133027) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,24 +42,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
-  create_table "agency_brokers", force: :cascade do |t|
-    t.string "broker_name"
-    t.string "broker_code"
-    t.string "agency_code"
-    t.boolean "status"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "agency_codes", force: :cascade do |t|
-    t.string "insurance_type"
-    t.string "company_name"
-    t.string "agent_name"
-    t.string "code"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
   create_table "banners", force: :cascade do |t|
     t.string "title"
     t.text "description"
@@ -79,14 +61,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
 
   create_table "booking_invoices", force: :cascade do |t|
     t.bigint "booking_id", null: false
-    t.bigint "customer_id", null: false
+    t.bigint "customer_id"
     t.string "invoice_number"
     t.datetime "invoice_date"
     t.datetime "due_date"
-    t.decimal "subtotal"
-    t.decimal "tax_amount"
-    t.decimal "discount_amount"
-    t.decimal "total_amount"
+    t.decimal "subtotal", precision: 10, scale: 2
+    t.decimal "tax_amount", precision: 10, scale: 2
+    t.decimal "discount_amount", precision: 10, scale: 2
+    t.decimal "total_amount", precision: 10, scale: 2
     t.integer "payment_status"
     t.integer "status"
     t.text "notes"
@@ -156,7 +138,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
     t.decimal "change_amount"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "booking_items_count", default: 0, null: false
     t.bigint "booking_schedule_id"
     t.string "stage"
     t.string "courier_service"
@@ -195,15 +176,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
     t.index ["tracking_number"], name: "index_bookings_on_tracking_number"
   end
 
-  create_table "brokers", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "status", default: "active"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["name"], name: "index_brokers_on_name"
-    t.index ["status"], name: "index_brokers_on_status"
-  end
-
   create_table "categories", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -217,20 +189,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
   end
 
   create_table "client_requests", force: :cascade do |t|
-    t.string "ticket_number", null: false
-    t.string "name", null: false
-    t.string "email", null: false
-    t.string "phone_number", null: false
-    t.text "description", null: false
+    t.string "title"
+    t.text "description"
     t.string "status", default: "pending"
     t.string "priority", default: "medium"
-    t.datetime "submitted_at", null: false
-    t.text "admin_response"
-    t.datetime "resolved_at"
-    t.bigint "resolved_by_id"
+    t.bigint "customer_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "stage"
+    t.string "stage", default: "new"
     t.datetime "stage_updated_at"
     t.text "stage_history"
     t.integer "assignee_id"
@@ -238,73 +204,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
     t.datetime "estimated_resolution_time"
     t.datetime "actual_resolution_time"
     t.index ["assignee_id"], name: "index_client_requests_on_assignee_id"
+    t.index ["customer_id"], name: "index_client_requests_on_customer_id"
     t.index ["department"], name: "index_client_requests_on_department"
-    t.index ["email"], name: "index_client_requests_on_email"
     t.index ["estimated_resolution_time"], name: "index_client_requests_on_estimated_resolution_time"
-    t.index ["resolved_by_id"], name: "index_client_requests_on_resolved_by_id"
-    t.index ["status"], name: "index_client_requests_on_status"
-    t.index ["submitted_at"], name: "index_client_requests_on_submitted_at"
-    t.index ["ticket_number"], name: "index_client_requests_on_ticket_number", unique: true
-  end
-
-  create_table "commission_payouts", force: :cascade do |t|
-    t.string "policy_type"
-    t.integer "policy_id"
-    t.string "payout_to"
-    t.decimal "payout_amount"
-    t.date "payout_date"
-    t.string "status"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "transaction_id"
-    t.string "payment_mode"
-    t.string "reference_number"
-    t.decimal "commission_amount_received", precision: 10, scale: 2
-    t.decimal "distribution_percentage", precision: 5, scale: 2
-    t.text "notes"
-    t.string "processed_by"
-    t.datetime "processed_at"
-    t.index ["payout_date"], name: "index_commission_payouts_on_payout_date"
-    t.index ["payout_to", "status"], name: "index_commission_payouts_on_payout_to_and_status"
-    t.index ["policy_type", "policy_id"], name: "index_commission_payouts_on_policy_type_and_policy_id"
-  end
-
-  create_table "commission_receipts", force: :cascade do |t|
-    t.string "policy_type", null: false
-    t.integer "policy_id", null: false
-    t.decimal "total_commission_received", precision: 12, scale: 2, null: false
-    t.date "received_date", null: false
-    t.string "insurance_company_name"
-    t.string "insurance_company_reference"
-    t.decimal "company_commission_percentage", precision: 5, scale: 2
-    t.string "payment_mode"
-    t.string "transaction_id"
-    t.text "notes"
-    t.string "received_by"
-    t.boolean "auto_distributed", default: false
-    t.datetime "distributed_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["auto_distributed"], name: "index_commission_receipts_on_auto_distributed"
-    t.index ["policy_type", "policy_id"], name: "index_commission_receipts_on_policy_type_and_policy_id", unique: true
-    t.index ["received_date"], name: "index_commission_receipts_on_received_date"
-  end
-
-  create_table "corporate_members", force: :cascade do |t|
-    t.bigint "customer_id", null: false
-    t.string "company_name"
-    t.string "mobile"
-    t.string "email"
-    t.string "state"
-    t.string "city"
-    t.text "address"
-    t.decimal "annual_income"
-    t.string "pan_no"
-    t.string "gst_no"
-    t.text "additional_information"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["customer_id"], name: "index_corporate_members_on_customer_id"
+    t.index ["stage"], name: "index_client_requests_on_stage"
   end
 
   create_table "coupons", force: :cascade do |t|
@@ -327,47 +230,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
   end
 
   create_table "customers", force: :cascade do |t|
-    t.string "customer_type"
     t.string "first_name"
     t.string "last_name"
-    t.string "company_name"
     t.string "email"
     t.string "mobile"
-    t.string "address"
-    t.string "state"
-    t.string "city"
-    t.date "birth_date"
-    t.integer "age"
-    t.string "gender"
-    t.string "height"
-    t.string "weight"
-    t.string "education"
-    t.string "marital_status"
-    t.string "occupation"
-    t.string "job_name"
-    t.string "type_of_duty"
-    t.decimal "annual_income"
-    t.string "pan_number"
-    t.string "gst_number"
-    t.string "birth_place"
-    t.text "additional_info"
-    t.boolean "status"
-    t.string "added_by"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "nominee_name"
-    t.string "nominee_relation"
-    t.date "nominee_date_of_birth"
-    t.string "pincode"
-    t.string "sub_agent", default: "Self"
-    t.string "middle_name"
-    t.string "height_feet"
-    t.decimal "weight_kg", precision: 5, scale: 2
-    t.string "business_job"
-    t.string "business_name"
-    t.text "additional_information"
-    t.string "pan_no"
-    t.string "gst_no"
     t.decimal "longitude", precision: 10, scale: 8
     t.decimal "latitude", precision: 10, scale: 8
     t.string "whatsapp_number"
@@ -375,16 +243,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
     t.datetime "location_obtained_at"
     t.decimal "location_accuracy", precision: 8, scale: 2
     t.string "password_digest"
-    t.index ["created_at"], name: "index_customers_on_created_at"
-    t.index ["customer_type", "created_at"], name: "index_customers_on_customer_type_and_created_at"
-    t.index ["customer_type", "status"], name: "index_customers_on_customer_type_and_status"
-    t.index ["customer_type"], name: "index_customers_on_customer_type"
-    t.index ["email"], name: "index_customers_on_email"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
-    t.index ["mobile"], name: "index_customers_on_mobile"
-    t.index ["pan_number"], name: "index_customers_on_pan_number"
-    t.index ["status", "created_at"], name: "index_customers_on_status_and_created_at"
-    t.index ["status"], name: "index_customers_on_status"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
   end
 
@@ -431,41 +290,196 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_08_153931) do
     t.index ["rule_type"], name: "index_delivery_rules_on_rule_type"
   end
 
-  create_table "distributor_assignments", force: :cascade do |t|
-    t.bigint "distributor_id", null: false
-    t.bigint "sub_agent_id", null: false
-    t.datetime "assigned_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["distributor_id"], name: "index_distributor_assignments_on_distributor_id"
-    t.index ["sub_agent_id"], name: "index_distributor_assignments_on_sub_agent_id"
-  end
-
-  create_table "distributor_documents", force: :cascade do |t|
-    t.bigint "distributor_id", null: false
-    t.string "document_type"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["distributor_id"], name: "index_distributor_documents_on_distributor_id"
-  end
-
-  create_table "distributor_payouts", force: :cascade do |t|
-    t.bigint "distributor_id", null: false
-    t.string "policy_type"
-    t.integer "policy_id"
-    t.decimal "payout_amount", precision: 10, scale: 2
-    t.date "payout_date"
-    t.string "status", default: "pending"
-    t.string "transaction_id"
-    t.string "payment_mode"
-    t.string "reference_number"
+  create_table "franchises", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.string "mobile"
+    t.string "contact_person_name"
+    t.string "business_type"
+    t.text "address"
+    t.string "city"
+    t.string "state"
+    t.string "pincode"
+    t.string "pan_no"
+    t.string "gst_no"
+    t.string "license_no"
+    t.date "establishment_date"
+    t.string "territory"
+    t.decimal "franchise_fee"
+    t.decimal "commission_percentage"
+    t.boolean "status"
     t.text "notes"
-    t.string "processed_by"
-    t.datetime "processed_at"
+    t.string "password_digest"
+    t.string "auto_generated_password"
+    t.decimal "longitude"
+    t.decimal "latitude"
+    t.string "whatsapp_number"
+    t.string "profile_image"
+    t.text "business_documents"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["distributor_id", "status"], name: "index_distributor_payouts_on_distributor_id_and_status"
-    t.index ["distributor_id"], name: "index_distributor_payouts_on_distributor_id"
-    t.index ["policy_type", "policy_id"], name: "index_distributor_payouts_on_policy_type_and_policy_id"
-    t.index ["status"], name: "index_distributor_payouts_on_status"
+    t.index ["email"], name: "index_franchises_on_email", unique: true
+    t.index ["mobile"], name: "index_franchises_on_mobile", unique: true
+    t.index ["pan_no"], name: "index_franchises_on_pan_no", unique: true
+  end
+
+  create_table "invoices", force: :cascade do |t|
+    t.string "invoice_number"
+    t.string "payout_type"
+    t.integer "payout_id"
+    t.decimal "total_amount"
+    t.string "status"
+    t.date "invoice_date"
+    t.date "due_date"
+    t.datetime "paid_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
+  end
+
+  create_table "leads", force: :cascade do |t|
+    t.string "name"
+    t.string "contact_number"
+    t.string "email"
+    t.string "current_stage"
+    t.string "lead_source"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "product_category"
+    t.string "product_subcategory"
+    t.string "customer_type"
+    t.integer "affiliate_id"
+    t.boolean "is_direct"
+    t.string "first_name"
+    t.string "last_name"
+    t.string "middle_name"
+    t.string "company_name"
+    t.string "gender"
+    t.string "marital_status"
+    t.string "pan_no"
+    t.string "gst_no"
+    t.decimal "height"
+    t.decimal "weight"
+    t.decimal "annual_income"
+    t.string "business_job"
+  end
+
+  create_table "order_items", force: :cascade do |t|
+    t.integer "order_id"
+    t.integer "product_id"
+    t.integer "quantity"
+    t.decimal "price"
+    t.decimal "total"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "orders", force: :cascade do |t|
+    t.integer "customer_id"
+    t.integer "user_id"
+    t.string "order_number"
+    t.datetime "order_date"
+    t.string "status"
+    t.string "payment_method"
+    t.string "payment_status"
+    t.decimal "subtotal"
+    t.decimal "tax_amount"
+    t.decimal "discount_amount"
+    t.decimal "shipping_amount"
+    t.decimal "total_amount"
+    t.text "notes"
+    t.text "order_items"
+    t.string "customer_name"
+    t.string "customer_email"
+    t.string "customer_phone"
+    t.text "delivery_address"
+    t.string "tracking_number"
+    t.datetime "delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "processing_notes"
+    t.integer "estimated_processing_time"
+    t.datetime "processing_started_at"
+    t.string "packed_by"
+    t.decimal "package_weight"
+    t.string "package_dimensions"
+    t.text "packing_notes"
+    t.datetime "packed_at"
+    t.string "shipping_carrier"
+    t.date "estimated_delivery_date"
+    t.decimal "shipping_cost"
+    t.text "shipping_notes"
+    t.datetime "shipped_at"
+    t.string "delivered_to"
+    t.string "delivery_location"
+    t.text "delivery_notes"
+    t.datetime "cancelled_at"
+    t.string "cancellation_reason"
+    t.string "refund_method"
+    t.decimal "refund_amount"
+    t.text "cancellation_notes"
+    t.boolean "invoice_generated", default: false
+    t.string "invoice_number"
+    t.decimal "cash_received", precision: 10, scale: 2
+    t.decimal "change_amount", precision: 10, scale: 2
+    t.string "order_stage", default: "draft"
+    t.datetime "booking_date"
+    t.integer "booking_id"
+    t.index ["booking_id"], name: "index_orders_on_booking_id"
+  end
+
+  create_table "permissions", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "resource"
+    t.string "action"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_permissions_on_name", unique: true
+    t.index ["resource", "action"], name: "index_permissions_on_resource_and_action"
+  end
+
+  create_table "product_ratings", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.bigint "customer_id"
+    t.bigint "user_id"
+    t.integer "rating", null: false
+    t.text "comment"
+    t.integer "status", default: 0
+    t.string "reviewer_name"
+    t.string "reviewer_email"
+    t.boolean "verified_purchase", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_product_ratings_on_customer_id"
+    t.index ["product_id", "rating"], name: "index_product_ratings_on_product_id_and_rating"
+    t.index ["product_id", "status"], name: "index_product_ratings_on_product_id_and_status"
+    t.index ["product_id"], name: "index_product_ratings_on_product_id"
+    t.index ["user_id"], name: "index_product_ratings_on_user_id"
+  end
+
+  create_table "product_reviews", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.bigint "customer_id"
+    t.bigint "user_id"
+    t.integer "rating", null: false
+    t.text "comment"
+    t.string "reviewer_name"
+    t.string "reviewer_email"
+    t.integer "status", default: 0
+    t.boolean "verified_purchase", default: false
+    t.integer "helpful_count", default: 0
+    t.text "pros"
+    t.text "cons"
+    t.string "title"
+    t.json "images_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id", "product_id"], name: "index_product_reviews_on_customer_id_and_product_id", unique: true, where: "(customer_id IS NOT NULL)"
+    t.index ["customer_id"], name: "index_product_reviews_on_customer_id"
+    t.index ["product_id", "created_at"], name: "index_product_reviews_on_product_id_and_created_at"
+    t.index ["product_id", "rating"], name: "index_product_reviews_on_product_id_and_rating"
+    t.index ["product_id", "status"], name: "index_product_reviews_on_product_id_and_status"
+    t.index ["product_id"], name: "index_product_reviews_on_product_id"
+    t.index ["user_id"], name: "index_product_reviews_on_user_id"
   end

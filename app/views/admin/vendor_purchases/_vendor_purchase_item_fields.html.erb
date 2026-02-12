@@ -1,27 +1,27 @@
-<div class="product-item border rounded p-3 mb-3" style="background: #f8f9fa;">
+<div class="product-item border rounded p-3 mb-3 shadow-sm" style="background: #f8f9fa; border-radius: 8px !important;">
   <div class="row g-3 align-items-end">
     <div class="col-md-3">
-      <%= f.label :product_id, "Product", class: "form-label" %>
+      <%= f.label :product_id, "Product", class: "form-label fw-semibold" %>
       <span class="text-danger">*</span>
       <%= f.select :product_id,
-          options_from_collection_for_select(@products, :id, :name, f.object.product_id),
+          options_for_select(
+            @products.map { |p|
+              [p.name, p.id, {
+                'data-unit-type' => p.unit_type || 'units',
+                'data-default-price' => p.default_selling_price
+              }]
+            },
+            f.object.product_id
+          ),
           { prompt: 'Select Product' },
           {
             class: "form-select product-select",
-            required: true,
-            data: {
-              products: @products.map { |p| {
-                id: p.id,
-                name: p.name,
-                unit_type: p.unit_type || 'units',
-                default_selling_price: p.default_selling_price
-              }}.to_json
-            }
+            required: true
           } %>
     </div>
 
     <div class="col-md-2">
-      <%= f.label :quantity, class: "form-label" %>
+      <%= f.label :quantity, class: "form-label fw-semibold" %>
       <span class="text-danger">*</span>
       <div class="input-group">
         <%= f.number_field :quantity,
@@ -35,7 +35,7 @@
     </div>
 
     <div class="col-md-2">
-      <%= f.label :purchase_price, "Purchase Price (₹)", class: "form-label" %>
+      <%= f.label :purchase_price, "Purchase Price (₹)", class: "form-label fw-semibold" %>
       <span class="text-danger">*</span>
       <%= f.number_field :purchase_price,
           class: "form-control purchase-price-input",
@@ -46,7 +46,7 @@
     </div>
 
     <div class="col-md-2">
-      <%= f.label :selling_price, "Selling Price (₹)", class: "form-label" %>
+      <%= f.label :selling_price, "Selling Price (₹)", class: "form-label fw-semibold" %>
       <span class="text-danger">*</span>
       <%= f.number_field :selling_price,
           class: "form-control selling-price-input",
@@ -57,9 +57,11 @@
     </div>
 
     <div class="col-md-2">
-      <label class="form-label">Line Total</label>
-      <div class="form-control-plaintext">
-        <strong class="line-total">₹0.00</strong>
+      <label class="form-label fw-semibold">Line Total</label>
+      <div class="d-flex align-items-center">
+        <span class="badge bg-info-subtle text-info px-3 py-2">
+          <strong class="line-total">₹0.00</strong>
+        </span>
       </div>
     </div>
 
@@ -71,12 +73,18 @@
   </div>
 
   <!-- Profit Margin Display -->
-  <div class="row mt-2">
+  <div class="row mt-3">
     <div class="col-12">
-      <small class="text-muted">
-        Profit Margin: <span class="profit-margin">-</span> |
-        Profit per unit: <span class="profit-per-unit">-</span>
-      </small>
+      <div class="d-flex align-items-center gap-3">
+        <small class="text-muted">
+          <i class="bi bi-graph-up me-1"></i>
+          Profit Margin: <span class="profit-margin fw-medium">-</span>
+        </small>
+        <small class="text-muted">
+          <i class="bi bi-currency-rupee me-1"></i>
+          Profit per unit: <span class="profit-per-unit fw-medium">-</span>
+        </small>
+      </div>
     </div>
   </div>
 
@@ -98,32 +106,76 @@ document.addEventListener('DOMContentLoaded', function() {
 
       if (profitMarginSpan) {
         profitMarginSpan.textContent = `${profitMargin}%`;
-        profitMarginSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+        profitMarginSpan.className = 'profit-margin fw-medium ' + (profitPerUnit >= 0 ? 'text-success' : 'text-danger');
       }
 
       if (profitPerUnitSpan) {
         profitPerUnitSpan.textContent = `₹${profitPerUnit.toFixed(2)}`;
-        profitPerUnitSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+        profitPerUnitSpan.className = 'profit-per-unit fw-medium ' + (profitPerUnit >= 0 ? 'text-success' : 'text-danger');
       }
     } else {
-      if (profitMarginSpan) profitMarginSpan.textContent = '-';
-      if (profitPerUnitSpan) profitPerUnitSpan.textContent = '-';
+      if (profitMarginSpan) {
+        profitMarginSpan.textContent = '-';
+        profitMarginSpan.className = 'profit-margin fw-medium';
+      }
+      if (profitPerUnitSpan) {
+        profitPerUnitSpan.textContent = '-';
+        profitPerUnitSpan.className = 'profit-per-unit fw-medium';
+      }
+    }
+
+    // Trigger grand total calculation if available
+    if (typeof calculateGrandTotal === 'function') {
+      calculateGrandTotal();
+    }
+  }
+
+  function calculateLineTotal(row) {
+    const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+    const purchasePrice = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
+    const lineTotal = quantity * purchasePrice;
+    const lineTotalSpan = row.querySelector('.line-total');
+
+    if (lineTotalSpan) {
+      lineTotalSpan.textContent = '₹' + lineTotal.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    // Trigger grand total calculation if available
+    if (typeof calculateGrandTotal === 'function') {
+      calculateGrandTotal();
     }
   }
 
   // Initialize profit calculation for existing rows
   document.querySelectorAll('.product-item').forEach(row => {
+    const productSelect = row.querySelector('.product-select');
+    const quantityInput = row.querySelector('.quantity-input');
     const purchaseInput = row.querySelector('.purchase-price-input');
     const sellingInput = row.querySelector('.selling-price-input');
 
-    [purchaseInput, sellingInput].forEach(input => {
+    // Add event listeners to all relevant inputs
+    [quantityInput, purchaseInput, sellingInput].forEach(input => {
       if (input) {
-        input.addEventListener('input', () => updateProfitCalculation(row));
+        input.addEventListener('input', () => {
+          updateProfitCalculation(row);
+          calculateLineTotal(row);
+        });
       }
     });
 
-    // Initial calculation
+    if (productSelect) {
+      productSelect.addEventListener('change', () => {
+        updateProfitCalculation(row);
+        calculateLineTotal(row);
+      });
+    }
+
+    // Initial calculations
     updateProfitCalculation(row);
+    calculateLineTotal(row);
   });
 });
 </script>

@@ -1,16 +1,28 @@
 <%= form_with model: [:admin, @vendor_purchase], local: true, id: "vendor-purchase-form" do |f| %>
   <% if @vendor_purchase.errors.any? %>
-    <div class="alert alert-danger">
-      <h6>Please fix the following errors:</h6>
-      <ul class="mb-0">
-        <% @vendor_purchase.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
+    <div class="alert alert-danger mb-4">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <div>
+          <h6 class="mb-1">Please fix the following errors:</h6>
+          <ul class="mb-0 small">
+            <% @vendor_purchase.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
     </div>
   <% end %>
 
-  <div class="card sticky-top mb-4" style="z-index: 1000;">
+  <!-- Purchase Details Card -->
+  <div class="card border-0 shadow-sm sticky-top mb-4" style="z-index: 1020;">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle me-2 text-primary"></i>
+        <h6 class="mb-0 fw-semibold">Purchase Information</h6>
+      </div>
+    </div>
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-4">
@@ -29,26 +41,44 @@
               value: @vendor_purchase.purchase_date&.strftime('%Y-%m-%d') || Date.current.strftime('%Y-%m-%d'),
               required: true %>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">Total Amount</label>
-          <div class="form-control-plaintext">
-            <strong id="total-amount">₹0.00</strong>
+          <div class="d-flex align-items-center">
+            <div class="badge bg-primary-subtle text-primary px-3 py-2">
+              <i class="bi bi-currency-rupee me-1"></i>
+              <strong id="total-amount">₹0.00</strong>
+            </div>
           </div>
+        </div>
+        <div class="col-md-3">
+          <%= f.label :paid_amount, "Amount Paid", class: "form-label" %>
+          <%= f.number_field :paid_amount,
+              class: "form-control",
+              placeholder: "0.00",
+              step: 0.01,
+              min: 0,
+              value: @vendor_purchase.paid_amount || 0 %>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Products Section -->
-  <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="card-title mb-0">Purchase Items</h5>
-      <button type="button" class="btn btn-success btn-sm" id="add-product-btn">
-        <i class="bi bi-plus-circle me-1"></i>Add Product
-      </button>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-cart me-2 text-primary"></i>
+          <h5 class="mb-0 fw-semibold">Purchase Items</h5>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="add-product-btn">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Product
+        </button>
+      </div>
     </div>
-    <div class="card-body">
-      <div id="products-container">
+    <div class="card-body p-0">
+      <div id="products-container" class="p-3">
         <%= f.fields_for :vendor_purchase_items do |item_form| %>
           <%= render 'vendor_purchase_item_fields', f: item_form %>
         <% end %>
@@ -63,9 +93,12 @@
   </div>
 
   <!-- Notes Section -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="card-title mb-0">Additional Information</h5>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-chat-text me-2 text-primary"></i>
+        <h5 class="mb-0 fw-semibold">Additional Information</h5>
+      </div>
     </div>
     <div class="card-body">
       <%= f.label :notes, class: "form-label" %>
@@ -74,23 +107,94 @@
   </div>
 
   <!-- Actions -->
-  <div class="card">
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-check-circle me-2 text-success"></i>
+        <h5 class="mb-0 fw-semibold">Purchase Summary</h5>
+      </div>
+    </div>
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          <h5 class="mb-1">Total Purchase Amount: <span id="final-total" class="text-primary">₹0.00</span></h5>
-          <small class="text-muted">Stock batches will be automatically created upon saving</small>
+          <div class="d-flex align-items-center mb-2">
+            <span class="text-muted me-2">Total Purchase Amount:</span>
+            <span class="badge bg-success-subtle text-success px-3 py-2 fs-6">
+              <i class="bi bi-currency-rupee me-1"></i>
+              <strong id="final-total">₹0.00</strong>
+            </span>
+          </div>
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Stock batches will be automatically created upon saving
+          </small>
         </div>
         <div class="d-flex gap-2">
-          <%= f.submit @vendor_purchase.new_record? ? "Create Purchase" : "Update Purchase",
+          <%= link_to admin_vendor_purchases_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-x-lg me-1"></i>
+            Cancel
+          <% end %>
+          <%= f.submit (@vendor_purchase.new_record? ? "Create Purchase" : "Update Purchase"),
               class: "btn btn-primary", id: "submit-btn" %>
-          <%= link_to "Cancel", admin_vendor_purchases_path, class: "btn btn-outline-secondary" %>
         </div>
       </div>
     </div>
   </div>
 
 <% end %>
+
+<style>
+/* Custom Select2 styling for vendor purchases */
+.select2-container--bootstrap-5 .select2-selection--single {
+  height: 38px !important;
+  padding: 0.375rem 2.25rem 0.375rem 0.75rem !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  line-height: 1.5 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+  height: 36px !important;
+}
+
+.select2-dropdown {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.375rem !important;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.select2-results__option {
+  padding: 0.5rem 0.75rem !important;
+}
+
+.select2-results__option--highlighted[aria-selected] {
+  background-color: #0d6efd !important;
+}
+
+.select2-search__field {
+  padding: 0.375rem 0.75rem !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.25rem !important;
+}
+
+.select2-search__field:focus {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+  outline: 0 !important;
+}
+
+/* Ensure proper width in grid columns */
+.col-md-3 .select2-container,
+.col-md-4 .select2-container {
+  width: 100% !important;
+}
+</style>
 
 <script>
 // Store product data for JavaScript template
@@ -110,6 +214,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
   let itemIndex = <%= @vendor_purchase.vendor_purchase_items.length %>;
 
+  // Custom formatting for Select2 dropdown options
+  function formatProductOption(product) {
+    if (!product.id) {
+      return product.text;
+    }
+
+    const $option = $(product.element);
+    const unitType = $option.data('unit-type') || 'units';
+    const defaultPrice = $option.data('default-price');
+
+    const $result = $('<div class="d-flex justify-content-between align-items-center">');
+    $result.append($('<span>').text(product.text));
+
+    const $meta = $('<small class="text-muted ms-2">');
+    if (defaultPrice) {
+      $meta.append($('<span class="me-2">').html('₹' + parseFloat(defaultPrice).toFixed(2)));
+    }
+    $meta.append($('<span class="badge bg-secondary">').text(unitType));
+    $result.append($meta);
+
+    return $result;
+  }
+
+  // Custom formatting for selected option
+  function formatProductSelection(product) {
+    return product.text;
+  }
+
   // Create product options HTML
   function createProductOptionsHtml(selectedId = '') {
     let html = '<option value="">Select Product</option>';
@@ -128,10 +260,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Create new product item HTML
   function createProductItemHtml(index) {
     return `
-      <div class="product-item border rounded p-3 mb-3" style="background: #f8f9fa;">
+      <div class="product-item border rounded p-3 mb-3 shadow-sm" style="background: #f8f9fa; border-radius: 8px !important;">
         <div class="row g-3 align-items-end">
           <div class="col-md-3">
-            <label class="form-label">Product <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
             <select name="vendor_purchase[vendor_purchase_items_attributes][${index}][product_id]"
                     class="form-select product-select" required>
               ${createProductOptionsHtml()}
@@ -139,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Quantity <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
             <div class="input-group">
               <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][quantity]"
                      class="form-control quantity-input" placeholder="0" step="0.01" min="0.01" required>
@@ -148,21 +280,23 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Purchase Price (₹) <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Purchase Price (₹) <span class="text-danger">*</span></label>
             <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][purchase_price]"
                    class="form-control purchase-price-input" placeholder="0.00" step="0.01" min="0.01" required>
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Selling Price (₹) <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Selling Price (₹) <span class="text-danger">*</span></label>
             <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][selling_price]"
                    class="form-control selling-price-input" placeholder="0.00" step="0.01" min="0.01" required>
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Line Total</label>
-            <div class="form-control-plaintext">
-              <strong class="line-total">₹0.00</strong>
+            <label class="form-label fw-semibold">Line Total</label>
+            <div class="d-flex align-items-center">
+              <span class="badge bg-info-subtle text-info px-3 py-2">
+                <strong class="line-total">₹0.00</strong>
+              </span>
             </div>
           </div>
 
@@ -173,12 +307,18 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
 
-        <div class="row mt-2">
+        <div class="row mt-3">
           <div class="col-12">
-            <small class="text-muted">
-              Profit Margin: <span class="profit-margin">-</span> |
-              Profit per unit: <span class="profit-per-unit">-</span>
-            </small>
+            <div class="d-flex align-items-center gap-3">
+              <small class="text-muted">
+                <i class="bi bi-graph-up me-1"></i>
+                Profit Margin: <span class="profit-margin fw-medium">-</span>
+              </small>
+              <small class="text-muted">
+                <i class="bi bi-currency-rupee me-1"></i>
+                Profit per unit: <span class="profit-per-unit fw-medium">-</span>
+              </small>
+            </div>
           </div>
         </div>
 
@@ -213,9 +353,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const removeBtn = row.querySelector('.remove-item-btn');
     const unitTypeSpan = row.querySelector('.unit-type');
 
-    // Product selection change
+    // Initialize Select2 on product select
+    if (productSelect && !productSelect.classList.contains('select2-initialized')) {
+      $(productSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Search and select a product...',
+        allowClear: true,
+        width: '100%',
+        minimumInputLength: 0,
+        templateResult: formatProductOption,
+        templateSelection: formatProductSelection
+      });
+
+      // Mark as initialized to avoid re-initialization
+      productSelect.classList.add('select2-initialized');
+    }
+
+    // Product selection change (works with Select2)
     if (productSelect) {
-      productSelect.addEventListener('change', function() {
+      $(productSelect).on('select2:select', function(e) {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption.value) {
           const unitType = selectedOption.dataset.unitType || 'units';
@@ -247,6 +403,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Remove row
     if (removeBtn) {
       removeBtn.addEventListener('click', function() {
+        // Destroy Select2 instance before removing row
+        const select2Instance = $(productSelect).data('select2');
+        if (select2Instance) {
+          $(productSelect).select2('destroy');
+        }
         row.remove();
         calculateGrandTotal();
       });
@@ -276,16 +437,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (profitMarginSpan) {
           profitMarginSpan.textContent = `${profitMargin}%`;
-          profitMarginSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+          profitMarginSpan.className = 'profit-margin fw-medium ' + (profitPerUnit >= 0 ? 'text-success' : 'text-danger');
         }
 
         if (profitPerUnitSpan) {
           profitPerUnitSpan.textContent = `₹${profitPerUnit.toFixed(2)}`;
-          profitPerUnitSpan.className = profitPerUnit >= 0 ? 'text-success' : 'text-danger';
+          profitPerUnitSpan.className = 'profit-per-unit fw-medium ' + (profitPerUnit >= 0 ? 'text-success' : 'text-danger');
         }
       } else {
-        if (profitMarginSpan) profitMarginSpan.textContent = '-';
-        if (profitPerUnitSpan) profitPerUnitSpan.textContent = '-';
+        if (profitMarginSpan) {
+          profitMarginSpan.textContent = '-';
+          profitMarginSpan.className = 'profit-margin fw-medium';
+        }
+        if (profitPerUnitSpan) {
+          profitPerUnitSpan.textContent = '-';
+          profitPerUnitSpan.className = 'profit-per-unit fw-medium';
+        }
       }
     }
 
@@ -296,7 +463,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function calculateGrandTotal() {
     let total = 0;
-    document.querySelectorAll('.product-item:not([style*="display: none"])').forEach(row => {
+    const productItems = document.querySelectorAll('.product-item:not([style*="display: none"])');
+
+    productItems.forEach(row => {
       const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
       const price = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
       total += quantity * price;
@@ -307,11 +476,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Enable/disable submit button
     const submitBtn = document.getElementById('submit-btn');
-    const hasItems = document.querySelectorAll('.product-item:not([style*="display: none"])').length > 0;
-    const vendorSelected = document.getElementById('vendor_select').value;
+    const vendorSelect = document.getElementById('vendor_select');
 
     if (submitBtn) {
-      submitBtn.disabled = !hasItems || !vendorSelected || total === 0;
+      const hasItems = productItems.length > 0;
+      const vendorSelected = vendorSelect ? vendorSelect.value : true; // Default to true if vendor select not found
+      const hasValidItems = Array.from(productItems).some(row => {
+        const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+        const price = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
+        const productId = row.querySelector('.product-select')?.value;
+        return quantity > 0 && price > 0 && productId;
+      });
+
+      submitBtn.disabled = !(hasItems && vendorSelected && hasValidItems && total > 0);
     }
   }
 
@@ -322,11 +499,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Vendor selection change
+  // Initialize Select2 for vendor selection
   const vendorSelect = document.getElementById('vendor_select');
   if (vendorSelect) {
-    vendorSelect.addEventListener('change', calculateGrandTotal);
+    $(vendorSelect).select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select a vendor...',
+      allowClear: true,
+      width: '100%'
+    });
+
+    $(vendorSelect).on('select2:select select2:clear', function() {
+      calculateGrandTotal();
+    });
   }
+
+  // Make calculateGrandTotal globally available
+  window.calculateGrandTotal = calculateGrandTotal;
 
   // Initial calculation
   calculateGrandTotal();

@@ -422,12 +422,10 @@
   <!-- Navigation Menu -->
   <nav class="sidebar-nav">
     <!-- Main Menu Section -->
-    <% if show_sidebar_section?(['dashboard', 'customers', 'sub_agents', 'distributors', 'leads']) %>
     <div class="nav-section">
       <div class="nav-section-title">Main Menu</div>
       <ul class="nav-menu">
         <!-- Dashboard -->
-        <% if show_sidebar_item?('dashboard') %>
           <li class="nav-item">
             <%= link_to root_path, class: "nav-link-modern #{'active' if current_page?(root_path)}" do %>
               <div class="nav-icon-modern">
@@ -439,7 +437,6 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
-        <% end %>
 
 
 
@@ -447,7 +444,6 @@
 
       </ul>
     </div>
-    <% end %>
 
     <!-- Bookings Section -->
     <div class="nav-section">
@@ -540,7 +536,6 @@
       <div class="nav-section-title">Master Data</div>
       <ul class="nav-menu">
         <!-- Customers -->
-        <% if show_sidebar_item?('customers') %>
           <li class="nav-item">
             <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
               <div class="nav-icon-modern">
@@ -552,25 +547,8 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
-        <% end %>
-
-        <!-- Affiliates -->
-        <% if show_sidebar_item?('affiliates') %>
-          <li class="nav-item">
-            <%= link_to admin_sub_agents_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/sub_agents')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-pink">
-                  <i class="bi bi-person-badge-fill"></i>
-                </div>
-              </div>
-              <span class="nav-text">Affiliates</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
 
         <!-- Categories -->
-        <% if show_sidebar_item?('categories') %>
           <li class="nav-item">
             <%= link_to admin_categories_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/categories')}" do %>
               <div class="nav-icon-modern">
@@ -582,12 +560,10 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
-        <% end %>
 
         <!-- Products -->
-        <% if show_sidebar_item?('products') %>
           <li class="nav-item">
-            <%= link_to admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/products') && !request.path.include?('/products_chart')}" do %>
+            <%= link_to admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/products')}" do %>
               <div class="nav-icon-modern">
                 <div class="icon-bg gradient-sky">
                   <i class="bi bi-box-seam-fill"></i>
@@ -597,203 +573,12 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
-
-          <!-- Product Chart -->
-          <li class="nav-item">
-            <%= link_to products_chart_admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/products_chart')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-violet">
-                  <i class="bi bi-bar-chart-fill"></i>
-                </div>
-              </div>
-              <span class="nav-text">Product Chart</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-
-        <!-- Delivery People -->
-        <li class="nav-item">
-          <%= link_to admin_delivery_people_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/delivery_people')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-orange">
-                <i class="bi bi-truck"></i>
-              </div>
-            </div>
-            <span class="nav-text">Delivery People</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-
-        <!-- Coupons -->
-        <li class="nav-item">
-          <%= link_to admin_coupons_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/coupons')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-purple">
-                <i class="bi bi-ticket-perforated-fill"></i>
-              </div>
-            </div>
-            <span class="nav-text">Coupons</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-
-        <!-- Franchises -->
-        <li class="nav-item">
-          <%= link_to admin_franchises_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/franchises')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-emerald">
-                <i class="bi bi-shop-window"></i>
-              </div>
-            </div>
-            <span class="nav-text">Franchises</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
       </ul>
     </div>
 
 
 
 
-    <!-- Transactions Section (renamed from Invoice) -->
-    <% if show_sidebar_section?(['invoices']) %>
-    <div class="nav-section">
-      <div class="nav-section-title">Transactions</div>
-      <ul class="nav-menu">
-        <!-- Invoices -->
-        <% if show_sidebar_item?('invoices') %>
-          <li class="nav-item">
-            <%= link_to admin_invoices_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/invoices')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-orange">
-                  <i class="bi bi-receipt"></i>
-                </div>
-              </div>
-              <span class="nav-text">Invoices</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-      </ul>
-    </div>
-    <% end %>
-
-
-    <!-- Reports & Analytics Section -->
-    <% if show_sidebar_section?(['reports']) %>
-      <div class="nav-section">
-        <div class="nav-section-title">Reports & Analytics</div>
-        <ul class="nav-menu">
-          <!-- Reports -->
-          <% if show_sidebar_item?('reports') %>
-            <li class="nav-item">
-              <%= link_to admin_reports_commission_path, class: "nav-link-modern #{'active' if request.path.include?('/reports/commission')}" do %>
-                <div class="nav-icon-modern">
-                  <div class="icon-bg gradient-green">
-                    <i class="bi bi-graph-up"></i>
-                  </div>
-                </div>
-                <span class="nav-text">Reports</span>
-                <div class="nav-indicator"></div>
-              <% end %>
-            </li>
-          <% end %>
-        </ul>
-      </div>
-    <% end %>
-
-    <!-- Management Section -->
-    <% if show_sidebar_section?(['management', 'investors']) %>
-      <div class="nav-section">
-        <div class="nav-section-title">Management</div>
-      <ul class="nav-menu">
-        <% if show_sidebar_item?('management') %>
-
-
-        <!-- Client Request -->
-        <li class="nav-item">
-          <%= link_to admin_client_requests_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/client_requests')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-orange">
-                <i class="bi bi-headset"></i>
-              </div>
-            </div>
-            <span class="nav-text">Client Request</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-
-        <!-- Roles & Permissions (fixed spelling) -->
-        <li class="nav-item">
-          <%= link_to admin_roles_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/roles') || request.path.include?('/admin/permissions')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-cyan">
-                <i class="bi bi-shield-check"></i>
-              </div>
-            </div>
-            <span class="nav-text">Roles & Permissions</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-
-
-        <!-- Banner Management -->
-        <li class="nav-item">
-          <%= link_to admin_banners_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/banners')}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-indigo">
-                <i class="bi bi-image-fill"></i>
-              </div>
-            </div>
-            <span class="nav-text">Banner Management</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-
-
-
-        <% end %>
-        </ul>
-      </div>
-    <% end %>
-
-
-    <!-- Settings Section -->
-    <% if show_sidebar_section?(['settings']) %>
-      <div class="nav-section">
-        <div class="nav-section-title">Settings</div>
-      <ul class="nav-menu">
-        <% if show_sidebar_item?('settings') %>
-          <!-- User Roles Configuration -->
-          <li class="nav-item">
-            <%= link_to admin_settings_user_roles_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/user_roles')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-teal">
-                  <i class="bi bi-person-gear"></i>
-                </div>
-              </div>
-              <span class="nav-text">User Roles</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-
-          <!-- System Settings -->
-          <li class="nav-item">
-            <%= link_to admin_settings_system_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/system')}" do %>
-              <div class="nav-icon-modern">
-                <div class="icon-bg gradient-gray">
-                  <i class="bi bi-gear-fill"></i>
-                </div>
-              </div>
-              <span class="nav-text">System Settings</span>
-              <div class="nav-indicator"></div>
-            <% end %>
-          </li>
-        <% end %>
-        </ul>
-      </div>
-    <% end %>
   </nav>
 
   <!-- Logout Section - Moved outside nav to be fixed at bottom -->

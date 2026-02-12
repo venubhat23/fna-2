@@ -1,5 +1,16 @@
 class CreateProductRatings < ActiveRecord::Migration[8.0]
   def change
+    # Create customers table if it doesn't exist
+    unless table_exists?(:customers)
+      create_table :customers do |t|
+        t.string :first_name
+        t.string :last_name
+        t.string :email
+        t.string :mobile
+        t.timestamps
+      end
+    end
+
     create_table :product_ratings do |t|
       t.references :product, null: false, foreign_key: true
       t.references :customer, null: true, foreign_key: true

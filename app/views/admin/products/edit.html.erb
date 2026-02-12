@@ -1,22 +1,19 @@
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-        <h4 class="mb-sm-0">Edit Product</h4>
-        <div class="page-title-right">
-          <ol class="breadcrumb m-0">
-            <li class="breadcrumb-item"><%= link_to "Dashboard", dashboard_path %></li>
-            <li class="breadcrumb-item"><%= link_to "Products", admin_products_path %></li>
-            <li class="breadcrumb-item active">Edit Product</li>
-          </ol>
-        </div>
-      </div>
+<%# Modern Card Layout without Breadcrumb %>
+<div class="mb-3">
+  <div class="d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">
+      <i class="bi bi-pencil-square me-2"></i>Edit Product
+    </h4>
+    <div class="d-flex gap-2">
+      <%= link_to admin_products_path, class: "btn btn-outline-secondary btn-sm" do %>
+        <i class="bi bi-arrow-left me-1"></i>Back to Products
+      <% end %>
     </div>
   </div>
+</div>
 
-  <div class="row">
-    <div class="col-12">
-      <%= render 'form' %>
-    </div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <%= render 'form' %>
   </div>
 </div>

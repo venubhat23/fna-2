@@ -1,4 +1,4 @@
-<%= form_with model: [:admin, @product], local: true, multipart: true, class: "row g-3" do |form| %>
+<%= form_with model: [:admin, @product], local: true, multipart: true, class: "row g-3", id: "product-form" do |form| %>
   <% if @product.errors.any? %>
     <div class="col-12">
       <div class="alert alert-danger">
@@ -265,12 +265,7 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-md-6">
-            <%= form.label :initial_stock, "Initial Stock", class: "form-label" %>
-            <%= form.number_field :initial_stock, class: "form-control", min: 0, placeholder: "0", id: "product_initial_stock" %>
-            <div class="form-text">Total quantity when product was first added</div>
-          </div>
-          <div class="col-md-6">
+          <div class="col-12">
             <%= form.label :stock, "Available Stock", class: "form-label" %>
             <span class="text-danger">*</span>
             <%= form.number_field :stock, class: "form-control", min: 0, placeholder: "0", required: true, id: "product_current_stock" %>
@@ -377,7 +372,8 @@
               </div>
 
               <div class="row g-3" id="currentImagesContainer">
-                <% @product.images.each_with_index do |image, index| %>
+                <% if @product.persisted? && @product.images.any? %>
+                  <% @product.images.each_with_index do |image, index| %>
                   <div class="col-lg-2 col-md-3 col-sm-4 col-6" data-image-id="<%= image.id %>">
                     <div class="image-card position-relative">
                       <div class="image-wrapper">
@@ -436,6 +432,7 @@
                       </div>
                     </div>
                   </div>
+                  <% end %>
                 <% end %>
               </div>
 
@@ -798,15 +795,31 @@
         <i class="ri-arrow-left-line"></i> Cancel
       <% end %>
 
-      <%= form.submit class: "btn btn-primary" do %>
-        <i class="ri-save-line"></i> <%= @product.new_record? ? 'Create Product' : 'Update Product' %>
-      <% end %>
+      <%= form.submit (@product.new_record? ? 'Create Product' : 'Update Product'),
+          class: "btn btn-primary",
+          id: "submit-btn",
+          data: {
+            loading_text: (@product.new_record? ? 'Creating Product...' : 'Updating Product...'),
+            original_text: (@product.new_record? ? 'Create Product' : 'Update Product')
+          } %>
     </div>
   </div>
 <% end %>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // IMPORTANT: Remove any required attributes from occasional date fields on page load
+  // These should only be set dynamically when needed
+  const occasionalStartDate = document.getElementById('occasionalStartDate');
+  const occasionalEndDate = document.getElementById('occasionalEndDate');
+
+  if (occasionalStartDate) {
+    occasionalStartDate.removeAttribute('required');
+  }
+  if (occasionalEndDate) {
+    occasionalEndDate.removeAttribute('required');
+  }
+
   let deliveryRuleIndex = document.querySelectorAll('.delivery-rule-row').length;
 
   // Image Management System
@@ -1244,14 +1257,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const selling = parseFloat(regularPrice?.value) || 0;
 
     if (cost > 0) {
-      profitPreview.style.display = 'block';
+      if (profitPreview) {
+        profitPreview.style.display = 'block';
+      }
 
       const profit = selling - cost;
       const marginPercentage = selling > 0 ? ((profit / selling) * 100).toFixed(2) : 0;
 
       updateProfitPreview(cost, selling, profit, marginPercentage);
     } else {
-      profitPreview.style.display = 'none';
+      if (profitPreview) {
+        profitPreview.style.display = 'none';
+      }
     }
   }
 
@@ -1590,6 +1607,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const recurringToDay = document.getElementById('recurringToDay');
     const recurringToTime = document.getElementById('recurringToTime');
 
+    // Initialize on page load - ensure fields are NEVER required initially
+    if (startDateInput) {
+      startDateInput.removeAttribute('required');
+    }
+    if (endDateInput) {
+      endDateInput.removeAttribute('required');
+    }
+    if (startDateRequired) {
+      startDateRequired.style.display = 'none';
+    }
+    if (endDateRequired) {
+      endDateRequired.style.display = 'none';
+    }
+
     // Toggle occasional product settings
     if (occasionalToggle) {
       occasionalToggle.addEventListener('change', function() {
@@ -1627,14 +1658,16 @@ document.addEventListener('DOMContentLoaded', function() {
         oneTimeSchedule.style.display = 'block';
         recurringSchedule.style.display = 'none';
 
-        // Set required fields
-        if (startDateInput) {
-          startDateInput.required = true;
-          startDateRequired.style.display = 'inline';
-        }
-        if (endDateInput) {
-          endDateInput.required = true;
-          endDateRequired.style.display = 'inline';
+        // Set required fields only if occasional product is enabled
+        if (occasionalToggle && occasionalToggle.checked) {
+          if (startDateInput) {
+            startDateInput.setAttribute('required', 'required');
+            startDateRequired.style.display = 'inline';
+          }
+          if (endDateInput) {
+            endDateInput.setAttribute('required', 'required');
+            endDateRequired.style.display = 'inline';
+          }
         }
 
         // Clear recurring fields
@@ -1647,11 +1680,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Remove required from one-time fields
         if (startDateInput) {
-          startDateInput.required = false;
+          startDateInput.removeAttribute('required');
           startDateRequired.style.display = 'none';
         }
         if (endDateInput) {
-          endDateInput.required = false;
+          endDateInput.removeAttribute('required');
           endDateRequired.style.display = 'none';
         }
 
@@ -1703,9 +1736,14 @@ document.addEventListener('DOMContentLoaded', function() {
       clearRecurringFields();
     }
 
-    // Initial setup
-    updateScheduleTypeDisplay();
-    updateOccasionalPreview();
+    // Initial setup - only update if occasional product is enabled
+    if (occasionalToggle && occasionalToggle.checked) {
+      updateScheduleTypeDisplay();
+      updateOccasionalPreview();
+    } else {
+      // Ensure fields are not required on initial load
+      clearAllScheduleFields();
+    }
   }
 
   function updateOccasionalPreview() {
@@ -1834,8 +1872,26 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function clearDateInputs() {
-    document.getElementById('occasionalStartDate').value = '';
-    document.getElementById('occasionalEndDate').value = '';
+    const startDateInput = document.getElementById('occasionalStartDate');
+    const endDateInput = document.getElementById('occasionalEndDate');
+    const startDateRequired = document.getElementById('startDateRequired');
+    const endDateRequired = document.getElementById('endDateRequired');
+
+    if (startDateInput) {
+      startDateInput.value = '';
+      startDateInput.removeAttribute('required');
+    }
+    if (endDateInput) {
+      endDateInput.value = '';
+      endDateInput.removeAttribute('required');
+    }
+    if (startDateRequired) {
+      startDateRequired.style.display = 'none';
+    }
+    if (endDateRequired) {
+      endDateRequired.style.display = 'none';
+    }
+
     updateOccasionalPreview();
   }
 
@@ -2135,6 +2191,25 @@ function previewImage(src, filename) {
     modal.remove();
   });
 }
+
+// Form submission handler for loading state
+document.getElementById('product-form').addEventListener('submit', function(e) {
+  const submitBtn = document.getElementById('submit-btn');
+  const loadingText = submitBtn.getAttribute('data-loading-text');
+  const originalText = submitBtn.getAttribute('data-original-text');
+
+  // Show loading state
+  submitBtn.innerHTML = loadingText;
+  submitBtn.disabled = true;
+
+  // Re-enable after a delay (in case of validation errors)
+  setTimeout(function() {
+    if (submitBtn.disabled) {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  }, 5000);
+});
 </script>
 
 <style>

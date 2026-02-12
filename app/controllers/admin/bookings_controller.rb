@@ -4,7 +4,7 @@ class Admin::BookingsController < ApplicationController
 
   def index
     # Start with base query for statistics (before filtering)
-    @all_bookings = Booking.includes(:customer, :user, :booking_items, :order, :store)
+    @all_bookings = Booking.includes(:customer, :user, :booking_items, :store)
 
     # Apply filters
     @bookings = @all_bookings.recent
@@ -49,6 +49,15 @@ class Admin::BookingsController < ApplicationController
     # @booking.status = :ordered_and_delivery_pending
     @booking.payment_status = params[:booking][:payment_method] == 'cash' ? :paid : :unpaid
 
+    # Validate stock availability before saving
+    unless validate_stock_availability(@booking)
+      @products = Product.active.includes(:category, images_attachments: :blob)
+      @customers = Customer.all.order(:first_name, :last_name)
+      @stores = Store.where(status: true)
+      render :new, status: :unprocessable_entity
+      return
+    end
+
     if @booking.save
       # Calculate totals after saving
       @booking.calculate_totals
@@ -66,9 +75,14 @@ class Admin::BookingsController < ApplicationController
 
       redirect_to admin_booking_path(@booking), notice: 'Booking created successfully! Invoice generated.'
     else
+      Rails.logger.error "Booking creation failed: #{@booking.errors.full_messages.join(', ')}"
+      Rails.logger.error "Booking items errors: #{@booking.booking_items.map(&:errors).map(&:full_messages).flatten.join(', ')}"
+
       @products = Product.active.includes(:category, images_attachments: :blob)
       @customers = Customer.all.order(:first_name, :last_name)
-      render :new
+      @stores = Store.where(status: true)
+      flash.now[:alert] = @booking.errors.full_messages.join(', ')
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -82,6 +96,14 @@ class Admin::BookingsController < ApplicationController
   end
 
   def update
+    # Validate stock availability for updates
+    unless validate_stock_availability(@booking, is_update: true)
+      @products = Product.active.includes(:category, images_attachments: :blob)
+      @customers = Customer.all.order(:first_name, :last_name)
+      render :edit, status: :unprocessable_entity
+      return
+    end
+
     if @booking.update(booking_params)
       redirect_to admin_booking_path(@booking), notice: 'Booking updated successfully!'
     else
@@ -274,7 +296,7 @@ class Admin::BookingsController < ApplicationController
   # Real-time data endpoint
   def realtime_data
     # Get fresh data for statistics
-    all_bookings = Booking.includes(:customer, :user, :booking_items, :order)
+    all_bookings = Booking.includes(:customer, :user, :booking_items)
 
     stats = {
       draft: all_bookings.draft.count,
@@ -328,7 +350,12 @@ class Admin::BookingsController < ApplicationController
         text: "#{p.name} - #{p.formatted_selling_price}",
         name: p.name,
         price: p.selling_price,
-        stock: p.stock,
+        stock: p.total_batch_stock, # Use batch stock for accuracy
+        stock_status: p.stock_status_enhanced,
+        stock_status_text: p.stock_status_text_enhanced,
+        out_of_stock: p.out_of_stock?,
+        low_stock: p.low_stock?,
+        minimum_threshold: p.minimum_stock_threshold,
         image_url: p.main_image ? url_for(p.main_image) : nil
       }
     }
@@ -585,6 +612,50 @@ class Admin::BookingsController < ApplicationController
       :delivery_address, :cash_received, :change_amount, :status, :store_id,
       booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
     )
+  end
+
+  def validate_stock_availability(booking, is_update: false)
+    stock_errors = []
+
+    booking.booking_items.reject(&:marked_for_destruction?).each do |item|
+      next unless item.product_id.present? && item.quantity.present? && item.quantity > 0
+
+      product = Product.find(item.product_id)
+      available_stock = product.total_batch_stock
+
+      # For updates, add back the current item's quantity if it exists
+      if is_update && item.persisted? && item.quantity_changed?
+        available_stock += (item.quantity_was || 0)
+      end
+
+      if item.quantity > available_stock
+        stock_errors << {
+          product: product,
+          requested: item.quantity,
+          available: available_stock,
+          item: item
+        }
+      end
+    end
+
+    if stock_errors.any?
+      stock_errors.each do |error|
+        booking.errors.add(:base,
+          "#{error[:product].name}: Only #{error[:available]} units available, but #{error[:requested]} requested")
+
+        # Also add error to the specific booking item
+        error[:item].errors.add(:quantity,
+          "only #{error[:available]} units available")
+      end
+
+      flash.now[:alert] = "Stock validation failed: #{stock_errors.map { |e|
+        "#{e[:product].name} (Available: #{e[:available]}, Requested: #{e[:requested]})"
+      }.join(', ')}"
+
+      return false
+    end
+
+    true
   end
 
   # Stage transition processing methods

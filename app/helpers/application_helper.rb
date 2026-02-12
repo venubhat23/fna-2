@@ -487,4 +487,82 @@ module ApplicationHelper
       'Update order stage'
     end
   end
+
+  # Convert amount to words helper for invoices
+  def amount_in_words(amount)
+    return 'Zero' if amount.nil? || amount == 0
+
+    amount = amount.to_f.round(2)
+    rupees = amount.to_i
+    paisa = ((amount - rupees) * 100).round
+
+    words = convert_number_to_words(rupees)
+
+    if paisa > 0
+      paisa_words = convert_number_to_words(paisa)
+      "#{words} Rupees and #{paisa_words} Paisa"
+    else
+      "#{words} Rupees"
+    end
+  end
+
+  private
+
+  def convert_number_to_words(number)
+    return 'Zero' if number == 0
+
+    ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
+    tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+    teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+
+    def convert_hundreds(num, ones, tens, teens)
+      result = ''
+
+      if num >= 100
+        result += ones[num / 100] + ' Hundred '
+        num %= 100
+      end
+
+      if num >= 20
+        result += tens[num / 10] + ' '
+        result += ones[num % 10] + ' ' if num % 10 > 0
+      elsif num >= 10
+        result += teens[num - 10] + ' '
+      elsif num > 0
+        result += ones[num] + ' '
+      end
+
+      result.strip
+    end
+
+    if number >= 10000000  # 1 Crore
+      crores = number / 10000000
+      remainder = number % 10000000
+      result = convert_hundreds(crores, ones, tens, teens) + ' Crore'
+
+      if remainder > 0
+        result += ' ' + convert_number_to_words(remainder)
+      end
+    elsif number >= 100000  # 1 Lakh
+      lakhs = number / 100000
+      remainder = number % 100000
+      result = convert_hundreds(lakhs, ones, tens, teens) + ' Lakh'
+
+      if remainder > 0
+        result += ' ' + convert_number_to_words(remainder)
+      end
+    elsif number >= 1000  # 1 Thousand
+      thousands = number / 1000
+      remainder = number % 1000
+      result = convert_hundreds(thousands, ones, tens, teens) + ' Thousand'
+
+      if remainder > 0
+        result += ' ' + convert_number_to_words(remainder)
+      end
+    else
+      result = convert_hundreds(number, ones, tens, teens)
+    end
+
+    result.strip
+  end
 end

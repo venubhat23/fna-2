@@ -59,7 +59,7 @@
       <% if @products&.any? %>
         <div class="row g-3" id="productGrid">
           <% @products.each do |product| %>
-            <div class="col-md-4 col-lg-3 product-grid-item" data-product-id="<%= product.id %>" data-category="<%= product.category_id %>" data-stock="<%= product.stock %>">
+            <div class="col-md-4 col-lg-3 product-grid-item" data-product-id="<%= product.id %>" data-category="<%= product.category_id %>" data-stock="<%= product.total_batch_stock %>">
               <div class="card h-100 border-0 shadow-sm hover-lift">
                 <%# Product Image %>
                 <div class="position-relative">
@@ -71,11 +71,20 @@
                     </div>
                   <% end %>
 
-                  <%# Stock Badge %>
-                  <% if product.stock <= 0 %>
-                    <span class="position-absolute top-0 end-0 badge bg-danger m-2">Out of Stock</span>
-                  <% elsif product.stock <= 5 %>
-                    <span class="position-absolute top-0 end-0 badge bg-warning m-2">Low Stock</span>
+                  <%# Enhanced Stock Badge %>
+                  <% current_stock = product.total_batch_stock %>
+                  <% if product.out_of_stock? %>
+                    <span class="position-absolute top-0 end-0 badge bg-danger m-2">
+                      <i class="bi bi-x-circle me-1"></i>Out of Stock
+                    </span>
+                  <% elsif product.low_stock? %>
+                    <span class="position-absolute top-0 end-0 badge bg-warning text-dark m-2">
+                      <i class="bi bi-exclamation-triangle me-1"></i>Low Stock (<%= current_stock.to_i %> left)
+                    </span>
+                  <% else %>
+                    <span class="position-absolute top-0 end-0 badge bg-success m-2">
+                      <i class="bi bi-check-circle me-1"></i><%= current_stock.to_i %> in stock
+                    </span>
                   <% end %>
 
                   <%# Discount Badge %>
@@ -106,16 +115,47 @@
                     <% end %>
                   </div>
 
-                  <%# Enhanced Inventory Status %>
+                  <%# Enhanced Stock Movement Display %>
                   <div class="mb-3">
-                    <% if product.stock > 0 %>
+                    <% current_stock = product.total_batch_stock %>
+                    <% if current_stock > 0 %>
                       <div class="d-flex flex-column">
-                        <small class="text-success mb-1">
-                          <i class="bi bi-check-circle-fill"></i>
-                          <%= product.inventory_status_text %>
-                        </small>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                          <small class="<%= product.stock_status_class %>">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <%= product.stock_status_text_enhanced %>
+                          </small>
+                          <span class="badge bg-primary">
+                            <i class="bi bi-box-seam"></i>
+                            <%= current_stock.to_i %> units
+                          </span>
+                        </div>
+
+                        <%# Stock Movement Summary %>
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                          <span title="Total added via purchases">
+                            <i class="bi bi-plus-circle text-success"></i>
+                            Added: <%= product.total_added.to_i %>
+                          </span>
+                          <span title="Total consumed via bookings">
+                            <i class="bi bi-dash-circle text-danger"></i>
+                            Consumed: <%= product.total_consumed.to_i %>
+                          </span>
+                        </div>
+
+                        <% if product.low_stock? %>
+                          <div class="alert alert-warning py-1 px-2 mb-2">
+                            <small>
+                              <i class="bi bi-exclamation-triangle"></i>
+                              <strong>Low Stock Alert!</strong> Only <%= current_stock.to_i %> units remaining
+                              (Minimum: <%= product.minimum_stock_threshold %>)
+                            </small>
+                          </div>
+                        <% end %>
+
+                        <%# Progress bar showing stock utilization %>
                         <% if product.initial_stock.present? && product.initial_stock > 0 %>
-                          <div class="progress" style="height: 4px;">
+                          <div class="progress" style="height: 6px;">
                             <div class="progress-bar bg-success" role="progressbar"
                                  style="width: <%= product.inventory_percentage_available %>%"
                                  title="<%= product.inventory_percentage_available %>% available">
@@ -125,49 +165,84 @@
                                  title="<%= product.inventory_percentage_sold %>% sold">
                             </div>
                           </div>
-                          <small class="text-muted">
+                          <small class="text-muted mt-1">
                             <span class="badge bg-success-subtle text-success"><%= product.inventory_percentage_available %>% available</span>
                             <span class="badge bg-danger-subtle text-danger"><%= product.inventory_percentage_sold %>% sold</span>
+                          </small>
+                        <% else %>
+                          <small class="text-muted mt-1">
+                            Current stock: <strong><%= current_stock.to_i %></strong> units
+                            <% if product.stock_movements.any? %>
+                              | Last updated: <%= product.stock_movements.recent.first&.created_at&.strftime('%d %b %y') %>
+                            <% end %>
                           </small>
                         <% end %>
                       </div>
                     <% else %>
-                      <small class="text-danger">
-                        <i class="bi bi-x-circle-fill"></i>
-                        <strong>SOLD OUT</strong>
-                        <% if product.initial_stock.present? && product.initial_stock > 0 %>
-                          (0 / <%= product.initial_stock %> available)
+                      <div class="alert alert-danger py-1 px-2 mb-2">
+                        <small class="d-block">
+                          <i class="bi bi-x-circle-fill"></i>
+                          <strong>OUT OF STOCK</strong>
+                        </small>
+                        <% if product.total_consumed > 0 %>
+                          <small class="text-muted">
+                            Total consumed: <%= product.total_consumed.to_i %> units
+                          </small>
                         <% end %>
-                      </small>
+                      </div>
                     <% end %>
                   </div>
 
                   <%# Quantity and Add to Cart %>
                   <div class="mt-3">
-                    <% if product.stock > 0 %>
+                    <% current_stock = product.total_batch_stock %>
+                    <% if current_stock > 0 %>
                       <!-- Quantity Selector -->
                       <div class="mb-3">
-                        <label class="form-label fw-bold small">Quantity (Max: <%= product.stock %>):</label>
+                        <label class="form-label fw-bold small">
+                          Quantity
+                          <span class="badge bg-info-subtle text-info ms-1">
+                            Max: <%= current_stock.to_i %>
+                          </span>
+                        </label>
                         <div class="d-flex align-items-center gap-2">
                           <button class="btn btn-outline-secondary btn-sm" type="button" onclick="decreaseQuantity(<%= product.id %>)" style="width: 35px; height: 35px;">
                             <i class="bi bi-dash"></i>
                           </button>
-                          <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="<%= product.stock %>" class="form-control text-center" style="width: 80px; height: 35px;" onchange="validateQuantity(<%= product.id %>, <%= product.stock %>)">
+                          <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="<%= current_stock %>" class="form-control text-center" style="width: 80px; height: 35px;" onchange="validateQuantity(<%= product.id %>, <%= current_stock %>)">
                           <button class="btn btn-outline-secondary btn-sm" type="button" onclick="increaseQuantity(<%= product.id %>)" style="width: 35px; height: 35px;">
                             <i class="bi bi-plus"></i>
                           </button>
                         </div>
-                        <% if product.stock <= 5 %>
-                          <small class="text-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Only <%= product.stock %> items remaining!
+
+                        <%# Enhanced Stock Warning Messages %>
+                        <% if product.out_of_stock? %>
+                          <small class="text-danger d-block mt-1">
+                            <i class="bi bi-x-circle-fill"></i>
+                            <strong>OUT OF STOCK</strong> - Cannot add to cart
+                          </small>
+                        <% elsif product.low_stock? %>
+                          <small class="text-warning d-block mt-1">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>Low Stock Alert!</strong> Only <%= current_stock.to_i %> items remaining
+                          </small>
+                        <% elsif current_stock <= 10 %>
+                          <small class="text-info d-block mt-1">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <%= current_stock.to_i %> items available
                           </small>
                         <% end %>
                       </div>
 
                       <!-- Add to Cart Button -->
-                      <button class="btn btn-primary w-100" onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= product.respond_to?(:discount_price) && product.discount_price.present? ? product.discount_price : product.price %>, <%= product.stock %>)">
-                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                      <button class="btn btn-primary w-100"
+                              onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= product.respond_to?(:discount_price) && product.discount_price.present? ? product.discount_price : product.price %>, <%= current_stock %>)"
+                              <%= 'disabled' if product.out_of_stock? %>>
+                        <% if product.out_of_stock? %>
+                          <i class="bi bi-x-circle me-2"></i>Out of Stock
+                        <% else %>
+                          <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                        <% end %>
                       </button>
                     <% else %>
                       <div class="text-center">
@@ -225,11 +300,45 @@
 
               <div class="row g-3">
                 <div class="col-md-4">
-                  <label class="form-label">Existing Customer</label>
-                  <%= f.select :customer_id,
-                      options_for_select([['Select existing customer', '']] + @customers.map { |c| ["#{c.respond_to?(:display_name) ? c.display_name : "#{c.first_name} #{c.last_name}"} - #{c.mobile}", c.id] }),
-                      {},
-                      { class: 'form-select', onchange: 'fillCustomerDetails(this)' } %>
+                  <label class="form-label">
+                    <i class="bi bi-person-search me-1"></i>Search & Select Customer
+                  </label>
+                  <div class="position-relative">
+                    <!-- Hidden input for form submission -->
+                    <%= f.hidden_field :customer_id, id: 'selected_customer_id' %>
+
+                    <!-- Search input -->
+                    <input type="text"
+                           class="form-control customer-search-input"
+                           id="customerSearchInput"
+                           placeholder="🔍 Search by name, phone, or email..."
+                           autocomplete="off">
+
+                    <!-- Search results dropdown -->
+                    <div class="customer-search-dropdown" id="customerSearchDropdown">
+                      <div class="customer-search-results" id="customerSearchResults">
+                        <!-- Results will be populated here -->
+                      </div>
+                      <div class="customer-search-footer">
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="showAllCustomers()">
+                          <i class="bi bi-people me-1"></i>Show All Customers
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Selected customer display -->
+                    <div class="selected-customer-display" id="selectedCustomerDisplay" style="display: none;">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <div class="customer-info">
+                          <div class="customer-name fw-medium"></div>
+                          <div class="customer-details text-muted small"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearSelectedCustomer()">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="col-md-4">
@@ -237,9 +346,9 @@
                   <%= f.select :store_id,
                       options_for_select([['Select Store (Optional)', '']] + Store.active.map { |s| [s.display_name, s.id] }),
                       {},
-                      { class: 'form-select' } %>
+                      { class: 'form-select', id: 'store_select', onchange: 'handleStoreSelection(this)' } %>
                   <div class="form-text">
-                    <small><i class="bi bi-shop me-1"></i>Tag this sale to a store</small>
+                    <small><i class="bi bi-shop me-1"></i>Tag this sale to a store (auto-sets status to completed)</small>
                   </div>
                 </div>
 
@@ -358,8 +467,14 @@
                 <i class="bi bi-arrow-left me-1"></i>Back to Products
               </button>
 
-              <button type="submit" name="create_order" value="1" class="btn btn-success">
-                <i class="bi bi-check-circle me-1"></i>Complete Booking
+              <button type="submit" name="create_order" value="1" class="btn btn-success" id="completeBookingBtn">
+                <span class="btn-text">
+                  <i class="bi bi-check-circle me-1"></i>Complete Booking
+                </span>
+                <span class="btn-loading d-none">
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Processing booking...
+                </span>
               </button>
             </div>
           <% end %>
@@ -645,17 +760,216 @@ function calculateChange() {
   document.getElementById('booking_change_amount').value = change.toFixed(2);
 }
 
-// Fill customer details from dropdown
-function fillCustomerDetails(select) {
-  const customerId = select.value;
-  if (!customerId) return;
+// Customer Search System
+let customers = <%= raw @customers.map { |c| {
+  id: c.id,
+  name: c.respond_to?(:display_name) ? c.display_name : "#{c.first_name} #{c.last_name}".strip,
+  first_name: c.first_name,
+  last_name: c.last_name,
+  mobile: c.mobile,
+  email: c.email,
+  address: c.respond_to?(:address) ? c.address : ''
+}}.to_json %>;
 
-  // You would typically make an AJAX call here to get customer details
-  // For now, just clear the fields
+let searchTimeout;
+let currentSearchQuery = '';
+let selectedCustomerIndex = -1;
+
+// Initialize customer search
+function initializeCustomerSearch() {
+  const searchInput = document.getElementById('customerSearchInput');
+  const dropdown = document.getElementById('customerSearchDropdown');
+
+  if (!searchInput || !dropdown) return;
+
+  // Show dropdown on focus
+  searchInput.addEventListener('focus', function() {
+    if (this.value.length >= 1 || customers.length <= 20) {
+      showCustomerDropdown();
+      if (this.value.length >= 1) {
+        performCustomerSearch(this.value);
+      } else {
+        showAllCustomers();
+      }
+    }
+  });
+
+  // Hide dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.position-relative')) {
+      hideCustomerDropdown();
+    }
+  });
+
+  // Search as user types
+  searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    currentSearchQuery = query;
+    selectedCustomerIndex = -1;
+
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      if (query.length >= 1) {
+        showCustomerDropdown();
+        performCustomerSearch(query);
+      } else if (query.length === 0) {
+        if (customers.length <= 20) {
+          showAllCustomers();
+        } else {
+          hideCustomerDropdown();
+        }
+      }
+    }, 300);
+  });
+
+  // Handle keyboard navigation
+  searchInput.addEventListener('keydown', function(e) {
+    const items = document.querySelectorAll('.customer-search-item');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedCustomerIndex = Math.min(selectedCustomerIndex + 1, items.length - 1);
+      updateHighlightedItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedCustomerIndex = Math.max(selectedCustomerIndex - 1, -1);
+      updateHighlightedItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedCustomerIndex >= 0 && items[selectedCustomerIndex]) {
+        items[selectedCustomerIndex].click();
+      }
+    } else if (e.key === 'Escape') {
+      hideCustomerDropdown();
+      this.blur();
+    }
+  });
+}
+
+function performCustomerSearch(query) {
+  const results = document.getElementById('customerSearchResults');
+  if (!results) return;
+
+  // Show loading
+  results.innerHTML = '<div class="customer-search-loading"><div class="customer-search-spinner"></div>Searching customers...</div>';
+
+  // Simulate network delay for better UX
+  setTimeout(() => {
+    const filteredCustomers = customers.filter(customer =>
+      customer.name.toLowerCase().includes(query.toLowerCase()) ||
+      customer.mobile.includes(query) ||
+      (customer.email && customer.email.toLowerCase().includes(query.toLowerCase()))
+    ).slice(0, 10); // Limit to 10 results
+
+    displayCustomerResults(filteredCustomers, query);
+  }, 200);
+}
+
+function displayCustomerResults(customerList, searchQuery = '') {
+  const results = document.getElementById('customerSearchResults');
+  if (!results) return;
+
+  if (customerList.length === 0) {
+    results.innerHTML = '<div class="customer-search-empty"><i class="bi bi-person-x fs-4 mb-2 d-block text-muted"></i><div class="fw-medium">No customers found</div><small class="text-muted">Try searching with a different name, phone, or email</small></div>';
+    return;
+  }
+
+  let html = '';
+  customerList.forEach((customer, index) => {
+    const highlightedName = highlightSearchTerm(customer.name, searchQuery);
+    const highlightedMobile = highlightSearchTerm(customer.mobile, searchQuery);
+    const highlightedEmail = customer.email ? highlightSearchTerm(customer.email, searchQuery) : '';
+
+    html += '<div class="customer-search-item" onclick="selectCustomer(' + customer.id + ', \'' + escapeHtml(customer.name) + '\', \'' + customer.mobile + '\', \'' + escapeHtml(customer.email) + '\', \'' + escapeHtml(customer.address) + '\')" data-index="' + index + '">';
+    html += '<div class="customer-search-name">' + highlightedName + '</div>';
+    html += '<div class="customer-search-details">';
+    html += '<span class="customer-search-badge"><i class="bi bi-telephone"></i>' + highlightedMobile + '</span>';
+    if (customer.email) {
+      html += '<span class="customer-search-badge"><i class="bi bi-envelope"></i>' + highlightedEmail + '</span>';
+    }
+    html += '<span class="customer-search-badge"><i class="bi bi-person"></i>ID: ' + customer.id + '</span>';
+    html += '</div></div>';
+  });
+
+  results.innerHTML = html;
+}
+
+function highlightSearchTerm(text, searchTerm) {
+  if (!searchTerm || !text) return text;
+  const regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+  return text.replace(regex, '<mark style="background-color: #fff3cd; padding: 1px 2px; border-radius: 3px;">$1</mark>');
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/'/g, "\\\\'").replace(/"/g, '&quot;');
+}
+
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
+}
+
+function updateHighlightedItem(items) {
+  items.forEach((item, index) => {
+    item.classList.toggle('active', index === selectedCustomerIndex);
+  });
+
+  if (selectedCustomerIndex >= 0 && items[selectedCustomerIndex]) {
+    items[selectedCustomerIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function selectCustomer(customerId, customerName, customerMobile, customerEmail, customerAddress) {
+  document.getElementById('selected_customer_id').value = customerId;
+  document.getElementById('customerSearchInput').style.display = 'none';
+
+  const selectedDisplay = document.getElementById('selectedCustomerDisplay');
+  selectedDisplay.style.display = 'block';
+  selectedDisplay.querySelector('.customer-name').textContent = customerName;
+  selectedDisplay.querySelector('.customer-details').innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap"><span class="badge bg-primary-subtle text-primary"><i class="bi bi-telephone me-1"></i>' + customerMobile + '</span>' + (customerEmail ? '<span class="badge bg-success-subtle text-success"><i class="bi bi-envelope me-1"></i>' + customerEmail + '</span>' : '') + '<span class="badge bg-info-subtle text-info"><i class="bi bi-person me-1"></i>ID: ' + customerId + '</span></div>';
+
+  document.getElementById('booking_customer_name').value = customerName;
+  document.getElementById('booking_customer_phone').value = customerMobile;
+  document.getElementById('booking_customer_email').value = customerEmail || '';
+  if (customerAddress) {
+    document.getElementById('booking_delivery_address').value = customerAddress;
+  }
+
+  hideCustomerDropdown();
+  showNotification('Selected customer: ' + customerName, 'success');
+}
+
+function clearSelectedCustomer() {
+  document.getElementById('selected_customer_id').value = '';
+  document.getElementById('customerSearchInput').style.display = 'block';
+  document.getElementById('customerSearchInput').value = '';
+  document.getElementById('selectedCustomerDisplay').style.display = 'none';
+
   document.getElementById('booking_customer_name').value = '';
   document.getElementById('booking_customer_phone').value = '';
   document.getElementById('booking_customer_email').value = '';
   document.getElementById('booking_delivery_address').value = '';
+
+  document.getElementById('customerSearchInput').focus();
+}
+
+function showAllCustomers() {
+  displayCustomerResults(customers.slice(0, 10));
+}
+
+function showCustomerDropdown() {
+  const dropdown = document.getElementById('customerSearchDropdown');
+  if (dropdown) {
+    dropdown.classList.add('show');
+  }
+}
+
+function hideCustomerDropdown() {
+  const dropdown = document.getElementById('customerSearchDropdown');
+  if (dropdown) {
+    dropdown.classList.remove('show');
+  }
+  selectedCustomerIndex = -1;
 }
 
 // Quantity controls
@@ -717,10 +1031,17 @@ function setupSearch() {
     searchInput.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
       document.querySelectorAll('.product-grid-item').forEach(card => {
-        const name = card.querySelector('h6').textContent.toLowerCase();
-        const category = card.querySelector('small').textContent.toLowerCase();
+        const name = card.querySelector('h6')?.textContent?.toLowerCase() || '';
+        const categoryElement = card.querySelector('small');
+        const category = categoryElement?.textContent?.toLowerCase() || '';
 
-        if (name.includes(searchTerm) || category.includes(searchTerm)) {
+        // Get the SKU from the second small element (SKU: xxx format)
+        const skuElement = card.querySelectorAll('small')[1];
+        const sku = skuElement?.textContent?.toLowerCase() || '';
+
+        if (name.includes(searchTerm) ||
+            category.includes(searchTerm) ||
+            sku.includes(searchTerm)) {
           card.style.display = 'block';
         } else {
           card.style.display = 'none';
@@ -768,6 +1089,35 @@ function applyCategoryFilter() {
   });
 }
 
+// Handle store selection - automatically set status to completed if store is selected
+function handleStoreSelection(select) {
+  const statusSelect = document.getElementById('booking_status');
+
+  if (select.value && select.value !== '') {
+    // Store is selected - set status to completed
+    if (statusSelect) {
+      statusSelect.value = 'completed';
+      updateStatusPreview();
+
+      // Show notification
+      showNotification('Status automatically set to "Completed" as store is selected', 'info');
+
+      // Add visual feedback
+      statusSelect.style.backgroundColor = '#d4edda';
+      setTimeout(() => {
+        statusSelect.style.backgroundColor = '';
+      }, 2000);
+    }
+  } else {
+    // Store is deselected - optionally reset status to draft
+    if (statusSelect && statusSelect.value === 'completed') {
+      statusSelect.value = 'draft';
+      updateStatusPreview();
+      showNotification('Status reset to "Draft" as store was deselected', 'warning');
+    }
+  }
+}
+
 // Status management
 function updateStatusPreview() {
   const statusSelect = document.getElementById('booking_status');
@@ -809,10 +1159,65 @@ function updateStatusPreview() {
   statusPreview.style.display = 'block';
 }
 
+// Booking loader functionality
+function showBookingLoader() {
+  const submitBtn = document.getElementById('completeBookingBtn');
+  const btnText = submitBtn.querySelector('.btn-text');
+  const btnLoading = submitBtn.querySelector('.btn-loading');
+
+  if (submitBtn && btnText && btnLoading) {
+    // Hide normal text and show loading
+    btnText.classList.add('d-none');
+    btnLoading.classList.remove('d-none');
+
+    // Disable the button to prevent double submission
+    submitBtn.disabled = true;
+    submitBtn.classList.add('btn-loading-state');
+
+    // Disable the back button during processing
+    const backBtn = document.querySelector('button[onclick="showProductsView()"]');
+    if (backBtn) {
+      backBtn.disabled = true;
+      backBtn.classList.add('opacity-50');
+    }
+
+    // Show overlay message
+    showProcessingOverlay();
+  }
+}
+
+function showProcessingOverlay() {
+  // Create an overlay to prevent user interaction
+  const overlay = document.createElement('div');
+  overlay.id = 'bookingProcessingOverlay';
+  overlay.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+  overlay.style.cssText = `
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+  `;
+
+  overlay.innerHTML = `
+    <div class="text-center text-white">
+      <div class="spinner-border spinner-border-lg mb-3" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <h5 class="mb-2">Processing Your Booking</h5>
+      <p class="mb-0 opacity-75">Please wait while we save your booking details...</p>
+      <div class="mt-3">
+        <small class="opacity-50">⚠️ Please do not close this window or navigate away</small>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
   initializeCart();
   setupSearch();
+  initializeCustomerSearch();
 
   // Set default payment method
   selectPaymentMethod('cash');
@@ -853,6 +1258,9 @@ document.addEventListener('DOMContentLoaded', function() {
         statusSelect.focus();
         return false;
       }
+
+      // Show loading state
+      showBookingLoader();
     });
   }
 });
@@ -878,5 +1286,170 @@ document.addEventListener('DOMContentLoaded', function() {
   .position-fixed {
     position: relative !important;
   }
+}
+
+/* Customer Search Dropdown Styles */
+.customer-search-input {
+  position: relative;
+  z-index: 1;
+}
+
+.customer-search-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.customer-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  z-index: 1000;
+  max-height: 400px;
+  overflow: hidden;
+  display: none;
+}
+
+.customer-search-dropdown.show {
+  display: block;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.customer-search-results {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.customer-search-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f3f4;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.customer-search-item:hover {
+  background-color: #f8f9fa;
+}
+
+.customer-search-item:last-child {
+  border-bottom: none;
+}
+
+.customer-search-item.active {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.customer-search-name {
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.customer-search-details {
+  font-size: 0.875rem;
+  color: #6c757d;
+  display: flex;
+  align-items-center;
+  gap: 12px;
+}
+
+.customer-search-badge {
+  display: inline-flex;
+  align-items-center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 12px;
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.customer-search-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.selected-customer-display {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.customer-search-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.customer-search-loading {
+  padding: 16px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.customer-search-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #0d6efd;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Booking Loading Button Styles */
+.btn-loading-state {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading-state:hover {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+}
+
+.btn-loading .spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+#bookingProcessingOverlay {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.spinner-border-lg {
+  width: 3rem;
+  height: 3rem;
 }
 </style>
