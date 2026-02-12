@@ -220,7 +220,7 @@
                 <td class="align-middle">
                   <div>
                     <span class="badge bg-info-subtle text-info">
-                      <%= pluralize(booking.booking_items_count, 'item') %>
+                      <%= pluralize(booking.booking_items.size, 'item') %>
                     </span>
                     <div class="fw-medium text-success mt-1">
                       ₹<%= number_with_delimiter(booking.total_amount || 0) %>

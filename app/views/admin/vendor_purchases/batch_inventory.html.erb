@@ -253,11 +253,11 @@
                             <table class="table table-sm table-borderless">
                               <tr>
                                 <td>Purchase Date:</td>
-                                <td><%= batch.vendor_purchase.purchase_date.strftime('%B %d, %Y') %></td>
+                                <td><%= batch.vendor_purchase&.purchase_date&.strftime('%B %d, %Y') || 'N/A' %></td>
                               </tr>
                               <tr>
                                 <td>Purchase #:</td>
-                                <td><%= batch.vendor_purchase.purchase_number %></td>
+                                <td><%= batch.vendor_purchase&.purchase_number || 'N/A' %></td>
                               </tr>
                               <tr>
                                 <td>Unit Type:</td>

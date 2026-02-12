@@ -511,10 +511,7 @@ Rails.application.routes.draw do
       end
     end
 
-    # Bookings Management
-    resources :bookings
-
-    # Orders Management
+    # Orders Management (Note: Bookings already defined above with full functionality)
     resources :orders
 
     # Settings namespace

@@ -65,7 +65,7 @@
             </div>
             <div class="info-item">
               <span class="label">Items:</span>
-              <span class="value"><%= pluralize(@booking.booking_items_count, 'item') %></span>
+              <span class="value"><%= pluralize(@booking.booking_items.size, 'item') %></span>
             </div>
             <div class="info-item">
               <span class="label">Payment Status:</span>
