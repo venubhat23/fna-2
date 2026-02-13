@@ -35,13 +35,8 @@ class Admin::CustomersController < Admin::ApplicationController
 
     # Filter by customer type - removed (column doesn't exist in customers table)
 
-    # Filter by status
-    case params[:status]
-    when 'active'
-      @customers = @customers.where(status: true)
-    when 'inactive'
-      @customers = @customers.where(status: false)
-    end
+    # Filter by status - removed (status column doesn't exist in customers table)
+    # All customers are considered active since there's no status field
 
     # Get total count before pagination for display purposes
     @total_filtered_count = @customers.count
@@ -65,12 +60,8 @@ class Admin::CustomersController < Admin::ApplicationController
 
     # customer_type filtering removed - column doesn't exist in customers table
 
-    case params[:status]
-    when 'active'
-      stats_scope = stats_scope.where(status: true)
-    when 'inactive'
-      stats_scope = stats_scope.where(status: false)
-    end
+    # Status filtering removed - status column doesn't exist in customers table
+    # All customers are treated as active
 
     # Calculate filtered stats - customer_type column doesn't exist in customers table
     @stats = {
@@ -347,7 +338,7 @@ class Admin::CustomersController < Admin::ApplicationController
   # GET /admin/customers/new
   def new
     @customer = Customer.new
-    @customer.status = true
+    # status field removed - column doesn't exist in customers table
     @sub_agents = SubAgent.active.order(:first_name, :last_name)
 
     # If lead_id is provided, populate customer with lead data
@@ -544,9 +535,8 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # PATCH /admin/customers/1/toggle_status
   def toggle_status
-    @customer.update(status: !@customer.status)
-    status_text = @customer.status? ? 'activated' : 'deactivated'
-    redirect_to admin_customers_path, notice: "Customer was successfully #{status_text}."
+    # Status functionality disabled - status column doesn't exist in customers table
+    redirect_to admin_customers_path, notice: "Status functionality is not available."
   end
 
   # GET /admin/customers/export

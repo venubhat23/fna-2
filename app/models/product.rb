@@ -16,11 +16,18 @@ class Product < ApplicationRecord
   UNIT_TYPES = [
     ['Kg', 'Kg'],
     ['Liter', 'Liter'],
+    ['Bottle', 'Bottle'],
     ['Piece', 'Piece'],
     ['Gram', 'Gram'],
     ['Dozen', 'Dozen'],
     ['Box', 'Box'],
-    ['Packet', 'Packet']
+    ['Packet', 'Packet'],
+    ['Ml', 'Ml'],
+    ['Bundle', 'Bundle'],
+    ['Can', 'Can'],
+    ['Jar', 'Jar'],
+    ['Pouch', 'Pouch'],
+    ['Sachet', 'Sachet']
   ].freeze
 
   belongs_to :category
@@ -54,7 +61,7 @@ class Product < ApplicationRecord
   validates :product_type, presence: true, inclusion: { in: PRODUCT_TYPES.map(&:last) }
   validates :weight, numericality: { greater_than: 0 }, allow_blank: true
   validates :buying_price, numericality: { greater_than: 0 }, allow_blank: true
-  # validates :unit_type, inclusion: { in: UNIT_TYPES.map(&:last) }, allow_blank: true
+  validates :unit_type, presence: true, inclusion: { in: UNIT_TYPES.map(&:last) }
   # validates :minimum_stock_alert, numericality: { greater_than: 0 }, allow_blank: true
   # validates :default_selling_price, numericality: { greater_than: 0 }, allow_blank: true
   validates :discount_type, inclusion: { in: ['percentage', 'fixed'], message: 'must be percentage or fixed' }, allow_blank: true
@@ -106,11 +113,7 @@ class Product < ApplicationRecord
   after_update :update_stock_batch, if: -> { saved_change_to_stock? && stock.present? }
 
   def in_stock?
-    total_batch_stock > 0
-  end
-
-  def out_of_stock?
-    total_batch_stock == 0
+    cached_total_batch_stock > 0
   end
 
   # Inventory tracking methods
@@ -142,9 +145,32 @@ class Product < ApplicationRecord
 
   # Initial stock - calculated as the first stock batch's quantity
   def initial_stock
+    # Use cached value if available (from controller query)
+    if respond_to?(:initial_stock_value) && initial_stock_value.present?
+      return initial_stock_value.to_f
+    end
+
+    # Use loaded association if available
+    if stock_batches.loaded?
+      oldest_batch = stock_batches.min_by { |b| [b.batch_date, b.created_at] }
+      return oldest_batch&.quantity_purchased || stock || 0
+    end
+
     # Get the oldest stock batch (the original one) or fall back to current stock
     first_batch = stock_batches.by_fifo.first
     first_batch&.quantity_purchased || stock || 0
+  end
+
+  # Optimized method for cached initial stock
+  def cached_initial_stock
+    if respond_to?(:initial_stock_value)
+      initial_stock_value.to_f
+    elsif stock_batches.loaded?
+      oldest_batch = stock_batches.min_by { |b| [b.batch_date, b.created_at] }
+      oldest_batch&.quantity_purchased || stock || 0
+    else
+      initial_stock
+    end
   end
 
   def inventory_percentage_sold
@@ -487,11 +513,27 @@ class Product < ApplicationRecord
 
   # Vendor Management Methods
   def total_batch_stock
+    # Use cached value if available (from controller query)
+    if respond_to?(:cached_stock) && cached_stock.present?
+      return cached_stock.to_f
+    end
+
     # Fallback to regular stock if stock_batches table doesn't exist
     return stock if !ActiveRecord::Base.connection.table_exists?('stock_batches')
     stock_batches.active.sum(:quantity_remaining)
   rescue
     stock
+  end
+
+  # Optimized method for when we have preloaded stock_batches
+  def cached_total_batch_stock
+    if respond_to?(:cached_stock)
+      cached_stock.to_f
+    elsif stock_batches.loaded?
+      stock_batches.select { |b| b.status == 'active' && b.quantity_remaining > 0 }.sum(&:quantity_remaining)
+    else
+      total_batch_stock
+    end
   end
 
   def total_batch_value
@@ -609,13 +651,14 @@ class Product < ApplicationRecord
   end
 
   def out_of_stock?
-    total_batch_stock <= 0
+    cached_total_batch_stock <= 0
   end
 
   def low_stock?
     # Use minimum_stock_alert if it exists, otherwise default threshold of 10
     threshold = respond_to?(:minimum_stock_alert) && minimum_stock_alert.present? ? minimum_stock_alert : 10
-    total_batch_stock <= threshold
+    stock_amount = cached_total_batch_stock
+    stock_amount > 0 && stock_amount <= threshold
   end
 
   def stock_status_enhanced

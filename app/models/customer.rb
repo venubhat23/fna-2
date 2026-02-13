@@ -73,16 +73,16 @@ class Customer < ApplicationRecord
   # before_create :generate_lead_id_if_missing  # Commented out until lead_id column exists
 
   def set_defaults
-    self.status = true if status.nil?
+    # No default status field - column doesn't exist in customers table
   end
 
   # Optional validations
   validates :gender, inclusion: { in: ['Male', 'Female', 'Other'] }, allow_blank: true
   validates :pan_no, format: { with: /\A[A-Z]{5}\d{4}[A-Z]\z/ }, allow_blank: true
 
-  # Scopes
-  scope :active, -> { where(status: true) }
-  scope :inactive, -> { where(status: false) }
+  # Scopes - status column doesn't exist, so all customers are considered active
+  scope :active, -> { all }
+  scope :inactive, -> { none } # No status column, so return empty relation
 
   # Callbacks
   before_validation :normalize_blank_values

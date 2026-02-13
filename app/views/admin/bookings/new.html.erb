@@ -59,7 +59,8 @@
       <% if @products&.any? %>
         <div class="row g-3" id="productGrid">
           <% @products.each do |product| %>
-            <div class="col-md-4 col-lg-3 product-grid-item" data-product-id="<%= product.id %>" data-category="<%= product.category_id %>" data-stock="<%= product.total_batch_stock %>">
+            <% current_stock = product.cached_total_batch_stock %>
+            <div class="col-md-4 col-lg-3 product-grid-item" data-product-id="<%= product.id %>" data-category="<%= product.category_id %>" data-stock="<%= current_stock %>">
               <div class="card h-100 border-0 shadow-sm hover-lift">
                 <%# Product Image %>
                 <div class="position-relative">
@@ -72,7 +73,6 @@
                   <% end %>
 
                   <%# Enhanced Stock Badge %>
-                  <% current_stock = product.total_batch_stock %>
                   <% if product.out_of_stock? %>
                     <span class="position-absolute top-0 end-0 badge bg-danger m-2">
                       <i class="bi bi-x-circle me-1"></i>Out of Stock
@@ -117,30 +117,23 @@
 
                   <%# Enhanced Stock Movement Display %>
                   <div class="mb-3">
-                    <% current_stock = product.total_batch_stock %>
                     <% if current_stock > 0 %>
                       <div class="d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                          <small class="<%= product.stock_status_class %>">
+                          <small class="text-success">
                             <i class="bi bi-check-circle-fill"></i>
-                            <%= product.stock_status_text_enhanced %>
+                            In Stock
                           </small>
                           <span class="badge bg-primary">
                             <i class="bi bi-box-seam"></i>
-                            <%= current_stock.to_i %> units
+                            <%= current_stock.to_i %> <%= product.unit_type %>
                           </span>
                         </div>
 
-                        <%# Stock Movement Summary %>
-                        <div class="d-flex justify-content-between small text-muted mb-2">
-                          <span title="Total added via purchases">
-                            <i class="bi bi-plus-circle text-success"></i>
-                            Added: <%= product.total_added.to_i %>
-                          </span>
-                          <span title="Total consumed via bookings">
-                            <i class="bi bi-dash-circle text-danger"></i>
-                            Consumed: <%= product.total_consumed.to_i %>
-                          </span>
+                        <%# Simplified Stock Display %>
+                        <div class="small text-muted mb-2 text-center">
+                          <i class="bi bi-info-circle"></i>
+                          Available: <%= current_stock.to_i %> <%= product.unit_type %>
                         </div>
 
                         <% if product.low_stock? %>
@@ -154,29 +147,6 @@
                         <% end %>
 
                         <%# Progress bar showing stock utilization %>
-                        <% if product.initial_stock.present? && product.initial_stock > 0 %>
-                          <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-success" role="progressbar"
-                                 style="width: <%= product.inventory_percentage_available %>%"
-                                 title="<%= product.inventory_percentage_available %>% available">
-                            </div>
-                            <div class="progress-bar bg-danger" role="progressbar"
-                                 style="width: <%= product.inventory_percentage_sold %>%"
-                                 title="<%= product.inventory_percentage_sold %>% sold">
-                            </div>
-                          </div>
-                          <small class="text-muted mt-1">
-                            <span class="badge bg-success-subtle text-success"><%= product.inventory_percentage_available %>% available</span>
-                            <span class="badge bg-danger-subtle text-danger"><%= product.inventory_percentage_sold %>% sold</span>
-                          </small>
-                        <% else %>
-                          <small class="text-muted mt-1">
-                            Current stock: <strong><%= current_stock.to_i %></strong> units
-                            <% if product.stock_movements.any? %>
-                              | Last updated: <%= product.stock_movements.recent.first&.created_at&.strftime('%d %b %y') %>
-                            <% end %>
-                          </small>
-                        <% end %>
                       </div>
                     <% else %>
                       <div class="alert alert-danger py-1 px-2 mb-2">
@@ -184,18 +154,12 @@
                           <i class="bi bi-x-circle-fill"></i>
                           <strong>OUT OF STOCK</strong>
                         </small>
-                        <% if product.total_consumed > 0 %>
-                          <small class="text-muted">
-                            Total consumed: <%= product.total_consumed.to_i %> units
-                          </small>
-                        <% end %>
                       </div>
                     <% end %>
                   </div>
 
                   <%# Quantity and Add to Cart %>
                   <div class="mt-3">
-                    <% current_stock = product.total_batch_stock %>
                     <% if current_stock > 0 %>
                       <!-- Quantity Selector -->
                       <div class="mb-3">
@@ -224,12 +188,12 @@
                         <% elsif product.low_stock? %>
                           <small class="text-warning d-block mt-1">
                             <i class="bi bi-exclamation-triangle-fill"></i>
-                            <strong>Low Stock Alert!</strong> Only <%= current_stock.to_i %> items remaining
+                            <strong>Low Stock Alert!</strong> Only <%= current_stock.to_i %> <%= product.unit_type %> remaining
                           </small>
                         <% elsif current_stock <= 10 %>
                           <small class="text-info d-block mt-1">
                             <i class="bi bi-info-circle-fill"></i>
-                            <%= current_stock.to_i %> items available
+                            <%= current_stock.to_i %> <%= product.unit_type %> available
                           </small>
                         <% end %>
                       </div>

@@ -80,19 +80,45 @@ class Admin::VendorPurchasesController < ApplicationController
   end
 
   def batch_inventory
-    @stock_batches = StockBatch.includes(:product, :vendor, :vendor_purchase)
-                              .active
-                              .order(:batch_date, :created_at)
+    # Get all stock batches with filters
+    stock_batches_query = StockBatch.includes(:product, :vendor, :vendor_purchase)
+                                   .active
+                                   .order(:batch_date, :created_at)
 
-    @stock_batches = @stock_batches.joins(:product).where('products.name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
-    @stock_batches = @stock_batches.where(vendor_id: params[:vendor_id]) if params[:vendor_id].present?
-    @stock_batches = @stock_batches.where('quantity_remaining > 0') if params[:in_stock] == 'true'
-    @stock_batches = @stock_batches.page(params[:page]).per(50)
+    stock_batches_query = stock_batches_query.joins(:product).where('products.name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
+    stock_batches_query = stock_batches_query.where(vendor_id: params[:vendor_id]) if params[:vendor_id].present?
+    stock_batches_query = stock_batches_query.where('quantity_remaining > 0') if params[:in_stock] == 'true'
 
+    @stock_batches = stock_batches_query.to_a
+
+    # Group batches by product for better organization
+    @products_with_batches = @stock_batches.group_by(&:product)
+
+    # Statistics
     @vendors = Vendor.active.order(:name)
     @total_batches = @stock_batches.count
-    @total_products = @stock_batches.joins(:product).distinct.count('products.id')
-    @total_stock_value = StockBatch.active.sum { |batch| batch.quantity_remaining * batch.purchase_price }
+    @total_products = @products_with_batches.keys.count
+    @total_stock_value = @stock_batches.sum { |batch| batch.quantity_remaining * batch.purchase_price }
+    @total_quantity = @stock_batches.sum(&:quantity_remaining)
+
+    # Product-level statistics (sorted by product name)
+    @product_stats = @products_with_batches.sort_by { |product, _| product.name }.map do |product, batches|
+      total_quantity = batches.sum(&:quantity_remaining)
+      total_value = batches.sum { |batch| batch.quantity_remaining * batch.purchase_price }
+      avg_purchase_price = total_quantity > 0 ? (total_value / total_quantity.to_f) : 0
+
+      {
+        product: product,
+        batch_count: batches.count,
+        total_quantity: total_quantity,
+        total_value: total_value,
+        avg_purchase_price: avg_purchase_price,
+        oldest_batch_date: batches.min_by(&:batch_date)&.batch_date,
+        newest_batch_date: batches.max_by(&:batch_date)&.batch_date,
+        vendor_count: batches.map(&:vendor).uniq.count,
+        batches: batches.sort_by(&:batch_date)
+      }
+    end
   end
 
   private

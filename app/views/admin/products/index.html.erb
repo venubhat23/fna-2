@@ -198,10 +198,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td class="align-middle">
                   <% if product.stock.to_i > 0 %>
-                    <span class="text-success fw-medium"><%= product.stock %></span>
+                    <span class="text-success fw-medium"><%= product.stock %> <%= product.unit_type %></span>
                     <div class="small text-muted">In Stock</div>
                   <% else %>
-                    <span class="text-danger fw-medium">0</span>
+                    <span class="text-danger fw-medium">0 <%= product.unit_type %></span>
                     <div class="small text-muted">Out of Stock</div>
                   <% end %>
                 </td>

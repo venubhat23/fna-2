@@ -37,8 +37,26 @@ class Admin::BookingsController < ApplicationController
   def new
     @booking = Booking.new
     @booking.booking_items.build
-    @products = Product.active.includes(:category, images_attachments: :blob)
-    @customers = Customer.all.order(:first_name, :last_name)
+
+    # Eager load all necessary associations and precompute stock data
+    @products = Product.active
+                       .includes(
+                         :category,
+                         :stock_batches,
+                         images_attachments: :blob
+                       )
+                       .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active' AND stock_batches.quantity_remaining > 0")
+                       .select(
+                         "products.*,
+                          COALESCE(SUM(stock_batches.quantity_remaining), 0) as cached_stock,
+                          MIN(stock_batches.batch_date) as first_batch_date,
+                          (SELECT quantity_purchased FROM stock_batches sb2 WHERE sb2.product_id = products.id ORDER BY sb2.batch_date ASC, sb2.created_at ASC LIMIT 1) as initial_stock_value"
+                       )
+                       .group("products.id")
+                       .order(:name)
+
+    @customers = Customer.select(:id, :first_name, :last_name, :email, :mobile)
+                        .order(:first_name, :last_name)
   end
 
   def create
