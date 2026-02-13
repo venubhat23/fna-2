@@ -33,10 +33,7 @@ class Admin::CustomersController < Admin::ApplicationController
       end
     end
 
-    # Filter by customer type
-    if params[:customer_type].present?
-      @customers = @customers.where(customer_type: params[:customer_type])
-    end
+    # Filter by customer type - removed (column doesn't exist in customers table)
 
     # Filter by status
     case params[:status]
@@ -66,9 +63,7 @@ class Admin::CustomersController < Admin::ApplicationController
       )
     end
 
-    if params[:customer_type].present?
-      stats_scope = stats_scope.where(customer_type: params[:customer_type])
-    end
+    # customer_type filtering removed - column doesn't exist in customers table
 
     case params[:status]
     when 'active'
@@ -77,29 +72,13 @@ class Admin::CustomersController < Admin::ApplicationController
       stats_scope = stats_scope.where(status: false)
     end
 
-    # Calculate filtered stats using simple queries to avoid GROUP BY issues
-    @stats = if params[:search].present? && params[:search].strip.length >= 4
-      # When search is active, use simpler aggregation
-      {
-        total_customers: stats_scope.count,
-        active_customers: stats_scope.where(status: true).count,
-        individual_customers: stats_scope.where(customer_type: 'individual').count,
-        corporate_customers: stats_scope.where(customer_type: 'corporate').count
-      }
-    else
-      # When no search, can use GROUP BY safely
-      stats_data = stats_scope.group(:customer_type, :status).count
-      stats_data.each_with_object(Hash.new(0)) do |(key, count), stats|
-        customer_type, status = key
-
-        stats[:total_customers] += count
-        stats[:active_customers] += count if status == true
-        stats[:individual_customers] += count if customer_type == 'individual'
-        stats[:corporate_customers] += count if customer_type == 'corporate'
-      end.tap do |stats|
-        stats[:total_customers] = stats_scope.count if stats[:total_customers] == 0
-      end
-    end
+    # Calculate filtered stats - customer_type column doesn't exist in customers table
+    @stats = {
+      total_customers: stats_scope.count,
+      active_customers: stats_scope.count, # All customers are considered active in this context
+      individual_customers: 0, # Not available without customer_type column
+      corporate_customers: 0   # Not available without customer_type column
+    }
 
     @total_customers = @stats[:total_customers]
     @active_customers = @stats[:active_customers]
@@ -376,7 +355,7 @@ class Admin::CustomersController < Admin::ApplicationController
       @lead = Lead.find(params[:lead_id])
 
       # Basic information mapping
-      @customer.customer_type = @lead.customer_type
+      # customer_type assignment removed - field doesn't exist in customers table
       @customer.email = @lead.email
       @customer.mobile = @lead.contact_number
       @customer.address = @lead.address
@@ -579,9 +558,7 @@ class Admin::CustomersController < Admin::ApplicationController
       @customers = @customers.search_customers(params[:search])
     end
 
-    if params[:customer_type].present?
-      @customers = @customers.where(customer_type: params[:customer_type])
-    end
+    # customer_type filtering removed - column doesn't exist in customers table
 
     case params[:status]
     when 'active'
@@ -680,7 +657,7 @@ class Admin::CustomersController < Admin::ApplicationController
 
   def customer_params
     params.require(:customer).permit(
-      :customer_type, :first_name, :middle_name, :last_name, :company_name, :email, :mobile,
+      :first_name, :last_name, :email, :mobile,
       :address, :state, :city, :pincode, :pan_no, :pan_number, :gst_no, :gst_number, :birth_date,
       :gender, :occupation, :job_name, :annual_income, :nominee_name, :nominee_relation,
       :nominee_date_of_birth, :status, :birth_place, :height_feet, :weight_kg, :education,
@@ -708,7 +685,7 @@ class Admin::CustomersController < Admin::ApplicationController
 
     CSV.generate(headers: true) do |csv|
       csv << %w[
-        ID CustomerType FirstName LastName CompanyName Email Mobile
+        ID FirstName LastName Email Mobile
         Address State City Pincode BirthDate Gender Height Weight
         Education MaritalStatus Occupation JobName TypeOfDuty AnnualIncome
         PANNumber GSTNumber BirthPlace NomineeName NomineeRelation
@@ -718,7 +695,6 @@ class Admin::CustomersController < Admin::ApplicationController
       customers.find_each do |customer|
         csv << [
           customer.id,
-          customer.customer_type&.humanize,
           customer.first_name,
           customer.last_name,
           customer.company_name,
@@ -778,7 +754,6 @@ class Admin::CustomersController < Admin::ApplicationController
       row = row_index + 1
       data = [
         customer.id,
-        customer.customer_type&.humanize,
         customer.first_name,
         customer.last_name,
         customer.company_name,
