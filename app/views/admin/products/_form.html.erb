@@ -403,13 +403,13 @@
                         <div class="row g-3">
                           <div class="col-md-3">
                             <div class="text-center">
-                              <small class="text-muted d-block">Base Price</small>
+                              <small class="text-muted d-block">Selling Price (Base)</small>
                               <span class="fw-bold fs-6" id="gst_base_price">₹0.00</span>
                             </div>
                           </div>
                           <div class="col-md-3">
                             <div class="text-center">
-                              <small class="text-muted d-block">Total GST</small>
+                              <small class="text-muted d-block">Total GST Amount</small>
                               <span class="fw-bold fs-6 text-info" id="gst_total_amount">₹0.00</span>
                               <small class="d-block text-muted">(<span id="gst_effective_rate">0</span>%)</small>
                             </div>
@@ -1624,8 +1624,12 @@ document.addEventListener('DOMContentLoaded', function() {
     calculateSimplifiedDiscount();
   };
 
-  // Initialize multiselect functionality
-  initializeMultiselectDropdowns();
+  // Initialize multiselect functionality with error handling
+  try {
+    initializeMultiselectDropdowns();
+  } catch (error) {
+    console.error('Error initializing multiselect dropdowns:', error);
+  }
 
   // Initialize occasional product functionality
   initializeOccasionalProduct();
@@ -1638,6 +1642,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Handle multiselect change events to update hidden location_data field
   function updateLocationData(ruleRow) {
+    if (!ruleRow) {
+      console.error('updateLocationData: ruleRow is null');
+      return;
+    }
+
     const ruleTypeSelect = ruleRow.querySelector('[name*="rule_type"]');
     const hiddenLocationData = ruleRow.querySelector('.location-data-hidden');
     const stateSelect = ruleRow.querySelector('.multiselect-states');
@@ -1672,6 +1681,95 @@ document.addEventListener('DOMContentLoaded', function() {
     hiddenLocationData.value = JSON.stringify(locationData);
   }
 
+  // Update filtered cities when states are selected
+  function updateFilteredCities(ruleRow) {
+    if (!ruleRow) return;
+
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const filteredCitiesGroup = ruleRow.querySelector('.filtered-cities-group');
+    const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+
+    if (!stateSelect || !filteredCitiesGroup || !filteredCitiesSelect) return;
+
+    const selectedStates = Array.from(stateSelect.selectedOptions).map(option => option.value);
+
+    if (selectedStates.length > 0) {
+      // Show the filtered cities dropdown
+      filteredCitiesGroup.style.display = 'block';
+
+      // Populate cities for selected states
+      const citiesForStates = [];
+      const stateCityMapping = {
+        'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davangere'],
+        'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli'],
+        'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur', 'Thane'],
+        'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam', 'Alappuzha'],
+        'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Tirupati'],
+        'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar'],
+        'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar'],
+        'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur'],
+        'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Ghaziabad', 'Agra', 'Varanasi', 'Meerut', 'Allahabad'],
+        'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Haldia'],
+        'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali'],
+        'Haryana': ['Chandigarh', 'Faridabad', 'Gurgaon', 'Hisar', 'Panipat', 'Ambala'],
+        'Delhi': ['New Delhi', 'Delhi', 'Gurgaon', 'Faridabad', 'Noida', 'Ghaziabad'],
+        'Madhya Pradesh': ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar'],
+        'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia', 'Darbhanga'],
+        'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur', 'Sambalpur']
+      };
+
+      selectedStates.forEach(state => {
+        if (stateCityMapping[state]) {
+          citiesForStates.push(...stateCityMapping[state]);
+        }
+      });
+
+      // Clear and populate filtered cities dropdown
+      $(filteredCitiesSelect).empty();
+      citiesForStates.sort().forEach(city => {
+        const option = new Option(city, city, false, false);
+        filteredCitiesSelect.appendChild(option);
+      });
+
+      // Refresh Select2
+      $(filteredCitiesSelect).trigger('change');
+
+    } else {
+      // Hide the filtered cities dropdown
+      filteredCitiesGroup.style.display = 'none';
+    }
+  }
+
+  // Filter cities by selected states
+  function filterCitiesByStates(ruleRow) {
+    if (!ruleRow) return;
+
+    const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+
+    if (!stateFilterSelect || !citySelect) return;
+
+    const selectedStates = Array.from(stateFilterSelect.selectedOptions).map(option => option.value);
+
+    // Show/hide options based on selected states
+    const allOptions = citySelect.querySelectorAll('option');
+    allOptions.forEach(option => {
+      if (selectedStates.length === 0) {
+        option.style.display = 'block';
+      } else {
+        // Simple filtering logic - you can enhance this with proper state-city mapping
+        const shouldShow = selectedStates.some(state => {
+          // This is a simplified check - in a real application, you'd have proper city-state mapping
+          return option.value.toLowerCase().includes(state.toLowerCase().substring(0, 3));
+        });
+        option.style.display = shouldShow ? 'block' : 'none';
+      }
+    });
+
+    // Refresh Select2 to reflect changes
+    $(citySelect).trigger('change.select2');
+  }
+
   // Add change event listeners to multiselects and pincode input
   function initializeMultiselectDropdowns() {
     document.querySelectorAll('.delivery-rule-row').forEach(ruleRow => {
@@ -1681,70 +1779,159 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initialize multiselect functionality for a single row
   function initializeMultiselectForRow(ruleRow) {
+    if (!ruleRow) {
+      console.error('initializeMultiselectForRow: ruleRow is null');
+      return;
+    }
+
     const stateSelect = ruleRow.querySelector('.multiselect-states');
     const citySelect = ruleRow.querySelector('.multiselect-cities');
+    const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+    const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
     const pincodeInput = ruleRow.querySelector('[name*="location_data_pincodes"]');
 
     if (stateSelect) {
-      stateSelect.addEventListener('change', () => updateLocationData(ruleRow));
+      // Initialize Select2 for states
+      $(stateSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select states...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+
+      $(stateSelect).on('change', () => {
+        updateLocationData(ruleRow);
+        updateFilteredCities(ruleRow);
+      });
     }
     if (citySelect) {
-      citySelect.addEventListener('change', () => updateLocationData(ruleRow));
+      // Initialize Select2 for cities
+      $(citySelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select cities...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+
+      $(citySelect).on('change', () => updateLocationData(ruleRow));
     }
     if (pincodeInput) {
       pincodeInput.addEventListener('input', () => updateLocationData(ruleRow));
     }
+
+    // Initialize additional dropdowns
+    if (filteredCitiesSelect) {
+      $(filteredCitiesSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select cities from chosen states...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+      $(filteredCitiesSelect).on('change', () => updateLocationData(ruleRow));
+    }
+
+    if (stateFilterSelect) {
+      $(stateFilterSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select states to filter cities...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+      $(stateFilterSelect).on('change', () => updateLocationData(ruleRow));
+    }
   }
 
-  document.getElementById('add-delivery-rule').addEventListener('click', function() {
-    const container = document.getElementById('delivery-rules-container');
-    const template = document.getElementById('delivery-rule-template').content.cloneNode(true);
+  const addDeliveryRuleBtn = document.getElementById('add-delivery-rule');
+  if (addDeliveryRuleBtn) {
+    addDeliveryRuleBtn.addEventListener('click', function() {
+      const container = document.getElementById('delivery-rules-container');
+      const templateElement = document.getElementById('delivery-rule-template');
 
-    // Replace index placeholders with actual index
-    const ruleRow = template.querySelector('.delivery-rule-row');
-    ruleRow.innerHTML = ruleRow.innerHTML.replace(/NEW_RECORD/g, deliveryRuleIndex);
+      if (!container) {
+        console.error('Delivery rules container not found');
+        return;
+      }
 
-    container.appendChild(template);
-    deliveryRuleIndex++;
+      if (!templateElement) {
+        console.error('Delivery rule template not found');
+        return;
+      }
 
-    // Initialize the new rule type select
-    const newRuleType = ruleRow.querySelector('[name*="rule_type"]');
-    initializeRuleTypeSelect(newRuleType);
+      const template = templateElement.content.cloneNode(true);
 
-    // Initialize multiselect functionality for the new row
-    initializeMultiselectForRow(ruleRow);
-  });
+      // Replace index placeholders with actual index
+      const ruleRow = template.querySelector('.delivery-rule-row');
+      if (ruleRow) {
+        ruleRow.innerHTML = ruleRow.innerHTML.replace(/NEW_RECORD/g, deliveryRuleIndex);
+
+        container.appendChild(template);
+        deliveryRuleIndex++;
+
+        // Initialize the new rule type select
+        const newRuleType = ruleRow.querySelector('[name*="rule_type"]');
+        if (newRuleType) {
+          initializeRuleTypeSelect(newRuleType);
+        }
+
+        // Initialize multiselect functionality for the new row
+        initializeMultiselectForRow(ruleRow);
+      }
+    });
+  }
 
   // Initialize existing rule type selects
   document.querySelectorAll('[name*="rule_type"]').forEach(initializeRuleTypeSelect);
 
   function initializeRuleTypeSelect(select) {
+    if (!select) {
+      console.error('initializeRuleTypeSelect: select element is null');
+      return;
+    }
+
     select.addEventListener('change', function() {
       const ruleRow = this.closest('.delivery-rule-row');
+      if (!ruleRow) {
+        console.error('Rule row not found');
+        return;
+      }
+
       const locationGroup = ruleRow.querySelector('.location-data-group');
       const stateGroup = ruleRow.querySelector('.state-select-group');
       const cityGroup = ruleRow.querySelector('.city-select-group');
       const pincodeGroup = ruleRow.querySelector('.pincode-input-group');
+      const filteredCitiesGroup = ruleRow.querySelector('.filtered-cities-group');
+      const statesFilterGroup = ruleRow.querySelector('.states-filter-group');
       const hiddenLocationData = ruleRow.querySelector('.location-data-hidden');
 
       // Hide all location input groups first
       if (stateGroup) stateGroup.style.display = 'none';
       if (cityGroup) cityGroup.style.display = 'none';
       if (pincodeGroup) pincodeGroup.style.display = 'none';
+      if (filteredCitiesGroup) filteredCitiesGroup.style.display = 'none';
+      if (statesFilterGroup) statesFilterGroup.style.display = 'none';
 
       if (this.value === 'everywhere') {
-        locationGroup.style.display = 'none';
+        if (locationGroup) locationGroup.style.display = 'none';
         if (hiddenLocationData) hiddenLocationData.value = '';
       } else {
-        locationGroup.style.display = 'block';
+        if (locationGroup) locationGroup.style.display = 'block';
 
         // Show appropriate input group based on rule type
         switch(this.value) {
           case 'state':
             if (stateGroup) stateGroup.style.display = 'block';
+            // Initialize state selection handler for filtered cities
+            initializeStateFilteredCities(ruleRow);
             break;
           case 'city':
             if (cityGroup) cityGroup.style.display = 'block';
+            if (statesFilterGroup) statesFilterGroup.style.display = 'block';
+            // Initialize state filter for cities
+            initializeStateFilter(ruleRow);
             break;
           case 'pincode':
             if (pincodeGroup) pincodeGroup.style.display = 'block';
@@ -1771,6 +1958,26 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('remove-delivery-rule') || e.target.closest('.remove-delivery-rule')) {
       const ruleRow = e.target.closest('.delivery-rule-row');
+
+      // Destroy Select2 instances before removing
+      const stateSelect = ruleRow.querySelector('.multiselect-states');
+      const citySelect = ruleRow.querySelector('.multiselect-cities');
+      const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+      const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+
+      if (stateSelect && $(stateSelect).data('select2')) {
+        $(stateSelect).select2('destroy');
+      }
+      if (citySelect && $(citySelect).data('select2')) {
+        $(citySelect).select2('destroy');
+      }
+      if (filteredCitiesSelect && $(filteredCitiesSelect).data('select2')) {
+        $(filteredCitiesSelect).select2('destroy');
+      }
+      if (stateFilterSelect && $(stateFilterSelect).data('select2')) {
+        $(stateFilterSelect).select2('destroy');
+      }
+
       const destroyInput = ruleRow.querySelector('[name*="_destroy"]');
 
       if (destroyInput) {
@@ -2501,6 +2708,7 @@ function previewImage(src, filename) {
     // Listen for price changes to recalculate GST
     if (sellingPriceField) {
       sellingPriceField.addEventListener('input', calculateGst);
+      sellingPriceField.addEventListener('blur', calculateGst);
     }
     if (discountToggle) {
       discountToggle.addEventListener('change', calculateGst);
@@ -2511,6 +2719,13 @@ function previewImage(src, filename) {
     if (discountValue) {
       discountValue.addEventListener('input', calculateGst);
     }
+
+    // Initial GST calculation if GST is enabled and values exist
+    setTimeout(() => {
+      if (gstToggle.checked && sellingPriceField?.value && totalGstRate?.value) {
+        calculateGst();
+      }
+    }, 500);
   }
 
   function updateGstRates(totalRate) {
@@ -2563,11 +2778,9 @@ function previewImage(src, filename) {
       return;
     }
 
-    // Calculate base price (price excluding GST)
-    // If GST is included in selling price: Base = Selling / (1 + GST/100)
-    // If GST is to be added: Base = Selling Price
-    const isGstIncluded = true; // You can make this configurable
-    const basePrice = isGstIncluded ? sellingPrice / (1 + gstRate / 100) : sellingPrice;
+    // Calculate base price (selling price is the base price, GST will be added on top)
+    // Base Price = Selling Price (GST will be calculated and added to this)
+    const basePrice = sellingPrice;
 
     // Calculate discount if enabled
     let discountAmount = 0;
@@ -2694,6 +2907,112 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
       submitBtn.disabled = false;
     }
   }, 5000);
+
+  // Function to handle state-filtered cities
+  function initializeStateFilteredCities(ruleRow) {
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const filteredCitiesGroup = ruleRow.querySelector('.filtered-cities-group');
+    const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+
+    if (!stateSelect || !filteredCitiesSelect) return;
+
+    // Cities data - this could be loaded from server or defined as a constant
+    const statesCitiesMap = {
+      'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Davangere'],
+      'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli', 'Tirunelveli'],
+      'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur'],
+      'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar'],
+      'Rajasthan': ['Jaipur', 'Udaipur', 'Jodhpur', 'Kota', 'Ajmer', 'Bikaner']
+      // Add more states and cities as needed
+    };
+
+    $(stateSelect).on('change', function() {
+      const selectedStates = Array.from(this.selectedOptions).map(option => option.value);
+
+      if (selectedStates.length > 0) {
+        filteredCitiesGroup.style.display = 'block';
+
+        // Clear existing options
+        filteredCitiesSelect.innerHTML = '';
+
+        // Add cities from selected states
+        selectedStates.forEach(state => {
+          if (statesCitiesMap[state]) {
+            statesCitiesMap[state].forEach(city => {
+              const option = document.createElement('option');
+              option.value = city;
+              option.textContent = city;
+              filteredCitiesSelect.appendChild(option);
+            });
+          }
+        });
+
+        // Initialize or refresh Select2
+        if ($(filteredCitiesSelect).data('select2')) {
+          $(filteredCitiesSelect).select2('destroy');
+        }
+        $(filteredCitiesSelect).select2({
+          theme: 'bootstrap-5',
+          placeholder: 'Select cities from chosen states...',
+          allowClear: true,
+          closeOnSelect: false,
+          width: '100%'
+        });
+      } else {
+        filteredCitiesGroup.style.display = 'none';
+      }
+    });
+  }
+
+  // Function to handle state filter for cities
+  function initializeStateFilter(ruleRow) {
+    const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+
+    if (!stateFilterSelect || !citySelect) return;
+
+    $(stateFilterSelect).on('change', function() {
+      const selectedStates = Array.from(this.selectedOptions).map(option => option.value);
+
+      // Get all city options
+      const allCityOptions = Array.from(citySelect.options);
+
+      if (selectedStates.length > 0) {
+        // Hide cities that don't belong to selected states
+        allCityOptions.forEach(option => {
+          const cityBelongsToSelectedStates = selectedStates.some(state => {
+            const statesCitiesMap = {
+              'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Davangere'],
+              'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli', 'Tirunelveli'],
+              'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur'],
+              'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar'],
+              'Rajasthan': ['Jaipur', 'Udaipur', 'Jodhpur', 'Kota', 'Ajmer', 'Bikaner']
+            };
+            return statesCitiesMap[state] && statesCitiesMap[state].includes(option.value);
+          });
+
+          option.style.display = cityBelongsToSelectedStates ? '' : 'none';
+        });
+      } else {
+        // Show all cities
+        allCityOptions.forEach(option => {
+          option.style.display = '';
+        });
+      }
+
+      // Refresh Select2 to reflect changes
+      if ($(citySelect).data('select2')) {
+        $(citySelect).select2('destroy');
+        $(citySelect).select2({
+          theme: 'bootstrap-5',
+          placeholder: 'Select cities...',
+          allowClear: true,
+          closeOnSelect: false,
+          width: '100%'
+        });
+      }
+    });
+  }
 });
 </script>
 
@@ -2853,6 +3172,62 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   background-color: #007bff;
   color: #fff;
   font-weight: 600;
+}
+
+/* Select2 Bootstrap 5 theme customization for delivery rules */
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple {
+  min-height: 38px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+.delivery-rule-row .select2-container--bootstrap-5.select2-container--focus .select2-selection--multiple {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+  background-color: #007bff;
+  border: 1px solid #007bff;
+  color: #fff;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  margin: 0.125rem;
+  font-size: 0.875rem;
+}
+
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+  color: #fff;
+  margin-right: 0.25rem;
+}
+
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: #ffcccc;
+}
+
+/* Additional styling for filtered cities and state filter dropdowns */
+.filtered-cities-group, .states-filter-group {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.multiselect-filtered-cities, .multiselect-state-filter {
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.3s ease;
+}
+
+.multiselect-filtered-cities:focus, .multiselect-state-filter:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+  outline: 0;
 }
 
 .delivery-rule-row {
@@ -3499,6 +3874,14 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
             <% end %>
           </select>
           <div class="form-text">Select one or more states for delivery</div>
+
+          <!-- Cities filtered by selected states -->
+          <div class="filtered-cities-group mt-3" style="display: none;">
+            <label class="form-label">Cities in Selected States</label>
+            <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_filtered_cities][]" multiple class="form-control multiselect-filtered-cities" data-placeholder="Select cities from chosen states...">
+            </select>
+            <div class="form-text">Select specific cities within the chosen states (optional)</div>
+          </div>
         </div>
 
         <!-- City Multiselect -->
@@ -3509,6 +3892,17 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
             <% end %>
           </select>
           <div class="form-text">Select one or more cities for delivery</div>
+
+          <!-- States filter for selected cities -->
+          <div class="states-filter-group mt-3" style="display: none;">
+            <label class="form-label">Filter by States</label>
+            <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_state_filter][]" multiple class="form-control multiselect-state-filter" data-placeholder="Select states to filter cities...">
+              <% indian_states.each do |state| %>
+                <option value="<%= state %>"><%= state %></option>
+              <% end %>
+            </select>
+            <div class="form-text">Filter the cities list by selecting specific states (optional)</div>
+          </div>
         </div>
 
         <!-- Pincode Input -->

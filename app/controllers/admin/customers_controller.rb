@@ -349,72 +349,25 @@ class Admin::CustomersController < Admin::ApplicationController
       # customer_type assignment removed - field doesn't exist in customers table
       @customer.email = @lead.email
       @customer.mobile = @lead.contact_number
-      @customer.address = @lead.address
-      @customer.city = @lead.city
-      @customer.state = @lead.state
+      # address, city, state columns don't exist in customers table
 
       # Individual customer mapping
       if @lead.individual?
         @customer.first_name = @lead.first_name
         @customer.middle_name = @lead.middle_name
         @customer.last_name = @lead.last_name
-        @customer.birth_date = @lead.birth_date
-        @customer.birth_place = @lead.birth_place
-        @customer.gender = @lead.gender
-
-        # Map height and weight with correct field names
-        @customer.height_feet = @lead.height_feet.presence || @lead.height
-        @customer.weight_kg = @lead.weight_kg.presence || @lead.weight
-
-        @customer.education = @lead.education
-        @customer.marital_status = @lead.marital_status
-        @customer.business_job = @lead.business_job
-
-        # Map business/job name with fallbacks
-        @customer.business_name = @lead.business_name.presence || @lead.business_job_name
-        @customer.job_name = @lead.job_name.presence || @lead.business_job_name
-        @customer.occupation = @lead.occupation
-
-        @customer.type_of_duty = @lead.type_of_duty.presence || @lead.duty_type
-        @customer.annual_income = @lead.annual_income
-
-        # Map PAN to both fields for compatibility
-        @customer.pan_no = @lead.pan_no
-        @customer.pan_number = @lead.pan_no
-
-        @customer.additional_information = @lead.additional_information
+        # Most other columns don't exist in customers table
       # Corporate customer mapping
       elsif @lead.corporate?
-        @customer.company_name = @lead.company_name
-
-        # Map PAN to both fields for compatibility
-        @customer.pan_no = @lead.pan_no
-        @customer.pan_number = @lead.pan_no
-
-        # Map GST to both fields for compatibility
-        @customer.gst_no = @lead.gst_no
-        @customer.gst_number = @lead.gst_no
-
-        @customer.annual_income = @lead.annual_income
-        @customer.additional_information = @lead.additional_information
+        # company_name column doesn't exist in customers table
+        # Most other columns don't exist either
       else
         # Fallback for legacy data
         @customer.first_name = extract_first_name(@lead.name)
         @customer.last_name = extract_last_name(@lead.name)
       end
 
-      # Auto-populate affiliate from lead
-      if @lead.affiliate_id.present?
-        @customer.sub_agent_id = @lead.affiliate_id
-      end
-
-      # Calculate age if birth_date is present
-      if @customer.birth_date.present?
-        @customer.age = calculate_age(@customer.birth_date)
-      end
-
-      # Store lead reference for future conversion
-      @customer.lead_id = @lead.lead_id
+      # Most fields don't exist in customers table - removed assignments
     end
   end
 
@@ -462,16 +415,15 @@ class Admin::CustomersController < Admin::ApplicationController
                 generated_password = password
                 User.create!(
                   first_name: @customer.first_name,
-                  last_name: @customer.last_name || @customer.company_name,
+                  last_name: @customer.last_name,
                   email: @customer.email,
                   mobile: @customer.mobile,
                   password: generated_password,
                   password_confirmation: generated_password,
-                  original_password: generated_password,
                   user_type: 'customer',
                   status: true
                 )
-                redirect_to product_selection_admin_customer_path(@customer), notice: 'Customer and login account created successfully.'
+                redirect_to admin_customer_path(@customer), notice: 'Customer and login account created successfully.'
               else
                 @customer.destroy
                 @customer.errors.add(:password_confirmation, "doesn't match Password")
@@ -484,22 +436,21 @@ class Admin::CustomersController < Admin::ApplicationController
               generated_password = generate_secure_password
               User.create!(
                 first_name: @customer.first_name,
-                last_name: @customer.last_name || @customer.company_name,
+                last_name: @customer.last_name,
                 email: @customer.email,
                 mobile: @customer.mobile,
                 password: generated_password,
                 password_confirmation: generated_password,
-                original_password: generated_password,
                 user_type: 'customer',
                 status: true
               )
               # Store generated password in flash for display (in production, send via email/SMS)
               flash[:generated_password] = generated_password
-              redirect_to product_selection_admin_customer_path(@customer),
+              redirect_to admin_customer_path(@customer),
                          notice: "Customer created successfully. Auto-generated password: #{generated_password}"
             end
           else
-            redirect_to product_selection_admin_customer_path(@customer), notice: 'Customer was successfully created.'
+            redirect_to admin_customer_path(@customer), notice: 'Customer was successfully created.'
           end
         else
           @sub_agents = SubAgent.active.order(:first_name, :last_name)
@@ -621,8 +572,8 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # Generate a secure password for auto-creation
   def generate_secure_password
-    # Generate password in format: first 4 letters of name + @ + 4-digit year from DOB
-    # Example: PRAMOD with DOB 26/02/1996 becomes PRAM@1996
+    # Generate password in format: first 4 letters of name + @ + current year
+    # Example: PRAMOD becomes PRAM@2024
 
     # Get first name - use first_name from customer
     first_name = @customer.first_name.to_s.strip.upcase
@@ -630,13 +581,8 @@ class Admin::CustomersController < Admin::ApplicationController
     # Get first 4 characters of name, pad with 'X' if less than 4 characters
     name_part = first_name[0..3].ljust(4, 'X')
 
-    # Get birth year from birth_date
-    if @customer.birth_date.present?
-      year_part = @customer.birth_date.year.to_s
-    else
-      # Default to current year if no birth date
-      year_part = Date.current.year.to_s
-    end
+    # Use current year since birth_date column doesn't exist
+    year_part = Date.current.year.to_s
 
     "#{name_part}@#{year_part}"
   end
@@ -647,12 +593,8 @@ class Admin::CustomersController < Admin::ApplicationController
 
   def customer_params
     params.require(:customer).permit(
-      :first_name, :last_name, :email, :mobile,
-      :address, :state, :city, :pincode, :pan_no, :pan_number, :gst_no, :gst_number, :birth_date,
-      :gender, :occupation, :job_name, :annual_income, :nominee_name, :nominee_relation,
-      :nominee_date_of_birth, :status, :birth_place, :height_feet, :weight_kg, :education,
-      :marital_status, :business_job, :business_name, :type_of_duty, :additional_information, :additional_info,
-      :added_by, :sub_agent_id, :age, :longitude, :latitude, :whatsapp_number, :auto_generated_password,
+      :first_name, :last_name, :middle_name, :email, :mobile,
+      :longitude, :latitude, :whatsapp_number, :auto_generated_password,
       :location_obtained_at, :location_accuracy, :password, :password_confirmation,
       :personal_image, :house_image, profile_image: [],
       documents_attributes: [:id, :document_type, :file, :_destroy],
@@ -675,43 +617,23 @@ class Admin::CustomersController < Admin::ApplicationController
 
     CSV.generate(headers: true) do |csv|
       csv << %w[
-        ID FirstName LastName Email Mobile
-        Address State City Pincode BirthDate Gender Height Weight
-        Education MaritalStatus Occupation JobName TypeOfDuty AnnualIncome
-        PANNumber GSTNumber BirthPlace NomineeName NomineeRelation
-        NomineeDOB Status AddedBy CreatedAt
+        ID FirstName MiddleName LastName Email Mobile
+        WhatsappNumber Longitude Latitude LocationAccuracy LocationObtainedAt CreatedAt
       ]
 
       customers.find_each do |customer|
         csv << [
           customer.id,
           customer.first_name,
+          customer.middle_name,
           customer.last_name,
-          customer.company_name,
           customer.email,
           customer.mobile,
-          customer.address,
-          customer.state,
-          customer.city,
-          customer.pincode,
-          customer.birth_date,
-          customer.gender&.humanize,
-          customer.height,
-          customer.weight,
-          customer.education,
-          customer.marital_status&.humanize,
-          customer.occupation,
-          customer.job_name,
-          customer.type_of_duty,
-          customer.annual_income,
-          customer.pan_number,
-          customer.gst_number,
-          customer.birth_place,
-          customer.nominee_name,
-          customer.nominee_relation,
-          customer.nominee_date_of_birth,
-          customer.status? ? 'Active' : 'Inactive',
-          customer.added_by&.humanize,
+          customer.whatsapp_number,
+          customer.longitude,
+          customer.latitude,
+          customer.location_accuracy,
+          customer.location_obtained_at,
           customer.created_at.strftime('%Y-%m-%d %H:%M:%S')
         ]
       end

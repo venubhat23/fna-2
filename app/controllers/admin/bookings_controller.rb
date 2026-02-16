@@ -55,7 +55,7 @@ class Admin::BookingsController < ApplicationController
                        .group("products.id")
                        .order(:name)
 
-    @customers = Customer.select(:id, :first_name, :last_name, :email, :mobile)
+    @customers = Customer.select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
                         .order(:first_name, :last_name)
   end
 

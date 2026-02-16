@@ -47,14 +47,21 @@ class Admin::CategoriesController < ApplicationController
   end
 
   def destroy
-    if @category.products.exists?
-      redirect_to admin_categories_path, alert: 'Cannot delete category with products. Please reassign or delete products first.'
+    products_count = @category.products.count
+
+    if products_count > 0
+      # Delete all products in this category first
+      @category.products.destroy_all
+      flash_message = "Category '#{@category.name}' and #{products_count} product(s) have been deleted successfully."
     else
-      # Safely remove the category and its image
-      @category.image.purge_later if @category.image.attached?
-      @category.destroy
-      redirect_to admin_categories_path, notice: 'Category was successfully deleted.'
+      flash_message = "Category '#{@category.name}' was successfully deleted."
     end
+
+    # Safely remove the category and its image
+    @category.image.purge_later if @category.image.attached?
+    @category.destroy
+
+    redirect_to admin_categories_path, notice: flash_message
   end
 
   def toggle_status

@@ -46,7 +46,6 @@
       <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <% end %>
     <%= stylesheet_link_tag "auth", "data-turbo-track": "reload" if !user_signed_in? %>
-    <%= javascript_importmap_tags %>
 
     <!-- Force cache refresh -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -151,13 +150,13 @@
           </div>
         <% end %>
 
-        <% if alert && alert.present? && !alert.include?('http://') && !alert.include?('https://') %>
-          <div class="alert alert-danger alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 90%; width: 400px;">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <%= alert %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        <% end %>
+        <% if alert && alert.present? && !alert.include?("http://") && !alert.include?("https://") && !request.path.include?("sign_in") %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 90%; width: 400px;">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <%= alert %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% end %>
 
         <%= yield %>
       </div>
@@ -306,67 +305,174 @@
         }
       });
 
-      // Session security and browser navigation handling
+      // Enhanced session security and browser navigation handling
       <% if user_signed_in? %>
-        // Prevent back button authentication bypass
-        window.addEventListener('pageshow', function(event) {
-          // Force reload if page is accessed via back/forward button after logout
-          if (event.persisted || performance.navigation.type === 2) {
-            // Check if user is still authenticated by making a quick request
-            fetch('/dashboard', {
-              method: 'HEAD',
-              credentials: 'same-origin',
-              cache: 'no-cache'
-            }).catch(() => {
-              // If request fails, likely not authenticated, redirect to login
-              window.location.href = '/sessions/new';
+        // Comprehensive authentication bypass prevention
+        let sessionValid = true;
+        let lastValidationTime = Date.now();
+
+        // Store session markers for validation
+        const sessionMarkers = {
+          loginTime: <%= session[:login_time] || 0 %>,
+          userId: <%= current_user.id %>,
+          sessionId: '<%= session[:session_id] %>'
+        };
+
+        // Function to validate session integrity
+        function validateSession() {
+          return fetch('/dashboard', {
+            method: 'HEAD',
+            credentials: 'same-origin',
+            cache: 'no-cache',
+            headers: {
+              'X-Session-Validation': 'true',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          }).then(response => {
+            if (!response.ok) {
+              throw new Error('Session invalid');
+            }
+            lastValidationTime = Date.now();
+            return true;
+          }).catch(() => {
+            sessionValid = false;
+            forceReAuthentication('Session validation failed');
+            return false;
+          });
+        }
+
+        // Force re-authentication
+        function forceReAuthentication(reason) {
+          console.warn('Authentication required:', reason);
+          sessionStorage.clear();
+          localStorage.clear();
+
+          // Clear any cached data
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => caches.delete(name));
             });
+          }
+
+          window.location.replace('/sessions/new');
+        }
+
+        // Enhanced back/forward button detection
+        window.addEventListener('pageshow', function(event) {
+          const now = Date.now();
+
+          // Detect if page was loaded from cache (back/forward button)
+          if (event.persisted) {
+            console.warn('Page loaded from cache - validating session');
+
+            // Always validate session for cached pages
+            validateSession().then(valid => {
+              if (!valid) {
+                forceReAuthentication('Cached page access denied');
+              }
+            });
+          }
+
+          // Check for navigation type
+          if (performance.navigation && performance.navigation.type === 2) {
+            console.warn('Back/forward navigation detected');
+
+            // Force validation for back/forward navigation
+            validateSession().then(valid => {
+              if (!valid) {
+                forceReAuthentication('Back/forward navigation denied');
+              }
+            });
+          }
+
+          // Check if too much time has passed since last validation
+          if (now - lastValidationTime > 60000) { // 1 minute
+            validateSession();
           }
         });
 
-        // Update session activity on user interaction
+        // Monitor for tab visibility changes (user switching tabs)
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden) {
+            // Tab became visible - validate session
+            const now = Date.now();
+            if (now - lastValidationTime > 30000) { // 30 seconds
+              validateSession();
+            }
+          }
+        });
+
+        // Monitor for focus changes
+        window.addEventListener('focus', function() {
+          const now = Date.now();
+          if (now - lastValidationTime > 30000) { // 30 seconds
+            validateSession();
+          }
+        });
+
+        // Enhanced activity tracking
         let lastActivity = Date.now();
-        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 
         activityEvents.forEach(event => {
           document.addEventListener(event, function() {
             const now = Date.now();
-            if (now - lastActivity > 30000) { // Only update every 30 seconds
-              lastActivity = now;
-              // Update session activity timestamp
-              fetch('/dashboard', {
-                method: 'HEAD',
-                credentials: 'same-origin',
-                cache: 'no-cache'
-              }).catch(() => {
-                // Session expired, redirect to login
-                window.location.href = '/sessions/new';
-              });
+            lastActivity = now;
+
+            // Periodic session validation
+            if (now - lastValidationTime > 120000) { // 2 minutes
+              validateSession();
             }
           }, true);
         });
 
-        // Handle browser refresh and navigation
+        // Handle navigation away from page
         window.addEventListener('beforeunload', function(event) {
-          // Mark that we're navigating away
-          sessionStorage.setItem('navigating', 'true');
+          sessionStorage.setItem('lastActiveTime', Date.now().toString());
+          sessionStorage.setItem('userLoggedIn', 'true');
         });
 
-        // Check if coming back from navigation
+        // Validate on page load
         window.addEventListener('load', function() {
-          const wasNavigating = sessionStorage.getItem('navigating');
-          if (wasNavigating) {
-            sessionStorage.removeItem('navigating');
-            // Validate session is still active
-            fetch('/dashboard', {
-              method: 'HEAD',
-              credentials: 'same-origin',
-              cache: 'no-cache'
-            }).catch(() => {
-              window.location.href = '/sessions/new';
+          const lastActiveTime = parseInt(sessionStorage.getItem('lastActiveTime') || '0');
+          const wasLoggedIn = sessionStorage.getItem('userLoggedIn') === 'true';
+          const now = Date.now();
+
+          // If returning after being away for more than 5 minutes, validate
+          if (wasLoggedIn && lastActiveTime && (now - lastActiveTime > 300000)) {
+            validateSession().then(valid => {
+              if (!valid) {
+                forceReAuthentication('Session timeout after inactivity');
+              }
             });
           }
+
+          // Always validate on initial load
+          setTimeout(() => {
+            validateSession();
+          }, 1000);
         });
+
+        // Prevent browser caching aggressive measures
+        window.addEventListener('unload', function() {
+          // Clear session storage on actual page unload
+          if (performance.navigation.type === 0) { // Normal navigation
+            sessionStorage.clear();
+          }
+        });
+
+        // Detect attempts to access cached content
+        if (performance.getEntriesByType) {
+          const navigationEntries = performance.getEntriesByType('navigation');
+          if (navigationEntries.length > 0) {
+            const entry = navigationEntries[0];
+            if (entry.type === 'back_forward') {
+              console.warn('Back/forward cache access detected');
+              validateSession();
+            }
+          }
+        }
+
       <% end %>
     </script>
 

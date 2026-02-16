@@ -38,6 +38,13 @@ class Admin::ProductsController < ApplicationController
 
   def new
     @product = Product.new
+
+    # Set category if provided in params
+    if params[:category_id].present?
+      category = Category.find_by(id: params[:category_id])
+      @product.category_id = category.id if category
+    end
+
     @product.delivery_rules.build(rule_type: 'everywhere') # Default rule
     @categories = Category.active.ordered
   end

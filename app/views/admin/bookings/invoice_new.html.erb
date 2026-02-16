@@ -35,13 +35,8 @@
         <div class="bill-to-box">
           <h5 class="section-title">Details of Receiver (Billed to)</h5>
           <p class="mb-1"><strong>Name:</strong> <%= @booking.customer_name || @booking.customer&.display_name || 'Customer Name' %></p>
-          <p class="mb-1"><strong>Address:</strong> <%= @booking.delivery_address || @booking.customer&.address || 'Customer Address' %></p>
+          <p class="mb-1"><strong>Address:</strong> <%= @booking.delivery_address || 'Customer Address' %></p>
           <p class="mb-1"><strong>Ph:</strong> <%= @booking.customer_phone || @booking.customer&.mobile || '+91 XXXXXXXXXX' %></p>
-          <% if @booking.customer&.gst_no.present? %>
-            <p class="mb-1"><strong>GSTIN:</strong> <%= @booking.customer.gst_no %></p>
-            <p class="mb-1"><strong>State:</strong> Karnataka</p>
-            <p class="mb-1"><strong>State Code:</strong> 29</p>
-          <% end %>
         </div>
       </div>
       <div class="col-6">

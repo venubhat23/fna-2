@@ -51,28 +51,52 @@ class ApplicationController < ActionController::Base
   private
 
   def set_cache_control_headers
-    # Prevent caching for authenticated pages to avoid back button authentication bypass
+    # Strong cache prevention for all authenticated pages
     if user_signed_in?
-      response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+      response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private, max-age=0'
       response.headers['Pragma'] = 'no-cache'
-      response.headers['Expires'] = '0'
+      response.headers['Expires'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
+
+      # Additional headers to prevent browser caching
+      response.headers['Last-Modified'] = Time.current.httpdate
+      response.headers['ETag'] = SecureRandom.hex(16)
     end
   end
 
   def ensure_session_security
-    # Force re-authentication if accessing protected pages after session expiry
+    # Enhanced session security with multiple validation layers
     if user_signed_in? && current_user
-      # Update last activity timestamp
+      # Validate session integrity
+      current_session_id = session.id.to_s
+      stored_session_id = session[:session_id]
+
+      # Check for session hijacking or replay attacks
+      if stored_session_id && stored_session_id != current_session_id
+        handle_session_security_breach
+        return
+      end
+
+      # Set or verify session markers
+      session[:session_id] = current_session_id
+      session[:user_authenticated] = current_user.id
       session[:last_activity] = Time.current.to_i
 
-      # Check if this is a valid active session
-      unless session[:user_authenticated] == current_user.id
-        session[:user_authenticated] = current_user.id
+      # Validate session age (prevent old session reuse)
+      login_time = session[:login_time]
+      if login_time && (Time.current.to_i - login_time) > 24.hours
+        handle_session_expiry
+        return
       end
+
+      # Check for suspicious activity patterns
+      if detect_suspicious_navigation?
+        handle_suspicious_activity
+        return
+      end
+
     elsif !devise_controller? && !is_public_action?
-      # Clear any stale session data
-      session.delete(:user_authenticated)
-      session.delete(:last_activity)
+      # Clear any stale session data for unauthenticated access
+      clear_session_data
     end
   end
 
@@ -83,5 +107,56 @@ class ApplicationController < ActionController::Base
       'public_pages', 'api/cities'
     ]
     public_controllers.any? { |controller| self.class.name.downcase.include?(controller) }
+  end
+
+  def handle_session_security_breach
+    Rails.logger.warn "Session security breach detected for user #{current_user&.id}: Session ID mismatch"
+    clear_session_data
+    sign_out(current_user) if current_user
+    redirect_to new_sessions_path, alert: 'Security breach detected. Please login again.'
+  end
+
+  def handle_session_expiry
+    Rails.logger.info "Session expired for user #{current_user&.id}"
+    clear_session_data
+    sign_out(current_user) if current_user
+    redirect_to new_sessions_path, alert: 'Your session has expired. Please login again.'
+  end
+
+  def handle_suspicious_activity
+    Rails.logger.warn "Suspicious navigation detected for user #{current_user&.id}"
+    clear_session_data
+    sign_out(current_user) if current_user
+    redirect_to new_sessions_path, alert: 'Suspicious activity detected. Please login again.'
+  end
+
+  def detect_suspicious_navigation?
+    # Check if user came from browser back/forward navigation after logout
+    return false unless session[:last_activity]
+
+    # Check for rapid navigation patterns (back button abuse)
+    last_activity_time = session[:last_activity]
+    current_time = Time.current.to_i
+
+    # If more than 30 seconds of inactivity, require fresh validation
+    if (current_time - last_activity_time) > 30
+      # Check if this looks like a cached page access
+      user_agent = request.headers['User-Agent']
+      referer = request.headers['Referer']
+
+      # Detect browser navigation patterns
+      if referer.blank? || referer.include?('sign_in') || referer.include?('login')
+        return true
+      end
+    end
+
+    false
+  end
+
+  def clear_session_data
+    session.delete(:user_authenticated)
+    session.delete(:login_time)
+    session.delete(:last_activity)
+    session.delete(:session_id)
   end
 end

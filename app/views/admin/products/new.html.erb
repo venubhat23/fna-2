@@ -269,6 +269,27 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Auto-select category from URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryId = urlParams.get('category_id');
+
+  if (categoryId) {
+    const categorySelect = document.getElementById('product_category_id');
+    if (categorySelect) {
+      // Set the selected option
+      categorySelect.value = categoryId;
+
+      // Trigger change event if needed for any listeners
+      categorySelect.dispatchEvent(new Event('change'));
+
+      // Also update the visual appearance if using custom styling
+      const selectedOption = categorySelect.querySelector(`option[value="${categoryId}"]`);
+      if (selectedOption) {
+        console.log(`Category "${selectedOption.text}" automatically selected from URL parameter`);
+      }
+    }
+  }
+
   const form = document.querySelector('form[data-remote]') || document.querySelector('form');
   const loadingOverlay = document.getElementById('loading-overlay');
   const progressBar = loadingOverlay.querySelector('.progress-bar');

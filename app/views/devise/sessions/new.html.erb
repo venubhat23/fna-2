@@ -21,16 +21,10 @@
 <div class="simple-login-wrapper">
   <div class="simple-login-container">
     <div class="simple-login-card">
-      <!-- Flash Messages - show login-related messages only -->
-      <% if notice && notice.present? && !notice.include?('http://') && !notice.include?('https://') %>
-        <div class="alert alert-success mb-3">
-          <i class="fas fa-check-circle me-2"></i><%= notice %>
-        </div>
-      <% end %>
-
-      <!-- Single Alert Message - prevents duplicates -->
-      <% if alert && alert.present? && !alert.include?('http://') && !alert.include?('https://') %>
-        <div class="alert alert-danger mb-3">
+      <!-- Single Flash Message for Login Errors -->
+      <% if alert && alert.present? && !alert.include?("http://") && !alert.include?("https://") %>
+        <div class="alert alert-danger mb-3" id="login-error-alert">
+          <button type="button" class="btn-close" onclick="this.parentElement.style.display='none'" style="float: right;"></button>
           <i class="fas fa-exclamation-triangle me-2"></i><%= alert %>
         </div>
       <% end %>

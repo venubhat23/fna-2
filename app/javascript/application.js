@@ -223,34 +223,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Enhanced dropdown functionality
 document.addEventListener('DOMContentLoaded', function() {
-  // Notification dropdown enhancements
-  const notificationDropdown = document.querySelector('.notification-dropdown');
-  if (notificationDropdown) {
-    notificationDropdown.addEventListener('shown.bs.dropdown', function() {
-      // Mark notifications as seen
-      const badge = document.querySelector('.notification-bell .badge');
-      if (badge) {
-        setTimeout(() => {
-          badge.style.opacity = '0';
-        }, 2000);
-      }
-    });
-  }
+  try {
+    // Notification dropdown enhancements
+    const notificationDropdown = document.querySelector('.notification-dropdown');
+    if (notificationDropdown) {
+      notificationDropdown.addEventListener('shown.bs.dropdown', function() {
+        // Mark notifications as seen
+        const badge = document.querySelector('.notification-bell .badge');
+        if (badge) {
+          setTimeout(() => {
+            badge.style.opacity = '0';
+          }, 2000);
+        }
+      });
+    }
 
-  // Search functionality
-  const searchInput = document.querySelector('.search-box input');
-  if (searchInput) {
-    searchInput.addEventListener('focus', function() {
-      this.parentElement.style.transform = 'scale(1.02)';
-    });
+    // Search functionality
+    const searchInput = document.querySelector('.search-box input');
+    if (searchInput) {
+      searchInput.addEventListener('focus', function() {
+        if (this.parentElement) {
+          this.parentElement.style.transform = 'scale(1.02)';
+        }
+      });
 
-    searchInput.addEventListener('blur', function() {
-      this.parentElement.style.transform = 'scale(1)';
-    });
-  }
+      searchInput.addEventListener('blur', function() {
+        if (this.parentElement) {
+          this.parentElement.style.transform = 'scale(1)';
+        }
+      });
+    }
 
-  // Button click effects
-  document.querySelectorAll('.btn').forEach(button => {
+    // Button click effects
+    document.querySelectorAll('.btn').forEach(button => {
     button.addEventListener('click', function(e) {
       // Create ripple effect
       const ripple = document.createElement('span');
@@ -281,6 +286,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 600);
     });
   });
+  } catch (error) {
+    console.log('JavaScript initialization error:', error);
+  }
 });
 
 // Add ripple and spin animation keyframes

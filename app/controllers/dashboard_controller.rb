@@ -2,6 +2,13 @@ class DashboardController < ApplicationController
   skip_load_and_authorize_resource
 
   def index
+    # Handle session validation requests
+    if request.headers['X-Session-Validation'] == 'true'
+      # Lightweight session validation - just return 200 OK if authenticated
+      head :ok
+      return
+    end
+
     authorize! :read, :dashboard
     load_ecommerce_dashboard_data
   end

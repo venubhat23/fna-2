@@ -44,6 +44,22 @@
               }
             } %>
         <div class="form-text">Select one or more states for delivery</div>
+
+        <!-- Cities filtered by selected states -->
+        <div class="filtered-cities-group mt-3" style="display: none;">
+          <label class="form-label">Cities in Selected States</label>
+          <%= select_tag "#{f.object_name}[location_data_filtered_cities][]",
+              options_for_select([]),
+              {
+                multiple: true,
+                class: "form-control multiselect-filtered-cities",
+                data: {
+                  placeholder: "Select cities from chosen states...",
+                  'allow-clear': true
+                }
+              } %>
+          <div class="form-text">Select specific cities within the chosen states (optional)</div>
+        </div>
       </div>
 
       <!-- City Multiselect -->
@@ -71,6 +87,22 @@
               }
             } %>
         <div class="form-text">Select one or more cities for delivery</div>
+
+        <!-- States filter for selected cities -->
+        <div class="states-filter-group mt-3" style="display: none;">
+          <label class="form-label">Filter by States</label>
+          <%= select_tag "#{f.object_name}[location_data_state_filter][]",
+              options_from_collection_for_select(indian_states.map { |s| [s, s] }, :last, :first, []),
+              {
+                multiple: true,
+                class: "form-control multiselect-state-filter",
+                data: {
+                  placeholder: "Select states to filter cities...",
+                  'allow-clear': true
+                }
+              } %>
+          <div class="form-text">Filter the cities list by selecting specific states (optional)</div>
+        </div>
       </div>
 
       <!-- Pincode Input (unchanged) -->

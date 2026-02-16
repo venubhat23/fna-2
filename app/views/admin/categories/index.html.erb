@@ -178,11 +178,12 @@
                       <li><hr class="dropdown-divider"></li>
                       <li>
                         <%= link_to admin_category_path(category),
-                            class: "dropdown-item text-danger",
+                            class: "dropdown-item text-danger delete-category-btn",
                             data: {
-                              method: :delete,
-                              confirm: "Are you sure you want to delete #{category.name}? This action cannot be undone.",
-                              turbo_method: :delete
+                              turbo_method: :delete,
+                              turbo_confirm: "Are you sure you want to delete '#{category.name}'?#{category.products_count > 0 ? "\n\nThis will also permanently delete #{category.products_count} product(s) in this category." : ""}\n\nThis action cannot be undone.",
+                              category_name: category.name,
+                              products_count: category.products_count
                             } do %>
                           <i class="bi bi-trash me-2"></i>
                           Delete Category
@@ -239,5 +240,77 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // Enhanced delete functionality
+  const deleteButtons = document.querySelectorAll('.delete-category-btn');
+
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      const categoryName = this.dataset.categoryName;
+      const productsCount = parseInt(this.dataset.productsCount);
+      const url = this.href;
+
+      let confirmMessage = `Are you sure you want to delete the category "${categoryName}"?`;
+
+      if (productsCount > 0) {
+        confirmMessage += `\n\n⚠️ WARNING: This will also permanently delete ${productsCount} product(s) in this category.`;
+      }
+
+      confirmMessage += '\n\nThis action cannot be undone!';
+
+      // Use custom confirmation dialog
+      if (confirm(confirmMessage)) {
+        // Create and submit a form for the DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        form.style.display = 'none';
+
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (csrfToken) {
+          const csrfInput = document.createElement('input');
+          csrfInput.type = 'hidden';
+          csrfInput.name = 'authenticity_token';
+          csrfInput.value = csrfToken;
+          form.appendChild(csrfInput);
+        }
+
+        // Add method override for DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'delete';
+        form.appendChild(methodInput);
+
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+      }
+    });
+  });
+});
+
+// Turbo confirmation handler (backup method)
+document.addEventListener('turbo:before-fetch-request', function(event) {
+  if (event.target.classList.contains('delete-category-btn')) {
+    const categoryName = event.target.dataset.categoryName;
+    const productsCount = parseInt(event.target.dataset.productsCount);
+
+    let confirmMessage = `Are you sure you want to delete the category "${categoryName}"?`;
+
+    if (productsCount > 0) {
+      confirmMessage += `\n\n⚠️ WARNING: This will also permanently delete ${productsCount} product(s) in this category.`;
+    }
+
+    confirmMessage += '\n\nThis action cannot be undone!';
+
+    if (!confirm(confirmMessage)) {
+      event.preventDefault();
+      return false;
+    }
+  }
 });
 </script>
