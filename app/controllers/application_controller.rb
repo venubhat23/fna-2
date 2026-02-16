@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::Base
-  # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  allow_browser versions: :modern
+  # Browser compatibility check disabled - allow all browsers
+  # allow_browser versions: :modern
 
   # Include exception handler for API
   include ExceptionHandler
