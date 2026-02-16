@@ -119,7 +119,7 @@
                   <div class="mb-3">
                     <% if current_stock > 0 %>
                       <div class="d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
                           <small class="text-success">
                             <i class="bi bi-check-circle-fill"></i>
                             In Stock
@@ -128,12 +128,6 @@
                             <i class="bi bi-box-seam"></i>
                             <%= current_stock.to_i %> <%= product.unit_type %>
                           </span>
-                        </div>
-
-                        <%# Simplified Stock Display %>
-                        <div class="small text-muted mb-2 text-center">
-                          <i class="bi bi-info-circle"></i>
-                          Available: <%= current_stock.to_i %> <%= product.unit_type %>
                         </div>
 
                         <% if product.low_stock? %>
@@ -169,13 +163,13 @@
                             Max: <%= current_stock.to_i %>
                           </span>
                         </label>
-                        <div class="d-flex align-items-center gap-2">
-                          <button class="btn btn-outline-secondary btn-sm" type="button" onclick="decreaseQuantity(<%= product.id %>)" style="width: 35px; height: 35px;">
-                            <i class="bi bi-dash"></i>
+                        <div class="input-group">
+                          <button class="btn btn-outline-primary" type="button" onclick="decreaseQuantity(<%= product.id %>)" style="width: 45px; height: 45px; border-radius: 8px 0 0 8px;">
+                            <i class="bi bi-dash fw-bold"></i>
                           </button>
-                          <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="<%= current_stock %>" class="form-control text-center" style="width: 80px; height: 35px;" onchange="validateQuantity(<%= product.id %>, <%= current_stock %>)">
-                          <button class="btn btn-outline-secondary btn-sm" type="button" onclick="increaseQuantity(<%= product.id %>)" style="width: 35px; height: 35px;">
-                            <i class="bi bi-plus"></i>
+                          <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="<%= current_stock %>" class="form-control text-center fw-bold" style="height: 45px; font-size: 1.1rem;" onchange="validateQuantity(<%= product.id %>, <%= current_stock %>)">
+                          <button class="btn btn-outline-primary" type="button" onclick="increaseQuantity(<%= product.id %>)" style="width: 45px; height: 45px; border-radius: 0 8px 8px 0;">
+                            <i class="bi bi-plus fw-bold"></i>
                           </button>
                         </div>
 
@@ -578,14 +572,31 @@ function updateCartDisplay() {
     total += itemTotal;
 
     itemsHtml += `
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-          <div class="fw-medium">${item.name}</div>
-          <small class="text-muted">₹${item.price} × ${item.quantity} = ₹${itemTotal}</small>
+      <div class="cart-item mb-3 p-2 border rounded">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="flex-grow-1">
+            <div class="fw-medium">${item.name}</div>
+            <small class="text-muted">₹${item.price} each</small>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${productId})" title="Remove item">
+            <i class="bi bi-trash"></i>
+          </button>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${productId})">
-          <i class="bi bi-trash"></i>
-        </button>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="input-group input-group-sm" style="width: 120px;">
+            <button class="btn btn-outline-secondary" type="button" onclick="decreaseCartQuantity(${productId})" ${item.quantity <= 1 ? 'disabled' : ''}>
+              <i class="bi bi-dash"></i>
+            </button>
+            <input type="text" class="form-control text-center fw-bold" value="${item.quantity}" readonly>
+            <button class="btn btn-outline-secondary" type="button" onclick="increaseCartQuantity(${productId})" ${item.quantity >= item.stock ? 'disabled' : ''}>
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold text-success">₹${itemTotal.toFixed(2)}</div>
+            <small class="text-muted">${item.quantity} × ₹${item.price}</small>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -596,9 +607,42 @@ function updateCartDisplay() {
 
 // Remove item from cart
 function removeFromCart(productId) {
+  const item = cart[productId];
+  if (item) {
+    showNotification(`${item.name} removed from cart`, 'info');
+  }
   delete cart[productId];
   updateCartDisplay();
   updateCheckoutDisplay();
+}
+
+// Increase cart item quantity
+function increaseCartQuantity(productId) {
+  if (cart[productId]) {
+    if (cart[productId].quantity < cart[productId].stock) {
+      cart[productId].quantity += 1;
+      updateCartDisplay();
+      updateCheckoutDisplay();
+      showNotification(`Quantity increased for ${cart[productId].name}`, 'success');
+    } else {
+      showNotification(`Maximum stock reached for ${cart[productId].name}`, 'warning');
+    }
+  }
+}
+
+// Decrease cart item quantity
+function decreaseCartQuantity(productId) {
+  if (cart[productId]) {
+    if (cart[productId].quantity > 1) {
+      cart[productId].quantity -= 1;
+      updateCartDisplay();
+      updateCheckoutDisplay();
+      showNotification(`Quantity decreased for ${cart[productId].name}`, 'success');
+    } else {
+      // If quantity would be 0, remove the item
+      removeFromCart(productId);
+    }
+  }
 }
 
 // Show Products View
@@ -692,14 +736,16 @@ function updateCheckoutDisplay() {
 
 // Update checkout totals
 function updateCheckoutTotals() {
-  let subtotal = 0;
+  let grossTotal = 0;
   for (const [productId, item] of Object.entries(cart)) {
-    subtotal += item.price * item.quantity;
+    grossTotal += item.price * item.quantity;
   }
 
-  const tax = subtotal * 0.18;
+  // Calculate GST-exclusive subtotal (reverse calculation)
+  const tax = grossTotal * 0.18 / 1.18; // GST amount
+  const subtotal = grossTotal - tax; // Subtotal without GST
   const discount = parseFloat(document.getElementById('checkoutDiscount')?.value || 0);
-  const total = subtotal + tax - discount;
+  const total = grossTotal - discount; // Final total after discount
 
   document.getElementById('checkoutSubtotal').textContent = subtotal.toFixed(2);
   document.getElementById('checkoutTax').textContent = tax.toFixed(2);
@@ -976,16 +1022,35 @@ function showNotification(message, type = 'success') {
     info: 'alert-info'
   };
 
+  const icons = {
+    success: 'bi-check-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    danger: 'bi-x-circle-fill',
+    info: 'bi-info-circle-fill'
+  };
+
   const notification = document.createElement('div');
-  notification.className = `alert ${colors[type]} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-  notification.style.zIndex = '9999';
+  notification.className = `alert ${colors[type]} alert-dismissible fade show position-fixed bottom-0 start-50 translate-middle-x mb-3`;
+  notification.style.cssText = 'z-index: 9999; min-width: 350px; max-width: 500px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);';
   notification.innerHTML = `
-    ${message}
-    <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    <div class="d-flex align-items-center">
+      <i class="bi ${icons[type]} me-2 fs-5"></i>
+      <div class="flex-grow-1">${message}</div>
+      <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+    </div>
   `;
   document.body.appendChild(notification);
 
-  setTimeout(() => notification.remove(), 3000);
+  // Slide in animation
+  setTimeout(() => {
+    notification.style.transform = 'translateX(-50%) translateY(-10px)';
+  }, 10);
+
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(-50%) translateY(20px)';
+    setTimeout(() => notification.remove(), 300);
+  }, 4000);
 }
 
 // Search functionality

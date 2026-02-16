@@ -63,7 +63,6 @@ class Customer < ApplicationRecord
   validates :last_name, presence: true
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :mobile, presence: true, uniqueness: true
-  validates :status, inclusion: { in: [true, false] }
   validates :whatsapp_number, format: { with: /\A[+]?[\d\s\-\(\)]{7,15}\z/ }, allow_blank: true
   validates :longitude, numericality: { greater_than_or_equal_to: -180, less_than_or_equal_to: 180 }, allow_blank: true
   validates :latitude, numericality: { greater_than_or_equal_to: -90, less_than_or_equal_to: 90 }, allow_blank: true
@@ -76,9 +75,7 @@ class Customer < ApplicationRecord
     # No default status field - column doesn't exist in customers table
   end
 
-  # Optional validations
-  validates :gender, inclusion: { in: ['Male', 'Female', 'Other'] }, allow_blank: true
-  validates :pan_no, format: { with: /\A[A-Z]{5}\d{4}[A-Z]\z/ }, allow_blank: true
+  # Optional validations - removed validations for non-existent columns
 
   # Scopes - status column doesn't exist, so all customers are considered active
   scope :active, -> { all }
@@ -90,7 +87,7 @@ class Customer < ApplicationRecord
 
   # Search
   pg_search_scope :search_customers,
-    against: [:first_name, :last_name, :company_name, :email, :mobile, :pan_no],
+    against: [:first_name, :last_name, :email, :mobile],
     using: {
       tsearch: { prefix: true, any_word: true }
     }
@@ -105,7 +102,7 @@ class Customer < ApplicationRecord
   end
 
   def active?
-    status
+    true # All customers are considered active since there's no status column
   end
 
   def has_location?
@@ -135,60 +132,13 @@ class Customer < ApplicationRecord
   after_update :bust_cache
 
   def calculate_age
-    if birth_date.present?
-      today = Date.current
-      birth = birth_date
-
-      # Calculate years
-      years = today.year - birth.year
-
-      # Calculate if birthday hasn't occurred this year yet
-      if today.month < birth.month || (today.month == birth.month && today.day < birth.day)
-        years -= 1
-      end
-
-      # Store numeric age for compatibility
-      self.age = years
-    end
+    # Skip age calculation since birth_date and age columns don't exist
+    return
   end
 
   def formatted_age
-    if birth_date.present?
-      today = Date.current
-      birth = birth_date
-
-      # Calculate years
-      years = today.year - birth.year
-
-      # Calculate if birthday hasn't occurred this year yet
-      if today.month < birth.month || (today.month == birth.month && today.day < birth.day)
-        years -= 1
-      end
-
-      # Calculate the last birthday and days
-      if years == 0
-        # If less than a year old, calculate days from birth
-        days = (today - birth).to_i
-        "#{days} days"
-      else
-        # Calculate days since last birthday
-        last_birthday = Date.new(today.year, birth.month, birth.day)
-        if last_birthday > today
-          last_birthday = Date.new(today.year - 1, birth.month, birth.day)
-        end
-
-        days = (today - last_birthday).to_i
-
-        # Format the age string
-        if days == 0
-          "#{years} years"
-        else
-          "#{years} years, #{days} days"
-        end
-      end
-    else
-      ""
-    end
+    # Return empty string since birth_date column doesn't exist
+    ""
   end
 
   private
@@ -202,8 +152,7 @@ class Customer < ApplicationRecord
     # Convert empty strings to nil to prevent uniqueness validation issues
     self.mobile = nil if mobile.blank?
     self.email = nil if email.blank?
-    self.pan_no = nil if pan_no.blank?
-    self.gst_no = nil if gst_no.blank?
+    # Removed pan_no and gst_no as these columns don't exist
   end
 
   # Generate lead_id if not already present (for direct customer creation)

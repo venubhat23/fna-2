@@ -50,6 +50,8 @@ class Admin::CategoriesController < ApplicationController
     if @category.products.exists?
       redirect_to admin_categories_path, alert: 'Cannot delete category with products. Please reassign or delete products first.'
     else
+      # Safely remove the category and its image
+      @category.image.purge_later if @category.image.attached?
       @category.destroy
       redirect_to admin_categories_path, notice: 'Category was successfully deleted.'
     end

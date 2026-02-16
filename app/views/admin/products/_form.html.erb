@@ -29,19 +29,16 @@
           <div class="col-md-6">
             <%= form.label :category_id, "Category", class: "form-label" %>
             <span class="text-danger">*</span>
-            <div class="position-relative">
-              <select name="product[category_id]" id="product_category_id" class="form-select searchable-select" required>
-                <option value="">Search and select category...</option>
-                <% Category.for_select.each do |category| %>
-                  <option value="<%= category[1] %>" <%= 'selected' if @product.category_id == category[1] %>>
-                    <%= category[0] %>
-                  </option>
-                <% end %>
-              </select>
-              <div class="search-dropdown-container" style="display: none;">
-                <input type="text" class="form-control search-input" placeholder="Search categories..." autocomplete="off">
-                <div class="search-results"></div>
-              </div>
+            <div class="category-select-wrapper">
+              <%= form.select :category_id,
+                  options_for_select([['Search and select category...', '']] + Category.for_select, @product.category_id),
+                  {},
+                  {
+                    class: "form-select category-select",
+                    required: true,
+                    'data-live-search': 'true',
+                    'data-size': '10'
+                  } %>
             </div>
           </div>
 
@@ -79,12 +76,12 @@
             <div class="subscription-toggle-section">
               <div class="card border-0 bg-gradient-primary-subtle">
                 <div class="card-body p-4">
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div class="d-flex align-items-center flex-grow-1 me-3">
                       <div class="subscription-icon-container me-3">
                         <i class="bi bi-arrow-repeat fs-2 text-primary"></i>
                       </div>
-                      <div>
+                      <div class="flex-grow-1">
                         <h6 class="mb-1 fw-bold text-dark">
                           <i class="bi bi-star me-1 text-warning"></i>
                           Subscription Feature
@@ -94,7 +91,7 @@
                         </p>
                       </div>
                     </div>
-                    <div class="form-check form-switch form-check-lg">
+                    <div class="form-check form-switch form-check-lg flex-shrink-0">
                       <%= form.check_box :is_subscription_enabled,
                           class: "form-check-input subscription-toggle",
                           id: "subscription_toggle",
@@ -239,6 +236,213 @@
     </div>
   </div>
 
+  <!-- GST Configuration Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-receipt-cutoff me-2"></i>
+          GST Configuration
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- Enable GST Checkbox -->
+          <div class="col-12">
+            <div class="form-check form-switch form-check-lg">
+              <%= form.check_box :gst_enabled, class: "form-check-input gst-toggle", id: "gst_toggle" %>
+              <%= form.label :gst_enabled, "Enable GST", class: "form-check-label fw-semibold" %>
+              <div class="form-text">Enable GST calculation for this product</div>
+            </div>
+          </div>
+
+          <!-- GST Configuration Fields (hidden by default) -->
+          <div id="gst_config" class="col-12" style="<%= 'display: none;' unless @product.gst_enabled %>">
+            <div class="card border-info">
+              <div class="card-header bg-info bg-opacity-10">
+                <h6 class="card-title mb-0 text-info">
+                  <i class="bi bi-calculator me-1"></i>
+                  GST Tax Configuration
+                </h6>
+                <div class="form-text">Configure GST rates based on your business location and customer delivery location</div>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+
+                  <!-- GST Type Selection -->
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">GST Type</label>
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="gst_type" value="intrastate" id="gst_intrastate">
+                          <label class="form-check-label" for="gst_intrastate">
+                            <strong>Intrastate (Within Same State)</strong>
+                            <small class="d-block text-muted">CGST + SGST applies</small>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="gst_type" value="interstate" id="gst_interstate">
+                          <label class="form-check-label" for="gst_interstate">
+                            <strong>Interstate (Different States)</strong>
+                            <small class="d-block text-muted">IGST applies</small>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="gst_type" value="flexible" id="gst_flexible" checked>
+                          <label class="form-check-label" for="gst_flexible">
+                            <strong>Flexible (Auto-Calculate)</strong>
+                            <small class="d-block text-muted">Automatic based on delivery</small>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Total GST Percentage -->
+                  <div class="col-md-6">
+                    <%= form.label :gst_percentage, "Total GST Rate (%)", class: "form-label" %>
+                    <span class="text-danger">*</span>
+                    <%= form.select :gst_percentage,
+                        options_for_select([
+                          ['Select GST Rate', ''],
+                          ['0% - Nil Rate', '0'],
+                          ['3% - Essential Goods', '3'],
+                          ['5% - Daily Necessities', '5'],
+                          ['12% - Processed Foods', '12'],
+                          ['18% - Most Products', '18'],
+                          ['28% - Luxury Items', '28']
+                        ], @product.gst_percentage),
+                        {},
+                        { class: "form-select", id: "total_gst_rate" } %>
+                    <div class="form-text">Select applicable GST rate for your product category</div>
+                  </div>
+
+                  <!-- HSN Code -->
+                  <div class="col-md-6">
+                    <%= form.label :hsn_code, "HSN/SAC Code", class: "form-label" %>
+                    <%= form.text_field :hsn_code, class: "form-control", placeholder: "e.g., 1001, 2202", id: "hsn_code" %>
+                    <div class="form-text">Harmonized System of Nomenclature code</div>
+                  </div>
+
+                  <!-- Intrastate GST Fields (CGST + SGST) -->
+                  <div id="intrastate_gst_fields" class="col-12">
+                    <div class="card border-success bg-success bg-opacity-5">
+                      <div class="card-header bg-success bg-opacity-10">
+                        <h6 class="mb-0 text-success">
+                          <i class="bi bi-geo-alt me-1"></i>
+                          Intrastate GST (Same State)
+                        </h6>
+                        <small class="text-muted">CGST (Central) + SGST (State) = Total GST</small>
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-3">
+                            <%= form.label :cgst_percentage, "CGST Rate (%)", class: "form-label" %>
+                            <%= form.number_field :cgst_percentage, class: "form-control gst-split-rate", step: 0.01, min: 0, max: 50, placeholder: "0.00", id: "cgst_rate", readonly: true %>
+                            <div class="form-text">Central GST (Auto-calculated)</div>
+                          </div>
+                          <div class="col-md-3">
+                            <%= form.label :sgst_percentage, "SGST Rate (%)", class: "form-label" %>
+                            <%= form.number_field :sgst_percentage, class: "form-control gst-split-rate", step: 0.01, min: 0, max: 50, placeholder: "0.00", id: "sgst_rate", readonly: true %>
+                            <div class="form-text">State GST (Auto-calculated)</div>
+                          </div>
+                          <div class="col-md-3">
+                            <%= form.label :cgst_amount, "CGST Amount (₹)", class: "form-label" %>
+                            <%= form.number_field :cgst_amount, class: "form-control gst-amount", step: 0.01, min: 0, placeholder: "0.00", id: "cgst_amount", readonly: true %>
+                          </div>
+                          <div class="col-md-3">
+                            <%= form.label :sgst_amount, "SGST Amount (₹)", class: "form-label" %>
+                            <%= form.number_field :sgst_amount, class: "form-control gst-amount", step: 0.01, min: 0, placeholder: "0.00", id: "sgst_amount", readonly: true %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Interstate GST Fields (IGST) -->
+                  <div id="interstate_gst_fields" class="col-12">
+                    <div class="card border-primary bg-primary bg-opacity-5">
+                      <div class="card-header bg-primary bg-opacity-10">
+                        <h6 class="mb-0 text-primary">
+                          <i class="bi bi-arrow-left-right me-1"></i>
+                          Interstate GST (Different States)
+                        </h6>
+                        <small class="text-muted">IGST (Integrated) = Total GST</small>
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <%= form.label :igst_percentage, "IGST Rate (%)", class: "form-label" %>
+                            <%= form.number_field :igst_percentage, class: "form-control gst-total-rate", step: 0.01, min: 0, max: 50, placeholder: "0.00", id: "igst_rate", readonly: true %>
+                            <div class="form-text">Integrated GST (Auto-calculated)</div>
+                          </div>
+                          <div class="col-md-6">
+                            <%= form.label :igst_amount, "IGST Amount (₹)", class: "form-label" %>
+                            <%= form.number_field :igst_amount, class: "form-control gst-amount", step: 0.01, min: 0, placeholder: "0.00", id: "igst_amount", readonly: true %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- GST Summary -->
+                  <div class="col-12">
+                    <div class="card border-warning bg-warning bg-opacity-5">
+                      <div class="card-header bg-warning bg-opacity-10">
+                        <h6 class="mb-0 text-warning">
+                          <i class="bi bi-calculator-fill me-1"></i>
+                          Price Breakdown with GST
+                        </h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">Base Price</small>
+                              <span class="fw-bold fs-6" id="gst_base_price">₹0.00</span>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">Total GST</small>
+                              <span class="fw-bold fs-6 text-info" id="gst_total_amount">₹0.00</span>
+                              <small class="d-block text-muted">(<span id="gst_effective_rate">0</span>%)</small>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">After Discount</small>
+                              <span class="fw-bold fs-6 text-success" id="gst_discounted_price">₹0.00</span>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">Final Price (Inc. GST)</small>
+                              <span class="fw-bold fs-5 text-primary" id="gst_final_price">₹0.00</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Hidden field to store final amount with GST -->
+                        <%= form.hidden_field :final_amount_with_gst, id: "final_amount_with_gst" %>
+                        <%= form.hidden_field :gst_amount, id: "total_gst_amount_hidden" %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Inventory Section -->
   <div class="col-md-6">
     <div class="card h-100">
@@ -260,13 +464,14 @@
             <%= form.select :unit_type,
                 options_for_select([['Select Unit', '']] + Product::UNIT_TYPES, @product.unit_type),
                 {},
-                { class: "form-select", required: true } %>
+                { class: "form-select", required: true, id: "product_unit_type" } %>
             <div class="form-text">Unit of measurement for this product (e.g., 1 kg, 1 liter, 1 bottle)</div>
           </div>
 
           <div class="col-12">
-            <%= form.label :weight, "Weight (kg)", class: "form-label" %>
-            <%= form.number_field :weight, class: "form-control", step: 0.001, min: 0, placeholder: "0.000" %>
+            <%= form.label :weight, "Weight (kg)", class: "form-label", id: "weight_label" %>
+            <%= form.number_field :weight, class: "form-control", step: 0.001, min: 0, placeholder: "0.000", id: "product_weight" %>
+            <div class="form-text" id="weight_help_text">Enter the weight/quantity in the selected unit</div>
           </div>
 
           <div class="col-12">
@@ -2184,6 +2389,294 @@ function previewImage(src, filename) {
   });
 }
 
+  // Dynamic Unit Label Update
+  const unitTypeSelect = document.getElementById('product_unit_type');
+  const weightLabel = document.getElementById('weight_label');
+  const weightField = document.getElementById('product_weight');
+  const weightHelpText = document.getElementById('weight_help_text');
+
+  if (unitTypeSelect && weightLabel && weightField) {
+    // Unit mappings for label and placeholder updates
+    const unitMappings = {
+      'Kg': { label: 'Weight (kg)', placeholder: '0.000', step: '0.001', help: 'Enter weight in kilograms' },
+      'Gram': { label: 'Weight (gm)', placeholder: '0.0', step: '0.1', help: 'Enter weight in grams' },
+      'Liter': { label: 'Volume (L)', placeholder: '0.000', step: '0.001', help: 'Enter volume in liters' },
+      'Ml': { label: 'Volume (ml)', placeholder: '0', step: '1', help: 'Enter volume in milliliters' },
+      'Piece': { label: 'Quantity (pcs)', placeholder: '1', step: '1', help: 'Enter number of pieces' },
+      'Bottle': { label: 'Quantity (bottles)', placeholder: '1', step: '1', help: 'Enter number of bottles' },
+      'Dozen': { label: 'Quantity (dozen)', placeholder: '1', step: '0.5', help: 'Enter quantity in dozens' },
+      'Box': { label: 'Quantity (boxes)', placeholder: '1', step: '1', help: 'Enter number of boxes' },
+      'Packet': { label: 'Quantity (packets)', placeholder: '1', step: '1', help: 'Enter number of packets' },
+      'Bundle': { label: 'Quantity (bundles)', placeholder: '1', step: '1', help: 'Enter number of bundles' },
+      'Can': { label: 'Quantity (cans)', placeholder: '1', step: '1', help: 'Enter number of cans' },
+      'Jar': { label: 'Quantity (jars)', placeholder: '1', step: '1', help: 'Enter number of jars' },
+      'Pouch': { label: 'Quantity (pouches)', placeholder: '1', step: '1', help: 'Enter number of pouches' },
+      'Sachet': { label: 'Quantity (sachets)', placeholder: '1', step: '1', help: 'Enter number of sachets' }
+    };
+
+    function updateWeightField() {
+      const selectedUnit = unitTypeSelect.value;
+      const mapping = unitMappings[selectedUnit];
+
+      if (mapping) {
+        weightLabel.textContent = mapping.label;
+        weightField.placeholder = mapping.placeholder;
+        weightField.step = mapping.step;
+        if (weightHelpText) {
+          weightHelpText.textContent = mapping.help;
+        }
+
+        // Add visual feedback
+        weightField.classList.add('field-updated');
+        setTimeout(() => weightField.classList.remove('field-updated'), 300);
+      }
+    }
+
+    // Listen for unit type changes
+    unitTypeSelect.addEventListener('change', updateWeightField);
+
+    // Update on page load if unit is already selected
+    if (unitTypeSelect.value) {
+      updateWeightField();
+    }
+  }
+
+  // GST Configuration and Calculations
+  const gstToggle = document.getElementById('gst_toggle');
+  const gstConfig = document.getElementById('gst_config');
+  const totalGstRate = document.getElementById('total_gst_rate');
+  const gstTypeRadios = document.querySelectorAll('input[name="gst_type"]');
+
+  // Price fields for calculations
+  const sellingPriceField = document.getElementById('product_price');
+  const buyingPriceField = document.getElementById('product_buying_price');
+  const discountToggle = document.getElementById('discount_toggle');
+  const discountType = document.getElementById('discount_type');
+  const discountValue = document.getElementById('discount_value');
+
+  if (gstToggle && gstConfig) {
+    // Handle GST enable/disable
+    gstToggle.addEventListener('change', function() {
+      const isEnabled = this.checked;
+
+      if (isEnabled) {
+        gstConfig.style.display = 'block';
+        gstConfig.style.opacity = '0';
+        gstConfig.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          gstConfig.style.transition = 'all 0.3s ease';
+          gstConfig.style.opacity = '1';
+          gstConfig.style.transform = 'translateY(0)';
+        }, 10);
+      } else {
+        gstConfig.style.transition = 'all 0.3s ease';
+        gstConfig.style.opacity = '0';
+        gstConfig.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          gstConfig.style.display = 'none';
+          resetGstCalculations();
+        }, 300);
+      }
+    });
+
+    // Handle GST rate selection
+    if (totalGstRate) {
+      totalGstRate.addEventListener('change', function() {
+        const rate = parseFloat(this.value) || 0;
+        updateGstRates(rate);
+        calculateGst();
+      });
+    }
+
+    // Handle GST type changes
+    gstTypeRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        updateGstDisplay(this.value);
+        calculateGst();
+      });
+    });
+
+    // Listen for price changes to recalculate GST
+    if (sellingPriceField) {
+      sellingPriceField.addEventListener('input', calculateGst);
+    }
+    if (discountToggle) {
+      discountToggle.addEventListener('change', calculateGst);
+    }
+    if (discountType) {
+      discountType.addEventListener('change', calculateGst);
+    }
+    if (discountValue) {
+      discountValue.addEventListener('input', calculateGst);
+    }
+  }
+
+  function updateGstRates(totalRate) {
+    const cgstRate = document.getElementById('cgst_rate');
+    const sgstRate = document.getElementById('sgst_rate');
+    const igstRate = document.getElementById('igst_rate');
+
+    if (totalRate > 0) {
+      // For intrastate: CGST = SGST = Total/2
+      const halfRate = (totalRate / 2).toFixed(2);
+
+      if (cgstRate) cgstRate.value = halfRate;
+      if (sgstRate) sgstRate.value = halfRate;
+      if (igstRate) igstRate.value = totalRate.toFixed(2);
+    } else {
+      if (cgstRate) cgstRate.value = '0.00';
+      if (sgstRate) sgstRate.value = '0.00';
+      if (igstRate) igstRate.value = '0.00';
+    }
+  }
+
+  function updateGstDisplay(gstType) {
+    const intrastateFields = document.getElementById('intrastate_gst_fields');
+    const interstateFields = document.getElementById('interstate_gst_fields');
+
+    if (gstType === 'intrastate') {
+      if (intrastateFields) intrastateFields.style.display = 'block';
+      if (interstateFields) interstateFields.style.display = 'none';
+    } else if (gstType === 'interstate') {
+      if (intrastateFields) intrastateFields.style.display = 'none';
+      if (interstateFields) interstateFields.style.display = 'block';
+    } else {
+      // Flexible - show both
+      if (intrastateFields) intrastateFields.style.display = 'block';
+      if (interstateFields) interstateFields.style.display = 'block';
+    }
+  }
+
+  function calculateGst() {
+    if (!gstToggle || !gstToggle.checked) {
+      resetGstCalculations();
+      return;
+    }
+
+    const sellingPrice = parseFloat(sellingPriceField?.value) || 0;
+    const gstRate = parseFloat(totalGstRate?.value) || 0;
+
+    if (sellingPrice <= 0 || gstRate <= 0) {
+      resetGstCalculations();
+      return;
+    }
+
+    // Calculate base price (price excluding GST)
+    // If GST is included in selling price: Base = Selling / (1 + GST/100)
+    // If GST is to be added: Base = Selling Price
+    const isGstIncluded = true; // You can make this configurable
+    const basePrice = isGstIncluded ? sellingPrice / (1 + gstRate / 100) : sellingPrice;
+
+    // Calculate discount if enabled
+    let discountAmount = 0;
+    let discountedPrice = basePrice;
+
+    if (discountToggle && discountToggle.checked) {
+      const discountVal = parseFloat(discountValue?.value) || 0;
+      const discType = discountType?.value;
+
+      if (discType === 'percentage') {
+        discountAmount = (basePrice * discountVal) / 100;
+      } else if (discType === 'fixed') {
+        discountAmount = discountVal;
+      }
+
+      discountedPrice = Math.max(0, basePrice - discountAmount);
+    }
+
+    // Calculate GST amounts
+    const totalGstAmount = (discountedPrice * gstRate) / 100;
+    const cgstAmount = totalGstAmount / 2;
+    const sgstAmount = totalGstAmount / 2;
+    const igstAmount = totalGstAmount;
+
+    // Final price with GST
+    const finalPrice = discountedPrice + totalGstAmount;
+
+    // Update GST amount fields
+    updateGstAmountFields(cgstAmount, sgstAmount, igstAmount, totalGstAmount);
+
+    // Update display
+    updateGstDisplay(document.querySelector('input[name="gst_type"]:checked')?.value || 'flexible');
+    updateGstSummary(basePrice, totalGstAmount, discountedPrice, finalPrice, gstRate);
+
+    // Update hidden fields
+    const finalAmountField = document.getElementById('final_amount_with_gst');
+    const gstAmountField = document.getElementById('total_gst_amount_hidden');
+
+    if (finalAmountField) finalAmountField.value = finalPrice.toFixed(2);
+    if (gstAmountField) gstAmountField.value = totalGstAmount.toFixed(2);
+  }
+
+  function updateGstAmountFields(cgstAmount, sgstAmount, igstAmount, totalAmount) {
+    const cgstField = document.getElementById('cgst_amount');
+    const sgstField = document.getElementById('sgst_amount');
+    const igstField = document.getElementById('igst_amount');
+
+    if (cgstField) cgstField.value = cgstAmount.toFixed(2);
+    if (sgstField) sgstField.value = sgstAmount.toFixed(2);
+    if (igstField) igstField.value = igstAmount.toFixed(2);
+  }
+
+  function updateGstSummary(basePrice, gstAmount, discountedPrice, finalPrice, gstRate) {
+    const elements = {
+      gst_base_price: `₹${basePrice.toFixed(2)}`,
+      gst_total_amount: `₹${gstAmount.toFixed(2)}`,
+      gst_discounted_price: `₹${discountedPrice.toFixed(2)}`,
+      gst_final_price: `₹${finalPrice.toFixed(2)}`,
+      gst_effective_rate: gstRate.toFixed(2)
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+
+        // Add animation effect
+        element.classList.add('gst-updated');
+        setTimeout(() => element.classList.remove('gst-updated'), 500);
+      }
+    });
+  }
+
+  function resetGstCalculations() {
+    const resetFields = [
+      'cgst_amount', 'sgst_amount', 'igst_amount',
+      'final_amount_with_gst', 'total_gst_amount_hidden'
+    ];
+
+    resetFields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) field.value = '0.00';
+    });
+
+    const resetDisplays = [
+      'gst_base_price', 'gst_total_amount', 'gst_discounted_price',
+      'gst_final_price', 'gst_effective_rate'
+    ];
+
+    resetDisplays.forEach(displayId => {
+      const element = document.getElementById(displayId);
+      if (element) {
+        element.textContent = displayId === 'gst_effective_rate' ? '0' : '₹0.00';
+      }
+    });
+  }
+
+  // Initialize GST display on page load
+  if (gstToggle && gstToggle.checked) {
+    const selectedGstType = document.querySelector('input[name="gst_type"]:checked')?.value || 'flexible';
+    updateGstDisplay(selectedGstType);
+
+    const currentGstRate = parseFloat(totalGstRate?.value) || 0;
+    if (currentGstRate > 0) {
+      updateGstRates(currentGstRate);
+      calculateGst();
+    }
+  }
+
 // Form submission handler for loading state
 document.getElementById('product-form').addEventListener('submit', function(e) {
   const submitBtn = document.getElementById('submit-btn');
@@ -2774,6 +3267,209 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   color: #28a745;
   font-weight: bold;
   margin-left: 0.5rem;
+}
+
+/* Enhanced subscription toggle layout */
+@media (max-width: 992px) {
+  .subscription-toggle-section .d-flex {
+    flex-direction: column !important;
+    align-items: start !important;
+  }
+
+  .subscription-toggle-section .flex-shrink-0 {
+    margin-top: 1rem;
+    align-self: center;
+  }
+}
+
+/* Field update animation for unit changes */
+.field-updated {
+  border-color: #28a745 !important;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
+  transition: all 0.3s ease;
+}
+
+/* Category select improvements */
+.category-select-wrapper .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  cursor: pointer;
+}
+
+.category-select-wrapper .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* GST Configuration Styles */
+.gst-toggle {
+  transform: scale(1.2);
+  accent-color: #17a2b8;
+  transition: all 0.3s ease;
+}
+
+.gst-toggle:checked {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+}
+
+#gst_config {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gst-split-rate, .gst-total-rate, .gst-amount {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #6c757d;
+}
+
+.gst-split-rate:focus, .gst-total-rate:focus, .gst-amount:focus {
+  background-color: #fff;
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.gst-updated {
+  background-color: #d4edda !important;
+  border-color: #28a745 !important;
+  color: #155724 !important;
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+}
+
+/* GST Type Radio Buttons */
+.form-check-input[type="radio"][name="gst_type"]:checked + .form-check-label {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.form-check-input[type="radio"][name="gst_type"]:checked + .form-check-label strong {
+  color: #0d6efd;
+}
+
+/* GST Cards Styling */
+.card.border-success {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.card.border-primary {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.card.border-warning {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.card.border-info {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+/* GST Summary Cards Hover Effects */
+.card.border-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+
+.card.border-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+}
+
+.card.border-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+}
+
+.card.border-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.2);
+}
+
+/* Responsive GST Layout */
+@media (max-width: 768px) {
+  .gst-toggle {
+    transform: scale(1.1);
+  }
+
+  #gst_config .row .col-md-4,
+  #gst_config .row .col-md-6,
+  #gst_config .row .col-md-3 {
+    margin-bottom: 1rem;
+  }
+
+  .card-header h6 {
+    font-size: 0.9rem;
+  }
+}
+
+/* Animation for GST field updates */
+@keyframes gstFieldUpdate {
+  0% {
+    background-color: #d4edda;
+    transform: scale(1);
+  }
+  50% {
+    background-color: #c3e6cb;
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: #f8f9fa;
+    transform: scale(1);
+  }
+}
+
+.gst-field-animate {
+  animation: gstFieldUpdate 0.5s ease-in-out;
+}
+
+/* GST calculation loader */
+.gst-calculating::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #17a2b8;
+  border-radius: 50%;
+  border-top: 2px solid transparent;
+  animation: spin 0.8s linear infinite;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* HSN Code field styling */
+#hsn_code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+#hsn_code:focus {
+  border-color: #17a2b8;
+  box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+}
+
+/* GST Toggle Section Enhancement */
+.form-check-lg .form-check-input {
+  width: 2.5rem;
+  height: 1.25rem;
+  border-radius: 1rem;
+}
+
+.form-check-lg .form-check-label {
+  font-size: 1.1rem;
+  padding-left: 0.5rem;
 }
 </style>
 

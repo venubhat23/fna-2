@@ -70,9 +70,21 @@ class Product < ApplicationRecord
   validates :occasional_start_date, presence: true, if: :is_occasional_product?
   validates :occasional_end_date, presence: true, if: :is_occasional_product?
 
+  # GST validations
+  validates :gst_percentage, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }, if: :gst_enabled?
+  validates :cgst_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 25 }, allow_blank: true
+  validates :sgst_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 25 }, allow_blank: true
+  validates :igst_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }, allow_blank: true
+  validates :gst_amount, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
+  validates :cgst_amount, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
+  validates :sgst_amount, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
+  validates :igst_amount, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
+  validates :final_amount_with_gst, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
+
   validate :discount_price_validation
   validate :discount_value_validation
   validate :occasional_dates_validation
+  validate :gst_rates_validation
 
   accepts_nested_attributes_for :delivery_rules, allow_destroy: true, reject_if: :all_blank
 
@@ -779,6 +791,58 @@ class Product < ApplicationRecord
     }
   end
 
+  # GST utility methods
+  def calculate_final_price_with_gst
+    return price unless gst_enabled? && gst_percentage.present?
+
+    base_price = calculate_base_price
+    gst_amount = calculate_gst_amount(base_price, gst_percentage)
+    base_price + gst_amount
+  end
+
+  def calculate_base_price
+    # If price includes GST, extract base price
+    # If price excludes GST, use price as base
+    return price unless gst_enabled? && gst_percentage.present?
+
+    # Assuming price includes GST by default
+    price / (1 + (gst_percentage / 100.0))
+  end
+
+  def gst_breakdown
+    return {} unless gst_enabled? && gst_percentage.present?
+
+    base_price = calculate_base_price
+    total_gst = calculate_gst_amount(base_price, gst_percentage)
+
+    {
+      base_price: base_price.round(2),
+      cgst_rate: cgst_percentage || (gst_percentage / 2.0),
+      sgst_rate: sgst_percentage || (gst_percentage / 2.0),
+      igst_rate: igst_percentage || gst_percentage,
+      cgst_amount: cgst_amount || (total_gst / 2.0),
+      sgst_amount: sgst_amount || (total_gst / 2.0),
+      igst_amount: igst_amount || total_gst,
+      total_gst_amount: total_gst.round(2),
+      final_price: (base_price + total_gst).round(2)
+    }
+  end
+
+  def effective_selling_price
+    if gst_enabled?
+      final_amount_with_gst.presence || calculate_final_price_with_gst
+    else
+      final_price_after_discount
+    end
+  end
+
+  def display_gst_info
+    return 'GST Not Applicable' unless gst_enabled?
+    return 'GST Rate Not Set' unless gst_percentage.present?
+
+    "GST #{gst_percentage}% (₹#{gst_amount&.round(2) || 0})"
+  end
+
   private
 
   def generate_sku
@@ -923,6 +987,61 @@ class Product < ApplicationRecord
         errors.add(:occasional_end_date, 'duration cannot be more than 1 year')
       end
     end
+  end
+
+  def gst_rates_validation
+    return unless gst_enabled?
+
+    # Validate GST percentage is set when enabled
+    if gst_percentage.blank? || gst_percentage <= 0
+      errors.add(:gst_percentage, 'must be specified when GST is enabled')
+      return
+    end
+
+    # Validate CGST + SGST = Total GST (for intrastate transactions)
+    if cgst_percentage.present? && sgst_percentage.present?
+      total_intrastate = cgst_percentage + sgst_percentage
+      if (total_intrastate - gst_percentage).abs > 0.01 # Allow for minor rounding differences
+        errors.add(:base, "CGST (#{cgst_percentage}%) + SGST (#{sgst_percentage}%) must equal Total GST (#{gst_percentage}%)")
+      end
+    end
+
+    # Validate IGST = Total GST (for interstate transactions)
+    if igst_percentage.present?
+      if (igst_percentage - gst_percentage).abs > 0.01 # Allow for minor rounding differences
+        errors.add(:igst_percentage, "must equal Total GST rate (#{gst_percentage}%)")
+      end
+    end
+
+    # Validate that at least one GST configuration is present
+    if cgst_percentage.blank? && sgst_percentage.blank? && igst_percentage.blank?
+      errors.add(:base, 'At least one GST configuration (CGST/SGST or IGST) must be specified')
+    end
+
+    # Validate individual GST rates are reasonable
+    if cgst_percentage.present? && (cgst_percentage < 0 || cgst_percentage > 25)
+      errors.add(:cgst_percentage, 'must be between 0% and 25%')
+    end
+
+    if sgst_percentage.present? && (sgst_percentage < 0 || sgst_percentage > 25)
+      errors.add(:sgst_percentage, 'must be between 0% and 25%')
+    end
+
+    if igst_percentage.present? && (igst_percentage < 0 || igst_percentage > 50)
+      errors.add(:igst_percentage, 'must be between 0% and 50%')
+    end
+
+    # Validate GST amounts are consistent with percentages if present
+    if gst_amount.present? && price.present? && gst_percentage.present?
+      expected_gst_amount = calculate_gst_amount(price, gst_percentage)
+      if (gst_amount - expected_gst_amount).abs > 0.01
+        errors.add(:gst_amount, "should be approximately ₹#{expected_gst_amount.round(2)} based on price and GST rate")
+      end
+    end
+  end
+
+  def calculate_gst_amount(base_price, rate)
+    (base_price * rate) / 100.0
   end
 
   def create_initial_stock_movement

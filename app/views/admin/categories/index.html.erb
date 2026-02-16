@@ -109,7 +109,11 @@
               <tr>
                 <td class="align-middle">
                   <% if category.image.attached? %>
-                    <%= image_tag category.image, class: "rounded", style: "width: 50px; height: 50px; object-fit: cover;" %>
+                    <%= image_tag category.image, class: "rounded", style: "width: 50px; height: 50px; object-fit: cover;",
+                        onerror: "this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';" %>
+                    <div class="bg-light rounded align-items-center justify-content-center d-none" style="width: 50px; height: 50px;">
+                      <i class="bi bi-image text-muted"></i>
+                    </div>
                   <% else %>
                     <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                       <i class="bi bi-image text-muted"></i>
@@ -173,11 +177,12 @@
                       </li>
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <%= link_to admin_category_path(category), method: :delete,
+                        <%= link_to admin_category_path(category),
                             class: "dropdown-item text-danger",
-                            confirm: "Are you sure you want to delete this category?",
                             data: {
-                              confirm: "Are you sure you want to delete #{category.name}? This action cannot be undone."
+                              method: :delete,
+                              confirm: "Are you sure you want to delete #{category.name}? This action cannot be undone.",
+                              turbo_method: :delete
                             } do %>
                           <i class="bi bi-trash me-2"></i>
                           Delete Category

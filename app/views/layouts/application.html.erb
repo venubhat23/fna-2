@@ -305,6 +305,69 @@
           closeToast();
         }
       });
+
+      // Session security and browser navigation handling
+      <% if user_signed_in? %>
+        // Prevent back button authentication bypass
+        window.addEventListener('pageshow', function(event) {
+          // Force reload if page is accessed via back/forward button after logout
+          if (event.persisted || performance.navigation.type === 2) {
+            // Check if user is still authenticated by making a quick request
+            fetch('/dashboard', {
+              method: 'HEAD',
+              credentials: 'same-origin',
+              cache: 'no-cache'
+            }).catch(() => {
+              // If request fails, likely not authenticated, redirect to login
+              window.location.href = '/sessions/new';
+            });
+          }
+        });
+
+        // Update session activity on user interaction
+        let lastActivity = Date.now();
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+
+        activityEvents.forEach(event => {
+          document.addEventListener(event, function() {
+            const now = Date.now();
+            if (now - lastActivity > 30000) { // Only update every 30 seconds
+              lastActivity = now;
+              // Update session activity timestamp
+              fetch('/dashboard', {
+                method: 'HEAD',
+                credentials: 'same-origin',
+                cache: 'no-cache'
+              }).catch(() => {
+                // Session expired, redirect to login
+                window.location.href = '/sessions/new';
+              });
+            }
+          }, true);
+        });
+
+        // Handle browser refresh and navigation
+        window.addEventListener('beforeunload', function(event) {
+          // Mark that we're navigating away
+          sessionStorage.setItem('navigating', 'true');
+        });
+
+        // Check if coming back from navigation
+        window.addEventListener('load', function() {
+          const wasNavigating = sessionStorage.getItem('navigating');
+          if (wasNavigating) {
+            sessionStorage.removeItem('navigating');
+            // Validate session is still active
+            fetch('/dashboard', {
+              method: 'HEAD',
+              credentials: 'same-origin',
+              cache: 'no-cache'
+            }).catch(() => {
+              window.location.href = '/sessions/new';
+            });
+          }
+        });
+      <% end %>
     </script>
 
     <!-- Global Form Enhancement Script -->
