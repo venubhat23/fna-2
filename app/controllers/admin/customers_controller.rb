@@ -85,63 +85,11 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # GET /admin/customers/1
   def show
-    # Family members and uploaded documents tables don't exist, so skip these
+    # Simple customer show page without insurance dependencies
+    @all_policies = []
+    @policies = []
     @family_members = []
     @uploaded_documents = []
-
-    # Gather all policies from different insurance types
-    @all_policies = []
-
-    # Health Insurance policies
-    @customer.health_insurances.each do |policy|
-      @all_policies << {
-        type: 'Health Insurance',
-        policy: policy,
-        policy_number: policy.policy_number,
-        company_name: policy.insurance_company_name,
-        premium: policy.total_premium,
-        start_date: policy.policy_start_date,
-        end_date: policy.policy_end_date,
-        status: policy.active? ? 'Active' : 'Expired',
-        created_at: policy.created_at
-      }
-    end
-
-    # Life Insurance policies
-    @customer.life_insurances.each do |policy|
-      @all_policies << {
-        type: 'Life Insurance',
-        policy: policy,
-        policy_number: policy.policy_number,
-        company_name: policy.insurance_company_name,
-        premium: policy.total_premium,
-        start_date: policy.policy_start_date,
-        end_date: policy.policy_end_date,
-        status: policy.active? ? 'Active' : 'Expired',
-        created_at: policy.created_at
-      }
-    end
-
-    # Motor Insurance policies
-    @customer.motor_insurances.each do |policy|
-      @all_policies << {
-        type: 'Motor Insurance',
-        policy: policy,
-        policy_number: policy.policy_number,
-        company_name: policy.insurance_company_name,
-        premium: policy.total_premium,
-        start_date: policy.policy_start_date,
-        end_date: policy.policy_end_date,
-        status: policy.active? ? 'Active' : 'Expired',
-        created_at: policy.created_at
-      }
-    end
-
-    # Sort all policies by creation date (newest first)
-    @all_policies.sort_by! { |p| p[:created_at] }.reverse!
-
-    # For backwards compatibility, set @policies
-    @policies = @all_policies
   end
 
   # GET /admin/customers/:id/policy_chart
@@ -593,23 +541,12 @@ class Admin::CustomersController < Admin::ApplicationController
   end
 
   def customer_params
+    # Only permit fields that actually exist in the customers table
     params.require(:customer).permit(
       :first_name, :last_name, :middle_name, :email, :mobile,
       :longitude, :latitude, :whatsapp_number, :auto_generated_password,
       :location_obtained_at, :location_accuracy, :password, :password_confirmation,
-      :personal_image, :house_image, profile_image: [],
-      documents_attributes: [:id, :document_type, :file, :_destroy],
-      uploaded_documents_attributes: [:id, :title, :description, :document_type, :file, :uploaded_by, :_destroy],
-      family_members_attributes: [
-        :id, :first_name, :middle_name, :last_name, :birth_date, :age, :height_feet, :weight_kg,
-        :gender, :relationship, :pan_no, :mobile, :additional_information, :_destroy,
-        documents_attributes: [:id, :document_type, :file, :_destroy]
-      ],
-      corporate_members_attributes: [
-        :id, :company_name, :mobile, :email, :state, :city, :address, :annual_income,
-        :pan_no, :gst_no, :additional_information, :_destroy,
-        documents_attributes: [:id, :document_type, :file, :_destroy]
-      ]
+      :personal_image, :house_image, profile_image: []
     )
   end
 

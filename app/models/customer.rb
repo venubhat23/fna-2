@@ -13,16 +13,7 @@ class Customer < ApplicationRecord
   has_one_attached :house_image
   belongs_to :affiliate, class_name: 'SubAgent', foreign_key: 'sub_agent_id', optional: true
 
-  # Insurance associations
-  has_many :health_insurances, dependent: :destroy
-  has_many :life_insurances, dependent: :destroy
-  has_many :motor_insurances, dependent: :destroy
-
-  # New product associations
-  has_many :investments, dependent: :destroy
-  has_many :loans, dependent: :destroy
-  has_many :tax_services, dependent: :destroy
-  has_many :travel_packages, dependent: :destroy
+  # Product associations (investment/loan features removed for ecommerce focus)
 
   # E-commerce associations
   has_many :bookings, dependent: :destroy
@@ -64,6 +55,7 @@ class Customer < ApplicationRecord
   validates :last_name, presence: true
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :mobile, presence: true, uniqueness: true
+  validate :valid_mobile_format
   validates :whatsapp_number, format: { with: /\A[+]?[\d\s\-\(\)]{7,15}\z/ }, allow_blank: true
   validates :longitude, numericality: { greater_than_or_equal_to: -180, less_than_or_equal_to: 180 }, allow_blank: true
   validates :latitude, numericality: { greater_than_or_equal_to: -90, less_than_or_equal_to: 90 }, allow_blank: true
@@ -83,7 +75,7 @@ class Customer < ApplicationRecord
   scope :inactive, -> { none } # No status column, so return empty relation
 
   # Callbacks
-  before_validation :normalize_blank_values
+  before_validation :normalize_blank_values, :normalize_mobile_numbers
   before_save :calculate_age
 
   # Search
@@ -113,6 +105,7 @@ class Customer < ApplicationRecord
   def whatsapp_same_as_mobile?
     whatsapp_number == mobile
   end
+
 
   def self.generate_random_password(length = 10)
     charset = Array('A'..'Z') + Array('a'..'z') + Array('0'..'9') + ['@', '#', '$', '%', '&']
@@ -154,6 +147,48 @@ class Customer < ApplicationRecord
     self.mobile = nil if mobile.blank?
     self.email = nil if email.blank?
     # Removed pan_no and gst_no as these columns don't exist
+  end
+
+  def normalize_mobile_numbers
+    # Normalize mobile number
+    if mobile.present?
+      self.mobile = normalize_indian_mobile(mobile)
+    end
+
+    # Normalize WhatsApp number
+    if whatsapp_number.present?
+      self.whatsapp_number = normalize_indian_mobile(whatsapp_number)
+    end
+  end
+
+  def normalize_indian_mobile(number)
+    return number if number.blank?
+
+    # Remove all non-digit characters
+    clean_number = number.gsub(/\D/, '')
+
+    # Handle different input formats:
+    # +91 91909 39390 -> 919190939390 -> 9190939390
+    # 91909 39390 -> 919190939390 -> 9190939390
+    # 9190939390 -> 9190939390 (already correct)
+
+    if clean_number.length == 12 && clean_number.start_with?('91')
+      # Remove country code +91
+      clean_number = clean_number[2..-1]
+    elsif clean_number.length == 11 && clean_number.start_with?('91')
+      # Remove country code 91 without +
+      clean_number = clean_number[2..-1]
+    end
+
+    clean_number
+  end
+
+  def valid_mobile_format
+    return if mobile.blank?
+
+    unless mobile.match?(/\A[6-9]\d{9}\z/)
+      errors.add(:mobile, "must be exactly 10 digits starting with 6, 7, 8, or 9")
+    end
   end
 
   # Generate lead_id if not already present (for direct customer creation)

@@ -109,19 +109,21 @@
               <%= form.date_field :birth_date, class: "form-control" %>
               <div class="invalid-feedback">Please provide a birth date.</div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <%= form.label :gender, class: "form-label" do %>
                 Gender <span class="text-danger">*</span>
               <% end %>
-              <%= form.select :gender,
-                  options_for_select([
-                    ['Male', 'male'],
-                    ['Female', 'female'],
-                    ['Other', 'other']
-                  ], @customer.gender),
-                  { prompt: 'Select gender' },
-                  { class: "form-select" } %>
-              <div class="invalid-feedback">Please select a gender.</div>
+              <div class="gender-select-container">
+                <%= form.select :gender,
+                    options_for_select([
+                      ['Male', 'male'],
+                      ['Female', 'female'],
+                      ['Other', 'other']
+                    ], @customer.gender),
+                    { prompt: 'Select gender' },
+                    { class: "form-select gender-select" } %>
+                <div class="invalid-feedback">Please select a gender.</div>
+              </div>
             </div>
             <div class="col-md-6">
               <%= form.label :birth_place, class: "form-label" %>
@@ -696,3 +698,21 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+
+<style>
+/* Gender field styling - make it more compact */
+.gender-select-container {
+  max-width: 220px;
+}
+
+.gender-select {
+  min-width: 140px;
+}
+
+/* On smaller screens, allow full width */
+@media (max-width: 768px) {
+  .gender-select-container {
+    max-width: 100%;
+  }
+}
+</style>

@@ -58,7 +58,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-person text-muted"></i>
               </span>
-              <%= form.text_field :first_name, class: "form-control border-start-0 ps-0", placeholder: "Enter first name", required: true %>
+              <%= form.text_field :first_name, class: "form-control border-start-0", placeholder: "Enter first name", required: true %>
             </div>
           </div>
 
@@ -69,7 +69,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-person text-muted"></i>
               </span>
-              <%= form.text_field :last_name, class: "form-control border-start-0 ps-0", placeholder: "Enter last name", required: true %>
+              <%= form.text_field :last_name, class: "form-control border-start-0", placeholder: "Enter last name", required: true %>
             </div>
           </div>
 
@@ -80,7 +80,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-envelope text-muted"></i>
               </span>
-              <%= form.email_field :email, class: "form-control border-start-0 ps-0", placeholder: "Enter email address", required: true %>
+              <%= form.email_field :email, class: "form-control border-start-0", placeholder: "Enter email address", required: true %>
             </div>
           </div>
 
@@ -91,7 +91,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-telephone text-muted"></i>
               </span>
-              <%= form.telephone_field :mobile, class: "form-control border-start-0 ps-0", placeholder: "Enter mobile number", required: true, id: "customer_mobile" %>
+              <%= form.telephone_field :mobile, class: "form-control border-start-0", placeholder: "Enter mobile number", required: true, id: "customer_mobile" %>
             </div>
           </div>
 
@@ -101,7 +101,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-whatsapp text-muted"></i>
               </span>
-              <%= form.telephone_field :whatsapp_number, class: "form-control border-start-0 ps-0", placeholder: "Enter WhatsApp number", id: "customer_whatsapp" %>
+              <%= form.telephone_field :whatsapp_number, class: "form-control border-start-0", placeholder: "Enter WhatsApp number", id: "customer_whatsapp" %>
               <button type="button" class="btn btn-outline-secondary" id="copyMobileBtn" title="Copy from mobile number">
                 <i class="bi bi-copy"></i>
               </button>
@@ -114,30 +114,6 @@
             </div>
           </div>
 
-          <div class="col-md-6">
-            <%= form.label :date_of_birth, "Date of Birth", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-calendar text-muted"></i>
-              </span>
-              <%= form.date_field :date_of_birth, class: "form-control border-start-0 ps-0", style: "max-width: 200px;", id: "customer_date_of_birth" %>
-              <button type="button" class="btn btn-outline-secondary" id="datepickerToggle" title="Open date picker">
-                <i class="bi bi-calendar3"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :gender, "Gender", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-gender-ambiguous text-muted"></i>
-              </span>
-              <%= form.select :gender, [['Male', 'Male'], ['Female', 'Female'], ['Other', 'Other']],
-                             { prompt: "Select Gender" },
-                             { class: "form-select border-start-0" } %>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -151,60 +127,11 @@
           <div class="bg-info bg-opacity-10 rounded p-2 me-3">
             <i class="bi bi-geo-alt text-info"></i>
           </div>
-          <h5 class="card-title mb-0">Address Information</h5>
+          <h5 class="card-title mb-0">Location Information</h5>
         </div>
       </div>
       <div class="card-body pt-3">
         <div class="row g-3">
-          <div class="col-12">
-            <%= form.label :address, "Address", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
-                <i class="bi bi-geo text-muted"></i>
-              </span>
-              <%= form.text_area :address, class: "form-control border-start-0 ps-0", rows: 3, placeholder: "Enter complete address" %>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :city, "City", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-building text-muted"></i>
-              </span>
-              <%= form.text_field :city, class: "form-control border-start-0 ps-0", placeholder: "Enter city" %>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :state, "State", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-map text-muted"></i>
-              </span>
-              <%= form.text_field :state, class: "form-control border-start-0 ps-0", placeholder: "Enter state" %>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :pincode, "Pincode", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-mailbox text-muted"></i>
-              </span>
-              <%= form.text_field :pincode, class: "form-control border-start-0 ps-0", placeholder: "Enter pincode" %>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :country, "Country", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-globe text-muted"></i>
-              </span>
-              <%= form.text_field :country, class: "form-control border-start-0 ps-0", placeholder: "Enter country", value: "India" %>
-            </div>
-          </div>
 
           <!-- Location Section -->
           <div class="col-12">
@@ -227,7 +154,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-geo text-muted"></i>
               </span>
-              <%= form.number_field :latitude, class: "form-control border-start-0 ps-0", placeholder: "Auto-filled by location", step: :any, readonly: true %>
+              <%= form.number_field :latitude, class: "form-control border-start-0", placeholder: "Auto-filled by location", step: :any, readonly: true %>
             </div>
             <div class="form-text">Automatically filled when you use 'Get Current Location'</div>
           </div>
@@ -238,7 +165,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-geo text-muted"></i>
               </span>
-              <%= form.number_field :longitude, class: "form-control border-start-0 ps-0", placeholder: "Auto-filled by location", step: :any, readonly: true %>
+              <%= form.number_field :longitude, class: "form-control border-start-0", placeholder: "Auto-filled by location", step: :any, readonly: true %>
             </div>
             <div class="form-text">Automatically filled when you use 'Get Current Location'</div>
           </div>
@@ -351,8 +278,8 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-lock text-muted"></i>
               </span>
-              <%= form.password_field :password, class: "form-control border-start-0 ps-0", placeholder: "Enter password or use auto-generate", required: true, id: "customerPassword" %>
-              <button type="button" class="btn btn-outline-secondary" id="generatePasswordBtn" title="Generate random password">
+              <%= form.password_field :password, class: "form-control border-start-0", placeholder: "Enter password or use auto-generate", required: true, id: "customerPassword" %>
+              <button type="button" class="btn btn-outline-muted" id="generatePasswordBtn" title="Generate random password">
                 <i class="bi bi-magic"></i>
               </button>
               <button type="button" class="btn btn-outline-secondary" id="togglePasswordBtn" title="Show/Hide password">
@@ -371,7 +298,7 @@
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-lock-fill text-muted"></i>
               </span>
-              <%= form.password_field :password_confirmation, class: "form-control border-start-0 ps-0", placeholder: "Confirm password", required: true, id: "passwordConfirmation" %>
+              <%= form.password_field :password_confirmation, class: "form-control border-start-0", placeholder: "Confirm password", required: true, id: "passwordConfirmation" %>
             </div>
             <div id="passwordMatchStatus" class="form-text"></div>
           </div>
@@ -379,19 +306,6 @@
           <!-- Hidden field to store generated password for display -->
           <%= form.hidden_field :auto_generated_password %>
 
-          <div class="col-md-6">
-            <%= form.label :status, "Account Status", class: "form-label fw-medium" %>
-            <div class="mt-2">
-              <div class="form-check form-switch">
-                <%= form.check_box :status, { class: "form-check-input", checked: true }, "true", "false" %>
-                <%= form.label :status, class: "form-check-label fw-medium" do %>
-                  <i class="bi bi-check-circle text-success me-1"></i>
-                  Active
-                <% end %>
-              </div>
-              <div class="form-text">Toggle to activate/deactivate this customer</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -556,29 +470,28 @@ document.addEventListener('DOMContentLoaded', function() {
       passwordConfirmation.setAttribute('readonly', true);
       generatePasswordBtn.disabled = true;
 
-      // Update UI
-      passwordInput.placeholder = 'Auto-generated password (click to view)';
+      // Update UI - make it clear to use the eye icon
+      passwordInput.placeholder = 'Auto-generated secure password';
       passwordConfirmation.placeholder = 'Auto-filled';
-
-      // Add click event to view password
-      passwordInput.addEventListener('click', function() {
-        if (this.hasAttribute('readonly') && generatedPassword) {
-          alert(`Auto-Generated Password: ${generatedPassword}\n\nPlease save this password securely!`);
-        }
-      });
 
       checkPasswordStrength();
       checkPasswordMatch();
 
-      // Show success message
-      passwordStrength.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Secure password auto-generated! (Click password field to view)</span>';
+      // Show success message with clear instructions
+      passwordStrength.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Secure password auto-generated! Use the <i class="bi bi-eye"></i> icon to view it.</span>';
 
-      // Show the generated password in an alert (optional)
+      // Show brief success notification
       setTimeout(() => {
-        if (confirm('Password auto-generated successfully!\n\nWould you like to view the generated password now?')) {
-          alert(`Auto-Generated Password: ${generatedPassword}\n\nPlease save this password securely!`);
-        }
-      }, 500);
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+          <i class="bi bi-check-circle-fill me-2"></i>Password auto-generated successfully!
+          <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+      }, 100);
 
     } else {
       // Enable manual password input
@@ -610,8 +523,12 @@ document.addEventListener('DOMContentLoaded', function() {
     checkPasswordStrength();
     checkPasswordMatch();
 
-    // Show success message
-    passwordStrength.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Strong password generated!</span>';
+    // Show success message with instructions
+    passwordStrength.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Strong password generated! Use the <i class="bi bi-eye"></i> icon to view it.</span>';
+
+    // Brief visual feedback
+    this.style.transform = 'scale(0.95)';
+    setTimeout(() => { this.style.transform = ''; }, 150);
   });
 
   // Removed show generated password button - using eye icon toggle instead
@@ -753,18 +670,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Date picker functionality
-  const dateInput = document.getElementById('customer_date_of_birth');
-  const datepickerToggle = document.getElementById('datepickerToggle');
-
-  datepickerToggle.addEventListener('click', function() {
-    dateInput.showPicker();
-  });
-
-  // Also make the date field clickable anywhere to open picker
-  dateInput.addEventListener('click', function() {
-    this.showPicker();
-  });
 
   // Initialize location status
   showLocationMessage('Click "Get Current Location" to automatically fill coordinates', 'info');
@@ -847,6 +752,76 @@ document.addEventListener('DOMContentLoaded', function() {
 @keyframes sparkle {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
+}
+
+/* Gender field styling - make it more compact */
+.gender-select-container {
+  max-width: 220px;
+}
+
+.gender-select {
+  min-width: 140px;
+}
+
+/* Password generation button improvements */
+#generatePasswordBtn {
+  background-color: transparent;
+  border-color: #dee2e6;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+#generatePasswordBtn:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+  color: #495057;
+  transform: scale(1.05);
+}
+
+#generatePasswordBtn:active,
+#generatePasswordBtn:focus {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+}
+
+#generatePasswordBtn:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+/* Make the magic icon slightly more subtle */
+#generatePasswordBtn .bi-magic {
+  opacity: 0.8;
+}
+
+/* Enhance eye icon when password is auto-generated */
+#customerPassword[readonly] + button + #togglePasswordBtn {
+  border-color: #28a745;
+  color: #28a745;
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+#customerPassword[readonly] + button + #togglePasswordBtn:hover {
+  background-color: #d4edda;
+  border-color: #28a745;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.1);
+  }
+}
+
+/* On smaller screens, allow full width */
+@media (max-width: 768px) {
+  .gender-select-container {
+    max-width: 100%;
+  }
 }
 </style>
 
