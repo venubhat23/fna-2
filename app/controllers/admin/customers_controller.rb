@@ -322,7 +322,6 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # GET /admin/customers/1/edit
   def edit
-    @sub_agents = SubAgent.active.order(:first_name, :last_name)
   end
 
   # POST /admin/customers
@@ -418,7 +417,6 @@ class Admin::CustomersController < Admin::ApplicationController
     if @customer.update(customer_params)
       redirect_to admin_customer_path(@customer), notice: 'Customer was successfully updated.'
     else
-      @sub_agents = SubAgent.active.order(:first_name, :last_name)
       render :edit, status: :unprocessable_entity
     end
   end
