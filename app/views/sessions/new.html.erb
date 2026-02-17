@@ -518,6 +518,31 @@
         transform: scale(1.1);
         transition: all 0.2s ease;
       }
+
+      /* Spinner animation */
+      .spinner {
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* Field error styling */
+      .form-input.error {
+        border-color: #ff6b6b !important;
+        box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.15) !important;
+      }
+
+      .field-error {
+        color: #ff6b6b;
+        font-size: 12px;
+        margin-top: 4px;
+        font-weight: 500;
+        display: block;
+      }
     </style>
   </head>
 
@@ -574,7 +599,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                     </svg>
                   </div>
-                  <%= form.email_field :email, class: "form-input", placeholder: "Enter your email address" %>
+                  <%= form.email_field :email, class: "form-input", placeholder: "Enter your email address", required: true, id: "email_field" %>
                 </div>
               </div>
 
@@ -586,7 +611,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
-                  <%= form.password_field :password, class: "form-input", placeholder: "Enter your password" %>
+                  <%= form.password_field :password, class: "form-input", placeholder: "Enter your password", required: true, id: "password_field" %>
                   <button type="button" class="password-toggle">
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -604,7 +629,7 @@
                 <a href="#" class="forgot-link">Forgot password?</a>
               </div>
 
-              <button type="submit" class="login-button">Sign In</button>
+              <button type="submit" class="login-button" id="login_button">Sign In</button>
             <% end %>
           </div>
 
@@ -624,6 +649,73 @@
         }
       }
 
+      // Form validation
+      function validateForm() {
+        const email = document.getElementById('email_field');
+        const password = document.getElementById('password_field');
+        const loginButton = document.getElementById('login_button');
+
+        let isValid = true;
+
+        // Email validation
+        if (!email.value.trim()) {
+          showFieldError(email, 'Email is required');
+          isValid = false;
+        } else if (!isValidEmail(email.value.trim())) {
+          showFieldError(email, 'Please enter a valid email address');
+          isValid = false;
+        } else {
+          clearFieldError(email);
+        }
+
+        // Password validation
+        if (!password.value.trim()) {
+          showFieldError(password, 'Password is required');
+          isValid = false;
+        } else if (password.value.length < 3) {
+          showFieldError(password, 'Password must be at least 3 characters');
+          isValid = false;
+        } else {
+          clearFieldError(password);
+        }
+
+        return isValid;
+      }
+
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
+
+      function showFieldError(field, message) {
+        field.style.borderColor = '#ff6b6b';
+        field.style.boxShadow = '0 0 0 4px rgba(255, 107, 107, 0.15)';
+
+        // Remove existing error message
+        const existingError = field.parentNode.querySelector('.field-error');
+        if (existingError) {
+          existingError.remove();
+        }
+
+        // Add new error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        errorDiv.style.cssText = 'color: #ff6b6b; font-size: 12px; margin-top: 4px; font-weight: 500;';
+        errorDiv.textContent = message;
+        field.parentNode.appendChild(errorDiv);
+      }
+
+      function clearFieldError(field) {
+        field.style.borderColor = 'rgba(240, 147, 251, 0.2)';
+        field.style.boxShadow = '';
+
+        // Remove error message
+        const existingError = field.parentNode.querySelector('.field-error');
+        if (existingError) {
+          existingError.remove();
+        }
+      }
+
       // Auto-hide error ribbon after 5 seconds
       document.addEventListener('DOMContentLoaded', function() {
         const errorRibbon = document.getElementById('error-alert');
@@ -631,6 +723,53 @@
           setTimeout(() => {
             closeErrorRibbon();
           }, 5000);
+        }
+
+        // Add form submission validation
+        const form = document.querySelector('form');
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+              e.preventDefault();
+              return false;
+            }
+
+            // Show loading state
+            const loginButton = document.getElementById('login_button');
+            if (loginButton) {
+              loginButton.disabled = true;
+              loginButton.innerHTML = '<svg width="20" height="20" fill="currentColor" class="spinner" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a8 8 0 00-8 8 1 1 0 102 0 6 6 0 016-6 1 1 0 100-2z" clip-rule="evenodd" /></svg> Signing In...';
+              loginButton.style.background = 'linear-gradient(135deg, #5a67d8, #6a42a0, #e879f9)';
+            }
+          });
+        }
+
+        // Add real-time validation
+        const emailField = document.getElementById('email_field');
+        const passwordField = document.getElementById('password_field');
+
+        if (emailField) {
+          emailField.addEventListener('blur', function() {
+            if (this.value.trim() && !isValidEmail(this.value.trim())) {
+              showFieldError(this, 'Please enter a valid email address');
+            } else if (this.value.trim()) {
+              clearFieldError(this);
+            }
+          });
+
+          emailField.addEventListener('input', function() {
+            if (this.value.trim()) {
+              clearFieldError(this);
+            }
+          });
+        }
+
+        if (passwordField) {
+          passwordField.addEventListener('input', function() {
+            if (this.value.trim()) {
+              clearFieldError(this);
+            }
+          });
         }
 
         // Password toggle functionality

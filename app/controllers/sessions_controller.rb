@@ -9,9 +9,21 @@ class SessionsController < ApplicationController
   end
 
   def create
-    user = User.find_by(email: params[:email])
+    # Validate input parameters
+    if params[:email].blank? || params[:password].blank?
+      flash.now[:alert] = 'Please enter both email and password'
+      render :new and return
+    end
+
+    user = User.find_by(email: params[:email].to_s.downcase.strip)
 
     if user&.valid_password?(params[:password])
+      # Check if user is active/enabled
+      unless user.status?
+        flash.now[:alert] = 'Your account has been deactivated. Please contact support.'
+        render :new and return
+      end
+
       sign_in(user)
 
       # Enhanced session security markers
@@ -33,9 +45,18 @@ class SessionsController < ApplicationController
 
       redirect_to after_sign_in_path_for(user), notice: 'Login successful!'
     else
-      flash.now[:alert] = 'Invalid email or password'
+      # More specific error messages
+      if user.nil?
+        flash.now[:alert] = 'No account found with this email address'
+      else
+        flash.now[:alert] = 'Incorrect password. Please try again.'
+      end
       render :new
     end
+  rescue => e
+    Rails.logger.error "Login error: #{e.message}"
+    flash.now[:alert] = 'Login failed. Please try again.'
+    render :new
   end
 
   def destroy

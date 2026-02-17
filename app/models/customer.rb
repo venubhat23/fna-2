@@ -2,11 +2,12 @@ class Customer < ApplicationRecord
   include PgSearch::Model
 
   # Associations
-  has_many :family_members, dependent: :destroy
-  has_many :policies, dependent: :destroy
-  has_many :corporate_members, dependent: :destroy
-  has_many :documents, class_name: 'CustomerDocument', dependent: :destroy
-  has_many :uploaded_documents, as: :documentable, class_name: 'Document', dependent: :destroy
+  # Note: family_members, policies, corporate_members, and documents tables don't exist
+  # has_many :family_members, dependent: :destroy
+  # has_many :policies, dependent: :destroy
+  # has_many :corporate_members, dependent: :destroy
+  # has_many :documents, class_name: 'CustomerDocument', dependent: :destroy
+  # has_many :uploaded_documents, as: :documentable, class_name: 'Document', dependent: :destroy
   has_one_attached :profile_image
   has_one_attached :personal_image
   has_one_attached :house_image
@@ -28,11 +29,11 @@ class Customer < ApplicationRecord
   has_many :orders, dependent: :destroy
   has_many :booking_schedules, dependent: :destroy
 
-  # Nested attributes
-  accepts_nested_attributes_for :family_members, allow_destroy: true, reject_if: :all_blank
-  accepts_nested_attributes_for :corporate_members, allow_destroy: true, reject_if: :all_blank
-  accepts_nested_attributes_for :documents, allow_destroy: true, reject_if: :all_blank
-  accepts_nested_attributes_for :uploaded_documents, allow_destroy: true, reject_if: :all_blank
+  # Nested attributes - commented out as tables don't exist
+  # accepts_nested_attributes_for :family_members, allow_destroy: true, reject_if: :all_blank
+  # accepts_nested_attributes_for :corporate_members, allow_destroy: true, reject_if: :all_blank
+  # accepts_nested_attributes_for :documents, allow_destroy: true, reject_if: :all_blank
+  # accepts_nested_attributes_for :uploaded_documents, allow_destroy: true, reject_if: :all_blank
 
   # Password support for customer login (temporarily using plain text storage)
   # has_secure_password
