@@ -364,41 +364,6 @@
       </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-transparent border-0">
-        <h6 class="mb-0">Quick Actions</h6>
-      </div>
-      <div class="card-body">
-        <div class="d-grid gap-2">
-          <% if @booking.invoice_number.blank? %>
-            <%= link_to generate_invoice_admin_booking_path(@booking), class: "btn btn-success" do %>
-              <i class="bi bi-receipt me-1"></i>Generate Invoice
-            <% end %>
-          <% end %>
-
-          <% if @booking.invoice_number.present? %>
-            <%= link_to invoice_admin_booking_path(@booking), class: "btn btn-primary", target: "_blank" do %>
-              <i class="bi bi-file-earmark-pdf me-1"></i>View Invoice
-            <% end %>
-            <%= link_to invoice_admin_booking_path(@booking, format: :pdf), class: "btn btn-outline-primary" do %>
-              <i class="bi bi-download me-1"></i>Download PDF
-            <% end %>
-          <% end %>
-
-          <% if @booking.payment_status_paid? && !@booking.order.present? %>
-            <%= link_to convert_to_order_admin_booking_path(@booking), class: "btn btn-warning", method: :patch do %>
-              <i class="bi bi-box me-1"></i>Convert to Order
-            <% end %>
-          <% end %>
-
-          <%= link_to edit_admin_booking_path(@booking), class: "btn btn-outline-primary" do %>
-            <i class="bi bi-pencil me-1"></i>Edit Booking
-          <% end %>
-        </div>
-      </div>
-    </div>
-
     <!-- Timeline -->
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-transparent border-0">

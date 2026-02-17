@@ -271,6 +271,28 @@ Rails.application.routes.draw do
       end
     end
 
+    # Banner management
+    resources :banners do
+      member do
+        patch :toggle_status
+      end
+    end
+
+    # Client Request management
+    resources :client_requests do
+      member do
+        patch :update_status
+        patch :mark_resolved
+        post :add_response
+      end
+      collection do
+        get :pending
+        get :in_progress
+        get :resolved
+        get :closed
+      end
+    end
+
     # Vendor management
     resources :vendors do
       member do

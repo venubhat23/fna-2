@@ -576,6 +576,51 @@
       </ul>
     </div>
 
+    <!-- Settings & Configuration Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Settings & Configuration</div>
+      <ul class="nav-menu">
+        <!-- System Settings -->
+        <li class="nav-item">
+          <%= link_to admin_settings_system_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/system')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-violet">
+                <i class="bi bi-gear-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">System Settings</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Banners -->
+        <li class="nav-item">
+          <%= link_to admin_banners_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/banners')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-pink">
+                <i class="bi bi-image-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Banners</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
+        <!-- Client Requests -->
+        <li class="nav-item">
+          <%= link_to admin_client_requests_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/client_requests')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-cyan">
+                <i class="bi bi-envelope-open-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Client Requests</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+      </ul>
+    </div>
+
 
 
 

@@ -220,12 +220,15 @@
                     <!-- Hidden input for form submission -->
                     <%= f.hidden_field :customer_id, id: 'selected_customer_id' %>
 
-                    <!-- Search input -->
-                    <input type="text"
-                           class="form-control customer-search-input"
-                           id="customerSearchInput"
-                           placeholder="🔍 Search by name, phone, or email..."
-                           autocomplete="off">
+                    <!-- Search input with icon wrapper -->
+                    <div class="customer-search-wrapper">
+                      <i class="bi bi-search customer-search-icon"></i>
+                      <input type="text"
+                             class="form-control customer-search-input"
+                             id="customerSearchInput"
+                             placeholder="Search by name, phone, or email..."
+                             autocomplete="off">
+                    </div>
 
                     <!-- Search results dropdown -->
                     <div class="customer-search-dropdown" id="customerSearchDropdown">
@@ -270,7 +273,7 @@
                     <i class="bi bi-flag me-1"></i>Status/Stage <span class="text-danger">*</span>
                   </label>
                   <%= f.select :status,
-                      options_for_select([['Select Status', '']] + Booking.statuses.map { |key, value| [key.humanize, key] }),
+                      options_for_select([['Select Status', '']] + Booking.statuses.map { |key, value| [key.humanize, key] }, 'completed'),
                       {},
                       { class: 'form-select', required: true, id: 'booking_status' } %>
                   <div class="form-text">
@@ -432,30 +435,57 @@
   </div>
 </div>
 
-<%# Floating Cart %>
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
-  <div class="card border-0 shadow" id="floatingCart" style="min-width: 300px; display: none;">
-    <div class="card-header bg-primary text-white">
-      <h6 class="mb-0">
-        <i class="bi bi-cart3 me-2"></i>Shopping Cart
-        <span class="badge bg-light text-primary ms-2" id="cartCount">0</span>
-      </h6>
-    </div>
-    <div class="card-body">
-      <div id="cartItems" style="max-height: 200px; overflow-y: auto;">
-        <p class="text-muted text-center mb-0">Your cart is empty</p>
-      </div>
-      <div class="border-top pt-2 mt-2">
-        <div class="d-flex justify-content-between fw-bold">
-          <span>Total</span>
-          <span>₹<span id="cartTotal">0</span></span>
+<%# Floating Cart - Enhanced and Larger %>
+<div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1000;">
+  <div class="card border-0 shadow-lg" id="floatingCart" style="min-width: 420px; display: none;">
+    <div class="card-header bg-gradient-primary text-white py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 d-flex align-items-center">
+          <i class="bi bi-cart3 me-2"></i>Shopping Cart
+        </h5>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-white text-primary px-3 py-2" style="font-size: 0.9rem;">
+            <span id="cartCount">0</span> items
+          </span>
+          <button type="button" class="btn btn-sm btn-link text-white p-0" onclick="minimizeCart()" title="Minimize">
+            <i class="bi bi-dash-lg"></i>
+          </button>
         </div>
       </div>
-      <button class="btn btn-success w-100 mt-2" onclick="showCheckoutView()">
-        <i class="bi bi-arrow-right me-1"></i>Proceed to Checkout
+    </div>
+    <div class="card-body p-3" style="max-height: 420px; overflow-y: auto;">
+      <div id="cartItems">
+        <p class="text-muted text-center mb-0">Your cart is empty</p>
+      </div>
+    </div>
+    <div class="card-footer bg-light p-3">
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">Subtotal</span>
+          <span class="fw-semibold">₹<span id="cartSubtotal">0</span></span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">Tax (GST 18%)</span>
+          <span class="fw-semibold">₹<span id="cartTax">0</span></span>
+        </div>
+        <div class="border-top pt-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold fs-5">Total</span>
+            <span class="fw-bold fs-4 text-success">₹<span id="cartTotal">0</span></span>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-success btn-lg w-100" onclick="showCheckoutView()">
+        <i class="bi bi-arrow-right-circle me-2"></i>Proceed to Checkout
       </button>
     </div>
   </div>
+
+  <%# Minimized Cart Button %>
+  <button class="btn btn-primary btn-lg rounded-circle shadow-lg" id="minimizedCart" style="display: none; width: 60px; height: 60px;" onclick="maximizeCart()" title="Open Cart">
+    <i class="bi bi-cart3"></i>
+    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="minimizedCartCount">0</span>
+  </button>
 </div>
 
 <%# JavaScript %>
@@ -503,52 +533,70 @@ function addToCart(productId, productName, price, stock) {
 // Update cart display
 function updateCartDisplay() {
   const cartCount = Object.keys(cart).length;
+  const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
   const floatingCart = document.getElementById('floatingCart');
+  const minimizedCart = document.getElementById('minimizedCart');
   const cartCountEl = document.getElementById('cartCount');
+  const minimizedCartCountEl = document.getElementById('minimizedCartCount');
   const cartItemsEl = document.getElementById('cartItems');
+  const cartSubtotalEl = document.getElementById('cartSubtotal');
+  const cartTaxEl = document.getElementById('cartTax');
   const cartTotalEl = document.getElementById('cartTotal');
 
-  cartCountEl.textContent = cartCount;
+  cartCountEl.textContent = totalItems;
+  minimizedCartCountEl.textContent = totalItems;
 
   if (cartCount === 0) {
     floatingCart.style.display = 'none';
-    cartItemsEl.innerHTML = '<p class="text-muted text-center mb-0">Your cart is empty</p>';
+    minimizedCart.style.display = 'none';
+    cartItemsEl.innerHTML = '<div class="text-center py-4"><i class="bi bi-cart-x fs-1 text-muted d-block mb-2"></i><p class="text-muted mb-0">Your cart is empty</p><small class="text-muted">Add products to get started</small></div>';
+    cartSubtotalEl.textContent = '0';
+    cartTaxEl.textContent = '0';
     cartTotalEl.textContent = '0';
     return;
   }
 
-  floatingCart.style.display = 'block';
+  // Show cart if it was hidden
+  if (floatingCart.style.display === 'none' && minimizedCart.style.display === 'none') {
+    floatingCart.style.display = 'block';
+  }
 
   let itemsHtml = '';
-  let total = 0;
+  let subtotal = 0;
 
-  for (const [productId, item] of Object.entries(cart)) {
+  // Sort items by name for consistent display
+  const sortedItems = Object.entries(cart).sort((a, b) => a[1].name.localeCompare(b[1].name));
+
+  for (const [productId, item] of sortedItems) {
     const itemTotal = item.price * item.quantity;
-    total += itemTotal;
+    subtotal += itemTotal;
 
     itemsHtml += `
-      <div class="cart-item mb-3 p-2 border rounded">
+      <div class="cart-item-card mb-3">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div class="flex-grow-1">
-            <div class="fw-medium">${item.name}</div>
-            <small class="text-muted">₹${item.price} each</small>
+            <div class="fw-semibold text-dark" style="font-size: 0.95rem;">${item.name}</div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <span class="badge bg-light text-dark">₹${item.price} each</span>
+              ${item.quantity >= item.stock - 2 ? `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Only ${item.stock} in stock</span>` : ''}
+            </div>
           </div>
-          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${productId})" title="Remove item">
-            <i class="bi bi-trash"></i>
+          <button type="button" class="btn btn-sm btn-link text-danger p-1" onclick="removeFromCart(${productId})" title="Remove item">
+            <i class="bi bi-x-lg"></i>
           </button>
         </div>
         <div class="d-flex justify-content-between align-items-center">
-          <div class="input-group input-group-sm" style="width: 120px;">
-            <button class="btn btn-outline-secondary" type="button" onclick="decreaseCartQuantity(${productId})" ${item.quantity <= 1 ? 'disabled' : ''}>
+          <div class="input-group input-group-sm" style="width: 140px;">
+            <button class="btn btn-outline-secondary px-3" type="button" onclick="decreaseCartQuantity(${productId})" ${item.quantity <= 1 ? 'disabled' : ''}>
               <i class="bi bi-dash"></i>
             </button>
-            <input type="text" class="form-control text-center fw-bold" value="${item.quantity}" readonly>
-            <button class="btn btn-outline-secondary" type="button" onclick="increaseCartQuantity(${productId})" ${item.quantity >= item.stock ? 'disabled' : ''}>
+            <input type="text" class="form-control text-center fw-bold" value="${item.quantity}" readonly style="background: white;">
+            <button class="btn btn-outline-secondary px-3" type="button" onclick="increaseCartQuantity(${productId})" ${item.quantity >= item.stock ? 'disabled' : ''}>
               <i class="bi bi-plus"></i>
             </button>
           </div>
           <div class="text-end">
-            <div class="fw-bold text-success">₹${itemTotal.toFixed(2)}</div>
+            <div class="fw-bold fs-5 text-primary">₹${itemTotal.toFixed(2)}</div>
             <small class="text-muted">${item.quantity} × ₹${item.price}</small>
           </div>
         </div>
@@ -556,8 +604,44 @@ function updateCartDisplay() {
     `;
   }
 
+  // Calculate tax (GST 18%)
+  const tax = subtotal * 0.18;
+  const total = subtotal + tax;
+
   cartItemsEl.innerHTML = itemsHtml;
+  cartSubtotalEl.textContent = subtotal.toFixed(2);
+  cartTaxEl.textContent = tax.toFixed(2);
   cartTotalEl.textContent = total.toFixed(2);
+}
+
+// Minimize cart to icon
+function minimizeCart() {
+  const floatingCart = document.getElementById('floatingCart');
+  const minimizedCart = document.getElementById('minimizedCart');
+
+  floatingCart.style.display = 'none';
+  minimizedCart.style.display = 'block';
+
+  // Add bounce animation
+  minimizedCart.classList.add('animate-bounce');
+  setTimeout(() => {
+    minimizedCart.classList.remove('animate-bounce');
+  }, 500);
+}
+
+// Maximize cart from icon
+function maximizeCart() {
+  const floatingCart = document.getElementById('floatingCart');
+  const minimizedCart = document.getElementById('minimizedCart');
+
+  minimizedCart.style.display = 'none';
+  floatingCart.style.display = 'block';
+
+  // Add slide-in animation
+  floatingCart.classList.add('animate-slide-in');
+  setTimeout(() => {
+    floatingCart.classList.remove('animate-slide-in');
+  }, 300);
 }
 
 // Remove item from cart
@@ -687,6 +771,32 @@ function updateCheckoutDisplay() {
   fieldsContainer.innerHTML = fieldsHtml;
 
   updateCheckoutTotals();
+}
+
+// Ensure cart items are in form before submission
+function ensureCartItemsInForm() {
+  const fieldsContainer = document.getElementById('checkoutItemsFields');
+
+  // If fields container is empty but cart has items, regenerate the fields
+  if (fieldsContainer && Object.keys(cart).length > 0) {
+    let fieldsHtml = '';
+    let fieldIndex = 0;
+
+    for (const [productId, item] of Object.entries(cart)) {
+      fieldsHtml += `
+        <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_id]" value="${productId}">
+        <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][quantity]" value="${item.quantity}">
+        <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][price]" value="${item.price}">
+      `;
+      fieldIndex++;
+    }
+
+    fieldsContainer.innerHTML = fieldsHtml;
+
+    // Log for debugging
+    console.log('Cart items added to form:', cart);
+    console.log('Form fields generated:', fieldsHtml);
+  }
 }
 
 // Update checkout totals
@@ -846,18 +956,14 @@ function displayCustomerResults(customerList, searchQuery = '') {
     const highlightedEmail = customer.email ? highlightSearchTerm(customer.email, searchQuery) : '';
 
     html += '<div class="customer-search-item" onclick="selectCustomer(' + customer.id + ', \'' + escapeHtml(customer.name) + '\', \'' + customer.mobile + '\', \'' + escapeHtml(customer.email) + '\', \'' + escapeHtml(customer.address) + '\')" data-index="' + index + '">';
-    html += '<div class="customer-search-content">';
-    html += '<div class="customer-search-name">' + highlightedName + '</div>';
-    html += '<div class="customer-search-details">';
-    html += '<div class="customer-contact-info">';
-    html += '<span class="customer-contact-item"><i class="bi bi-phone-vibrate"></i>' + highlightedMobile + '</span>';
+    html += '<div class="customer-result-card">';
+    html += '<div class="customer-result-name">' + highlightedName + '</div>';
+    html += '<div class="customer-result-details">';
+    html += '<span class="customer-detail-item"><i class="bi bi-phone"></i>' + highlightedMobile + '</span>';
     if (customer.email) {
-      html += '<span class="customer-contact-item"><i class="bi bi-envelope"></i>' + highlightedEmail + '</span>';
+      html += '<span class="customer-detail-item"><i class="bi bi-envelope"></i>' + highlightedEmail + '</span>';
     }
-    html += '</div>';
-    html += '<div class="customer-meta-info">';
-    html += '<span class="customer-id-badge">ID: ' + customer.id + '</span>';
-    html += '</div>';
+    html += '<span class="customer-detail-badge">ID: ' + customer.id + '</span>';
     html += '</div>';
     html += '</div>';
     html += '</div>';
@@ -1250,6 +1356,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
       }
 
+      // IMPORTANT: Ensure cart items are added to form before submission
+      ensureCartItemsInForm();
+
       // Show loading state
       showBookingLoader();
     });
@@ -1280,35 +1389,60 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 /* Customer Search Dropdown Styles */
+.customer-search-wrapper {
+  position: relative;
+}
+
+.customer-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.95rem;
+  z-index: 2;
+  transition: color 0.3s ease;
+}
+
 .customer-search-input {
   position: relative;
   z-index: 1;
+  border-radius: 8px;
+  padding-left: 38px !important;
+  background: #f8f9fa;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
 }
 
 .customer-search-input:focus {
   border-color: #0d6efd;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  background: white;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.customer-search-input:focus ~ .customer-search-icon,
+.customer-search-wrapper:has(.customer-search-input:focus) .customer-search-icon {
+  color: #0d6efd;
 }
 
 .customer-search-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #dee2e6;
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border: 1px solid #e0e6ed;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.12);
   z-index: 1000;
-  max-height: 400px;
+  max-height: 420px;
   overflow: hidden;
   display: none;
 }
 
 .customer-search-dropdown.show {
   display: block;
-  animation: slideDown 0.2s ease-out;
+  animation: slideDown 0.25s ease-out;
 }
 
 @keyframes slideDown {
@@ -1323,10 +1457,10 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .customer-search-results {
-  max-height: 320px;
+  max-height: 340px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #007bff #f8f9fa;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 .customer-search-results::-webkit-scrollbar {
@@ -1334,30 +1468,27 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .customer-search-results::-webkit-scrollbar-track {
-  background: #f8f9fa;
-  border-radius: 3px;
+  background: #f1f5f9;
 }
 
 .customer-search-results::-webkit-scrollbar-thumb {
-  background: #007bff;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 .customer-search-results::-webkit-scrollbar-thumb:hover {
-  background: #0056b3;
+  background: #94a3b8;
 }
 
+/* Clean Customer Search Item Styles */
 .customer-search-item {
-  padding: 0;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .customer-search-item:hover {
-  background-color: #f8f9fa;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: linear-gradient(to right, #f8fbff 0%, #f1f8ff 100%);
 }
 
 .customer-search-item:last-child {
@@ -1365,127 +1496,192 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .customer-search-item.active {
-  background-color: #e7f3ff;
-  border-left: 4px solid #007bff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 12px rgba(0,123,255,0.15);
+  background: linear-gradient(to right, #e7f3ff 0%, #deedff 100%);
+  border-left: 3px solid #0d6efd;
 }
 
-.customer-search-content {
-  padding: 16px 18px;
+/* Modern Two-Line Card Layout */
+.customer-result-card {
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.customer-search-name {
-  font-weight: 700;
-  color: #212529;
-  font-size: 1.05rem;
-  line-height: 1.3;
-  margin: 0;
+.customer-result-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
 }
 
-.customer-search-details {
+.customer-result-details {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 12px;
-}
-
-.customer-contact-info {
-  display: flex;
-  gap: 16px;
   flex-wrap: wrap;
 }
 
-.customer-contact-item {
-  display: flex;
+.customer-detail-item {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.customer-contact-item i {
+  gap: 4px;
   font-size: 0.85rem;
-  color: #007bff;
-  width: 14px;
-  text-align: center;
+  color: #64748b;
+  font-weight: 400;
 }
 
-.customer-meta-info {
-  display: flex;
-  align-items: center;
-}
-
-.customer-id-badge {
-  background: #f8f9fa;
-  color: #495057;
-  padding: 4px 8px;
-  border-radius: 12px;
+.customer-detail-item i {
   font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid #dee2e6;
+  color: #94a3b8;
+  opacity: 0.8;
 }
 
-/* Old customer search styles removed - using new enhanced layout */
+.customer-detail-badge {
+  margin-left: auto;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #64748b;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Hover Effects */
+.customer-search-item:hover .customer-result-name {
+  color: #0d6efd;
+}
+
+.customer-search-item:hover .customer-detail-item i {
+  color: #0d6efd;
+  opacity: 1;
+}
+
+.customer-search-item:hover .customer-detail-badge {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+}
+
+/* Active/Selected State */
+.customer-search-item.active .customer-result-name {
+  color: #0d6efd;
+}
+
+.customer-search-item.active .customer-detail-badge {
+  background: #0d6efd;
+  color: white;
+}
 
 /* Responsive design for customer search */
 @media (max-width: 768px) {
-  .customer-search-content {
-    padding: 14px 16px;
+  .customer-result-card {
+    padding: 12px 14px;
   }
 
-  .customer-search-name {
-    font-size: 1rem;
+  .customer-result-name {
+    font-size: 0.9rem;
   }
 
-  .customer-search-details {
+  .customer-result-details {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
   }
 
-  .customer-contact-info {
-    flex-direction: column;
-    gap: 8px;
+  .customer-detail-item {
+    font-size: 0.8rem;
   }
 
-  .customer-contact-item {
-    font-size: 0.85rem;
-  }
-
-  .customer-id-badge {
-    align-self: flex-end;
+  .customer-detail-badge {
+    margin-left: 0;
+    align-self: flex-start;
   }
 }
 
 .customer-search-footer {
-  padding: 12px 16px;
-  border-top: 1px solid #e9ecef;
-  background-color: #f8f9fa;
+  padding: 10px 12px;
+  border-top: 1px solid #f1f5f9;
+  background: linear-gradient(to bottom, #fafbfc 0%, #f8f9fa 100%);
+}
+
+.customer-search-footer .btn {
+  border-radius: 8px;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.customer-search-footer .btn:hover {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
 }
 
 .selected-customer-display {
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-  border: 1px solid #2196f3;
-  border-radius: 8px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #0284c7;
+  border-radius: 10px;
   margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);
+}
+
+.selected-customer-display .customer-info {
+  flex-grow: 1;
+}
+
+.selected-customer-display .customer-name {
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.selected-customer-display .btn-outline-danger {
+  border-radius: 6px;
+  padding: 4px 8px;
+  border: 1px solid #fecaca;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.selected-customer-display .btn-outline-danger:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
 }
 
 .customer-search-empty {
-  padding: 24px 16px;
+  padding: 32px 16px;
   text-align: center;
-  color: #6c757d;
+  color: #64748b;
+  background: linear-gradient(to bottom, #fafbfc 0%, white 100%);
+}
+
+.customer-search-empty i {
+  color: #cbd5e1;
+}
+
+.customer-search-empty .fw-medium {
+  color: #475569;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.customer-search-empty small {
+  font-size: 0.85rem;
+  color: #94a3b8;
 }
 
 .customer-search-loading {
-  padding: 16px;
+  padding: 24px 16px;
   text-align: center;
-  color: #6c757d;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
 .customer-search-spinner {
@@ -1532,5 +1728,159 @@ document.addEventListener('DOMContentLoaded', function() {
 .spinner-border-lg {
   width: 3rem;
   height: 3rem;
+}
+
+/* Enhanced Floating Cart Styles */
+#floatingCart {
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+  transition: all 0.3s ease;
+}
+
+#floatingCart:hover {
+  box-shadow: 0 15px 50px rgba(0,0,0,0.2) !important;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.cart-item-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 14px;
+  transition: all 0.2s ease;
+  border: 1px solid #e9ecef;
+}
+
+.cart-item-card:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.cart-item-card .input-group {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cart-item-card .input-group .btn {
+  border: 1px solid #dee2e6;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.cart-item-card .input-group .btn:hover:not(:disabled) {
+  background: #0d6efd;
+  color: white;
+  border-color: #0d6efd;
+}
+
+.cart-item-card .input-group .form-control {
+  border-left: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  font-size: 0.95rem;
+}
+
+/* Minimized Cart Button */
+#minimizedCart {
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+#minimizedCart:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
+}
+
+#minimizedCart .badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  min-width: 20px;
+}
+
+/* Cart Animations */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 0.5s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Cart scrollbar */
+#floatingCart .card-body {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+#floatingCart .card-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#floatingCart .card-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+#floatingCart .card-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+#floatingCart .card-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Empty cart styling */
+#cartItems .bi-cart-x {
+  color: #cbd5e1;
+}
+
+/* Footer styling */
+#floatingCart .card-footer {
+  border-radius: 0 0 16px 16px !important;
+  border-top: 2px solid #e9ecef;
+}
+
+/* Success button enhancement */
+#floatingCart .btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+#floatingCart .btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
 }
 </style>
