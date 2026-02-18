@@ -67,10 +67,38 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
   end
 
   def user_params
-    permitted_params = params.require(:user).permit(:first_name, :last_name, :email, :mobile, :password, :password_confirmation, :role_name, sidebar_permissions: [])
+    permitted_params = params.require(:user).permit(:first_name, :last_name, :email, :mobile, :password, :password_confirmation, :role_name, :original_password, sidebar_permissions: [], crud_permissions: {})
 
-    # Convert sidebar_permissions array to JSON string for storage
-    if permitted_params[:sidebar_permissions].present?
+    # Handle CRUD permissions - store as JSON in sidebar_permissions field
+    if params[:user][:crud_permissions].present?
+      # Process CRUD permissions into a structured format
+      crud_data = {}
+      params[:user][:crud_permissions].each do |module_key, permissions|
+        if permissions['all_access'] == '1'
+          # For modules with "All Access" checked, grant all permissions
+          crud_data[module_key] = {
+            'view' => true,
+            'create' => true,
+            'edit' => true,
+            'delete' => true
+          }
+        else
+          # For modules with individual CRUD permissions (handle both "1" and "on" values)
+          crud_data[module_key] = {
+            'view' => ['1', 'on'].include?(permissions['view']),
+            'create' => ['1', 'on'].include?(permissions['create']),
+            'edit' => ['1', 'on'].include?(permissions['edit']),
+            'delete' => ['1', 'on'].include?(permissions['delete'])
+          }
+        end
+      end
+
+      # Store CRUD permissions as JSON in sidebar_permissions field
+      permitted_params[:sidebar_permissions] = crud_data.to_json
+      # Clear the crud_permissions field to avoid confusion
+      permitted_params[:crud_permissions] = nil
+    elsif permitted_params[:sidebar_permissions].present?
+      # Legacy format - convert array to JSON string for storage
       permitted_params[:sidebar_permissions] = permitted_params[:sidebar_permissions].compact_blank.to_json
     end
 
@@ -80,52 +108,32 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
   def get_sidebar_options
     {
       'Main Menu' => [
-        { key: 'dashboard', name: 'Dashboard' },
+        { key: 'dashboard', name: 'Dashboard' }
+      ],
+      'Sales' => [
+        { key: 'bookings', name: 'Bookings' },
+        { key: 'stores', name: 'Stores' }
+      ],
+      'Subscription' => [
+        { key: 'subscriptions', name: 'Subscriptions' }
+      ],
+      'Inventory' => [
+        { key: 'vendors', name: 'Vendors' },
+        { key: 'vendor_purchases', name: 'Vendor Purchases' }
+      ],
+      'Master Data' => [
         { key: 'customers', name: 'Customers' },
-        { key: 'affiliate', name: 'Affiliate' },
-        { key: 'ambassadors', name: 'Ambassadors' },
-        { key: 'investors', name: 'Investors' }
+        { key: 'categories', name: 'Categories' },
+        { key: 'products', name: 'Products' },
+        { key: 'customer_wallets', name: 'Customer Wallets' },
+        { key: 'coupons', name: 'Coupons' },
+        { key: 'franchises', name: 'Franchise' },
+        { key: 'affiliates', name: 'Affiliate' }
       ],
-      'Payouts & Commission' => [
-        { key: 'affiliate_payouts', name: 'Affiliate Payouts' },
-        { key: 'ambassador_payouts', name: 'Ambassador Payouts' },
-        { key: 'payout', name: 'Payout' }
-      ],
-      'Business Partners' => [
-        { key: 'brokers', name: 'Brokers' },
-        { key: 'agency_code', name: 'Agency Code' }
-      ],
-      'Leads' => [
-        { key: 'leads', name: 'Leads' }
-      ],
-      'Insurance Products' => [
-        { key: 'life_insurance', name: 'Life Insurance' },
-        { key: 'health_insurance', name: 'Health Insurance' },
-        { key: 'motor_insurance', name: 'Motor Insurance' },
-        { key: 'other_insurance', name: 'Other Insurance' }
-      ],
-      'Reports & Analytics' => [
-        { key: 'commission_report', name: 'Commission Report' },
-        { key: 'expired_insurance', name: 'Expired Insurance' },
-        { key: 'payment_due', name: 'Payment Due' },
-        { key: 'upcoming_renewal', name: 'Upcoming Renewal' },
-        { key: 'upcoming_payment', name: 'Upcoming Payment' },
-        { key: 'leads_report', name: 'Leads Report' },
-        { key: 'session_report', name: 'Session Report' }
-      ],
-      'Management' => [
-        { key: 'client_requests', name: 'Client Requests' },
-        { key: 'companies', name: 'Companies' },
-        { key: 'agency_broker', name: 'Agency/Broker' },
-        { key: 'banner_management', name: 'Banner Management' },
-        { key: 'imports', name: 'Imports' },
-        { key: 'roles_permissions', name: 'Roles & Permissions' }
-      ],
-      'Invoice' => [
-        { key: 'invoices', name: 'Invoices' }
-      ],
-      'Settings' => [
-        { key: 'system_settings', name: 'System Settings' }
+      'Settings & Configuration' => [
+        { key: 'system_settings', name: 'System Settings' },
+        { key: 'banners', name: 'Banners' },
+        { key: 'client_requests', name: 'Client Requests' }
       ]
     }
   end

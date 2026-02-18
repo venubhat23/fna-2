@@ -1,4 +1,5 @@
-class Admin::CouponsController < ApplicationController
+class Admin::CouponsController < Admin::ApplicationController
+  include ConfigurablePagination
   before_action :set_coupon, only: [:show, :edit, :update, :destroy, :toggle_status]
 
   def index
@@ -11,7 +12,14 @@ class Admin::CouponsController < ApplicationController
                when 'upcoming' then @coupons.upcoming
                else @coupons
                end
-    @coupons = @coupons.order(created_at: :desc).page(params[:page]).per(10)
+    @coupons = paginate_records(@coupons.order(created_at: :desc))
+
+    @stats = {
+      total: Coupon.count,
+      active: Coupon.active.count,
+      expired: Coupon.expired.count,
+      upcoming: Coupon.upcoming.count
+    }
   end
 
   def show

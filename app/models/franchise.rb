@@ -1,17 +1,20 @@
 class Franchise < ApplicationRecord
   include PgSearch::Model
 
+  # Associations
+  belongs_to :user, optional: true
+
   # Password support
-  has_secure_password
+  has_secure_password validations: false
 
   # Custom password handling for auto-generated passwords
   attr_accessor :password_confirmation
 
   # Store password in auto_generated_password field for display
-  before_save :store_password_in_auto_generated_field, if: :password_required?
+  before_save :store_password_in_auto_generated_field, if: :password_present?
 
-  def password_required?
-    password.present? || new_record?
+  def password_present?
+    password.present?
   end
 
   def store_password_in_auto_generated_field

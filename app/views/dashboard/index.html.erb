@@ -10,15 +10,15 @@
       <i class="bi bi-arrow-clockwise me-1"></i>Refresh Data
     </button>
     <div class="dropdown">
-      <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-        <i class="bi bi-calendar-range me-1"></i>This Month
+      <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="timeframeDropdownButton">
+        <i class="bi bi-calendar-range me-1"></i><span id="selectedTimeframe">This Month</span>
       </button>
       <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="#">Today</a></li>
-        <li><a class="dropdown-item" href="#">This Week</a></li>
-        <li><a class="dropdown-item active" href="#">This Month</a></li>
-        <li><a class="dropdown-item" href="#">Last Month</a></li>
-        <li><a class="dropdown-item" href="#">This Quarter</a></li>
+        <li><a class="dropdown-item" href="#" onclick="changeTimeframe('Today', 'today')">Today</a></li>
+        <li><a class="dropdown-item" href="#" onclick="changeTimeframe('This Week', 'this_week')">This Week</a></li>
+        <li><a class="dropdown-item active" href="#" onclick="changeTimeframe('This Month', 'this_month')">This Month</a></li>
+        <li><a class="dropdown-item" href="#" onclick="changeTimeframe('Last Month', 'last_month')">Last Month</a></li>
+        <li><a class="dropdown-item" href="#" onclick="changeTimeframe('This Quarter', 'this_quarter')">This Quarter</a></li>
       </ul>
     </div>
   </div>
@@ -944,5 +944,33 @@ function refreshDashboard() {
   setTimeout(() => {
     location.reload();
   }, 1000);
+}
+
+function changeTimeframe(label, period) {
+  event.preventDefault();
+
+  // Update dropdown button text
+  document.getElementById('selectedTimeframe').textContent = label;
+
+  // Update active state
+  const dropdownItems = document.querySelectorAll('.dropdown-menu .dropdown-item');
+  dropdownItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Add loading indicator
+  const button = document.getElementById('timeframeDropdownButton');
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Loading...';
+  button.disabled = true;
+
+  // Redirect with timeframe parameter
+  const url = new URL(window.location);
+  url.searchParams.set('timeframe', period);
+
+  // Redirect to update the dashboard with new timeframe
+  setTimeout(() => {
+    window.location.href = url.toString();
+  }, 500);
 }
 </script>

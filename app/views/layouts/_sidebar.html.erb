@@ -426,6 +426,7 @@
       <div class="nav-section-title">Main Menu</div>
       <ul class="nav-menu">
         <!-- Dashboard -->
+        <% if current_user.has_sidebar_permission?('dashboard') %>
           <li class="nav-item">
             <%= link_to root_path, class: "nav-link-modern #{'active' if current_page?(root_path)}" do %>
               <div class="nav-icon-modern">
@@ -437,6 +438,7 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
+        <% end %>
 
 
 
@@ -450,6 +452,7 @@
       <div class="nav-section-title">Sales</div>
       <ul class="nav-menu">
         <!-- Bookings (merged with Orders) -->
+        <% if current_user.has_sidebar_permission?('bookings') %>
         <li class="nav-item">
           <%= link_to admin_bookings_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/bookings') || request.path.include?('/admin/orders')}" do %>
             <div class="nav-icon-modern">
@@ -461,7 +464,9 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <% end %>
         <!-- Stores -->
+        <% if current_user.has_sidebar_permission?('stores') %>
         <li class="nav-item">
           <%= link_to admin_stores_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/stores')}" do %>
             <div class="nav-icon-modern">
@@ -473,6 +478,28 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <% end %>
+      </ul>
+    </div>
+
+    <!-- Subscription Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Subscription</div>
+      <ul class="nav-menu">
+        <!-- Subscriptions -->
+        <% if current_user.has_sidebar_permission?('subscriptions') %>
+        <li class="nav-item">
+          <%= link_to admin_subscriptions_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/subscriptions')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-purple">
+                <i class="bi bi-arrow-repeat"></i>
+              </div>
+            </div>
+            <span class="nav-text">Subscriptions</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
       </ul>
     </div>
 
@@ -481,6 +508,7 @@
       <div class="nav-section-title">Inventory</div>
       <ul class="nav-menu">
         <!-- Vendors -->
+        <% if current_user.has_sidebar_permission?('vendors') %>
         <li class="nav-item">
           <%= link_to admin_vendors_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/vendors')}" do %>
             <div class="nav-icon-modern">
@@ -492,7 +520,9 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <% end %>
         <!-- Vendor Purchases -->
+        <% if current_user.has_sidebar_permission?('vendor_purchases') %>
         <li class="nav-item dropdown-menu-item">
           <a href="#" class="nav-link-modern dropdown-toggle #{'active' if request.path.include?('/admin/vendor_purchases')}" data-bs-toggle="collapse" data-bs-target="#vendorPurchasesSubmenu" aria-expanded="false">
             <div class="nav-icon-modern">
@@ -528,6 +558,7 @@
             </ul>
           </div>
         </li>
+        <% end %>
       </ul>
     </div>
 
@@ -536,6 +567,7 @@
       <div class="nav-section-title">Master Data</div>
       <ul class="nav-menu">
         <!-- Customers -->
+        <% if current_user.has_sidebar_permission?('customers') %>
           <li class="nav-item">
             <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
               <div class="nav-icon-modern">
@@ -547,8 +579,10 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
+        <% end %>
 
         <!-- Categories -->
+        <% if current_user.has_sidebar_permission?('categories') %>
           <li class="nav-item">
             <%= link_to admin_categories_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/categories')}" do %>
               <div class="nav-icon-modern">
@@ -560,8 +594,10 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
+        <% end %>
 
         <!-- Products -->
+        <% if current_user.has_sidebar_permission?('products') %>
           <li class="nav-item">
             <%= link_to admin_products_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/products')}" do %>
               <div class="nav-icon-modern">
@@ -573,6 +609,67 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
+        <% end %>
+
+        <!-- Coupons -->
+        <% if current_user.has_sidebar_permission?('coupons') %>
+          <li class="nav-item">
+            <%= link_to admin_coupons_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/coupons')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-red">
+                  <i class="bi bi-percent"></i>
+                </div>
+              </div>
+              <span class="nav-text">Coupons</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Customer Wallets -->
+        <% if current_user.has_sidebar_permission?('customer_wallets') %>
+          <li class="nav-item">
+            <%= link_to admin_customer_wallets_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customer_wallets')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-emerald">
+                  <i class="bi bi-wallet2"></i>
+                </div>
+              </div>
+              <span class="nav-text">Customer Wallets</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Franchise -->
+        <% if current_user.has_sidebar_permission?('franchises') %>
+          <li class="nav-item">
+            <%= link_to admin_franchises_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/franchises')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-indigo">
+                  <i class="bi bi-shop"></i>
+                </div>
+              </div>
+              <span class="nav-text">Franchise</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Affiliate -->
+        <% if current_user.has_sidebar_permission?('affiliates') %>
+          <li class="nav-item">
+            <%= link_to admin_affiliates_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/affiliates')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-purple">
+                  <i class="bi bi-person-badge"></i>
+                </div>
+              </div>
+              <span class="nav-text">Affiliate</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
       </ul>
     </div>
 
@@ -581,6 +678,7 @@
       <div class="nav-section-title">Settings & Configuration</div>
       <ul class="nav-menu">
         <!-- System Settings -->
+        <% if current_user.has_sidebar_permission?('system_settings') %>
         <li class="nav-item">
           <%= link_to admin_settings_system_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/system')}" do %>
             <div class="nav-icon-modern">
@@ -592,8 +690,10 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <% end %>
 
         <!-- Banners -->
+        <% if current_user.has_sidebar_permission?('banners') %>
         <li class="nav-item">
           <%= link_to admin_banners_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/banners')}" do %>
             <div class="nav-icon-modern">
@@ -605,8 +705,10 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <% end %>
 
         <!-- Client Requests -->
+        <% if current_user.has_sidebar_permission?('client_requests') %>
         <li class="nav-item">
           <%= link_to admin_client_requests_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/client_requests')}" do %>
             <div class="nav-icon-modern">
@@ -618,6 +720,7 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <% end %>
       </ul>
     </div>
 

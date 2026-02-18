@@ -271,6 +271,22 @@ Rails.application.routes.draw do
       end
     end
 
+    # Subscription Management
+    resources :subscriptions do
+      member do
+        patch :toggle_status
+        patch :pause_subscription
+        patch :resume_subscription
+        get :delivery_schedule
+        post :generate_tasks
+      end
+      collection do
+        get :active
+        get :paused
+        get :expired
+      end
+    end
+
     # Banner management
     resources :banners do
       member do
@@ -507,6 +523,38 @@ Rails.application.routes.draw do
         post :bulk_action
         get :categories_for_select
         get :products_chart
+      end
+    end
+
+    # Coupons
+    resources :coupons do
+      member do
+        patch :toggle_status
+      end
+    end
+
+    # Customer Wallets
+    resources :customer_wallets do
+      member do
+        post :add_money
+        post :deduct_money
+        get :transaction_history
+      end
+    end
+
+    # Franchises
+    resources :franchises do
+      member do
+        patch :toggle_status
+        post :reset_password
+      end
+    end
+
+    # Affiliates
+    resources :affiliates do
+      member do
+        patch :toggle_status
+        post :reset_password
       end
     end
 

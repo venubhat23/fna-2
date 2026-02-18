@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_18_073035) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,35 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "affiliates", force: :cascade do |t|
+    t.string "first_name"
+    t.string "last_name"
+    t.string "middle_name"
+    t.string "email"
+    t.string "mobile"
+    t.text "address"
+    t.string "city"
+    t.string "state"
+    t.string "pincode"
+    t.string "pan_no"
+    t.string "gst_no"
+    t.decimal "commission_percentage", precision: 5, scale: 2
+    t.string "bank_name"
+    t.string "account_no"
+    t.string "ifsc_code"
+    t.string "account_holder_name"
+    t.string "account_type"
+    t.string "upi_id"
+    t.boolean "status", default: true
+    t.text "notes"
+    t.string "auto_generated_password"
+    t.date "joining_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_affiliates_on_email", unique: true
+    t.index ["mobile"], name: "index_affiliates_on_mobile", unique: true
   end
 
   create_table "banners", force: :cascade do |t|
@@ -166,6 +195,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
     t.datetime "stage_updated_at"
     t.integer "stage_updated_by"
     t.bigint "store_id"
+    t.integer "subscription_id"
+    t.boolean "is_subscription"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
@@ -228,6 +259,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["code"], name: "index_coupons_on_code", unique: true
+  end
+
+  create_table "customer_wallets", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.decimal "balance", precision: 10, scale: 2, default: "0.0"
+    t.boolean "status", default: true
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_customer_wallets_on_customer_id", unique: true
   end
 
   create_table "customers", force: :cascade do |t|
@@ -320,9 +361,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
     t.text "business_documents"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["email"], name: "index_franchises_on_email", unique: true
     t.index ["mobile"], name: "index_franchises_on_mobile", unique: true
     t.index ["pan_no"], name: "index_franchises_on_pan_no", unique: true
+    t.index ["user_id"], name: "index_franchises_on_user_id"
   end
 
   create_table "invoices", force: :cascade do |t|
@@ -364,6 +407,52 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
     t.decimal "weight"
     t.decimal "annual_income"
     t.string "business_job"
+  end
+
+  create_table "milk_delivery_tasks", force: :cascade do |t|
+    t.bigint "subscription_id", null: false
+    t.bigint "customer_id", null: false
+    t.bigint "product_id", null: false
+    t.decimal "quantity", precision: 10, scale: 2
+    t.string "unit"
+    t.date "delivery_date"
+    t.bigint "delivery_person_id"
+    t.string "status", default: "pending"
+    t.datetime "assigned_at"
+    t.datetime "completed_at"
+    t.text "delivery_notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id", "delivery_date"], name: "index_milk_delivery_tasks_on_customer_id_and_delivery_date"
+    t.index ["customer_id"], name: "index_milk_delivery_tasks_on_customer_id"
+    t.index ["delivery_date"], name: "index_milk_delivery_tasks_on_delivery_date"
+    t.index ["delivery_person_id", "delivery_date"], name: "idx_on_delivery_person_id_delivery_date_8b580f1b82"
+    t.index ["delivery_person_id"], name: "index_milk_delivery_tasks_on_delivery_person_id"
+    t.index ["product_id"], name: "index_milk_delivery_tasks_on_product_id"
+    t.index ["status"], name: "index_milk_delivery_tasks_on_status"
+    t.index ["subscription_id"], name: "index_milk_delivery_tasks_on_subscription_id"
+  end
+
+  create_table "milk_subscriptions", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.bigint "product_id", null: false
+    t.decimal "quantity", precision: 10, scale: 2
+    t.string "unit", default: "liter"
+    t.date "start_date"
+    t.date "end_date"
+    t.string "delivery_time", default: "morning"
+    t.string "delivery_pattern", default: "daily"
+    t.text "specific_dates"
+    t.decimal "total_amount", precision: 10, scale: 2
+    t.string "status", default: "active"
+    t.boolean "is_active", default: true
+    t.integer "created_by"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_milk_subscriptions_on_customer_id"
+    t.index ["product_id"], name: "index_milk_subscriptions_on_product_id"
+    t.index ["start_date", "end_date"], name: "idx_milk_subscriptions_dates"
+    t.index ["status"], name: "idx_milk_subscriptions_status"
   end
 
   create_table "order_items", force: :cascade do |t|
@@ -484,4 +573,94 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_16_073135) do
     t.index ["product_id", "status"], name: "index_product_reviews_on_product_id_and_status"
     t.index ["product_id"], name: "index_product_reviews_on_product_id"
     t.index ["user_id"], name: "index_product_reviews_on_user_id"
+  end
+
+  create_table "products", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.bigint "category_id", null: false
+    t.decimal "price", precision: 10, scale: 2, null: false
+    t.decimal "discount_price", precision: 10, scale: 2
+    t.integer "stock", default: 0
+    t.string "status", default: "active"
+    t.string "sku", null: false
+    t.decimal "weight", precision: 8, scale: 3
+    t.string "dimensions"
+    t.text "meta_title"
+    t.text "meta_description"
+    t.text "tags"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "discount_type"
+    t.decimal "discount_value", precision: 10, scale: 2
+    t.decimal "original_price", precision: 10, scale: 2
+    t.decimal "discount_amount", precision: 10, scale: 2
+    t.boolean "is_discounted", default: false
+    t.boolean "gst_enabled", default: false
+    t.decimal "gst_percentage", precision: 5, scale: 2
+    t.decimal "cgst_percentage", precision: 5, scale: 2
+    t.decimal "sgst_percentage", precision: 5, scale: 2
+    t.decimal "igst_percentage", precision: 5, scale: 2
+    t.decimal "gst_amount", precision: 10, scale: 2
+    t.decimal "cgst_amount", precision: 10, scale: 2
+    t.decimal "sgst_amount", precision: 10, scale: 2
+    t.decimal "igst_amount", precision: 10, scale: 2
+    t.decimal "final_amount_with_gst", precision: 10, scale: 2
+    t.decimal "buying_price", precision: 10, scale: 2
+    t.decimal "yesterday_price", precision: 10, scale: 2
+    t.decimal "today_price", precision: 10, scale: 2
+    t.decimal "price_change_percentage", precision: 5, scale: 2
+    t.datetime "last_price_update"
+    t.text "price_history"
+    t.boolean "is_occasional_product", default: false, null: false
+    t.datetime "occasional_start_date"
+    t.datetime "occasional_end_date"
+    t.text "occasional_description"
+    t.boolean "occasional_auto_hide", default: true, null: false
+    t.string "product_type", default: "Grocery"
+    t.string "occasional_schedule_type"
+    t.string "occasional_recurring_from_day"
+    t.time "occasional_recurring_from_time"
+    t.string "occasional_recurring_to_day"
+    t.time "occasional_recurring_to_time"
+    t.boolean "is_subscription_enabled", default: false
+    t.string "unit_type"
+    t.integer "minimum_stock_alert"
+    t.decimal "default_selling_price"
+    t.string "hsn_code"
+    t.index ["category_id"], name: "index_products_on_category_id"
+    t.index ["is_occasional_product", "occasional_start_date", "occasional_end_date"], name: "index_products_on_occasional_dates"
+    t.index ["is_occasional_product"], name: "index_products_on_is_occasional_product"
+    t.index ["is_subscription_enabled"], name: "index_products_on_is_subscription_enabled"
+    t.index ["last_price_update"], name: "index_products_on_last_price_update"
+    t.index ["name"], name: "index_products_on_name"
+    t.index ["product_type"], name: "index_products_on_product_type"
+    t.index ["sku"], name: "index_products_on_sku", unique: true
+    t.index ["status"], name: "index_products_on_status"
+  end
+
+  create_table "roles", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.boolean "status"
+    t.text "permissions"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_roles_on_name", unique: true
+  end
+
+  create_table "sale_items", force: :cascade do |t|
+    t.bigint "booking_id", null: false
+    t.bigint "product_id", null: false
+    t.bigint "stock_batch_id", null: false
+    t.decimal "quantity"
+    t.decimal "selling_price"
+    t.decimal "purchase_price"
+    t.decimal "profit_amount"
+    t.decimal "line_total"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["booking_id"], name: "index_sale_items_on_booking_id"
+    t.index ["product_id"], name: "index_sale_items_on_product_id"
+    t.index ["stock_batch_id"], name: "index_sale_items_on_stock_batch_id"
   end

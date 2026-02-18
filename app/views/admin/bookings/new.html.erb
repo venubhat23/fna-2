@@ -106,13 +106,26 @@
 
                   <%# Price %>
                   <div class="mb-3">
+                    <%
+                      base_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
+                      gst_rate = product.gst_enabled ? (product.gst_percentage || 0) : 0
+                      gst_amount = base_price * gst_rate / 100
+                      final_price = base_price + gst_amount
+                    %>
+
                     <% if product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price %>
                       <div class="d-flex align-items-center gap-2">
-                        <span class="h6 text-success mb-0">₹<%= number_with_delimiter(product.discount_price) %></span>
+                        <span class="h6 text-success mb-0">₹<%= number_with_delimiter(final_price.round(2)) %></span>
                         <small class="text-muted text-decoration-line-through">₹<%= number_with_delimiter(product.price) %></small>
                       </div>
                     <% else %>
-                      <span class="h6 text-primary mb-0">₹<%= number_with_delimiter(product.price) %></span>
+                      <span class="h6 text-primary mb-0">₹<%= number_with_delimiter(final_price.round(2)) %></span>
+                    <% end %>
+
+                    <% if product.gst_enabled && gst_rate > 0 %>
+                      <small class="text-muted d-block">
+                        Base: ₹<%= number_with_delimiter(base_price.round(2)) %> + GST <%= gst_rate %>%
+                      </small>
                     <% end %>
                   </div>
 
@@ -148,8 +161,17 @@
                       </div>
 
                       <!-- Add to Cart Button -->
+                      <%
+                        cart_base_price = product.respond_to?(:discount_price) && product.discount_price.present? ? product.discount_price : product.price
+                        cart_gst_rate = product.gst_enabled ? (product.gst_percentage || 0) : 0
+                        cart_gst_amount = cart_base_price * cart_gst_rate / 100
+                        cart_final_price = cart_base_price + cart_gst_amount
+                      %>
                       <button class="btn btn-primary w-100"
-                              onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= product.respond_to?(:discount_price) && product.discount_price.present? ? product.discount_price : product.price %>, <%= current_stock %>)"
+                              onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= cart_final_price %>, <%= current_stock %>, <%= cart_base_price %>, <%= cart_gst_rate %>)"
+                              data-base-price="<%= cart_base_price %>"
+                              data-gst-rate="<%= cart_gst_rate %>"
+                              data-final-price="<%= cart_final_price %>"
                               <%= 'disabled' if product.out_of_stock? %>>
                         <% if product.out_of_stock? %>
                           <i class="bi bi-x-circle me-2"></i>Out of Stock
@@ -500,7 +522,7 @@ function initializeCart() {
 }
 
 // Add item to cart
-function addToCart(productId, productName, price, stock) {
+function addToCart(productId, productName, finalPrice, stock, basePrice, gstRate) {
   const quantity = parseInt(document.getElementById(`qty-${productId}`).value) || 1;
 
   if (quantity > stock) {
@@ -517,7 +539,9 @@ function addToCart(productId, productName, price, stock) {
   } else {
     cart[productId] = {
       name: productName,
-      price: price,
+      price: finalPrice,  // Final price including GST
+      basePrice: basePrice || finalPrice,  // Base price without GST
+      gstRate: gstRate || 0,  // GST percentage
       quantity: quantity,
       stock: stock
     };
@@ -815,6 +839,9 @@ function updateCheckoutTotals() {
   document.getElementById('checkoutSubtotal').textContent = subtotal.toFixed(2);
   document.getElementById('checkoutTax').textContent = tax.toFixed(2);
   document.getElementById('checkoutTotal').textContent = total.toFixed(2);
+
+  // Update change calculation when total changes
+  calculateChange();
 }
 
 // Payment method selection
@@ -1004,7 +1031,7 @@ function selectCustomer(customerId, customerName, customerMobile, customerEmail,
   const selectedDisplay = document.getElementById('selectedCustomerDisplay');
   selectedDisplay.style.display = 'block';
   selectedDisplay.querySelector('.customer-name').textContent = customerName;
-  selectedDisplay.querySelector('.customer-details').innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap"><span class="badge bg-primary-subtle text-primary"><i class="bi bi-telephone me-1"></i>' + customerMobile + '</span>' + (customerEmail ? '<span class="badge bg-success-subtle text-success"><i class="bi bi-envelope me-1"></i>' + customerEmail + '</span>' : '') + '<span class="badge bg-info-subtle text-info"><i class="bi bi-person me-1"></i>ID: ' + customerId + '</span></div>';
+  selectedDisplay.querySelector('.customer-details').innerHTML = '<div class="d-flex align-items-center gap-2 flex-wrap"><span class="badge bg-primary-subtle text-primary"><i class="bi bi-telephone me-1"></i>' + customerMobile + '</span>' + (customerEmail ? '<span class="badge bg-success-subtle text-success"><i class="bi bi-envelope me-1"></i>' + customerEmail + '</span>' : '') + '</div>';
 
   document.getElementById('booking_customer_name').value = customerName;
   document.getElementById('booking_customer_phone').value = customerMobile;

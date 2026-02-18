@@ -180,7 +180,7 @@
         <% end %>
 
         <div class="total-row tax">
-            <span>GST (18%):</span>
+            <span>GST (<%= @booking.calculated_gst_percentage %>%):</span>
             <span style="font-weight: 500;">₹<%= number_with_delimiter(@booking.calculated_tax_amount, delimiter: ',') %></span>
         </div>
 

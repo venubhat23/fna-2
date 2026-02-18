@@ -1,0 +1,368 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Add New Affiliate</h2>
+    <p class="text-muted mb-0">Create a new affiliate account with login credentials</p>
+  </div>
+  <div>
+    <%= link_to admin_affiliates_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Affiliates
+    <% end %>
+  </div>
+</div>
+
+<!-- Form Card -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <h5 class="mb-0">
+      <i class="bi bi-person-plus me-2 text-primary"></i>
+      Affiliate Information
+    </h5>
+  </div>
+  <div class="card-body">
+    <%= form_with model: [:admin, @affiliate], local: true, class: "needs-validation", novalidate: true do |form| %>
+      <% if @affiliate.errors.any? %>
+        <div class="alert alert-danger" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Please correct the following errors:
+          </h6>
+          <ul class="mb-0 ps-3">
+            <% @affiliate.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="row">
+        <!-- Personal Information -->
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-person me-2"></i>
+            Personal Information
+          </h6>
+
+          <div class="mb-3">
+            <%= form.label :first_name, class: "form-label fw-semibold" %>
+            <span class="text-danger">*</span>
+            <%= form.text_field :first_name, class: "form-control", placeholder: "Enter first name", required: true %>
+            <div class="invalid-feedback">
+              Please provide a first name.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :last_name, class: "form-label fw-semibold" %>
+            <span class="text-danger">*</span>
+            <%= form.text_field :last_name, class: "form-control", placeholder: "Enter last name", required: true %>
+            <div class="invalid-feedback">
+              Please provide a last name.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :middle_name, class: "form-label fw-semibold" %>
+            <%= form.text_field :middle_name, class: "form-control", placeholder: "Enter middle name (optional)" %>
+          </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-telephone me-2"></i>
+            Contact Information
+          </h6>
+
+          <div class="mb-3">
+            <%= form.label :email, class: "form-label fw-semibold" %>
+            <span class="text-danger">*</span>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-envelope text-muted"></i>
+              </span>
+              <%= form.email_field :email, class: "form-control", placeholder: "Enter email address", required: true %>
+              <div class="invalid-feedback">
+                Please provide a valid email address.
+              </div>
+            </div>
+            <small class="text-muted">This email will be used as the username for login</small>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :mobile, class: "form-label fw-semibold" %>
+            <span class="text-danger">*</span>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-telephone text-muted"></i>
+              </span>
+              <%= form.text_field :mobile, class: "form-control", placeholder: "Enter mobile number", required: true %>
+              <div class="invalid-feedback">
+                Please provide a mobile number.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <div class="row">
+        <!-- Business Information -->
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-building me-2"></i>
+            Business Information
+          </h6>
+
+          <div class="mb-3">
+            <%= form.label :commission_percentage, class: "form-label fw-semibold" %>
+            <span class="text-danger">*</span>
+            <div class="input-group">
+              <%= form.number_field :commission_percentage, class: "form-control", placeholder: "0.00", step: 0.01, min: 0, max: 100, required: true %>
+              <span class="input-group-text">%</span>
+              <div class="invalid-feedback">
+                Please provide a commission percentage between 0-100.
+              </div>
+            </div>
+            <small class="text-muted">Commission percentage for this affiliate</small>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :joining_date, class: "form-label fw-semibold" %>
+            <%= form.date_field :joining_date, class: "form-control", value: Date.current %>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :pan_no, "PAN Number", class: "form-label fw-semibold" %>
+            <%= form.text_field :pan_no, class: "form-control", placeholder: "Enter PAN number (optional)" %>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :gst_no, "GST Number", class: "form-label fw-semibold" %>
+            <%= form.text_field :gst_no, class: "form-control", placeholder: "Enter GST number (optional)" %>
+          </div>
+        </div>
+
+        <!-- Address & Banking -->
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-geo-alt me-2"></i>
+            Address Information
+          </h6>
+
+          <div class="mb-3">
+            <%= form.label :address, class: "form-label fw-semibold" %>
+            <%= form.text_area :address, class: "form-control", rows: 3, placeholder: "Enter full address" %>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :city, class: "form-label fw-semibold" %>
+                <%= form.text_field :city, class: "form-control", placeholder: "City" %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :state, class: "form-label fw-semibold" %>
+                <%= form.text_field :state, class: "form-control", placeholder: "State" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :pincode, class: "form-label fw-semibold" %>
+            <%= form.text_field :pincode, class: "form-control", placeholder: "Enter pincode" %>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Banking Information -->
+      <div class="row">
+        <div class="col-12">
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-bank me-2"></i>
+            Banking Information (Optional)
+          </h6>
+        </div>
+
+        <div class="col-md-4">
+          <div class="mb-3">
+            <%= form.label :bank_name, class: "form-label fw-semibold" %>
+            <%= form.text_field :bank_name, class: "form-control", placeholder: "Bank name" %>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="mb-3">
+            <%= form.label :account_no, "Account Number", class: "form-label fw-semibold" %>
+            <%= form.text_field :account_no, class: "form-control", placeholder: "Account number" %>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="mb-3">
+            <%= form.label :ifsc_code, "IFSC Code", class: "form-label fw-semibold" %>
+            <%= form.text_field :ifsc_code, class: "form-control", placeholder: "IFSC code" %>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :account_holder_name, class: "form-label fw-semibold" %>
+            <%= form.text_field :account_holder_name, class: "form-control", placeholder: "Account holder name" %>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="mb-3">
+            <%= form.label :account_type, class: "form-label fw-semibold" %>
+            <%= form.select :account_type,
+                options_for_select([
+                  ['Select Account Type', ''],
+                  ['Savings', 'savings'],
+                  ['Current', 'current']
+                ], @affiliate.account_type),
+                {},
+                { class: "form-select" } %>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="mb-3">
+            <%= form.label :upi_id, "UPI ID", class: "form-label fw-semibold" %>
+            <%= form.text_field :upi_id, class: "form-control", placeholder: "UPI ID" %>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Status and Notes -->
+      <div class="row">
+        <div class="col-md-8">
+          <div class="mb-3">
+            <%= form.label :notes, class: "form-label fw-semibold" %>
+            <%= form.text_area :notes, class: "form-control", rows: 3, placeholder: "Additional notes about the affiliate (optional)" %>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="mb-3">
+            <%= form.label :status, class: "form-label fw-semibold" %>
+            <div class="form-check form-switch">
+              <%= form.check_box :status, { class: "form-check-input", checked: true }, true, false %>
+              <%= form.label :status, "Active", class: "form-check-label" %>
+            </div>
+            <small class="text-muted">Affiliate will be active by default</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Password Information Alert -->
+      <div class="alert alert-info" role="alert">
+        <div class="d-flex align-items-start">
+          <i class="bi bi-info-circle me-2 mt-1"></i>
+          <div>
+            <strong>Automatic Password Generation:</strong>
+            <p class="mb-0 small">A secure password will be automatically generated for this affiliate using their name and current year. The password will be displayed after successful creation and can be found in the affiliate details.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Buttons -->
+      <div class="d-flex gap-2 justify-content-end">
+        <%= link_to "Cancel", admin_affiliates_path, class: "btn btn-outline-secondary" %>
+        <%= form.submit "Create Affiliate Account", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Bootstrap form validation
+  const forms = document.querySelectorAll('.needs-validation');
+
+  Array.from(forms).forEach(function(form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    });
+  });
+
+  // Auto-populate account holder name from full name
+  const firstNameInput = document.getElementById('affiliate_first_name');
+  const lastNameInput = document.getElementById('affiliate_last_name');
+  const accountHolderInput = document.getElementById('affiliate_account_holder_name');
+
+  function updateAccountHolderName() {
+    if (accountHolderInput && accountHolderInput.value === '') {
+      const firstName = firstNameInput ? firstNameInput.value : '';
+      const lastName = lastNameInput ? lastNameInput.value : '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      if (fullName) {
+        accountHolderInput.value = fullName;
+      }
+    }
+  }
+
+  if (firstNameInput) firstNameInput.addEventListener('blur', updateAccountHolderName);
+  if (lastNameInput) lastNameInput.addEventListener('blur', updateAccountHolderName);
+});
+</script>
+
+<style>
+.form-label {
+  color: #495057;
+  font-weight: 600;
+}
+
+.text-danger {
+  font-size: 0.9rem;
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+  border-color: #ced4da;
+}
+
+.form-check-input:checked {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.alert-info {
+  background-color: #e7f3ff;
+  border-color: #b3d7ff;
+  color: #084298;
+}
+
+.card-header h5 {
+  color: #495057;
+  font-weight: 600;
+}
+
+.needs-validation .form-control:invalid {
+  border-color: #dc3545;
+}
+
+.needs-validation .form-control:valid {
+  border-color: #198754;
+}
+
+.was-validated .form-control:valid {
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.18-.17 2.83-2.83c.11-.11.11-.29 0-.4L4.95 2.97c-.11-.11-.29-.11-.4 0L2.18 5.34l-.88-.88c-.11-.11-.29-.11-.4 0L.73 4.63c-.11.11-.11.29 0 .4l1.56 1.7z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+</style>

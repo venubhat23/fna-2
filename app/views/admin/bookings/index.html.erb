@@ -1455,6 +1455,30 @@ document.addEventListener('DOMContentLoaded', function() {
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
+/* Fix dropdown overlap with Manage Order Stages button */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute !important;
+  z-index: 1100 !important;
+  min-width: 180px;
+}
+
+/* Ensure dropdowns at the bottom of the table open upward */
+tbody tr:last-child .dropdown-menu,
+tbody tr:nth-last-child(2) .dropdown-menu,
+tbody tr:nth-last-child(3) .dropdown-menu {
+  bottom: 100%;
+  top: auto;
+}
+
+/* Add spacing between action buttons */
+td .d-flex.gap-2 {
+  gap: 0.5rem !important;
+}
+
 /* Timeline Styles */
 .timeline {
   position: relative;

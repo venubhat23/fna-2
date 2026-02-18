@@ -1,0 +1,323 @@
+<% content_for :title, "Subscriptions Management" %>
+
+<div class="container-fluid">
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                Total Subscriptions
+              </div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:total] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-calendar fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                Active Subscriptions
+              </div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:active] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                Today's Deliveries
+              </div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:today_deliveries] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-truck fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                Pending Today
+              </div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:pending_today] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-clock fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Header -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-arrow-repeat text-primary"></i>
+      Subscriptions Management
+    </h1>
+    <%= link_to new_admin_subscription_path, class: "btn btn-primary btn-lg shadow-sm" do %>
+      <i class="bi bi-plus-circle"></i> Create New Subscription
+    <% end %>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">
+        <i class="bi bi-funnel"></i> Filters
+      </h6>
+    </div>
+    <div class="card-body">
+      <%= form_with url: admin_subscriptions_path, method: :get, local: true, class: "row g-3" do |form| %>
+        <div class="col-md-3">
+          <%= form.label :status, class: "form-label" %>
+          <%= form.select :status,
+              options_for_select([
+                ['All Status', ''],
+                ['Active', 'active'],
+                ['Paused', 'paused'],
+                ['Expired', 'expired'],
+                ['Cancelled', 'cancelled']
+              ], params[:status]),
+              {},
+              { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-3">
+          <%= form.label :customer_id, "Customer", class: "form-label" %>
+          <%= form.select :customer_id,
+              options_for_select([['All Customers', '']] + @customers, params[:customer_id]),
+              {},
+              { class: "form-select select2" } %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :start_date, "Start Date", class: "form-label" %>
+          <%= form.date_field :start_date, value: params[:start_date], class: "form-control" %>
+        </div>
+
+        <div class="col-md-2">
+          <%= form.label :end_date, "End Date", class: "form-label" %>
+          <%= form.date_field :end_date, value: params[:end_date], class: "form-control" %>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <%= form.submit "Filter", class: "btn btn-primary me-2" %>
+          <%= link_to "Clear", admin_subscriptions_path, class: "btn btn-outline-secondary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Quick Action Buttons -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <%= link_to admin_subscriptions_path(status: 'active'), class: "btn btn-success me-2 #{'active' if params[:status] == 'active'}" do %>
+        <i class="bi bi-check-circle"></i> Active (<%= @stats[:active] %>)
+      <% end %>
+      <%= link_to admin_subscriptions_path(status: 'paused'), class: "btn btn-warning me-2 #{'active' if params[:status] == 'paused'}" do %>
+        <i class="bi bi-pause-circle"></i> Paused (<%= @stats[:paused] %>)
+      <% end %>
+      <%= link_to admin_subscriptions_path(status: 'expired'), class: "btn btn-danger me-2 #{'active' if params[:status] == 'expired'}" do %>
+        <i class="bi bi-x-circle"></i> Expired (<%= @stats[:expired] %>)
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Subscriptions Table -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">
+        <i class="bi bi-table"></i> Subscriptions List (<%= @subscriptions.total_count %> total)
+      </h6>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Duration</th>
+              <th>Pattern</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @subscriptions.each do |subscription| %>
+              <tr>
+                <td>
+                  <%= link_to "##{subscription.id}", admin_subscription_path(subscription),
+                      class: "text-primary fw-bold" %>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div>
+                      <strong><%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %></strong><br>
+                      <small class="text-muted"><%= subscription.customer.mobile %></small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <strong><%= subscription.product.name %></strong><br>
+                  <small class="text-muted">₹<%= subscription.product.price %> per unit</small>
+                </td>
+                <td>
+                  <span class="badge bg-info fs-6">
+                    <%= subscription.quantity %> <%= subscription.unit %>
+                  </span>
+                </td>
+                <td>
+                  <strong><%= subscription.start_date.strftime('%d %b') %></strong>
+                  <span class="text-muted">to</span>
+                  <strong><%= subscription.end_date.strftime('%d %b') %></strong><br>
+                  <small class="text-muted">(<%= subscription.total_days %> days)</small>
+                </td>
+                <td>
+                  <% pattern_class = case subscription.delivery_pattern
+                                     when 'daily' then 'bg-success'
+                                     when 'alternate' then 'bg-warning'
+                                     when 'specific_dates' then 'bg-info'
+                                     else 'bg-secondary'
+                                     end %>
+                  <span class="badge <%= pattern_class %> fs-6">
+                    <%= subscription.delivery_pattern.humanize %>
+                  </span>
+                </td>
+                <td>
+                  <% summary = subscription.subscription_summary %>
+                  <div class="progress mb-1" style="height: 20px;">
+                    <div class="progress-bar bg-success" style="width: <%= summary[:completion_rate] %>%">
+                      <%= summary[:completion_rate].round(1) %>%
+                    </div>
+                  </div>
+                  <small class="text-muted">
+                    <%= summary[:completed] %>/<%= summary[:total_deliveries] %> completed
+                  </small>
+                </td>
+                <td>
+                  <% status_class = case subscription.status
+                                    when 'active' then 'bg-success'
+                                    when 'paused' then 'bg-warning'
+                                    when 'expired' then 'bg-danger'
+                                    when 'cancelled' then 'bg-secondary'
+                                    else 'bg-light'
+                                    end %>
+                  <span class="badge <%= status_class %> fs-6">
+                    <%= subscription.status.humanize %>
+                  </span>
+                  <% unless subscription.is_active? %>
+                    <br><span class="badge bg-secondary mt-1">Inactive</span>
+                  <% end %>
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <%= link_to admin_subscription_path(subscription),
+                        class: "btn btn-sm btn-outline-primary",
+                        title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+
+                    <%= link_to edit_admin_subscription_path(subscription),
+                        class: "btn btn-sm btn-outline-warning",
+                        title: "Edit" do %>
+                      <i class="bi bi-pencil"></i>
+                    <% end %>
+
+                    <% if subscription.status == 'active' %>
+                      <%= link_to pause_subscription_admin_subscription_path(subscription),
+                          method: :patch,
+                          class: "btn btn-sm btn-outline-warning",
+                          title: "Pause",
+                          confirm: "Are you sure you want to pause this subscription?" do %>
+                        <i class="bi bi-pause"></i>
+                      <% end %>
+                    <% elsif subscription.status == 'paused' %>
+                      <%= link_to resume_subscription_admin_subscription_path(subscription),
+                          method: :patch,
+                          class: "btn btn-sm btn-outline-success",
+                          title: "Resume",
+                          confirm: "Are you sure you want to resume this subscription?" do %>
+                        <i class="bi bi-play"></i>
+                      <% end %>
+                    <% end %>
+
+                    <%= link_to admin_subscription_path(subscription),
+                        method: :delete,
+                        class: "btn btn-sm btn-outline-danger",
+                        title: "Delete",
+                        confirm: "Are you sure? This will delete all delivery tasks as well." do %>
+                      <i class="bi bi-trash"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+
+        <% if @subscriptions.empty? %>
+          <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">No subscriptions found</h4>
+            <p class="text-muted">Create your first subscription to get started.</p>
+            <%= link_to new_admin_subscription_path, class: "btn btn-primary" do %>
+              <i class="bi bi-plus-circle"></i> Create Subscription
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Pagination -->
+      <% if @subscriptions.respond_to?(:total_pages) && @subscriptions.total_pages > 1 %>
+        <div class="d-flex justify-content-center mt-4">
+          <%= paginate @subscriptions %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Initialize Select2 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof $ !== 'undefined' && $.fn.select2) {
+    $('.select2').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Select customer...',
+      allowClear: true
+    });
+  }
+});
+</script>

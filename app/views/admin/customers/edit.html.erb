@@ -193,9 +193,18 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!form.checkValidity()) {
         event.preventDefault();
         event.stopPropagation();
+        form.classList.add('was-validated');
       }
-      form.classList.add('was-validated');
     }, false);
+  });
+
+  // Only show validation errors for empty fields, not filled ones
+  const inputs = document.querySelectorAll('.needs-validation input[required]');
+  inputs.forEach(function(input) {
+    if (input.value && input.value.trim() !== '') {
+      input.classList.add('is-valid');
+      input.classList.remove('is-invalid');
+    }
   });
 });
 </script>

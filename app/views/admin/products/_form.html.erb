@@ -1461,11 +1461,60 @@ document.addEventListener('DOMContentLoaded', function() {
       const profit = selling - cost;
       const marginPercentage = selling > 0 ? ((profit / selling) * 100).toFixed(2) : 0;
 
+      // Show warning if selling price is less than buying price
+      if (selling > 0 && selling < cost) {
+        showPriceWarning(cost, selling);
+      } else {
+        hidePriceWarning();
+      }
+
       updateProfitPreview(cost, selling, profit, marginPercentage);
     } else {
       if (profitPreview) {
         profitPreview.style.display = 'none';
       }
+      hidePriceWarning();
+    }
+  }
+
+  function showPriceWarning(cost, selling) {
+    // Check if warning already exists
+    let warningDiv = document.getElementById('price-warning-alert');
+
+    if (!warningDiv) {
+      // Create warning element
+      warningDiv = document.createElement('div');
+      warningDiv.id = 'price-warning-alert';
+      warningDiv.className = 'alert alert-warning d-flex align-items-center mt-3';
+      warningDiv.innerHTML = `
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+          <strong>Warning!</strong> Selling price (₹${selling.toFixed(2)}) is less than buying price (₹${cost.toFixed(2)}).
+          This will result in a loss of ₹${(cost - selling).toFixed(2)} per unit.
+        </div>
+      `;
+
+      // Insert after the price fields
+      const priceSection = regularPrice?.closest('.row');
+      if (priceSection) {
+        priceSection.parentNode.insertBefore(warningDiv, priceSection.nextSibling);
+      }
+    } else {
+      // Update existing warning
+      warningDiv.innerHTML = `
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+          <strong>Warning!</strong> Selling price (₹${selling.toFixed(2)}) is less than buying price (₹${cost.toFixed(2)}).
+          This will result in a loss of ₹${(cost - selling).toFixed(2)} per unit.
+        </div>
+      `;
+    }
+  }
+
+  function hidePriceWarning() {
+    const warningDiv = document.getElementById('price-warning-alert');
+    if (warningDiv) {
+      warningDiv.remove();
     }
   }
 

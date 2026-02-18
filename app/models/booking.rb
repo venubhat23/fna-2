@@ -98,15 +98,33 @@ class Booking < ApplicationRecord
   def calculate_totals
     # Calculate totals for items (including unsaved ones)
     items_total = 0
+    total_gst = 0
+
     booking_items.each do |item|
       if item.quantity.present? && item.price.present?
-        items_total += (item.quantity * item.price)
+        quantity = item.quantity
+        price = item.price
+
+        # Check if product has GST enabled
+        if item.product && item.product.gst_enabled && item.product.gst_percentage.to_f > 0
+          # Price already includes GST, so extract base price and GST amount
+          gst_rate = item.product.gst_percentage.to_f
+          item_total_with_gst = price * quantity
+          item_base = item_total_with_gst / (1 + gst_rate / 100)
+          item_gst = item_total_with_gst - item_base
+
+          items_total += item_base
+          total_gst += item_gst
+        else
+          # No GST, use price as is
+          items_total += price * quantity
+        end
       end
     end
 
-    self.subtotal = items_total
-    self.tax_amount = (subtotal * 0.18).round(2) # 18% GST
-    self.total_amount = (subtotal + tax_amount - (discount_amount || 0)).round(2)
+    self.subtotal = items_total.round(2)
+    self.tax_amount = total_gst.round(2)
+    self.total_amount = (items_total + total_gst - (discount_amount || 0)).round(2)
   end
 
   def calculate_totals!
@@ -125,7 +143,23 @@ class Booking < ApplicationRecord
   def calculated_tax_amount
     return tax_amount if tax_amount.present?
 
-    (calculated_subtotal * 0.18).round(2)
+    # Calculate GST based on individual products
+    total_gst = 0
+    booking_items.each do |item|
+      if item.product && item.product.gst_enabled && item.product.gst_percentage.to_f > 0
+        gst_rate = item.product.gst_percentage.to_f
+        item_total_with_gst = (item.price || 0) * (item.quantity || 0)
+        item_base = item_total_with_gst / (1 + gst_rate / 100)
+        item_gst = item_total_with_gst - item_base
+        total_gst += item_gst
+      end
+    end
+    total_gst.round(2)
+  end
+
+  def calculated_gst_percentage
+    return 0 if calculated_subtotal == 0
+    ((calculated_tax_amount / calculated_subtotal) * 100).round(2)
   end
 
   def calculated_total_amount

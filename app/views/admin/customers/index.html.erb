@@ -295,6 +295,24 @@ document.addEventListener('DOMContentLoaded', function() {
   color: #0d6efd !important;
 }
 
+/* Fix dropdown menu visibility */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute !important;
+  z-index: 1050 !important;
+  min-width: 150px;
+}
+
+/* Ensure the last row's dropdown opens upward if needed */
+tbody tr:last-child .dropdown-menu,
+tbody tr:nth-last-child(2) .dropdown-menu {
+  bottom: 100%;
+  top: auto;
+}
+
 /* Make the credentials column more compact but readable */
 .login-credentials strong {
   color: #495057;

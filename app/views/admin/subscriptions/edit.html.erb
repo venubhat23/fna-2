@@ -1,0 +1,369 @@
+<% content_for :title, "Edit Subscription" %>
+
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-pencil text-warning"></i>
+      Edit Subscription #<%= @subscription.id %>
+    </h1>
+    <div class="btn-group">
+      <%= link_to admin_subscription_path(@subscription), class: "btn btn-secondary" do %>
+        <i class="bi bi-arrow-left"></i> Back to Details
+      <% end %>
+    </div>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-warning">
+        <i class="bi bi-form-check"></i> Edit Subscription Details
+      </h6>
+    </div>
+    <div class="card-body">
+      <%= form_with model: @subscription, url: admin_subscription_path(@subscription), method: :patch, local: true, html: { class: "needs-validation", novalidate: true } do |form| %>
+
+        <!-- Error Messages -->
+        <% if @subscription.errors.any? %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Please fix the following errors:</strong>
+            <ul class="mb-0 mt-2">
+              <% @subscription.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% end %>
+
+        <div class="row">
+          <!-- Customer Selection -->
+          <div class="col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-person"></i> Customer Information</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <%= form.label :customer_id, "Customer", class: "form-label fw-bold" %>
+                  <%= form.select :customer_id,
+                      options_for_select(@customers, @subscription.customer_id),
+                      {},
+                      {
+                        class: "form-select select2-customer",
+                        required: true,
+                        "data-placeholder" => "Search and select customer..."
+                      } %>
+                  <div class="invalid-feedback">
+                    Please select a customer.
+                  </div>
+                </div>
+
+                <!-- Current Customer Info Display -->
+                <div class="alert alert-info">
+                  <h6 class="mb-2"><i class="bi bi-info-circle"></i> Current Customer</h6>
+                  <strong><%= "#{@subscription.customer.first_name} #{@subscription.customer.last_name}".strip %></strong><br>
+                  <small class="text-muted">
+                    <%= @subscription.customer.mobile %><br>
+                    <%= @subscription.customer.address %>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Selection -->
+          <div class="col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-box"></i> Product & Quantity</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <%= form.label :product_id, "Product", class: "form-label fw-bold" %>
+                  <%= form.select :product_id,
+                      options_for_select(@products, @subscription.product_id),
+                      {},
+                      {
+                        class: "form-select select2-product",
+                        required: true
+                      } %>
+                  <div class="invalid-feedback">
+                    Please select a product.
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-8">
+                    <%= form.label :quantity, "Quantity", class: "form-label fw-bold" %>
+                    <%= form.number_field :quantity,
+                        step: 0.1,
+                        min: 0.1,
+                        class: "form-control form-control-lg",
+                        required: true %>
+                    <div class="invalid-feedback">
+                      Please enter a valid quantity.
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <%= form.label :unit, "Unit", class: "form-label fw-bold" %>
+                    <%= form.select :unit,
+                        options_for_select([
+                          ['Liter', 'liter'],
+                          ['ML', 'ml'],
+                          ['Packet', 'packet'],
+                          ['Bottle', 'bottle']
+                        ], @subscription.unit),
+                        {},
+                        { class: "form-select" } %>
+                  </div>
+                </div>
+
+                <!-- Current Product Info -->
+                <div class="alert alert-success mt-3">
+                  <strong>Current:</strong> <%= @subscription.product.name %><br>
+                  <small class="text-muted">
+                    <%= @subscription.quantity %> <%= @subscription.unit %> @ ₹<%= @subscription.product.price %>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Schedule Configuration -->
+          <div class="col-md-12 mb-4">
+            <div class="card">
+              <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-calendar"></i> Delivery Schedule</h6>
+              </div>
+              <div class="card-body">
+                <!-- Warning about existing tasks -->
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle"></i>
+                  <strong>Note:</strong> Changing dates or patterns will require regenerating delivery tasks.
+                  Existing completed deliveries will remain unchanged.
+                </div>
+
+                <!-- Delivery Pattern Selection -->
+                <div class="mb-4">
+                  <%= form.label :delivery_pattern, "Delivery Pattern", class: "form-label fw-bold" %>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="form-check form-check-inline">
+                        <%= form.radio_button :delivery_pattern, "daily",
+                            class: "form-check-input",
+                            id: "pattern_daily" %>
+                        <%= form.label :delivery_pattern, "Daily",
+                            class: "form-check-label",
+                            for: "pattern_daily" %>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-check form-check-inline">
+                        <%= form.radio_button :delivery_pattern, "alternate",
+                            class: "form-check-input",
+                            id: "pattern_alternate" %>
+                        <%= form.label :delivery_pattern, "Alternate Days",
+                            class: "form-check-label",
+                            for: "pattern_alternate" %>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-check form-check-inline">
+                        <%= form.radio_button :delivery_pattern, "specific_dates",
+                            class: "form-check-input",
+                            id: "pattern_specific" %>
+                        <%= form.label :delivery_pattern, "Specific Dates",
+                            class: "form-check-label",
+                            for: "pattern_specific" %>
+                      </div>
+                    </div>
+                  </div>
+                  <small class="text-muted">
+                    Current: <strong><%= @subscription.delivery_pattern.humanize %></strong>
+                  </small>
+                </div>
+
+                <!-- Date Range for Daily/Alternate -->
+                <div id="date-range-section" class="row mb-4 <%= 'd-none' if @subscription.delivery_pattern == 'specific_dates' %>">
+                  <div class="col-md-4">
+                    <%= form.label :start_date, "Start Date", class: "form-label fw-bold" %>
+                    <%= form.date_field :start_date,
+                        class: "form-control form-control-lg",
+                        required: true %>
+                    <div class="invalid-feedback">
+                      Please select a start date.
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <%= form.label :end_date, "End Date", class: "form-label fw-bold" %>
+                    <%= form.date_field :end_date,
+                        class: "form-control form-control-lg",
+                        required: true %>
+                    <div class="invalid-feedback">
+                      Please select an end date.
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <%= form.label :delivery_time, "Delivery Time", class: "form-label fw-bold" %>
+                    <%= form.select :delivery_time,
+                        options_for_select([
+                          ['Morning (6 AM - 10 AM)', 'morning'],
+                          ['Evening (5 PM - 8 PM)', 'evening'],
+                          ['Anytime', 'anytime']
+                        ], @subscription.delivery_time),
+                        {},
+                        { class: "form-select form-select-lg" } %>
+                  </div>
+                </div>
+
+                <!-- Specific Dates Section -->
+                <div id="specific-dates-section" class="<%= 'd-none' unless @subscription.delivery_pattern == 'specific_dates' %> mb-4">
+                  <h6 class="fw-bold mb-3">Select Specific Dates:</h6>
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Instructions:</strong> Enter dates in JSON format, for example:
+                    <code>["2024-02-17", "2024-02-19", "2024-02-21", "2024-02-25"]</code>
+                  </div>
+                  <%= form.text_area :specific_dates,
+                      rows: 4,
+                      placeholder: '["2024-02-17", "2024-02-19", "2024-02-21"]',
+                      class: "form-control font-monospace" %>
+                  <small class="text-muted">Format: JSON array of dates in YYYY-MM-DD format</small>
+                </div>
+
+                <!-- Current Schedule Display -->
+                <div class="alert alert-primary">
+                  <h6><i class="bi bi-calendar-check"></i> Current Schedule</h6>
+                  <p class="mb-0">
+                    <strong>Pattern:</strong> <%= @subscription.delivery_pattern.humanize %><br>
+                    <strong>Duration:</strong> <%= @subscription.start_date.strftime('%d %b %Y') %> to <%= @subscription.end_date.strftime('%d %b %Y') %><br>
+                    <strong>Total Deliveries:</strong> <%= @subscription.total_deliveries_count %><br>
+                    <strong>Completed:</strong> <%= @subscription.completed_deliveries_count %>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Status and Settings -->
+          <div class="col-md-12 mb-4">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-gear"></i> Status & Settings</h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-4">
+                    <%= form.label :status, "Status", class: "form-label fw-bold" %>
+                    <%= form.select :status,
+                        options_for_select([
+                          ['Active', 'active'],
+                          ['Paused', 'paused'],
+                          ['Expired', 'expired'],
+                          ['Cancelled', 'cancelled']
+                        ], @subscription.status),
+                        {},
+                        { class: "form-select" } %>
+                    <small class="text-muted">Current: <strong><%= @subscription.status.humanize %></strong></small>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check form-switch mt-4">
+                      <%= form.check_box :is_active,
+                          class: "form-check-input",
+                          id: "subscription_is_active" %>
+                      <%= form.label :is_active, "Active Subscription",
+                          class: "form-check-label fw-bold",
+                          for: "subscription_is_active" %>
+                      <small class="d-block text-muted">Inactive subscriptions won't generate delivery tasks</small>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mt-3">
+                      <strong>Created:</strong><br>
+                      <small class="text-muted"><%= @subscription.created_at.strftime('%d %B %Y at %I:%M %p') %></small><br>
+                      <strong>Updated:</strong><br>
+                      <small class="text-muted"><%= @subscription.updated_at.strftime('%d %B %Y at %I:%M %p') %></small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body text-center">
+                <%= form.submit "Update Subscription",
+                    class: "btn btn-warning btn-lg me-3" %>
+                <%= link_to "Cancel", admin_subscription_path(@subscription),
+                    class: "btn btn-secondary btn-lg me-3" %>
+                <%= link_to "Regenerate Tasks After Update",
+                    generate_tasks_admin_subscription_path(@subscription),
+                    method: :post,
+                    class: "btn btn-outline-primary btn-lg",
+                    confirm: "This will regenerate all delivery tasks after updating. Are you sure?" %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for Dynamic Form Behavior -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Select2
+  if (typeof $ !== 'undefined' && $.fn.select2) {
+    $('.select2-customer').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select customer...',
+      allowClear: true
+    });
+
+    $('.select2-product').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Select product...',
+      allowClear: true
+    });
+  }
+
+  // Handle delivery pattern changes
+  const patternInputs = document.querySelectorAll('input[name="milk_subscription[delivery_pattern]"]');
+  const dateRangeSection = document.getElementById('date-range-section');
+  const specificDatesSection = document.getElementById('specific-dates-section');
+
+  patternInputs.forEach(input => {
+    input.addEventListener('change', function() {
+      if (this.value === 'specific_dates') {
+        dateRangeSection.classList.add('d-none');
+        specificDatesSection.classList.remove('d-none');
+      } else {
+        dateRangeSection.classList.remove('d-none');
+        specificDatesSection.classList.add('d-none');
+      }
+    });
+  });
+
+  // Form validation
+  const form = document.querySelector('.needs-validation');
+  if (form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    });
+  }
+});
+</script>

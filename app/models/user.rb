@@ -48,6 +48,8 @@ class User < ApplicationRecord
   # Associations
   belongs_to :role, optional: true
   belongs_to :user_role, optional: true
+  belongs_to :authenticatable, polymorphic: true, optional: true
+  has_one :franchise, dependent: :destroy
   has_many :policies, dependent: :destroy
   has_many_attached :profile_images
   has_many_attached :documents
@@ -58,11 +60,11 @@ class User < ApplicationRecord
   validates :last_name, presence: true
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :mobile, presence: true, uniqueness: true
-  validates :user_type, presence: true, inclusion: { in: ['admin', 'agent', 'sub_agent', 'customer'] }
+  validates :user_type, presence: true, inclusion: { in: ['admin', 'agent', 'sub_agent', 'customer', 'franchise', 'affiliate'] }
   # Note: role validation can be added later when roles are set up
 
   # Enums
-  enum :user_type, { admin: 'admin', agent: 'agent', sub_agent: 'sub_agent', customer: 'customer' }
+  enum :user_type, { admin: 'admin', agent: 'agent', sub_agent: 'sub_agent', customer: 'customer', franchise: 'franchise', affiliate: 'affiliate' }
 
   # Callbacks
   after_update :role_changed_callback
@@ -144,6 +146,70 @@ class User < ApplicationRecord
     return true
   end
 
+  # Sidebar permissions methods
+  def sidebar_permissions_array
+    return [] if sidebar_permissions.blank?
+    begin
+      parsed = if sidebar_permissions.is_a?(String)
+        JSON.parse(sidebar_permissions)
+      elsif sidebar_permissions.is_a?(Array)
+        sidebar_permissions
+      else
+        []
+      end
+      # If it's the new CRUD format (hash), extract the keys
+      if parsed.is_a?(Hash)
+        parsed.keys
+      else
+        # Old format (array)
+        parsed
+      end
+    rescue JSON::ParserError
+      []
+    end
+  end
+
+  # Get permissions in CRUD format (for compatibility)
+  def sidebar_permissions_hash
+    return {} if sidebar_permissions.blank?
+    begin
+      parsed = if sidebar_permissions.is_a?(String)
+        JSON.parse(sidebar_permissions)
+      else
+        sidebar_permissions
+      end
+      # If it's already a hash (CRUD format), return it
+      if parsed.is_a?(Hash)
+        parsed
+      else
+        # Convert old array format to CRUD format (view-only)
+        result = {}
+        parsed.each do |permission|
+          result[permission] = { 'view' => true, 'create' => false, 'edit' => false, 'delete' => false }
+        end
+        result
+      end
+    rescue JSON::ParserError
+      {}
+    end
+  end
+
+  def has_sidebar_permission?(permission_key)
+    # Super admin (admin@dhanvantri-naturals.com) has access to everything
+    return true if email == 'admin@dhanvantri-naturals.com'
+
+    # Admin users have access to all sidebars
+    return true if admin?
+
+    # Check CRUD permissions - user needs 'view' permission for sidebar access
+    permissions = sidebar_permissions_hash
+    permission_data = permissions[permission_key.to_s]
+    return false if permission_data.nil?
+
+    # Check if user has view permission for this module
+    permission_data['view'] == true
+  end
+
   def update_sidebar_permissions(permissions)
     self.update(sidebar_permissions: permissions.to_json)
   end
@@ -159,6 +225,14 @@ class User < ApplicationRecord
 
   def customer?
     user_type == 'customer'
+  end
+
+  def franchise?
+    user_type == 'franchise'
+  end
+
+  def affiliate?
+    user_type == 'affiliate'
   end
 
   def super_admin?
