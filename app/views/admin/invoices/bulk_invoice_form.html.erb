@@ -108,18 +108,93 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Handle radio button changes
   document.querySelectorAll('input[name="customer_ids"]').forEach(radio => {
     radio.addEventListener('change', function() {
       const customerSelection = document.getElementById('customerSelection');
       if (this.value === 'specific') {
         customerSelection.style.display = 'block';
+        updateSelectedCount();
       } else {
         customerSelection.style.display = 'none';
       }
     });
   });
+
+  // Initialize selected count
+  updateSelectedCount();
 });
 
+// Filter customers based on search input
+function filterCustomers() {
+  const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
+  const customerItems = document.querySelectorAll('.customer-item');
+  const noResults = document.getElementById('noResults');
+  let visibleCount = 0;
+
+  customerItems.forEach(item => {
+    const customerName = item.getAttribute('data-customer-name');
+    const customerMobile = item.getAttribute('data-customer-mobile');
+
+    if (customerName.includes(searchTerm) || customerMobile.includes(searchTerm)) {
+      item.style.display = 'block';
+      visibleCount++;
+    } else {
+      item.style.display = 'none';
+    }
+  });
+
+  // Update visible count and show/hide no results message
+  document.getElementById('totalVisible').textContent = visibleCount;
+
+  if (visibleCount === 0) {
+    noResults.style.display = 'block';
+  } else {
+    noResults.style.display = 'none';
+  }
+
+  // Update selected count after filtering
+  updateSelectedCount();
+}
+
+// Select all visible customers
+function selectAllCustomers() {
+  const visibleCheckboxes = document.querySelectorAll('.customer-item:not([style*="display: none"]) .customer-checkbox');
+
+  visibleCheckboxes.forEach(checkbox => {
+    checkbox.checked = true;
+  });
+
+  updateSelectedCount();
+}
+
+// Clear all customer selections
+function clearAllCustomers() {
+  const allCheckboxes = document.querySelectorAll('.customer-checkbox');
+
+  allCheckboxes.forEach(checkbox => {
+    checkbox.checked = false;
+  });
+
+  updateSelectedCount();
+}
+
+// Update the selected count display
+function updateSelectedCount() {
+  const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
+  const selectedCount = checkedBoxes.length;
+
+  document.getElementById('selectedCount').textContent = selectedCount;
+
+  // Update total visible count if no search is active
+  const searchTerm = document.getElementById('customerSearch') ? document.getElementById('customerSearch').value : '';
+  if (!searchTerm) {
+    const visibleItems = document.querySelectorAll('.customer-item:not([style*="display: none"])').length;
+    document.getElementById('totalVisible').textContent = visibleItems;
+  }
+}
+
+// AJAX success handler
 document.addEventListener('ajax:success', function(event) {
   const response = event.detail[0];
   if (response.success) {
@@ -131,6 +206,7 @@ document.addEventListener('ajax:success', function(event) {
   }
 });
 
+// AJAX error handler
 document.addEventListener('ajax:error', function(event) {
   console.error('Ajax error:', event.detail);
   alert('An error occurred while generating invoices. Please try again.');
