@@ -18,16 +18,12 @@ class Admin::ImportsController < Admin::ApplicationController
     # Show sub-agent import form
   end
 
-  def health_insurances_form
-    # Show health insurance import form
+  def delivery_people_form
+    # Show delivery people import form
   end
 
-  def life_insurances_form
-    # Show life insurance import form
-  end
-
-  def motor_insurances_form
-    # Show motor insurance import form
+  def products_form
+    # Show products import form
   end
 
   # POST /admin/import/customers
@@ -76,8 +72,8 @@ class Admin::ImportsController < Admin::ApplicationController
     end
   end
 
-  # POST /admin/import/health_insurances
-  def health_insurances
+  # POST /admin/import/delivery_people
+  def delivery_people
     uploaded_file = params[:file]
 
     if uploaded_file.blank?
@@ -86,21 +82,21 @@ class Admin::ImportsController < Admin::ApplicationController
     end
 
     begin
-      import_result = ImportService::HealthInsuranceImporter.new(uploaded_file).import
+      import_result = ImportService::DeliveryPersonImporter.new(uploaded_file).import
 
       if import_result[:success]
-        redirect_to admin_health_insurances_path, notice: "Successfully imported #{import_result[:imported_count]} health insurance policies. #{import_result[:skipped_count]} records were skipped due to validation errors."
+        redirect_to admin_delivery_people_path, notice: "Successfully imported #{import_result[:imported_count]} delivery people. #{import_result[:skipped_count]} records were skipped due to validation errors."
       else
         redirect_back fallback_location: admin_imports_path, alert: "Import failed: #{import_result[:error]}"
       end
     rescue => e
-      Rails.logger.error "Health insurance import error: #{e.message}"
+      Rails.logger.error "Delivery people import error: #{e.message}"
       redirect_back fallback_location: admin_imports_path, alert: 'An error occurred during import. Please check your file format and try again.'
     end
   end
 
-  # POST /admin/import/life_insurances
-  def life_insurances
+  # POST /admin/import/products
+  def products
     uploaded_file = params[:file]
 
     if uploaded_file.blank?
@@ -109,39 +105,37 @@ class Admin::ImportsController < Admin::ApplicationController
     end
 
     begin
-      import_result = ImportService::LifeInsuranceImporter.new(uploaded_file).import
+      import_result = ImportService::ProductImporter.new(uploaded_file).import
 
       if import_result[:success]
-        redirect_to admin_life_insurances_path, notice: "Successfully imported #{import_result[:imported_count]} life insurance policies. #{import_result[:skipped_count]} records were skipped due to validation errors."
+        redirect_to admin_products_path, notice: "Successfully imported #{import_result[:imported_count]} products. #{import_result[:skipped_count]} records were skipped due to validation errors."
       else
         redirect_back fallback_location: admin_imports_path, alert: "Import failed: #{import_result[:error]}"
       end
     rescue => e
-      Rails.logger.error "Life insurance import error: #{e.message}"
+      Rails.logger.error "Products import error: #{e.message}"
       redirect_back fallback_location: admin_imports_path, alert: 'An error occurred during import. Please check your file format and try again.'
     end
   end
 
-  # POST /admin/import/motor_insurances
-  def motor_insurances
+  # CSV Validation endpoint
+  def validate_csv
     uploaded_file = params[:file]
+    import_type = params[:import_type]
 
     if uploaded_file.blank?
-      redirect_back fallback_location: admin_imports_path, alert: 'Please select a file to import.'
+      render json: { success: false, error: 'No file uploaded' }
       return
     end
 
     begin
-      import_result = ImportService::MotorInsuranceImporter.new(uploaded_file).import
+      validator = ImportService::CsvValidator.new(uploaded_file, import_type)
+      result = validator.validate
 
-      if import_result[:success]
-        redirect_to admin_motor_insurances_path, notice: "Successfully imported #{import_result[:imported_count]} motor insurance policies. #{import_result[:skipped_count]} records were skipped due to validation errors."
-      else
-        redirect_back fallback_location: admin_imports_path, alert: "Import failed: #{import_result[:error]}"
-      end
+      render json: result
     rescue => e
-      Rails.logger.error "Motor insurance import error: #{e.message}"
-      redirect_back fallback_location: admin_imports_path, alert: 'An error occurred during import. Please check your file format and try again.'
+      Rails.logger.error "CSV validation error: #{e.message}"
+      render json: { success: false, error: 'Invalid file format or content' }
     end
   end
 
@@ -176,12 +170,10 @@ class Admin::ImportsController < Admin::ApplicationController
       send_customer_template
     when 'sub_agents'
       send_sub_agent_template
-    when 'health_insurances'
-      send_health_insurance_template
-    when 'life_insurances'
-      send_life_insurance_template
-    when 'motor_insurances'
-      send_motor_insurance_template
+    when 'delivery_people'
+      send_delivery_person_template
+    when 'products'
+      send_product_template
     else
       redirect_to admin_imports_path, alert: 'Invalid template type'
     end
@@ -193,19 +185,16 @@ class Admin::ImportsController < Admin::ApplicationController
   def send_customer_template
     csv_data = CSV.generate(headers: true) do |csv|
       csv << [
-        'customer_type', 'first_name', 'middle_name', 'last_name', 'company_name',
-        'email', 'mobile', 'gender', 'birth_date', 'address', 'city', 'state',
-        'pincode', 'pan_no', 'gst_no', 'occupation', 'annual_income', 'marital_status'
+        'first_name', 'middle_name', 'last_name', 'email', 'mobile',
+        'address', 'whatsapp_number', 'longitude', 'latitude'
       ]
       csv << [
-        'individual', 'John', 'Kumar', 'Doe', '',
-        'john.doe@example.com', '9876543210', 'male', '1990-01-01', '123 Main St', 'Mumbai', 'Maharashtra',
-        '400001', 'ABCDE1234F', '', 'Software Engineer', '500000', 'married'
+        'John', 'Kumar', 'Doe', 'john.doe@example.com', '9876543210',
+        '123 Main St, Mumbai, Maharashtra, 400001', '9876543210', '72.8777', '19.0760'
       ]
       csv << [
-        'corporate', '', '', '', 'ABC Company Ltd',
-        'contact@abc.com', '9876543211', '', '', '456 Business Park', 'Delhi', 'Delhi',
-        '110001', '', 'GSTIN123456789', '', '', ''
+        'Jane', '', 'Smith', 'jane.smith@example.com', '9876543211',
+        '456 Park Street, Delhi, 110001', '9876543211', '77.2090', '28.6139'
       ]
     end
 
@@ -231,68 +220,53 @@ class Admin::ImportsController < Admin::ApplicationController
     send_data csv_data, filename: 'sub_agents_import_template.csv', type: 'text/csv'
   end
 
-  def send_health_insurance_template
+  def send_delivery_person_template
     csv_data = CSV.generate(headers: true) do |csv|
       csv << [
-        'customer_email', 'policy_holder', 'insurance_company_name', 'policy_type',
-        'policy_number', 'policy_booking_date', 'policy_start_date', 'policy_end_date',
-        'payment_mode', 'sum_insured', 'net_premium', 'gst_percentage', 'total_premium',
-        'plan_name'
+        'first_name', 'last_name', 'email', 'mobile', 'vehicle_type', 'vehicle_number',
+        'license_number', 'address', 'city', 'state', 'pincode',
+        'emergency_contact_name', 'emergency_contact_mobile', 'joining_date', 'salary',
+        'bank_name', 'account_no', 'ifsc_code', 'account_holder_name', 'delivery_areas'
       ]
       csv << [
-        'customer@example.com', 'John Doe', 'HDFC ERGO Health Insurance', 'Individual',
-        'HLT001234', '2024-01-01', '2024-01-01', '2024-12-31',
-        'Yearly', '500000', '25000', '18', '29500',
-        'Complete Health Care'
+        'John', 'Driver', 'john.driver@example.com', '9876543210', 'Bike', 'MH01AB1234',
+        'DL1234567890', '123 Driver Street', 'Mumbai', 'Maharashtra', '400001',
+        'Jane Driver', '9876543211', '2024-01-01', '25000',
+        'SBI', '1234567890', 'SBIN0001234', 'John Driver', 'Andheri, Bandra, Kurla'
       ]
     end
 
-    send_data csv_data, filename: 'health_insurance_import_template.csv', type: 'text/csv'
+    send_data csv_data, filename: 'delivery_people_import_template.csv', type: 'text/csv'
   end
 
-  def send_life_insurance_template
+  def send_product_template
     csv_data = CSV.generate(headers: true) do |csv|
       csv << [
-        'customer_email', 'policy_holder', 'insured_name', 'insurance_company_name',
-        'policy_number', 'policy_booking_date', 'policy_start_date', 'policy_end_date',
-        'payment_mode', 'sum_insured', 'net_premium', 'first_year_gst_percentage',
-        'total_premium', 'plan_name', 'policy_term', 'premium_payment_term'
+        'name', 'description', 'category_name', 'price', 'discount_price', 'stock',
+        'status', 'sku', 'weight', 'dimensions', 'gst_enabled', 'gst_percentage',
+        'buying_price', 'product_type', 'is_subscription_enabled', 'unit_type', 'tags',
+        'meta_title', 'meta_description', 'minimum_stock_alert'
       ]
       csv << [
-        'customer@example.com', 'John Doe', 'John Doe', 'ICICI Prudential Life Insurance',
-        'LIC001234', '2024-01-01', '2024-01-01', '2044-12-31',
-        'Yearly', '1000000', '50000', '18',
-        '59000', 'iProtect Smart', '20', '10'
+        'Fresh Milk', 'Pure cow milk delivered daily', 'Dairy Products', '60.00', '55.00', '100',
+        'active', 'MILK001', '1.0', '1L bottle', 'true', '5.0',
+        '45.00', 'subscription', 'true', 'liter', 'fresh,organic,daily',
+        'Fresh Daily Milk', 'Premium quality fresh milk delivered to your doorstep', '10'
+      ]
+      csv << [
+        'Organic Vegetables', 'Fresh organic vegetables bundle', 'Vegetables', '150.00', '140.00', '50',
+        'active', 'VEG001', '1.0', '1kg bundle', 'true', '0.0',
+        '120.00', 'one_time', 'false', 'kilogram', 'organic,fresh,vegetables',
+        'Organic Vegetable Bundle', 'Farm fresh organic vegetables for healthy living', '5'
       ]
     end
 
-    send_data csv_data, filename: 'life_insurance_import_template.csv', type: 'text/csv'
-  end
-
-  def send_motor_insurance_template
-    csv_data = CSV.generate(headers: true) do |csv|
-      csv << [
-        'customer_email', 'policy_holder', 'insurance_company_name', 'policy_type',
-        'policy_number', 'policy_booking_date', 'policy_start_date', 'policy_end_date',
-        'registration_number', 'make', 'model', 'variant', 'mfy', 'vehicle_type',
-        'class_of_vehicle', 'seating_capacity', 'total_idv', 'net_premium',
-        'gst_percentage', 'total_premium', 'engine_number', 'chassis_number'
-      ]
-      csv << [
-        'customer@example.com', 'John Doe', 'HDFC ERGO General Insurance', 'Comprehensive',
-        'MOT001234', '2024-01-01', '2024-01-01', '2024-12-31',
-        'MH01AB1234', 'Maruti Suzuki', 'Swift', 'VXI', '2020', 'Car',
-        'Private Car', '5', '500000', '18000',
-        '18', '21240', 'ABC123456', 'XYZ789012'
-      ]
-    end
-
-    send_data csv_data, filename: 'motor_insurance_import_template.csv', type: 'text/csv'
+    send_data csv_data, filename: 'products_import_template.csv', type: 'text/csv'
   end
 
   # Statistics methods
   def get_total_imports_count
-    Customer.count + SubAgent.count + HealthInsurance.count + LifeInsurance.count + MotorInsurance.count
+    Customer.count + Product.count + DeliveryPerson.count
   end
 
   def get_successful_imports_count
@@ -306,10 +280,8 @@ class Admin::ImportsController < Admin::ApplicationController
   def get_last_import_date
     [
       Customer.maximum(:created_at),
-      SubAgent.maximum(:created_at),
-      HealthInsurance.maximum(:created_at),
-      LifeInsurance.maximum(:created_at),
-      MotorInsurance.maximum(:created_at)
+      Product.maximum(:created_at),
+      DeliveryPerson.maximum(:created_at)
     ].compact.max
   end
 end

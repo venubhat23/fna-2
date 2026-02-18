@@ -1,360 +1,260 @@
-<!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="mb-1">Invoice Management</h2>
+    <p class="text-muted mb-0">Manage customer invoices and billing</p>
   </div>
-  <div>
-    <!-- Filter Dropdown -->
-    <div class="dropdown">
-      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-        <i class="bi bi-funnel me-2"></i>Filter Invoices
-      </button>
-      <ul class="dropdown-menu">
-        <li><%= link_to "All Invoices", admin_invoices_path, class: "dropdown-item" %></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><%= link_to "Pending", admin_invoices_path(status: 'pending'), class: "dropdown-item" %></li>
-        <li><%= link_to "Paid", admin_invoices_path(status: 'paid'), class: "dropdown-item" %></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><%= link_to "Affiliate Payouts", admin_invoices_path(payout_type: 'affiliate'), class: "dropdown-item" %></li>
-        <li><%= link_to "Ambassador Payouts", admin_invoices_path(payout_type: 'distributor'), class: "dropdown-item" %></li>
-        <li><%= link_to "Commission Payouts", admin_invoices_path(payout_type: 'commission'), class: "dropdown-item" %></li>
-      </ul>
-    </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bulkInvoiceModal">
+      <i class="bi bi-plus-lg me-1"></i>
+      Generate Invoices
+    </button>
   </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Total Invoices</h6>
-            <h3 class="mb-0 text-primary"><%= number_with_delimiter(Invoice.count) %></h3>
-          </div>
-          <div class="bg-primary bg-opacity-10 rounded p-3">
-            <i class="bi bi-receipt text-primary fs-4"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Pending Invoices</h6>
-            <h3 class="mb-0 text-warning"><%= number_with_delimiter(Invoice.pending.count) %></h3>
-          </div>
-          <div class="bg-warning bg-opacity-10 rounded p-3">
-            <i class="bi bi-clock text-warning fs-4"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Paid Invoices</h6>
-            <h3 class="mb-0 text-success"><%= number_with_delimiter(Invoice.paid.count) %></h3>
-          </div>
-          <div class="bg-success bg-opacity-10 rounded p-3">
-            <i class="bi bi-check-circle text-success fs-4"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-3 col-md-6 mb-3">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="text-muted mb-2">Overdue Invoices</h6>
-            <h3 class="mb-0 text-danger"><%= number_with_delimiter(Invoice.overdue.count) %></h3>
-          </div>
-          <div class="bg-danger bg-opacity-10 rounded p-3">
-            <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Invoices List -->
 <div class="card border-0 shadow-sm">
-  <div class="card-header bg-transparent border-0">
-    <h5 class="mb-0">Invoice List</h5>
-  </div>
   <div class="card-body p-0">
     <% if @invoices.any? %>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead class="bg-light">
+          <thead class="table-light">
             <tr>
-              <th class="border-0">Invoice #</th>
-              <th class="border-0">Recipient</th>
-              <th class="border-0">Type</th>
-              <th class="border-0">Amount</th>
-              <th class="border-0">Invoice Date</th>
-              <th class="border-0">Due Date</th>
-              <th class="border-0">Status</th>
-              <th class="border-0">Actions</th>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <% @invoices.each do |invoice| %>
               <tr>
+                <td><%= invoice.invoice_number %></td>
+                <td><%= invoice.customer.display_name %></td>
+                <td>₹<%= number_with_delimiter(invoice.total_amount) %></td>
                 <td>
-                  <div class="fw-bold text-primary fs-6">
-                    <%= invoice.invoice_number %>
-                  </div>
+                  <span class="badge bg-<%= invoice.status == 'paid' ? 'success' : (invoice.status == 'draft' ? 'secondary' : 'warning') %>">
+                    <%= invoice.status&.humanize || 'Draft' %>
+                  </span>
                 </td>
-                <td class="py-3">
-                  <div>
-                    <div class="fw-semibold text-dark">
-                      <%= invoice.payout_recipient %>
-                    </div>
-                    <small class="text-muted">
-                      <%= invoice.payout_type.humanize %> Payment
-                    </small>
-                  </div>
-                </td>
-                <td class="py-3">
-                  <div class="text-dark">
-                    <% case invoice.payout_type %>
-                    <% when 'affiliate' %>
-                      Affiliate
-                    <% when 'distributor' %>
-                      Ambassador
-                    <% when 'commission' %>
-                      Commission
-                    <% else %>
-                      <%= invoice.payout_type.humanize %>
-                    <% end %>
-                  </div>
-                </td>
-                <td class="py-3">
-                  <div class="d-flex align-items-center">
-                    <div class="bg-success bg-opacity-10 rounded-3 px-3 py-2">
-                      <div class="fs-6 fw-bold text-success mb-0">
-                        ₹<%= number_with_delimiter(invoice.formatted_amount) %>
-                      </div>
-                      <small class="text-success opacity-75">Amount</small>
-                    </div>
-                  </div>
-                </td>
-                <td class="py-3">
-                  <div class="d-flex align-items-center">
-                    <div class="bg-info bg-opacity-10 rounded-2 px-3 py-2">
-                      <div class="d-flex align-items-center mb-1">
-                        <i class="bi bi-calendar-event text-info me-2"></i>
-                        <span class="fw-medium text-dark">
-                          <%= invoice.invoice_date.strftime('%d %b %Y') %>
-                        </span>
-                      </div>
-                      <small class="text-info">Invoice Date</small>
-                    </div>
-                  </div>
-                </td>
-                <td class="py-3">
-                  <div class="d-flex align-items-center">
-                    <div class="<%= invoice.overdue? ? 'bg-danger' : 'bg-warning' %> bg-opacity-10 rounded-2 px-3 py-2">
-                      <div class="d-flex align-items-center mb-1">
-                        <i class="bi bi-calendar-check <%= invoice.overdue? ? 'text-danger' : 'text-warning' %> me-2"></i>
-                        <span class="fw-medium text-dark">
-                          <%= invoice.due_date.strftime('%d %b %Y') %>
-                        </span>
-                      </div>
-                      <small class="<%= invoice.overdue? ? 'text-danger' : 'text-warning' %>">
-                        <% if invoice.overdue? %>
-                          <i class="bi bi-exclamation-triangle me-1"></i>
-                          Overdue by <%= invoice.days_overdue %> days
-                        <% else %>
-                          Due Date
-                        <% end %>
-                      </small>
-                    </div>
-                  </div>
-                </td>
-                <td class="py-3">
-                  <div class="text-dark">
-                    <% case invoice.status %>
-                    <% when 'pending' %>
-                      Pending
-                    <% when 'paid' %>
-                      Paid
-                    <% else %>
-                      Cancelled
-                    <% end %>
-                  </div>
-                </td>
-                <td class="py-3">
-                  <div class="d-flex gap-2 align-items-center">
-                    <!-- View Details -->
-                    <%= link_to admin_invoice_path(invoice),
-                        class: "btn btn-outline-primary btn-sm rounded-pill px-3",
-                        title: "View Details",
-                        data: { bs_toggle: "tooltip" } do %>
-                      <i class="bi bi-eye me-1"></i>View
-                    <% end %>
-
-
-                    <!-- Mark as Paid (if pending) -->
-                    <% if invoice.status == 'pending' %>
-                      <%= link_to mark_as_paid_admin_invoice_path(invoice),
-                          method: :patch,
-                          class: "btn btn-success btn-sm rounded-pill px-3",
-                          confirm: "Mark this invoice as paid?",
-                          title: "Mark as Paid",
-                          data: { bs_toggle: "tooltip" } do %>
-                        <i class="bi bi-check-circle me-1"></i>Mark Paid
-                      <% end %>
-                    <% end %>
-                  </div>
+                <td><%= invoice.invoice_date&.strftime("%d %b %Y") %></td>
+                <td>
+                  <%= link_to "View", admin_invoice_path(invoice), class: "btn btn-sm btn-outline-primary" %>
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
       </div>
-
-      <!-- Pagination -->
-      <div class="card-footer bg-transparent border-0">
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-          <small class="text-muted mb-2 mb-md-0">
-            <% if @invoices.respond_to?(:total_count) %>
-              Showing <%= @invoices.current_page == 1 ? 1 : ((@invoices.current_page - 1) * @invoices.limit_value + 1) %>
-              to <%= [@invoices.current_page * @invoices.limit_value, @invoices.total_count].min %>
-              of <%= number_with_delimiter(@invoices.total_count) %> invoices
-            <% else %>
-              Showing <%= @invoices.count %> invoices
-            <% end %>
-          </small>
-
-          <% if @invoices.respond_to?(:total_pages) && @invoices.total_pages > 1 %>
-            <div class="pagination-wrapper">
-              <%= paginate @invoices %>
-            </div>
-          <% end %>
-        </div>
-      </div>
     <% else %>
       <div class="text-center py-5">
-        <i class="bi bi-receipt fs-1 text-muted d-block mb-3"></i>
-        <h5 class="text-muted">No invoices found</h5>
-        <p class="text-muted mb-3">
-          No invoices have been generated yet. Invoices are automatically created when payouts are processed.
-        </p>
+        <h5 class="text-muted">No Invoices Found</h5>
+        <p class="text-muted">Generate invoices for completed deliveries</p>
       </div>
     <% end %>
   </div>
 </div>
 
+<!-- Generate Invoice Modal -->
+<div class="modal-overlay" id="bulkInvoiceModal" style="display: none;">
+  <div class="simple-modal">
+    <div class="modal-header bg-primary text-white">
+      <h5 class="modal-title" id="bulkInvoiceModalLabel">
+        <i class="bi bi-receipt"></i> Generate Bulk Invoices
+      </h5>
+      <button type="button" class="btn-close btn-close-white" onclick="closeBulkInvoiceModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="bulkInvoiceLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading invoice form...</p>
+      </div>
+      <div id="bulkInvoiceContent" style="display: none;">
+        <!-- Form content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal CSS -->
 <style>
-  /* Custom styling for invoice index page */
-  .table th {
-    font-weight: 600;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #64748b;
-    padding: 1rem 0.75rem;
-  }
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  overflow-y: auto;
+  padding: 20px;
+}
 
-  .table td {
-    vertical-align: middle;
-    border-color: #f1f5f9;
-  }
+.simple-modal {
+  background: white;
+  border-radius: 15px;
+  max-width: 90%;
+  width: 900px;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
 
-  .table tbody tr:hover {
-    background-color: #f8fafc;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
-  }
+.simple-modal .modal-header {
+  padding: 20px 30px;
+  border-radius: 15px 15px 0 0;
+  display: flex;
+  justify-content: between;
+  align-items: center;
+}
 
-  .avatar {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease;
-  }
+.simple-modal .modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
 
-  .avatar:hover {
-    transform: scale(1.05);
-  }
+.simple-modal .btn-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  margin-left: auto;
+}
 
-  .badge {
-    font-size: 12px;
-    letter-spacing: 0.25px;
-  }
+.simple-modal .btn-close:hover {
+  opacity: 1;
+}
 
-  .rounded-pill {
-    border-radius: 50px !important;
-  }
+.simple-modal .modal-body {
+  padding: 30px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
 
-  .btn-sm.rounded-pill {
-    padding: 0.375rem 1rem;
-    font-size: 13px;
-    font-weight: 500;
-  }
+/* Close modal when clicking outside */
+.modal-overlay:target {
+  display: block;
+}
 
-  .spinner-border-sm {
-    animation: spinner-border 0.75s linear infinite;
-  }
+/* Scrollbar styling for modal content */
+.simple-modal .modal-body::-webkit-scrollbar {
+  width: 8px;
+}
 
-  /* Hover effects for action buttons */
-  .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
-  }
+.simple-modal .modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
 
-  /* Dropdown menu styling */
-  .dropdown-menu {
-    border: none;
-    border-radius: 12px;
-    padding: 0.5rem 0;
-  }
+.simple-modal .modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
 
-  .dropdown-item {
-    padding: 0.5rem 1rem;
-    font-size: 13px;
-    transition: all 0.2s ease;
-  }
-
-  .dropdown-item:hover {
-    background-color: #f1f5f9;
-    color: #334155;
-  }
-
-  /* Custom background colors */
-  .bg-purple {
-    --bs-purple: #8b5cf6;
-    background-color: var(--bs-purple) !important;
-  }
-
-  .text-purple {
-    color: #8b5cf6 !important;
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .table-responsive {
-      font-size: 14px;
-    }
-
-    .btn-sm {
-      padding: 0.25rem 0.75rem;
-      font-size: 12px;
-    }
-  }
+.simple-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
 </style>
+
+<script>
+// Update the button to use onclick instead of Bootstrap modal
+document.addEventListener('DOMContentLoaded', function() {
+  const generateBtn = document.querySelector('[data-bs-target="#bulkInvoiceModal"]');
+  if (generateBtn) {
+    generateBtn.removeAttribute('data-bs-toggle');
+    generateBtn.removeAttribute('data-bs-target');
+    generateBtn.setAttribute('onclick', 'openBulkInvoiceModal()');
+  }
+});
+
+// Open bulk invoice modal
+function openBulkInvoiceModal() {
+  console.log('Opening bulk invoice modal');
+
+  // Load form content
+  loadBulkInvoiceForm();
+
+  // Show modal
+  const modal = document.getElementById('bulkInvoiceModal');
+  if (modal) {
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+}
+
+// Close bulk invoice modal
+function closeBulkInvoiceModal() {
+  const modal = document.getElementById('bulkInvoiceModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restore background scrolling
+  }
+}
+
+// Load bulk invoice form
+function loadBulkInvoiceForm() {
+  // Show loading, hide content
+  const modalLoading = document.getElementById('bulkInvoiceLoading');
+  const modalContent = document.getElementById('bulkInvoiceContent');
+
+  if (modalLoading) modalLoading.style.display = 'block';
+  if (modalContent) modalContent.style.display = 'none';
+
+  // Fetch form content
+  fetch('<%= bulk_invoice_form_admin_invoices_path %>')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(html => {
+      if (modalContent) {
+        modalContent.innerHTML = html;
+        modalContent.style.display = 'block';
+      }
+      if (modalLoading) {
+        modalLoading.style.display = 'none';
+      }
+    })
+    .catch(error => {
+      console.error('Error loading form:', error);
+      if (modalContent) {
+        modalContent.innerHTML = '<div class="alert alert-danger">Error loading form. Please try again.</div>';
+        modalContent.style.display = 'block';
+      }
+      if (modalLoading) {
+        modalLoading.style.display = 'none';
+      }
+    });
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('bulkInvoiceModal');
+  if (e.target === modal) {
+    closeBulkInvoiceModal();
+  }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeBulkInvoiceModal();
+  }
+});
+</script>

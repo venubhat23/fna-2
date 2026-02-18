@@ -72,12 +72,35 @@ class MilkSubscription < ApplicationRecord
     (completed_deliveries_count.to_f / total_deliveries_count * 100).round(2)
   end
 
+  def paused_deliveries_count
+    milk_delivery_tasks.where(status: 'paused').count
+  end
+
+  def can_be_paused?
+    status == 'active' && is_active?
+  end
+
+  def can_be_resumed?
+    status == 'paused'
+  end
+
+  def pause_all_tasks!
+    milk_delivery_tasks.where(status: 'pending', delivery_date: Date.current..).update_all(status: 'paused')
+    update!(status: 'paused', is_active: false)
+  end
+
+  def resume_all_tasks!
+    milk_delivery_tasks.where(status: 'paused').update_all(status: 'pending')
+    update!(status: 'active', is_active: true)
+  end
+
   def subscription_summary
     {
       total_days: total_days,
       total_deliveries: total_deliveries_count,
       completed: completed_deliveries_count,
       pending: pending_deliveries_count,
+      paused: paused_deliveries_count,
       completion_rate: completion_percentage
     }
   end
@@ -89,6 +112,28 @@ class MilkSubscription < ApplicationRecord
   def calculate_total_amount
     price_per_unit = product&.price || 0
     (total_quantity * price_per_unit).round(2)
+  end
+
+  def current_delivery_person
+    # Get the delivery person from the most recent assigned task or upcoming task
+    recent_task = milk_delivery_tasks
+                    .joins(:delivery_person)
+                    .where('delivery_date >= ?', Date.current - 7.days)
+                    .where.not(delivery_person_id: nil)
+                    .order(:delivery_date)
+                    .first
+
+    return recent_task&.delivery_person if recent_task
+
+    # If no recent assigned task, get from the next upcoming task
+    upcoming_task = milk_delivery_tasks
+                      .joins(:delivery_person)
+                      .where('delivery_date >= ?', Date.current)
+                      .where.not(delivery_person_id: nil)
+                      .order(:delivery_date)
+                      .first
+
+    upcoming_task&.delivery_person
   end
 
   def self.generate_subscription_number

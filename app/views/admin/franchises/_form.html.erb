@@ -1,347 +1,111 @@
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-primary text-white">
-    <div class="d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">
-        <i class="bi bi-shop me-2"></i>
-        <%= @franchise.new_record? ? 'Create New Franchise' : 'Edit Franchise' %>
-      </h5>
-      <small class="opacity-75">
-        <%= @franchise.new_record? ? 'Add a new franchise partner' : 'Update franchise information' %>
-      </small>
-    </div>
+    <h5 class="mb-0">
+      <i class="bi bi-shop me-2"></i>
+      <%= @franchise.new_record? ? 'Create New Franchise' : 'Edit Franchise' %>
+    </h5>
   </div>
 
   <div class="card-body">
-    <%= form_with model: [:admin, @franchise], local: true, html: { class: "needs-validation", novalidate: true } do |f| %>
+    <%= form_with model: [:admin, @franchise], local: true do |f| %>
       <% if @franchise.errors.any? %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>Please fix the following errors:</strong>
-          <ul class="mb-0 mt-2">
+        <div class="alert alert-danger">
+          <ul class="mb-0">
             <% @franchise.errors.full_messages.each do |message| %>
               <li><%= message %></li>
             <% end %>
           </ul>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <% end %>
 
-      <!-- Basic Information -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-info-circle me-2"></i>Basic Information
-          </h6>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :name, class: "form-label required" %>
-          <%= f.text_field :name, class: "form-control", placeholder: "Enter franchise name", required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid franchise name.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :contact_person_name, "Contact Person", class: "form-label required" %>
-          <%= f.text_field :contact_person_name, class: "form-control", placeholder: "Enter contact person name", required: true %>
-          <div class="invalid-feedback">
-            Please provide a contact person name.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :business_type, class: "form-label required" %>
-          <%= f.select :business_type, [
-            ['Select Business Type', ''],
-            ['Retail Store', 'retail'],
-            ['Distribution Center', 'distribution'],
-            ['Online Store', 'online'],
-            ['Hybrid Model', 'hybrid']
-          ], { selected: @franchise.business_type }, { class: "form-select", required: true } %>
-          <div class="invalid-feedback">
-            Please select a business type.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :territory, class: "form-label" %>
-          <%= f.text_field :territory, class: "form-control", placeholder: "e.g., North Mumbai, Central Delhi" %>
-        </div>
-      </div>
-
-      <!-- Contact Information -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-telephone me-2"></i>Contact Information
-          </h6>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :email, class: "form-label required" %>
-          <%= f.email_field :email, class: "form-control", placeholder: "Enter email address", required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid email address.
-          </div>
-          <small class="text-muted">This will be used as username for login</small>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :mobile, "Mobile Number", class: "form-label required" %>
-          <%= f.text_field :mobile, class: "form-control", placeholder: "Enter mobile number", required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid mobile number.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :whatsapp_number, "WhatsApp Number", class: "form-label" %>
-          <%= f.text_field :whatsapp_number, class: "form-control", placeholder: "Enter WhatsApp number (if different)" %>
-          <small class="text-muted">Leave blank if same as mobile number</small>
-        </div>
-      </div>
-
-      <!-- Address Information -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-geo-alt me-2"></i>Address Information
-          </h6>
-        </div>
-
-        <div class="col-12 mb-3">
-          <%= f.label :address, class: "form-label required" %>
-          <%= f.text_area :address, class: "form-control", rows: 3, placeholder: "Enter complete address", required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid address.
-          </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <%= f.label :city, class: "form-label required" %>
-          <%= f.text_field :city, class: "form-control", placeholder: "Enter city", required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid city.
-          </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <%= f.label :state, class: "form-label required" %>
-          <%= f.text_field :state, class: "form-control", placeholder: "Enter state", required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid state.
-          </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-          <%= f.label :pincode, class: "form-label required" %>
-          <%= f.text_field :pincode, class: "form-control", placeholder: "Enter pincode", required: true, pattern: "[0-9]{6}" %>
-          <div class="invalid-feedback">
-            Please provide a valid 6-digit pincode.
-          </div>
-        </div>
-      </div>
-
-      <!-- Business Details -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-briefcase me-2"></i>Business Details
-          </h6>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :pan_no, "PAN Number", class: "form-label" %>
-          <%= f.text_field :pan_no, class: "form-control", placeholder: "e.g., ABCDE1234F", pattern: "[A-Z]{5}[0-9]{4}[A-Z]" %>
-          <div class="invalid-feedback">
-            Please provide a valid PAN number (e.g., ABCDE1234F).
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :gst_no, "GST Number", class: "form-label" %>
-          <%= f.text_field :gst_no, class: "form-control", placeholder: "e.g., 22AAAAA0000A1Z5" %>
-          <div class="invalid-feedback">
-            Please provide a valid GST number.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :license_no, "License Number", class: "form-label" %>
-          <%= f.text_field :license_no, class: "form-control", placeholder: "Enter business license number" %>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :establishment_date, "Establishment Date", class: "form-label" %>
-          <%= f.date_field :establishment_date, class: "form-control" %>
-        </div>
-      </div>
-
-      <!-- Financial Information -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-currency-rupee me-2"></i>Financial Information
-          </h6>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :commission_percentage, "Commission (%)", class: "form-label required" %>
-          <%= f.number_field :commission_percentage, class: "form-control", placeholder: "Enter commission percentage",
-              min: 0, max: 100, step: 0.1, required: true %>
-          <div class="invalid-feedback">
-            Please provide a valid commission percentage (0-100).
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :franchise_fee, "Franchise Fee (₹)", class: "form-label" %>
-          <%= f.number_field :franchise_fee, class: "form-control", placeholder: "Enter franchise fee",
-              min: 0, step: 0.01 %>
-        </div>
-      </div>
-
-      <!-- Location (Optional) -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-geo me-2"></i>Location Coordinates (Optional)
-          </h6>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :latitude, class: "form-label" %>
-          <%= f.number_field :latitude, class: "form-control", placeholder: "Enter latitude",
-              min: -90, max: 90, step: 'any' %>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <%= f.label :longitude, class: "form-label" %>
-          <%= f.number_field :longitude, class: "form-control", placeholder: "Enter longitude",
-              min: -180, max: 180, step: 'any' %>
-        </div>
-      </div>
-
-      <!-- Status -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-toggle-on me-2"></i>Status
-          </h6>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch">
-            <%= f.check_box :status, { class: "form-check-input", checked: @franchise.status.nil? ? true : @franchise.status }, { "true" => "1", "false" => "0" } %>
-            <%= f.label :status, "Active Status", class: "form-check-label" %>
-          </div>
-          <small class="text-muted">Enable this to activate the franchise</small>
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-chat-left-text me-2"></i>Additional Notes
-          </h6>
-        </div>
-
-        <div class="col-12 mb-3">
-          <%= f.label :notes, class: "form-label" %>
-          <%= f.text_area :notes, class: "form-control", rows: 3, placeholder: "Enter any additional notes about this franchise" %>
-        </div>
-      </div>
-
-      <!-- Form Actions -->
       <div class="row">
-        <div class="col-12">
-          <div class="d-flex justify-content-between">
-            <%= link_to admin_franchises_path, class: "btn btn-outline-secondary" do %>
-              <i class="bi bi-arrow-left me-2"></i>Back to List
-            <% end %>
+        <!-- Basic Information -->
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">Basic Information</h6>
 
-            <div class="d-flex gap-2">
-              <% unless @franchise.new_record? %>
-                <%= link_to admin_franchise_path(@franchise), class: "btn btn-outline-info" do %>
-                  <i class="bi bi-eye me-2"></i>View Details
-                <% end %>
-              <% end %>
+          <div class="mb-3">
+            <%= f.label :name, "Franchise Name", class: "form-label required" %>
+            <%= f.text_field :name, class: "form-control", required: true %>
+          </div>
 
-              <%= f.submit @franchise.new_record? ? "Create Franchise" : "Update Franchise",
-                  class: "btn btn-primary" do %>
-                <i class="bi bi-<%= @franchise.new_record? ? 'plus' : 'check' %>-lg me-2"></i>
-                <%= @franchise.new_record? ? "Create Franchise" : "Update Franchise" %>
-              <% end %>
+          <div class="mb-3">
+            <%= f.label :contact_person_name, "Company Name", class: "form-label" %>
+            <%= f.text_field :contact_person_name, class: "form-control" %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :email, class: "form-label required" %>
+            <%= f.email_field :email, class: "form-control", required: true %>
+            <small class="text-muted">This will be used as username for login</small>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :mobile, "Phone Number", class: "form-label required" %>
+            <%= f.text_field :mobile, class: "form-control", required: true %>
+          </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">Address Information</h6>
+
+          <div class="mb-3">
+            <%= f.label :address, class: "form-label required" %>
+            <%= f.text_area :address, class: "form-control", rows: 3, required: true %>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= f.label :city, class: "form-label" %>
+              <%= f.text_field :city, class: "form-control" %>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <%= f.label :state, class: "form-label" %>
+              <%= f.text_field :state, class: "form-control" %>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <%= f.check_box :status, class: "form-check-input", checked: @franchise.new_record? ? true : @franchise.status %>
+              <%= f.label :status, "Active Status", class: "form-check-label" %>
             </div>
           </div>
         </div>
+      </div>
+
+      <% if @franchise.new_record? %>
+        <!-- Account Generation Info -->
+        <div class="alert alert-info mt-4">
+          <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Automatic Account Generation</h6>
+          <p class="mb-2">A user account will be automatically created with:</p>
+          <ul class="mb-0">
+            <li><strong>Username:</strong> The email address entered above</li>
+            <li><strong>Password:</strong> Auto-generated secure password (will be displayed after creation)</li>
+          </ul>
+        </div>
+      <% else %>
+        <!-- Show existing credentials -->
+        <div class="alert alert-secondary mt-4">
+          <h6 class="alert-heading"><i class="bi bi-key me-2"></i>Login Credentials</h6>
+          <p class="mb-2"><strong>Username:</strong> <%= @franchise.email %></p>
+          <p class="mb-0"><strong>Password:</strong> <%= @franchise.auto_generated_password || 'Not set' %></p>
+        </div>
+      <% end %>
+
+      <!-- Form Actions -->
+      <div class="d-flex justify-content-between mt-4">
+        <%= link_to "Cancel", admin_franchises_path, class: "btn btn-outline-secondary" %>
+        <%= f.submit @franchise.new_record? ? "Create Franchise" : "Update Franchise", class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
 </div>
 
-<% if @franchise.new_record? %>
-<div class="alert alert-info mt-4">
-  <i class="bi bi-info-circle me-2"></i>
-  <strong>Note:</strong> A user account will be automatically created for this franchise with login credentials.
-  The password will be auto-generated and displayed after creation.
-</div>
-<% end %>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Form validation
-  const forms = document.querySelectorAll('.needs-validation');
-
-  forms.forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
-      form.classList.add('was-validated');
-    }, false);
-  });
-
-  // PAN number formatting
-  const panField = document.querySelector('input[name="franchise[pan_no]"]');
-  if (panField) {
-    panField.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
-    });
-  }
-
-  // GST number formatting
-  const gstField = document.querySelector('input[name="franchise[gst_no]"]');
-  if (gstField) {
-    gstField.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
-    });
-  }
-});
-</script>
-
 <style>
 .required::after {
   content: " *";
   color: #dc3545;
-}
-
-.form-check-input:checked {
-  background-color: #198754;
-  border-color: #198754;
-}
-
-.was-validated .form-control:valid,
-.was-validated .form-select:valid {
-  border-color: #198754;
-}
-
-.was-validated .form-control:invalid,
-.was-validated .form-select:invalid {
-  border-color: #dc3545;
 }
 </style>

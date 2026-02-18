@@ -1,4 +1,4 @@
-class Admin::BookingInvoicesController < ApplicationController
+class Admin::BookingInvoicesController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_booking_invoice, only: [:show, :edit, :update, :destroy, :download_pdf, :mark_paid]
 

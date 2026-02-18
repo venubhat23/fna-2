@@ -1,5 +1,6 @@
 require 'csv'
 require 'roo'
+require 'bcrypt'
 
 module ImportService
   class CustomerImporter
@@ -57,7 +58,7 @@ module ImportService
     end
 
     def validate_headers(header)
-      required_headers = %w[customer_type email mobile]
+      required_headers = %w[first_name email mobile]
       missing_headers = required_headers - header.map(&:to_s).map(&:downcase)
 
       if missing_headers.any?
@@ -98,34 +99,38 @@ module ImportService
     end
 
     def normalize_customer_data(row)
+      # Generate password
+      password = generate_password(row['first_name'])
+
       {
-        customer_type: row['customer_type']&.to_s&.downcase,
         first_name: row['first_name']&.to_s&.strip,
         middle_name: row['middle_name']&.to_s&.strip,
         last_name: row['last_name']&.to_s&.strip,
-        company_name: row['company_name']&.to_s&.strip,
         email: row['email']&.to_s&.downcase&.strip,
         mobile: row['mobile']&.to_s&.strip,
-        gender: row['gender']&.to_s&.downcase,
-        birth_date: parse_date(row['birth_date']),
         address: row['address']&.to_s&.strip,
-        city: row['city']&.to_s&.strip,
-        state: row['state']&.to_s&.strip,
-        pincode: row['pincode']&.to_s&.strip,
-        pan_no: row['pan_no']&.to_s&.upcase&.strip,
-        gst_no: row['gst_no']&.to_s&.upcase&.strip,
-        occupation: row['occupation']&.to_s&.strip,
-        annual_income: parse_number(row['annual_income']),
-        marital_status: row['marital_status']&.to_s&.downcase,
-        status: true,
-        added_by: 'bulk_import'
+        whatsapp_number: row['whatsapp_number']&.to_s&.strip || row['mobile']&.to_s&.strip,
+        longitude: parse_decimal(row['longitude']),
+        latitude: parse_decimal(row['latitude']),
+        password_digest: BCrypt::Password.create(password),
+        auto_generated_password: password
       }.compact
     end
 
     def valid_row?(customer_data, row_number)
-      # Check customer type
-      unless %w[individual corporate].include?(customer_data[:customer_type])
-        @errors << "Row #{row_number}: Invalid customer_type. Must be 'individual' or 'corporate'"
+      # Check required fields
+      if customer_data[:first_name].blank?
+        @errors << "Row #{row_number}: first_name is required"
+        return false
+      end
+
+      if customer_data[:email].blank?
+        @errors << "Row #{row_number}: email is required"
+        return false
+      end
+
+      if customer_data[:mobile].blank?
+        @errors << "Row #{row_number}: mobile is required"
         return false
       end
 
@@ -140,22 +145,6 @@ module ImportService
         clean_mobile = customer_data[:mobile].gsub(/\D/, '')
         unless clean_mobile.match?(/^[6-9]\d{9}$/)
           @errors << "Row #{row_number}: Invalid mobile number format"
-          return false
-        end
-      end
-
-      # Individual customer specific validation
-      if customer_data[:customer_type] == 'individual'
-        if customer_data[:first_name].blank?
-          @errors << "Row #{row_number}: first_name is required for individual customers"
-          return false
-        end
-      end
-
-      # Corporate customer specific validation
-      if customer_data[:customer_type] == 'corporate'
-        if customer_data[:company_name].blank?
-          @errors << "Row #{row_number}: company_name is required for corporate customers"
           return false
         end
       end
@@ -186,6 +175,19 @@ module ImportService
       rescue
         nil
       end
+    end
+
+    def parse_decimal(decimal_string)
+      return nil if decimal_string.blank?
+      BigDecimal(decimal_string.to_s)
+    rescue ArgumentError
+      nil
+    end
+
+    def generate_password(first_name)
+      name_part = first_name.to_s[0..3].upcase.ljust(4, 'X')
+      year_part = Date.current.year.to_s
+      "#{name_part}@#{year_part}"
     end
   end
 end

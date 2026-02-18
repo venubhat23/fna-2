@@ -126,7 +126,7 @@
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customerImportModal">
+          <button type="button" class="btn btn-primary" onclick="openModal('customerImportModal')">
             <i class="fas fa-upload me-1"></i> Import Customers
           </button>
         </div>
@@ -134,132 +134,67 @@
     </div>
   </div>
 
-  <!-- Affiliate Import Card -->
+
+  <!-- Delivery People Import Card -->
   <div class="col-xl-6 col-lg-6 mb-4">
     <div class="card shadow-lg border-0 h-100 import-card">
-      <div class="card-header bg-gradient-success text-white">
+      <div class="card-header bg-gradient-purple text-white">
         <div class="d-flex align-items-center">
-          <i class="fas fa-user-tie fa-2x me-3"></i>
+          <i class="fas fa-shipping-fast fa-2x me-3"></i>
           <div>
-            <h5 class="mb-0">Import Affiliates</h5>
-            <small class="text-light">Bulk upload affiliate and distributor records</small>
+            <h5 class="mb-0">Import Delivery People</h5>
+            <small class="text-light">Bulk upload delivery personnel records</small>
           </div>
         </div>
       </div>
       <div class="card-body">
         <p class="card-text text-muted mb-4">
-          Import affiliate data including personal details, bank information, and commission setup.
-          Includes role assignment and authentication credentials.
+          Import delivery personnel data including personal details, vehicle information, and delivery areas.
+          Automatically generates login credentials for each delivery person.
         </p>
 
         <div class="d-flex justify-content-between align-items-center">
-          <%= link_to download_template_admin_imports_path(template_type: 'sub_agents'),
-                      class: "btn btn-outline-success btn-sm",
+          <%= link_to download_template_admin_imports_path(template_type: 'delivery_people'),
+                      class: "btn btn-outline-purple btn-sm",
                       target: "_blank" do %>
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#subAgentImportModal">
-            <i class="fas fa-upload me-1"></i> Import Affiliates
+          <button type="button" class="btn btn-purple" onclick="openModal('deliveryPeopleImportModal')">
+            <i class="fas fa-upload me-1"></i> Import Delivery People
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Health Insurance Import Card -->
+  <!-- Products Import Card -->
   <div class="col-xl-6 col-lg-6 mb-4">
     <div class="card shadow-lg border-0 h-100 import-card">
-      <div class="card-header bg-gradient-info text-white">
+      <div class="card-header bg-gradient-teal text-white">
         <div class="d-flex align-items-center">
-          <i class="fas fa-heartbeat fa-2x me-3"></i>
+          <i class="fas fa-boxes fa-2x me-3"></i>
           <div>
-            <h5 class="mb-0">Import Health Insurance</h5>
-            <small class="text-light">Bulk upload health insurance policies</small>
+            <h5 class="mb-0">Import Products</h5>
+            <small class="text-light">Bulk upload product catalog</small>
           </div>
         </div>
       </div>
       <div class="card-body">
         <p class="card-text text-muted mb-4">
-          Import health insurance policies with customer mapping, premium details, and policy terms.
-          Automatically calculates commissions and TDS.
+          Import products with pricing, inventory, GST calculations, and category mapping.
+          Supports both subscription and one-time purchase products with automatic SKU generation.
         </p>
 
         <div class="d-flex justify-content-between align-items-center">
-          <%= link_to download_template_admin_imports_path(template_type: 'health_insurances'),
-                      class: "btn btn-outline-info btn-sm",
+          <%= link_to download_template_admin_imports_path(template_type: 'products'),
+                      class: "btn btn-outline-teal btn-sm",
                       target: "_blank" do %>
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#healthInsuranceImportModal">
-            <i class="fas fa-upload me-1"></i> Import Health Insurance
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Life Insurance Import Card -->
-  <div class="col-xl-6 col-lg-6 mb-4">
-    <div class="card shadow-lg border-0 h-100 import-card">
-      <div class="card-header bg-gradient-warning text-white">
-        <div class="d-flex align-items-center">
-          <i class="fas fa-shield-alt fa-2x me-3"></i>
-          <div>
-            <h5 class="mb-0">Import Life Insurance</h5>
-            <small class="text-light">Bulk upload life insurance policies</small>
-          </div>
-        </div>
-      </div>
-      <div class="card-body">
-        <p class="card-text text-muted mb-4">
-          Import life insurance policies with beneficiary details, premium calculations, and multi-year GST setup.
-          Supports complex commission structures.
-        </p>
-
-        <div class="d-flex justify-content-between align-items-center">
-          <%= link_to download_template_admin_imports_path(template_type: 'life_insurances'),
-                      class: "btn btn-outline-warning btn-sm",
-                      target: "_blank" do %>
-            <i class="fas fa-download me-1"></i> Download Template
-          <% end %>
-
-          <button type="button" class="btn btn-warning text-white" data-bs-toggle="modal" data-bs-target="#lifeInsuranceImportModal">
-            <i class="fas fa-upload me-1"></i> Import Life Insurance
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Motor Insurance Import Card -->
-  <div class="col-xl-6 col-lg-6 mb-4">
-    <div class="card shadow-lg border-0 h-100 import-card">
-      <div class="card-header bg-gradient-danger text-white">
-        <div class="d-flex align-items-center">
-          <i class="fas fa-car fa-2x me-3"></i>
-          <div>
-            <h5 class="mb-0">Import Motor Insurance</h5>
-            <small class="text-light">Bulk upload motor insurance policies</small>
-          </div>
-        </div>
-      </div>
-      <div class="card-body">
-        <p class="card-text text-muted mb-4">
-          Import motor insurance policies with vehicle details, IDV calculations, and comprehensive coverage options.
-          Includes NCB, add-ons, and premium breakdowns.
-        </p>
-
-        <div class="d-flex justify-content-between align-items-center">
-          <%= link_to download_template_admin_imports_path(template_type: 'motor_insurances'),
-                      class: "btn btn-outline-danger btn-sm",
-                      target: "_blank" do %>
-            <i class="fas fa-download me-1"></i> Download Template
-          <% end %>
-
-          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#motorInsuranceImportModal">
-            <i class="fas fa-upload me-1"></i> Import Motor Insurance
+          <button type="button" class="btn btn-teal" onclick="openModal('productsImportModal')">
+            <i class="fas fa-upload me-1"></i> Import Products
           </button>
         </div>
       </div>
@@ -312,10 +247,8 @@
 
 <!-- Import Modals -->
 <%= render 'customer_import_modal' %>
-<%= render 'sub_agent_import_modal' %>
-<%= render 'health_insurance_import_modal' %>
-<%= render 'life_insurance_import_modal' %>
-<%= render 'motor_insurance_import_modal' %>
+<%= render 'delivery_people_import_modal' %>
+<%= render 'products_import_modal' %>
 
 <style>
 .import-card {
@@ -364,6 +297,60 @@
   background: linear-gradient(87deg, #f5365c 0, #f56036 100%);
 }
 
+.bg-gradient-purple {
+  background: linear-gradient(87deg, #8965e0 0, #bc65e0 100%);
+}
+
+.bg-gradient-teal {
+  background: linear-gradient(87deg, #17a2b8 0, #17b8a2 100%);
+}
+
+.btn-purple {
+  background-color: #8965e0;
+  border-color: #8965e0;
+  color: white;
+}
+
+.btn-purple:hover {
+  background-color: #7651d9;
+  border-color: #7651d9;
+  color: white;
+}
+
+.btn-outline-purple {
+  color: #8965e0;
+  border-color: #8965e0;
+}
+
+.btn-outline-purple:hover {
+  background-color: #8965e0;
+  border-color: #8965e0;
+  color: white;
+}
+
+.btn-teal {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+  color: white;
+}
+
+.btn-teal:hover {
+  background-color: #138496;
+  border-color: #138496;
+  color: white;
+}
+
+.btn-outline-teal {
+  color: #17a2b8;
+  border-color: #17a2b8;
+}
+
+.btn-outline-teal:hover {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+  color: white;
+}
+
 /* Fix modal z-index and overlay issues */
 .modal {
   z-index: 1055 !important;
@@ -371,6 +358,26 @@
 
 .modal-backdrop {
   z-index: 1050 !important;
+}
+
+/* Custom modal backdrop */
+.custom-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+}
+
+/* Ensure modals work with custom JavaScript */
+.modal.show {
+  display: block !important;
+}
+
+.modal {
+  display: none;
 }
 
 /* Ensure proper spacing and layout */
@@ -446,23 +453,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Handle modal events
-  const modals = document.querySelectorAll('.modal');
-  modals.forEach(modal => {
-    modal.addEventListener('hidden.bs.modal', function() {
-      // Reset file inputs when modal is closed
-      const fileInput = modal.querySelector('input[type="file"]');
-      if (fileInput) {
-        fileInput.value = '';
-        const label = modal.querySelector('.form-text');
-        if (label) {
-          label.textContent = 'Supported formats: CSV, Excel (.xlsx, .xls). Maximum size: 10MB';
-          label.style.color = '';
-        }
-      }
-    });
-  });
-
   // Add smooth scrolling to cards
   const importCards = document.querySelectorAll('.import-card');
   importCards.forEach(card => {
@@ -478,5 +468,59 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 150);
     });
   });
+});
+
+// Custom Modal Functions
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+
+    // Add backdrop
+    if (!document.querySelector('.custom-modal-backdrop')) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'custom-modal-backdrop';
+      backdrop.onclick = () => closeModal(modalId);
+      document.body.appendChild(backdrop);
+    }
+  }
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+
+    // Remove backdrop
+    const backdrop = document.querySelector('.custom-modal-backdrop');
+    if (backdrop) {
+      backdrop.remove();
+    }
+
+    // Reset file inputs when modal is closed
+    const fileInput = modal.querySelector('input[type="file"]');
+    if (fileInput) {
+      fileInput.value = '';
+      const label = modal.querySelector('.form-text');
+      if (label) {
+        label.textContent = 'Supported formats: CSV, Excel (.xlsx, .xls). Maximum size: 10MB';
+        label.style.color = '';
+      }
+    }
+  }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const openModals = document.querySelectorAll('.modal.show');
+    openModals.forEach(modal => {
+      closeModal(modal.id);
+    });
+  }
 });
 </script>

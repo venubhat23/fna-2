@@ -1,5 +1,5 @@
 class MilkDeliveryTask < ApplicationRecord
-  belongs_to :subscription, class_name: 'MilkSubscription'
+  belongs_to :subscription, class_name: 'MilkSubscription', optional: true
   belongs_to :customer
   belongs_to :product
   belongs_to :delivery_person, optional: true
@@ -7,13 +7,16 @@ class MilkDeliveryTask < ApplicationRecord
   validates :quantity, presence: true, numericality: { greater_than: 0 }
   validates :delivery_date, presence: true
 
-  enum :status, { pending: 'pending', assigned: 'assigned', delivered: 'delivered', cancelled: 'cancelled', missed: 'missed' }
+  enum :status, { pending: 'pending', assigned: 'assigned', delivered: 'delivered', completed: 'completed', cancelled: 'cancelled', missed: 'missed', paused: 'paused' }
 
   scope :for_today, -> { where(delivery_date: Date.current) }
   scope :for_tomorrow, -> { where(delivery_date: Date.tomorrow) }
   scope :for_date, ->(date) { where(delivery_date: date) }
   scope :for_delivery_person, ->(delivery_person_id) { where(delivery_person_id: delivery_person_id) }
   scope :unassigned, -> { where(delivery_person_id: nil, status: 'pending') }
+  scope :active_tasks, -> { where.not(status: ['paused', 'cancelled']) }
+  scope :uninvoiced, -> { where(invoiced: false) }
+  scope :invoiced, -> { where(invoiced: true) }
 
   def mark_as_completed!
     update!(
@@ -30,6 +33,14 @@ class MilkDeliveryTask < ApplicationRecord
       completed_at: Time.current,
       delivery_notes: notes
     )
+  end
+
+  def pause!
+    update!(status: 'paused')
+  end
+
+  def resume!
+    update!(status: 'pending')
   end
 
   def assign_to_delivery_person!(delivery_person)

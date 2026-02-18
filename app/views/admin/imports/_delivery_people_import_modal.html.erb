@@ -1,0 +1,145 @@
+<!-- Delivery People Import Modal -->
+<div class="modal fade" id="deliveryPeopleImportModal" tabindex="-1" aria-labelledby="deliveryPeopleImportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-purple text-white">
+        <h5 class="modal-title" id="deliveryPeopleImportModalLabel">
+          <i class="fas fa-shipping-fast me-2"></i>
+          Import Delivery People
+        </h5>
+        <button type="button" class="btn-close btn-close-white" onclick="closeModal('deliveryPeopleImportModal')" aria-label="Close"></button>
+      </div>
+
+      <%= form_with url: admin_import_delivery_people_path, local: true, multipart: true, id: 'deliveryPeopleImportForm', class: 'import-form' do |form| %>
+        <div class="modal-body">
+          <!-- Validation Results Container -->
+          <div id="deliveryPeopleValidationResults" class="validation-results" style="display: none;">
+            <!-- Results will be populated by JavaScript -->
+          </div>
+
+          <!-- File Upload Section -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="upload-area">
+                <div class="text-center p-4 border rounded bg-light">
+                  <i class="fas fa-cloud-upload-alt fa-3x text-purple mb-3"></i>
+                  <h5>Upload Delivery People CSV File</h5>
+                  <p class="text-muted mb-3">Select a CSV file containing delivery people data</p>
+
+                  <div class="mb-3">
+                    <%= form.file_field :file,
+                        class: "form-control",
+                        accept: ".csv,.xlsx,.xls",
+                        required: true,
+                        data: {
+                          import_type: 'delivery_people',
+                          validate_url: validate_csv_admin_imports_path
+                        } %>
+                    <div class="form-text">
+                      Supported formats: CSV, Excel (.xlsx, .xls). Maximum size: 10MB
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Section -->
+          <div id="deliveryPeoplePreview" class="preview-section" style="display: none;">
+            <h6 class="text-purple mb-3">
+              <i class="fas fa-eye me-2"></i>
+              Data Preview
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered" id="deliveryPeoplePreviewTable">
+                <thead class="table-light">
+                  <!-- Headers will be populated by JavaScript -->
+                </thead>
+                <tbody>
+                  <!-- Data will be populated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Template Download Section -->
+          <div class="row">
+            <div class="col-12">
+              <div class="alert alert-info" role="alert">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <div class="flex-grow-1">
+                    <strong>Template Required:</strong>
+                    Use the provided template to ensure proper data formatting and successful import.
+                  </div>
+                  <%= link_to download_template_admin_imports_path(template_type: 'delivery_people'),
+                             class: "btn btn-outline-info btn-sm",
+                             target: "_blank" do %>
+                    <i class="fas fa-download me-1"></i> Download Template
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Requirements Section -->
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-purple">Required Fields:</h6>
+              <ul class="list-unstyled small">
+                <li><i class="fas fa-check text-success me-1"></i> First Name</li>
+                <li><i class="fas fa-check text-success me-1"></i> Last Name</li>
+                <li><i class="fas fa-check text-success me-1"></i> Email Address</li>
+                <li><i class="fas fa-check text-success me-1"></i> Mobile Number</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-purple">Optional Fields:</h6>
+              <ul class="list-unstyled small">
+                <li><i class="fas fa-minus text-muted me-1"></i> Vehicle Details</li>
+                <li><i class="fas fa-minus text-muted me-1"></i> Banking Information</li>
+                <li><i class="fas fa-minus text-muted me-1"></i> Delivery Areas</li>
+                <li><i class="fas fa-minus text-muted me-1"></i> Emergency Contact</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-outline-purple" id="validateDeliveryPeopleBtn">
+            <i class="fas fa-check-circle me-1"></i> Validate File
+          </button>
+          <button type="submit" class="btn btn-purple" id="importDeliveryPeopleBtn" disabled>
+            <i class="fas fa-upload me-1"></i> Import Delivery People
+          </button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setupImportModal('deliveryPeople', 'delivery_people');
+});
+</script>
+
+<style>
+.text-purple {
+  color: #8965e0 !important;
+}
+
+.border-purple {
+  border-color: #8965e0 !important;
+}
+
+#deliveryPeopleImportModal .upload-area .border {
+  border: 2px dashed #8965e0 !important;
+}
+
+#deliveryPeopleImportModal .upload-area:hover .border {
+  border-color: #7651d9 !important;
+  background-color: #f8f7ff !important;
+}
+</style>

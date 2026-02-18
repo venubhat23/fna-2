@@ -1,6 +1,6 @@
 require 'ostruct'
 
-class Admin::CommissionTrackingController < ApplicationController
+class Admin::CommissionTrackingController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin_access
   before_action :find_policy, only: [:show, :policy_breakdown, :transfer_to_affiliate,

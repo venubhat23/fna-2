@@ -1,4 +1,4 @@
-class Admin::CategoriesController < ApplicationController
+class Admin::CategoriesController < Admin::ApplicationController
   before_action :set_category, only: [:show, :edit, :update, :destroy, :toggle_status]
   before_action :authenticate_user!
 

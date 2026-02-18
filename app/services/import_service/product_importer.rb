@@ -1,0 +1,190 @@
+module ImportService
+  class ProductImporter
+    require 'csv'
+
+    def initialize(uploaded_file)
+      @uploaded_file = uploaded_file
+      @imported_count = 0
+      @skipped_count = 0
+      @errors = []
+    end
+
+    def import
+      return { success: false, error: 'No file provided' } unless @uploaded_file
+
+      begin
+        csv_content = @uploaded_file.read
+        @uploaded_file.rewind
+
+        csv_data = CSV.parse(csv_content, headers: true)
+
+        # Validate CSV first
+        validator = CsvValidator.new(@uploaded_file, 'products')
+        validation_result = validator.validate
+
+        unless validation_result[:success]
+          return { success: false, error: validation_result[:error] }
+        end
+
+        Product.transaction do
+          csv_data.each_with_index do |row, index|
+            begin
+              process_product_row(row, index + 2)
+            rescue => e
+              @errors << "Row #{index + 2}: #{e.message}"
+              @skipped_count += 1
+            end
+          end
+        end
+
+        {
+          success: true,
+          imported_count: @imported_count,
+          skipped_count: @skipped_count,
+          errors: @errors
+        }
+
+      rescue CSV::MalformedCSVError => e
+        { success: false, error: "Invalid CSV format: #{e.message}" }
+      rescue => e
+        Rails.logger.error "Product import error: #{e.message}"
+        { success: false, error: e.message }
+      end
+    end
+
+    private
+
+    def process_product_row(row, row_number)
+      # Check if product already exists by SKU or name
+      existing_product = nil
+
+      if row['sku'].present?
+        existing_product = Product.find_by(sku: row['sku'].to_s.strip)
+      end
+
+      if existing_product.nil?
+        existing_product = Product.find_by(name: row['name'].to_s.strip)
+      end
+
+      if existing_product
+        @errors << "Row #{row_number}: Product with name '#{row['name']}' or SKU '#{row['sku']}' already exists"
+        @skipped_count += 1
+        return
+      end
+
+      # Find or create category
+      category = find_or_create_category(row['category_name'])
+
+      # Prepare product parameters
+      product_params = {
+        name: row['name'],
+        description: row['description'],
+        category_id: category&.id,
+        price: parse_decimal(row['price']),
+        discount_price: parse_decimal(row['discount_price']),
+        stock: parse_integer(row['stock']) || 0,
+        status: parse_status(row['status']),
+        sku: generate_sku(row),
+        weight: parse_decimal(row['weight']),
+        dimensions: row['dimensions'],
+        gst_enabled: parse_boolean(row['gst_enabled']),
+        gst_percentage: parse_decimal(row['gst_percentage']),
+        buying_price: parse_decimal(row['buying_price']),
+        product_type: parse_product_type(row['product_type']),
+        is_subscription_enabled: parse_boolean(row['is_subscription_enabled'])
+      }
+
+      # Calculate GST amounts if GST is enabled
+      if product_params[:gst_enabled] && product_params[:price] && product_params[:gst_percentage]
+        price = product_params[:price]
+        gst_rate = product_params[:gst_percentage] / 100
+
+        product_params[:gst_amount] = price * gst_rate
+        product_params[:final_amount_with_gst] = price + product_params[:gst_amount]
+
+        # For India, split GST into CGST and SGST (9% each for 18% GST)
+        if product_params[:gst_percentage] == 18
+          product_params[:cgst_percentage] = 9
+          product_params[:sgst_percentage] = 9
+          product_params[:cgst_amount] = product_params[:gst_amount] / 2
+          product_params[:sgst_amount] = product_params[:gst_amount] / 2
+        elsif product_params[:gst_percentage] == 5
+          product_params[:cgst_percentage] = 2.5
+          product_params[:sgst_percentage] = 2.5
+          product_params[:cgst_amount] = product_params[:gst_amount] / 2
+          product_params[:sgst_amount] = product_params[:gst_amount] / 2
+        end
+      end
+
+      # Set price tracking fields
+      product_params[:today_price] = product_params[:price]
+      product_params[:last_price_update] = Time.current
+
+      product = Product.create!(product_params)
+
+      @imported_count += 1
+    end
+
+    def find_or_create_category(category_name)
+      return nil if category_name.blank?
+
+      category_name = category_name.to_s.strip
+      existing_category = Category.find_by(name: category_name)
+
+      if existing_category
+        existing_category
+      else
+        Category.create!(
+          name: category_name,
+          status: true,
+          display_order: Category.count + 1
+        )
+      end
+    end
+
+    def generate_sku(row)
+      return row['sku'] if row['sku'].present?
+
+      # Generate SKU from product name
+      base_sku = row['name'].to_s.gsub(/[^a-zA-Z0-9]/, '').upcase[0..5]
+      counter = 1
+      sku = "#{base_sku}#{counter.to_s.rjust(3, '0')}"
+
+      while Product.exists?(sku: sku)
+        counter += 1
+        sku = "#{base_sku}#{counter.to_s.rjust(3, '0')}"
+      end
+
+      sku
+    end
+
+    def parse_decimal(decimal_string)
+      return nil if decimal_string.blank?
+      BigDecimal(decimal_string.to_s)
+    rescue ArgumentError
+      nil
+    end
+
+    def parse_integer(integer_string)
+      return nil if integer_string.blank?
+      Integer(integer_string.to_s)
+    rescue ArgumentError
+      nil
+    end
+
+    def parse_boolean(boolean_string)
+      return false if boolean_string.blank?
+      ['true', '1', 'yes', 'on'].include?(boolean_string.to_s.downcase)
+    end
+
+    def parse_status(status_string)
+      return 'active' if status_string.blank?
+      status_string.to_s.downcase == 'active' ? 'active' : 'inactive'
+    end
+
+    def parse_product_type(type_string)
+      return 'one_time' if type_string.blank?
+      ['subscription'].include?(type_string.to_s.downcase) ? 'subscription' : 'one_time'
+    end
+  end
+end

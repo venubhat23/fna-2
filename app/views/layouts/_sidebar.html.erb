@@ -500,6 +500,21 @@
           <% end %>
         </li>
         <% end %>
+
+        <!-- Invoices -->
+        <% if current_user.has_sidebar_permission?('invoices') %>
+        <li class="nav-item">
+          <%= link_to admin_invoices_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/invoices')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-cyan">
+                <i class="bi bi-receipt"></i>
+              </div>
+            </div>
+            <span class="nav-text">Invoices</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
       </ul>
     </div>
 
@@ -669,6 +684,43 @@
               <div class="nav-indicator"></div>
             <% end %>
           </li>
+        <% end %>
+
+        <!-- Subscription Templates -->
+        <%# TODO: Uncomment when SubscriptionTemplatesController is created %>
+        <%# if current_user.has_sidebar_permission?('subscription_templates') %>
+          <%# <li class="nav-item"> %>
+            <%#= link_to admin_subscription_templates_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/subscription_templates')}" do %>
+              <%# <div class="nav-icon-modern"> %>
+                <%# <div class="icon-bg gradient-teal"> %>
+                  <%# <i class="bi bi-clipboard-data"></i> %>
+                <%# </div> %>
+              <%# </div> %>
+              <%# <span class="nav-text">Subscription Templates</span> %>
+              <%# <div class="nav-indicator"></div>
+            <%# end %>
+          <%# </li> %>
+        <%# end %>
+      </ul>
+    </div>
+
+    <!-- Import & Export Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Import & Export</div>
+      <ul class="nav-menu">
+        <!-- Import Data -->
+        <% if current_user.has_sidebar_permission?('imports') %>
+        <li class="nav-item">
+          <%= link_to admin_imports_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/imports')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-blue">
+                <i class="bi bi-upload"></i>
+              </div>
+            </div>
+            <span class="nav-text">Import Data</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
         <% end %>
       </ul>
     </div>

@@ -195,6 +195,8 @@ Rails.application.routes.draw do
       end
       collection do
         post :generate_invoice
+        get :bulk_invoice_form
+        post :generate_bulk_invoices
       end
     end
     # Users (Admins/Agents) management
@@ -279,11 +281,39 @@ Rails.application.routes.draw do
         patch :resume_subscription
         get :delivery_schedule
         post :generate_tasks
+        get :daily_tasks
       end
       collection do
         get :active
         get :paused
         get :expired
+      end
+    end
+
+    # Subscription Templates Management
+    resources :subscription_templates do
+      member do
+        patch :toggle_status
+        post :apply_to_customer
+      end
+      collection do
+        get :active
+      end
+    end
+
+    # Milk Delivery Tasks Management
+    resources :milk_delivery_tasks, only: [:update, :destroy] do
+      member do
+        patch :complete
+        patch :cancel
+        patch :pause
+        patch :resume
+      end
+      collection do
+        post :bulk_update
+        post :bulk_complete
+        post :bulk_delete
+        post :bulk_cancel
       end
     end
 
@@ -490,7 +520,10 @@ Rails.application.routes.draw do
         get :health_insurances_form
         get :life_insurances_form
         get :motor_insurances_form
+        get :delivery_people_form
+        get :products_form
         get :download_template
+        post :validate_csv
       end
     end
 
@@ -500,6 +533,8 @@ Rails.application.routes.draw do
     post 'import/health_insurances', to: 'imports#health_insurances'
     post 'import/life_insurances', to: 'imports#life_insurances'
     post 'import/motor_insurances', to: 'imports#motor_insurances'
+    post 'import/delivery_people', to: 'imports#delivery_people'
+    post 'import/products', to: 'imports#products'
     post 'import/agencies', to: 'imports#agencies'
 
     # E-commerce Management
@@ -554,7 +589,7 @@ Rails.application.routes.draw do
     resources :affiliates do
       member do
         patch :toggle_status
-        post :reset_password
+        patch :reset_password
       end
     end
 

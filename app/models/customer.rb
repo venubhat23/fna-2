@@ -19,6 +19,7 @@ class Customer < ApplicationRecord
   has_many :bookings, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :booking_schedules, dependent: :destroy
+  has_many :invoices, dependent: :destroy
 
   # Nested attributes - commented out as tables don't exist
   # accepts_nested_attributes_for :family_members, allow_destroy: true, reject_if: :all_blank

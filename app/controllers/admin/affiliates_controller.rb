@@ -28,7 +28,7 @@ class Admin::AffiliatesController < Admin::ApplicationController
 
     if @affiliate.save
       redirect_to admin_affiliate_path(@affiliate),
-                 notice: "Affiliate created successfully. Login credentials: #{@affiliate.email} / #{@affiliate.auto_generated_password}"
+                 notice: "Affiliate created successfully. Login credentials: Username: #{@affiliate.username || @affiliate.email} | Password: #{@affiliate.auto_generated_password}"
     else
       render :new, status: :unprocessable_entity
     end
@@ -80,7 +80,7 @@ class Admin::AffiliatesController < Admin::ApplicationController
       :address, :city, :state, :pincode, :pan_no, :gst_no,
       :commission_percentage, :bank_name, :account_no, :ifsc_code,
       :account_holder_name, :account_type, :upi_id, :status, :notes,
-      :joining_date
+      :joining_date, :company_name, :username
     )
   end
 end

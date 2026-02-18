@@ -1,4 +1,4 @@
-class Admin::ClientRequestsController < ApplicationController
+class Admin::ClientRequestsController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_client_request, only: [:show, :edit, :update, :destroy, :update_status, :assign_to, :add_response]
 

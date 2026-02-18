@@ -1,4 +1,4 @@
-class Admin::BookingsController < ApplicationController
+class Admin::BookingsController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_booking, only: [:show, :edit, :update, :destroy, :generate_invoice, :invoice, :convert_to_order, :update_status, :cancel_order, :mark_delivered, :mark_completed, :manage_stage, :update_stage]
 

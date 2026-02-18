@@ -1,4 +1,4 @@
-class Admin::OrdersController < ApplicationController
+class Admin::OrdersController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_order, only: [:show, :update_status, :ship, :deliver, :cancel, :invoice, :tracking]
 

@@ -1,4 +1,4 @@
-class Admin::VendorPurchasesController < ApplicationController
+class Admin::VendorPurchasesController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase]
   before_action :set_vendors_and_products, only: [:new, :edit, :create, :update]

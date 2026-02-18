@@ -1,6 +1,6 @@
 require 'ostruct'
 
-class Admin::DistributorPayoutsController < ApplicationController
+class Admin::DistributorPayoutsController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin_access
 

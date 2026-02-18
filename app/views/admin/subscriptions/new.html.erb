@@ -342,32 +342,40 @@
   </div>
 </div>
 
-<!-- CSS Styles for Calendar -->
+<!-- Enhanced CSS Styles for Calendar -->
 <style>
 .calendar-table {
   width: 100%;
   border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .calendar-day-header {
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border: 1px solid #dee2e6;
-  padding: 8px 4px;
+  padding: 12px 4px;
   text-align: center;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 0.875rem;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .calendar-cell {
-  border: 1px solid #dee2e6;
+  border: 1px solid #e9ecef;
   padding: 0;
-  height: 40px;
+  height: 45px;
   width: 14.28%;
   position: relative;
+  transition: all 0.2s ease;
 }
 
 .calendar-cell.empty {
-  background-color: #f8f9fa;
+  background-color: #fafafa;
+  border-color: #f1f3f4;
 }
 
 .date-cell-content {
@@ -377,65 +385,192 @@
   height: 100%;
   width: 100%;
   cursor: pointer;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.calendar-cell.clickable-date:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .calendar-cell.clickable-date:hover .date-cell-content {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  color: #1565c0;
+  font-weight: 600;
 }
 
 .calendar-cell.selected-date .date-cell-content {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
   color: white;
-  font-weight: bold;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.4);
 }
 
 .calendar-cell.today .date-cell-content {
-  background-color: #fff3e0;
-  color: #f57c00;
-  font-weight: bold;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  color: #e65100;
+  font-weight: 600;
+  border: 2px solid #ff9800;
 }
 
 .calendar-cell.past-date .date-cell-content {
-  background-color: #f5f5f5;
-  color: #9e9e9e;
+  background-color: #f8f9fa;
+  color: #adb5bd;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .calendar-cell.selected-date.today .date-cell-content {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
   color: white;
+  border: 2px solid #ff9800;
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3);
 }
 
 .selected-dates-grid {
-  max-height: 200px;
+  max-height: 280px;
   overflow-y: auto;
+  padding-right: 8px;
+}
+
+.selected-dates-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.selected-dates-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.selected-dates-grid::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.selected-dates-grid::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .selected-date-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
-  margin-bottom: 4px;
-  background-color: #e3f2fd;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border: 1px solid #e1f5fe;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.selected-date-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-color: #81c784;
+}
+
+.selected-date-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(to bottom, #1976d2, #42a5f5);
 }
 
 .date-text {
-  font-weight: 500;
+  font-weight: 600;
+  color: #37474f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .remove-date {
-  padding: 2px 6px;
+  padding: 4px 8px;
   font-size: 0.75rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.remove-date:hover {
+  background-color: #f44336 !important;
+  border-color: #f44336 !important;
+  color: white !important;
+  transform: scale(1.1);
 }
 
 .date-picker-calendar {
   padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Animation for month transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.calendar-table {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Card enhancements for specific dates section */
+#specific-dates-section .card {
+  border: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#specific-dates-section .card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e1e8ed;
+  padding: 12px 16px;
+}
+
+#specific-dates-section .card-body {
+  padding: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .calendar-cell {
+    height: 35px;
+  }
+
+  .date-cell-content {
+    font-size: 0.8rem;
+  }
+
+  .calendar-day-header {
+    padding: 8px 2px;
+    font-size: 0.75rem;
+  }
+
+  .selected-date-item {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .selected-dates-grid {
+    max-height: 200px;
+  }
 }
 </style>
 
@@ -466,8 +601,18 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize calendar
   generateCalendar(currentMonth, currentYear);
 
-  // Make sure specific dates section is hidden initially
-  document.getElementById('specific-dates-section').style.display = 'none';
+  // Initialize display based on selected pattern
+  const initialPattern = document.querySelector('input[name="milk_subscription[delivery_pattern]"]:checked')?.value;
+  const dateRangeSectionInit = document.getElementById('date-range-section');
+  const specificDatesSectionInit = document.getElementById('specific-dates-section');
+
+  if (initialPattern === 'specific_dates') {
+    specificDatesSectionInit.classList.remove('d-none');
+    dateRangeSectionInit.classList.add('d-none');
+  } else {
+    specificDatesSectionInit.classList.add('d-none');
+    dateRangeSectionInit.classList.remove('d-none');
+  }
 
   // Calendar navigation
   document.getElementById('prevMonth').addEventListener('click', function() {
@@ -505,12 +650,12 @@ document.addEventListener('DOMContentLoaded', function() {
   patternInputs.forEach(input => {
     input.addEventListener('change', function() {
       if (this.value === 'specific_dates') {
-        dateRangeSection.style.display = 'none';
-        specificDatesSection.style.display = 'block';
+        dateRangeSection.classList.add('d-none');
+        specificDatesSection.classList.remove('d-none');
         generateCalendar(currentMonth, currentYear); // Refresh calendar when shown
       } else {
-        dateRangeSection.style.display = 'block';
-        specificDatesSection.style.display = 'none';
+        dateRangeSection.classList.remove('d-none');
+        specificDatesSection.classList.add('d-none');
       }
       updateSchedulePreview();
     });
@@ -569,6 +714,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = new Date();
+    // Set today to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0);
 
     let calendarHTML = '<table class="calendar-table w-100">';
     calendarHTML += '<thead><tr>';
@@ -588,17 +735,20 @@ document.addEventListener('DOMContentLoaded', function() {
           calendarHTML += '<td class="calendar-cell empty"></td>';
         } else {
           const currentDate = new Date(year, month, date);
+          currentDate.setHours(0, 0, 0, 0); // Set to start of day
           const dateString = formatDate(currentDate);
-          const isPast = currentDate < today && !isSameDay(currentDate, today);
+          const isPast = currentDate < today;
           const isSelected = selectedDates.includes(dateString);
-          const isToday = isSameDay(currentDate, today);
+          const isToday = currentDate.getTime() === today.getTime();
 
-          let cellClass = 'calendar-cell clickable-date';
+          let cellClass = 'calendar-cell';
+          if (!isPast) cellClass += ' clickable-date';
           if (isPast) cellClass += ' past-date';
           if (isSelected) cellClass += ' selected-date';
           if (isToday) cellClass += ' today';
 
-          calendarHTML += '<td class="' + cellClass + '" data-date="' + dateString + '">';
+          const dataAttr = !isPast ? `data-date="${dateString}"` : '';
+          calendarHTML += `<td class="${cellClass}" ${dataAttr}>`;
           calendarHTML += '<div class="date-cell-content">' + date + '</div>';
           calendarHTML += '</td>';
           date++;
@@ -610,24 +760,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     calendarHTML += '</tbody></table>';
-    document.getElementById('datePickerCalendar').innerHTML = calendarHTML;
 
-    // Add click events to date cells
+    const calendarContainer = document.getElementById('datePickerCalendar');
+    if (calendarContainer) {
+      calendarContainer.innerHTML = calendarHTML;
+    }
+
+    // Add click events to clickable date cells only
     document.querySelectorAll('.clickable-date').forEach(cell => {
       cell.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
+
         const dateStr = this.getAttribute('data-date');
+        if (!dateStr) return;
+
         console.log('Date clicked:', dateStr);
 
-        if (this.classList.contains('past-date')) {
-          console.log('Past date clicked, ignoring');
-          return; // Don't allow past dates
-        }
-
-        if (selectedDates.includes(dateStr)) {
+        const index = selectedDates.indexOf(dateStr);
+        if (index > -1) {
           // Remove date
           console.log('Removing date:', dateStr);
-          selectedDates = selectedDates.filter(d => d !== dateStr);
+          selectedDates.splice(index, 1);
           this.classList.remove('selected-date');
         } else {
           // Add date
@@ -648,11 +802,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return year + '-' + month + '-' + day;
+    return `${year}-${month}-${day}`;
   }
 
   function isSameDay(date1, date2) {
-    return date1.toDateString() === date2.toDateString();
+    return date1.getTime() === date2.getTime();
+  }
+
+  function parseDate(dateStr) {
+    // Parse YYYY-MM-DD format properly
+    const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    date.setHours(0, 0, 0, 0);
+    return date;
   }
 
   function updateSelectedDatesDisplay() {
@@ -660,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const countElement = document.getElementById('selectedCount');
 
     if (selectedDates.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center">Click calendar dates to select</p>';
+      container.innerHTML = '<p class="text-muted text-center mb-0"><i class="bi bi-calendar-x me-1"></i>Click calendar dates to select</p>';
       countElement.textContent = '0';
       return;
     }
@@ -669,17 +831,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let html = '<div class="selected-dates-grid">';
     selectedDates.forEach((dateStr, index) => {
-      const date = new Date(dateStr);
+      const date = parseDate(dateStr);
       const formattedDate = date.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        year: 'numeric'
       });
 
       html += '<div class="selected-date-item">';
-      html += '<span class="date-text">' + formattedDate + '</span>';
-      html += '<button type="button" class="btn btn-sm btn-outline-danger remove-date" data-date="' + dateStr + '">';
-      html += '<i class="bi bi-x"></i>';
+      html += `<span class="date-text"><i class="bi bi-calendar-event me-1"></i>${formattedDate}</span>`;
+      html += `<button type="button" class="btn btn-sm btn-outline-danger remove-date" data-date="${dateStr}" title="Remove date">`;
+      html += '<i class="bi bi-x-lg"></i>';
       html += '</button>';
       html += '</div>';
     });
@@ -689,13 +852,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add remove date functionality
     document.querySelectorAll('.remove-date').forEach(btn => {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const dateStr = this.getAttribute('data-date');
-        selectedDates = selectedDates.filter(d => d !== dateStr);
-        updateSelectedDatesDisplay();
-        updateSpecificDatesField();
-        generateCalendar(currentMonth, currentYear);
-        updateSchedulePreview();
+        const index = selectedDates.indexOf(dateStr);
+        if (index > -1) {
+          selectedDates.splice(index, 1);
+          updateSelectedDatesDisplay();
+          updateSpecificDatesField();
+          generateCalendar(currentMonth, currentYear);
+          updateSchedulePreview();
+        }
       });
     });
   }

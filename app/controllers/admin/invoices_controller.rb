@@ -1,159 +1,122 @@
-class Admin::InvoicesController < ApplicationController
-  before_action :set_invoice, only: [:show, :show_premium, :download_pdf, :download_premium_pdf, :mark_as_paid]
+class Admin::InvoicesController < Admin::ApplicationController
+  before_action :set_invoice, only: [:show, :edit, :update, :destroy]
 
   def index
-    @invoices = BookingInvoice.includes(:booking, :customer)
-                              .order(created_at: :desc)
-                              .page(params[:page])
-                              .per(20)
-
-    # Filter by payment status
-    if params[:status].present?
-      @invoices = @invoices.where(payment_status: params[:status])
-    end
-
-    # Filter by invoice status
-    if params[:invoice_status].present?
-      @invoices = @invoices.where(status: params[:invoice_status])
-    end
+    @invoices = Invoice.includes(:customer, :invoice_items)
+                      .order(created_at: :desc)
+                      .limit(50)
   end
 
   def show
-    @booking = @invoice.booking
-    @customer = @invoice.customer || @booking.customer
-    render template: 'admin/invoices/invoice_new', layout: false
+    @invoice_items = @invoice.invoice_items.includes(:milk_delivery_task)
   end
 
-  def show_premium
-    @booking = @invoice.booking
-    @customer = @invoice.customer || @booking.customer
-    render template: 'admin/invoices/invoice_new', layout: false
+  def bulk_invoice_form
+    @customers = Customer.order(:first_name, :last_name)
+    render layout: false
   end
 
-  def generate_invoice
-    payout_type = params[:payout_type]
-    payout_id = params[:payout_id]
+  def generate_bulk_invoices
+    month = params[:month].to_i
+    year = params[:year].to_i
+    customer_ids = params[:customer_ids]
 
-    case payout_type
-    when 'affiliate'
-      payout = CommissionPayout.find_by(id: payout_id, payout_to: 'affiliate')
-    when 'distributor'
-      payout = DistributorPayout.find(payout_id)
-    when 'ambassador'
-      payout = CommissionPayout.find_by(id: payout_id, payout_to: 'ambassador')
-    when 'commission'
-      payout = Payout.find(payout_id)
+    if customer_ids == 'all'
+      customers = Customer.all
     else
-      render json: { error: 'Invalid payout type' }, status: 400
-      return
+      customers = Customer.where(id: customer_ids)
     end
 
-    unless payout
-      render json: { error: 'Payout record not found' }, status: 404
-      return
-    end
+    generated_invoices = []
+    errors = []
 
-    # Check if invoice already exists for this payout
-    existing_invoice = Invoice.find_by(payout_type: payout_type, payout_id: payout_id)
-    if existing_invoice
-      render json: { error: 'Invoice already exists for this payout' }, status: 422
-      return
-    end
-
-    # Generate invoice
-    invoice = Invoice.create!(
-      invoice_number: generate_invoice_number,
-      payout_type: payout_type,
-      payout_id: payout_id,
-      total_amount: calculate_total_amount(payout),
-      status: 'pending',
-      invoice_date: Date.current,
-      due_date: Date.current + 30.days
-    )
-
-    # Mark the payout as invoiced
-    payout.update!(invoiced: true) if payout.respond_to?(:invoiced)
-
-    render json: {
-      success: true,
-      message: 'Invoice generated successfully',
-      invoice_id: invoice.id,
-      invoice_number: invoice.invoice_number
-    }
-  rescue => e
-    render json: { error: e.message }, status: 500
-  end
-
-  def mark_as_paid
-    @invoice.update!(
-      status: 'paid',
-      paid_at: Time.current
-    )
-
-    # Update the associated payout record
-    payout = @invoice.payout_record
-    if payout.respond_to?(:mark_as_paid!)
-      payout.mark_as_paid!
-    else
-      payout.update!(status: 'paid', paid_at: Time.current)
-    end
-
-    redirect_to admin_invoices_path, notice: 'Invoice marked as paid successfully'
-  rescue => e
-    redirect_to admin_invoices_path, alert: "Error marking invoice as paid: #{e.message}"
-  end
-
-  def download_pdf
-    respond_to do |format|
-      format.pdf do
-        render pdf: "invoice_#{@invoice.invoice_number}",
-               template: 'admin/invoices/show',
-               layout: false,
-               page_size: 'A4',
-               margin: { top: 5, bottom: 5, left: 5, right: 5 },
-               encoding: 'UTF-8'
+    customers.find_each do |customer|
+      begin
+        invoice = generate_customer_invoice(customer, month, year)
+        generated_invoices << invoice if invoice
+      rescue => e
+        errors << "#{customer.display_name}: #{e.message}"
       end
     end
-  rescue => e
-    redirect_to admin_invoices_path, alert: "Error generating PDF: #{e.message}"
-  end
 
-  def download_premium_pdf
-    respond_to do |format|
-      format.pdf do
-        render pdf: "premium_invoice_#{@invoice.invoice_number}",
-               template: 'admin/invoices/show_premium',
-               layout: false,
-               page_size: 'A4',
-               margin: { top: 10, bottom: 10, left: 10, right: 10 },
-               encoding: 'UTF-8',
-               javascript_delay: 1000
-      end
+    if generated_invoices.any?
+      render json: {
+        success: true,
+        message: "Generated #{generated_invoices.count} invoices successfully",
+        errors: errors,
+        invoices: generated_invoices.map { |inv| { id: inv.id, number: inv.invoice_number, customer: inv.customer.display_name, amount: inv.total_amount } }
+      }
+    else
+      render json: {
+        success: false,
+        message: "No invoices could be generated",
+        errors: errors
+      }
     end
-  rescue => e
-    redirect_to admin_invoices_path, alert: "Error generating premium PDF: #{e.message}"
   end
 
   private
 
   def set_invoice
-    @invoice = BookingInvoice.find(params[:id])
+    @invoice = Invoice.find(params[:id])
   end
 
-  def generate_invoice_number
-    "INV-#{Date.current.strftime('%Y%m%d')}-#{rand(10000..99999)}"
-  end
+  def generate_customer_invoice(customer, month, year)
+    start_date = Date.new(year, month).beginning_of_month
+    end_date = Date.new(year, month).end_of_month
 
-  def calculate_total_amount(payout)
-    case payout.class.name
-    when 'CommissionPayout'
-      payout.payout_amount || 0
-    when 'DistributorPayout'
-      payout.payout_amount || 0
-    when 'Payout'
-      payout.total_commission_amount || payout.total_amount || 0
+    # Find completed delivery tasks for the customer in the specified month
+    completed_tasks = MilkDeliveryTask.where(customer: customer,
+                                           delivery_date: start_date..end_date,
+                                           status: 'completed',
+                                           invoiced: false)
+
+    return nil if completed_tasks.empty?
+
+    # Check if invoice already exists for this month
+    existing_invoice = Invoice.where(customer: customer)
+                             .where(invoice_date: start_date..end_date)
+                             .first
+
+    return existing_invoice if existing_invoice
+
+    # Create new invoice
+    invoice = Invoice.new(
+      customer: customer,
+      invoice_date: end_date,
+      due_date: end_date + 30.days,
+      status: :draft,
+      payment_status: :unpaid,
+      created_by: current_user.id,
+      notes: "Monthly delivery invoice for #{Date::MONTHNAMES[month]} #{year}"
+    )
+
+    total_amount = 0
+
+    # Group tasks by product for cleaner invoice items
+    completed_tasks.group_by(&:product).each do |product, tasks|
+      total_quantity = tasks.sum(&:quantity)
+      unit_price = product.price || 30
+      item_total = total_quantity * unit_price
+
+      invoice.invoice_items.build(
+        description: "#{product.name} - #{tasks.count} deliveries",
+        quantity: total_quantity,
+        unit_price: unit_price,
+        total_amount: item_total
+      )
+
+      total_amount += item_total
+    end
+
+    invoice.total_amount = total_amount
+
+    if invoice.save
+      # Mark tasks as invoiced
+      completed_tasks.update_all(invoiced: true, invoiced_at: Time.current)
+      return invoice
     else
-      0
+      raise invoice.errors.full_messages.join(', ')
     end
   end
 end

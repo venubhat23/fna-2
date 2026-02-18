@@ -28,8 +28,9 @@ class Admin::FranchisesController < Admin::ApplicationController
 
     if @franchise.save
       # Create user account for franchise
-      create_franchise_user
-      redirect_to admin_franchise_path(@franchise), notice: 'Franchise was successfully created.'
+      password = create_franchise_user
+      flash[:success] = "Franchise created successfully! Login credentials - Username: #{@franchise.email}, Password: #{password}"
+      redirect_to admin_franchises_path
     else
       render :new, status: :unprocessable_entity
     end
@@ -85,6 +86,12 @@ class Admin::FranchisesController < Admin::ApplicationController
   def create_franchise_user
     password = generate_secure_password(@franchise)
 
+    # Find or create franchise role
+    franchise_role = Role.find_or_create_by(name: 'franchise') do |r|
+      r.description = 'Franchise Partner Role'
+      r.status = true
+    end
+
     user = User.create!(
       first_name: @franchise.contact_person_name || @franchise.name,
       last_name: 'Franchise',
@@ -93,11 +100,12 @@ class Admin::FranchisesController < Admin::ApplicationController
       password: password,
       password_confirmation: password,
       user_type: 'franchise',
-      role: 'franchise',
+      role_id: franchise_role.id,
       status: @franchise.status
     )
 
     @franchise.update(auto_generated_password: password, user: user)
+    password # Return the password for display
   end
 
   def generate_secure_password(franchise)

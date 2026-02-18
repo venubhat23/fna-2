@@ -1,0 +1,138 @@
+<%= form_with url: generate_bulk_invoices_admin_invoices_path, method: :post, remote: true do |form| %>
+  <div class="row">
+    <div class="col-md-6">
+      <%= form.label :month, "Month", class: "form-label fw-bold" %>
+      <%= form.select :month,
+          options_for_select((1..12).map { |m| [Date::MONTHNAMES[m], m] }, Date.current.month),
+          {},
+          { class: "form-select" } %>
+    </div>
+    <div class="col-md-6">
+      <%= form.label :year, "Year", class: "form-label fw-bold" %>
+      <%= form.select :year,
+          options_for_select((Date.current.year-1..Date.current.year+1).map { |y| [y, y] }, Date.current.year),
+          {},
+          { class: "form-select" } %>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <label class="form-label fw-bold">Customer Selection</label>
+    <div class="form-check">
+      <%= form.radio_button :customer_ids, 'all', checked: true, class: "form-check-input", id: "all_customers" %>
+      <label class="form-check-label" for="all_customers">All Customers</label>
+    </div>
+    <div class="form-check">
+      <%= form.radio_button :customer_ids, 'specific', class: "form-check-input", id: "specific_customers" %>
+      <label class="form-check-label" for="specific_customers">Specific Customers</label>
+    </div>
+  </div>
+
+  <div class="mt-3" id="customerSelection" style="display: none;">
+    <label class="form-label fw-bold">Select Customers:</label>
+
+    <!-- Search Box -->
+    <div class="mb-3">
+      <input type="text"
+             class="form-control"
+             id="customerSearch"
+             placeholder="Search customers by name or mobile..."
+             onkeyup="filterCustomers()" />
+      <small class="form-text text-muted">Type to search and filter customers</small>
+    </div>
+
+    <!-- Select All Options -->
+    <div class="mb-3 d-flex gap-3">
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllCustomers()">
+        <i class="bi bi-check-square"></i> Select All Visible
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllCustomers()">
+        <i class="bi bi-square"></i> Clear All
+      </button>
+      <span class="text-muted align-self-center">
+        <span id="selectedCount">0</span> of <span id="totalVisible"><%= @customers.count %></span> customers selected
+      </span>
+    </div>
+
+    <!-- Customer List -->
+    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" id="customerListContainer">
+      <% @customers.each do |customer| %>
+        <div class="form-check customer-item mb-2"
+             data-customer-name="<%= customer.display_name.downcase %>"
+             data-customer-mobile="<%= customer.mobile %>">
+          <%= form.check_box :customer_ids,
+              {
+                multiple: true,
+                class: "form-check-input customer-checkbox",
+                id: "customer_#{customer.id}",
+                onchange: "updateSelectedCount()"
+              }, customer.id, nil %>
+          <label class="form-check-label d-flex justify-content-between align-items-center w-100"
+                 for="customer_<%= customer.id %>">
+            <div>
+              <strong><%= customer.display_name %></strong>
+              <br>
+              <small class="text-muted">
+                <i class="bi bi-telephone me-1"></i><%= customer.mobile %>
+                <% if customer.email.present? %>
+                  <i class="bi bi-envelope ms-2 me-1"></i><%= customer.email %>
+                <% end %>
+              </small>
+            </div>
+            <div class="text-muted">
+              <% active_subscriptions = customer.milk_subscriptions.where(status: 'active').count %>
+              <% if active_subscriptions > 0 %>
+                <span class="badge bg-success"><%= active_subscriptions %> active subscription<%= 's' if active_subscriptions != 1 %></span>
+              <% else %>
+                <span class="badge bg-secondary">No active subscriptions</span>
+              <% end %>
+            </div>
+          </label>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="text-center text-muted py-4" style="display: none;">
+      <i class="bi bi-search display-4"></i>
+      <h5 class="mt-2">No customers found</h5>
+      <p>Try adjusting your search terms</p>
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-secondary" onclick="closeBulkInvoiceModal()">Cancel</button>
+    <%= form.submit "Generate Invoices", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('input[name="customer_ids"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const customerSelection = document.getElementById('customerSelection');
+      if (this.value === 'specific') {
+        customerSelection.style.display = 'block';
+      } else {
+        customerSelection.style.display = 'none';
+      }
+    });
+  });
+});
+
+document.addEventListener('ajax:success', function(event) {
+  const response = event.detail[0];
+  if (response.success) {
+    closeBulkInvoiceModal();
+    alert(response.message);
+    location.reload();
+  } else {
+    alert('Error: ' + response.message);
+  }
+});
+
+document.addEventListener('ajax:error', function(event) {
+  console.error('Ajax error:', event.detail);
+  alert('An error occurred while generating invoices. Please try again.');
+});
+</script>

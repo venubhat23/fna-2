@@ -1,4 +1,4 @@
-class Admin::DeliveryPeopleController < ApplicationController
+class Admin::DeliveryPeopleController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_delivery_person, only: [:show, :edit, :update, :destroy, :toggle_status]
 

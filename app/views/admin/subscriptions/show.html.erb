@@ -60,7 +60,7 @@
                 </tr>
                 <tr>
                   <td><strong>Address:</strong></td>
-                  <td><%= @subscription.customer.address %></td>
+                  <td><%= @subscription.customer.address.present? ? @subscription.customer.address : 'Not provided' %></td>
                 </tr>
               </table>
             </div>
@@ -343,7 +343,7 @@
       </div>
 
       <!-- Timeline -->
-      <div class="card shadow">
+      <div class="card shadow mb-4">
         <div class="card-header py-3">
           <h6 class="m-0 font-weight-bold text-primary">
             <i class="bi bi-clock-history"></i> Timeline
@@ -392,6 +392,57 @@
               </div>
             <% end %>
           </div>
+        </div>
+      </div>
+
+      <!-- Customer Patterns -->
+      <div class="card shadow">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-people"></i> Customer Patterns
+            <small class="text-muted">(Today's Tasks)</small>
+          </h6>
+        </div>
+        <div class="card-body">
+          <% if @customer_patterns.any? %>
+            <div class="customer-patterns-list" style="max-height: 400px; overflow-y: auto;">
+              <% @customer_patterns.each do |pattern| %>
+                <div class="customer-pattern-item border-bottom py-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="customer-info">
+                      <h6 class="mb-1 text-dark">
+                        <i class="bi bi-person-circle text-primary"></i>
+                        <%= "#{pattern.first_name} #{pattern.last_name}".strip %>
+                      </h6>
+                      <small class="text-muted">
+                        <i class="bi bi-bookmark"></i> <%= pattern.total_subscriptions %> subscription<%= 's' if pattern.total_subscriptions != 1 %>
+                      </small>
+                    </div>
+                    <div class="task-info text-end">
+                      <span class="badge bg-<%= pattern.daily_tasks_count > 0 ? 'success' : 'secondary' %> fs-6">
+                        <%= pattern.daily_tasks_count %>
+                      </span>
+                      <br>
+                      <small class="text-muted">today</small>
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <div class="progress" style="height: 4px;">
+                      <% completion_rate = pattern.daily_tasks_count > 0 ? 100 : 0 %>
+                      <div class="progress-bar bg-<%= pattern.daily_tasks_count > 0 ? 'success' : 'light' %>"
+                           style="width: <%= completion_rate %>%"></div>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <i class="bi bi-people display-4 text-muted"></i>
+              <h6 class="text-muted mt-3">No Customer Patterns</h6>
+              <p class="text-muted small">Customer subscription patterns will appear here</p>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>

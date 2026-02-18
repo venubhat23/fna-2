@@ -1,103 +1,134 @@
 <% content_for :title, "Subscriptions Management" %>
 
-<div class="container-fluid">
-  <!-- Stats Cards -->
-  <div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card border-left-primary shadow h-100 py-2">
-        <div class="card-body">
-          <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                Total Subscriptions
-              </div>
-              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:total] %></div>
-            </div>
-            <div class="col-auto">
-              <i class="fas fa-calendar fa-2x text-gray-300"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card border-left-success shadow h-100 py-2">
-        <div class="card-body">
-          <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                Active Subscriptions
-              </div>
-              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:active] %></div>
-            </div>
-            <div class="col-auto">
-              <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card border-left-info shadow h-100 py-2">
-        <div class="card-body">
-          <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                Today's Deliveries
-              </div>
-              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:today_deliveries] %></div>
-            </div>
-            <div class="col-auto">
-              <i class="fas fa-truck fa-2x text-gray-300"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card border-left-warning shadow h-100 py-2">
-        <div class="card-body">
-          <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                Pending Today
-              </div>
-              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:pending_today] %></div>
-            </div>
-            <div class="col-auto">
-              <i class="fas fa-clock fa-2x text-gray-300"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Subscription Management</h2>
+    <p class="text-muted mb-0">Manage all customer subscriptions and delivery schedules</p>
   </div>
-
-  <!-- Page Header -->
-  <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">
-      <i class="bi bi-arrow-repeat text-primary"></i>
-      Subscriptions Management
-    </h1>
-    <%= link_to new_admin_subscription_path, class: "btn btn-primary btn-lg shadow-sm" do %>
-      <i class="bi bi-plus-circle"></i> Create New Subscription
+  <div class="d-flex gap-2 align-items-center">
+    <!-- Real-time Status -->
+    <div class="d-flex align-items-center gap-2">
+      <div class="real-time-indicator">
+        <span class="status-dot status-active" id="realtimeStatus"></span>
+        <small class="text-muted" id="lastUpdated">Last updated: <span id="updateTime">--:--:--</span></small>
+      </div>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
+        <label class="form-check-label text-muted" for="autoRefreshToggle">
+          Auto-refresh
+        </label>
+      </div>
+    </div>
+    <%= link_to new_admin_subscription_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-lg me-1"></i>
+      Create New Subscription
     <% end %>
   </div>
+</div>
 
-  <!-- Filters Section -->
-  <div class="card shadow mb-4">
-    <div class="card-header py-3">
-      <h6 class="m-0 font-weight-bold text-primary">
-        <i class="bi bi-funnel"></i> Filters
-      </h6>
+<!-- Subscription Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total</h6>
+            <h5 class="mb-0"><%= @stats[:total] %></h5>
+          </div>
+          <div class="text-primary">
+            <i class="bi bi-arrow-repeat fs-3"></i>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <%= form_with url: admin_subscriptions_path, method: :get, local: true, class: "row g-3" do |form| %>
-        <div class="col-md-3">
-          <%= form.label :status, class: "form-label" %>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active</h6>
+            <h5 class="mb-0"><%= @stats[:active] %></h5>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-check-circle fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Paused</h6>
+            <h5 class="mb-0"><%= @stats[:paused] %></h5>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-pause-circle fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Expired</h6>
+            <h5 class="mb-0"><%= @stats[:expired] %></h5>
+          </div>
+          <div class="text-danger">
+            <i class="bi bi-x-circle fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Today's Tasks</h6>
+            <h5 class="mb-0"><%= @stats[:today_deliveries] %></h5>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-truck fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Pending</h6>
+            <h5 class="mb-0"><%= @stats[:pending_today] %></h5>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-clock fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subscriptions Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Subscription List</h5>
+      <div class="d-flex gap-2">
+        <!-- Status Filter -->
+        <%= form_with url: admin_subscriptions_path, method: :get, local: true, class: "d-flex gap-2 align-items-center" do |form| %>
           <%= form.select :status,
               options_for_select([
                 ['All Status', ''],
@@ -107,126 +138,126 @@
                 ['Cancelled', 'cancelled']
               ], params[:status]),
               {},
-              { class: "form-select" } %>
-        </div>
+              {
+                class: "form-select",
+                style: "width: 180px;",
+                onchange: "this.form.submit();"
+              } %>
 
-        <div class="col-md-3">
-          <%= form.label :customer_id, "Customer", class: "form-label" %>
+          <!-- Customer Filter -->
           <%= form.select :customer_id,
               options_for_select([['All Customers', '']] + @customers, params[:customer_id]),
               {},
-              { class: "form-select select2" } %>
-        </div>
+              {
+                class: "form-select select2",
+                style: "width: 200px;",
+                onchange: "this.form.submit();"
+              } %>
 
-        <div class="col-md-2">
-          <%= form.label :start_date, "Start Date", class: "form-label" %>
-          <%= form.date_field :start_date, value: params[:start_date], class: "form-control" %>
-        </div>
+          <!-- Search Input -->
+          <div class="position-relative">
+            <%= form.text_field :search,
+                value: params[:search],
+                class: "form-control",
+                placeholder: "Search subscriptions...",
+                id: "searchInput",
+                style: "width: 250px;" %>
+            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+          </div>
 
-        <div class="col-md-2">
-          <%= form.label :end_date, "End Date", class: "form-label" %>
-          <%= form.date_field :end_date, value: params[:end_date], class: "form-control" %>
-        </div>
-
-        <div class="col-md-2 d-flex align-items-end">
-          <%= form.submit "Filter", class: "btn btn-primary me-2" %>
-          <%= link_to "Clear", admin_subscriptions_path, class: "btn btn-outline-secondary" %>
-        </div>
-      <% end %>
+          <!-- Hidden submit button -->
+          <%= form.submit "Search", class: "btn btn-outline-primary d-none" %>
+        <% end %>
+      </div>
     </div>
   </div>
-
-  <!-- Quick Action Buttons -->
-  <div class="row mb-3">
-    <div class="col-12">
-      <%= link_to admin_subscriptions_path(status: 'active'), class: "btn btn-success me-2 #{'active' if params[:status] == 'active'}" do %>
-        <i class="bi bi-check-circle"></i> Active (<%= @stats[:active] %>)
-      <% end %>
-      <%= link_to admin_subscriptions_path(status: 'paused'), class: "btn btn-warning me-2 #{'active' if params[:status] == 'paused'}" do %>
-        <i class="bi bi-pause-circle"></i> Paused (<%= @stats[:paused] %>)
-      <% end %>
-      <%= link_to admin_subscriptions_path(status: 'expired'), class: "btn btn-danger me-2 #{'active' if params[:status] == 'expired'}" do %>
-        <i class="bi bi-x-circle"></i> Expired (<%= @stats[:expired] %>)
-      <% end %>
-    </div>
-  </div>
-
-  <!-- Subscriptions Table -->
-  <div class="card shadow mb-4">
-    <div class="card-header py-3">
-      <h6 class="m-0 font-weight-bold text-primary">
-        <i class="bi bi-table"></i> Subscriptions List (<%= @subscriptions.total_count %> total)
-      </h6>
-    </div>
-    <div class="card-body">
+  <div class="card-body p-0">
+    <% if @subscriptions.any? %>
       <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-          <thead class="table-dark">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
             <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              <th>Product</th>
-              <th>Quantity</th>
-              <th>Duration</th>
-              <th>Pattern</th>
-              <th>Progress</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th class="border-0 fw-semibold">Subscription Details</th>
+              <th class="border-0 fw-semibold">Customer</th>
+              <th class="border-0 fw-semibold">Product & Quantity</th>
+              <th class="border-0 fw-semibold">Duration</th>
+              <th class="border-0 fw-semibold">Pattern</th>
+              <th class="border-0 fw-semibold">Progress</th>
+              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
             <% @subscriptions.each do |subscription| %>
               <tr>
-                <td>
-                  <%= link_to "##{subscription.id}", admin_subscription_path(subscription),
-                      class: "text-primary fw-bold" %>
-                </td>
-                <td>
+                <td class="align-middle">
                   <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-arrow-repeat text-primary"></i>
+                    </div>
                     <div>
-                      <strong><%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %></strong><br>
-                      <small class="text-muted"><%= subscription.customer.mobile %></small>
+                      <h6 class="mb-0">#<%= subscription.id %></h6>
+                      <small class="text-muted"><%= subscription.created_at.strftime("%d %b %Y") if subscription.created_at %></small>
                     </div>
                   </div>
                 </td>
-                <td>
-                  <strong><%= subscription.product.name %></strong><br>
-                  <small class="text-muted">₹<%= subscription.product.price %> per unit</small>
+                <td class="align-middle">
+                  <div>
+                    <h6 class="mb-0"><%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %></h6>
+                    <small class="text-muted">
+                      <i class="bi bi-telephone me-1"></i>
+                      <%= subscription.customer.mobile %>
+                    </small>
+                  </div>
                 </td>
-                <td>
-                  <span class="badge bg-info fs-6">
-                    <%= subscription.quantity %> <%= subscription.unit %>
-                  </span>
+                <td class="align-middle">
+                  <div>
+                    <h6 class="mb-0"><%= subscription.product.name %></h6>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                      <span class="badge bg-info-subtle text-info">
+                        <%= subscription.quantity %> <%= subscription.unit %>
+                      </span>
+                      <small class="text-muted">₹<%= subscription.product.price %>/unit</small>
+                    </div>
+                  </div>
                 </td>
-                <td>
-                  <strong><%= subscription.start_date.strftime('%d %b') %></strong>
-                  <span class="text-muted">to</span>
-                  <strong><%= subscription.end_date.strftime('%d %b') %></strong><br>
-                  <small class="text-muted">(<%= subscription.total_days %> days)</small>
+                <td class="align-middle">
+                  <div>
+                    <strong><%= subscription.start_date.strftime('%d %b') %></strong>
+                    <span class="text-muted">to</span>
+                    <strong><%= subscription.end_date.strftime('%d %b') %></strong>
+                    <div class="mt-1">
+                      <small class="text-muted">(<%= subscription.total_days %> days)</small>
+                    </div>
+                  </div>
                 </td>
-                <td>
+                <td class="align-middle">
                   <% pattern_class = case subscription.delivery_pattern
                                      when 'daily' then 'bg-success'
                                      when 'alternate' then 'bg-warning'
                                      when 'specific_dates' then 'bg-info'
                                      else 'bg-secondary'
                                      end %>
-                  <span class="badge <%= pattern_class %> fs-6">
+                  <span class="badge <%= pattern_class %> px-3 py-2">
+                    <i class="bi bi-calendar me-1"></i>
                     <%= subscription.delivery_pattern.humanize %>
                   </span>
                 </td>
-                <td>
+                <td class="align-middle">
                   <% summary = subscription.subscription_summary %>
-                  <div class="progress mb-1" style="height: 20px;">
-                    <div class="progress-bar bg-success" style="width: <%= summary[:completion_rate] %>%">
-                      <%= summary[:completion_rate].round(1) %>%
-                    </div>
+                  <div class="progress mb-1" style="height: 8px;">
+                    <div class="progress-bar bg-success" style="width: <%= summary[:completion_rate] %>%"></div>
                   </div>
-                  <small class="text-muted">
-                    <%= summary[:completed] %>/<%= summary[:total_deliveries] %> completed
-                  </small>
+                  <div class="d-flex justify-content-between">
+                    <small class="text-muted">
+                      <%= summary[:completed] %>/<%= summary[:total_deliveries] %> tasks
+                    </small>
+                    <small class="text-muted">
+                      <%= summary[:completion_rate].round(1) %>%
+                    </small>
+                  </div>
                 </td>
-                <td>
+                <td class="align-middle">
                   <% status_class = case subscription.status
                                     when 'active' then 'bg-success'
                                     when 'paused' then 'bg-warning'
@@ -234,82 +265,611 @@
                                     when 'cancelled' then 'bg-secondary'
                                     else 'bg-light'
                                     end %>
-                  <span class="badge <%= status_class %> fs-6">
+                  <span class="badge <%= status_class %> px-3 py-2">
                     <%= subscription.status.humanize %>
                   </span>
                   <% unless subscription.is_active? %>
-                    <br><span class="badge bg-secondary mt-1">Inactive</span>
+                    <div class="mt-1">
+                      <span class="badge bg-secondary">Inactive</span>
+                    </div>
                   <% end %>
                 </td>
-                <td>
-                  <div class="btn-group" role="group">
+                <td class="align-middle">
+                  <div class="d-flex gap-2 align-items-center">
+                    <!-- Primary Action - View Details -->
                     <%= link_to admin_subscription_path(subscription),
                         class: "btn btn-sm btn-outline-primary",
                         title: "View Details" do %>
                       <i class="bi bi-eye"></i>
                     <% end %>
 
-                    <%= link_to edit_admin_subscription_path(subscription),
-                        class: "btn btn-sm btn-outline-warning",
-                        title: "Edit" do %>
-                      <i class="bi bi-pencil"></i>
-                    <% end %>
+                    <!-- Daily Tasks Modal -->
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info daily-tasks-btn"
+                            data-subscription-id="<%= subscription.id %>"
+                            data-subscription-name="<%= subscription.customer.first_name %> <%= subscription.customer.last_name %> - <%= subscription.product.name %>"
+                            title="View Daily Tasks"
+                            onclick="openDailyTasksModal(<%= subscription.id %>)">
+                      <i class="bi bi-list-task"></i>
+                    </button>
 
-                    <% if subscription.status == 'active' %>
-                      <%= link_to pause_subscription_admin_subscription_path(subscription),
-                          method: :patch,
-                          class: "btn btn-sm btn-outline-warning",
-                          title: "Pause",
-                          confirm: "Are you sure you want to pause this subscription?" do %>
-                        <i class="bi bi-pause"></i>
-                      <% end %>
-                    <% elsif subscription.status == 'paused' %>
-                      <%= link_to resume_subscription_admin_subscription_path(subscription),
-                          method: :patch,
-                          class: "btn btn-sm btn-outline-success",
-                          title: "Resume",
-                          confirm: "Are you sure you want to resume this subscription?" do %>
-                        <i class="bi bi-play"></i>
-                      <% end %>
-                    <% end %>
+                    <!-- Secondary Actions Dropdown -->
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="dropdown-header">
+                          <i class="bi bi-tools me-1"></i>Subscription Actions
+                        </li>
+                        <li>
+                          <%= link_to edit_admin_subscription_path(subscription), class: "dropdown-item" do %>
+                            <i class="bi bi-pencil me-2"></i>
+                            Edit Subscription
+                          <% end %>
+                        </li>
 
-                    <%= link_to admin_subscription_path(subscription),
-                        method: :delete,
-                        class: "btn btn-sm btn-outline-danger",
-                        title: "Delete",
-                        confirm: "Are you sure? This will delete all delivery tasks as well." do %>
-                      <i class="bi bi-trash"></i>
-                    <% end %>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">
+                          <i class="bi bi-gear me-1"></i>Status Actions
+                        </li>
+
+                        <% if subscription.status == 'active' %>
+                          <li>
+                            <%= link_to pause_subscription_admin_subscription_path(subscription),
+                                method: :patch, class: "dropdown-item",
+                                confirm: "Are you sure you want to pause this subscription?" do %>
+                              <i class="bi bi-pause me-2 text-warning"></i>
+                              Pause Subscription
+                            <% end %>
+                          </li>
+                        <% elsif subscription.status == 'paused' %>
+                          <li>
+                            <%= link_to resume_subscription_admin_subscription_path(subscription),
+                                method: :patch, class: "dropdown-item",
+                                confirm: "Are you sure you want to resume this subscription?" do %>
+                              <i class="bi bi-play me-2 text-success"></i>
+                              Resume Subscription
+                            <% end %>
+                          </li>
+                        <% end %>
+
+                        <li>
+                          <%= link_to generate_tasks_admin_subscription_path(subscription),
+                              method: :post, class: "dropdown-item",
+                              confirm: "This will regenerate all delivery tasks. Are you sure?" do %>
+                            <i class="bi bi-arrow-clockwise me-2 text-primary"></i>
+                            Regenerate Tasks
+                          <% end %>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <%= link_to admin_subscription_path(subscription),
+                              method: :delete, class: "dropdown-item text-danger",
+                              confirm: "Are you sure? This will delete all delivery tasks as well.",
+                              data: {
+                                confirm: "Are you sure you want to delete subscription ##{subscription.id}? This action cannot be undone."
+                              } do %>
+                            <i class="bi bi-trash me-2"></i>
+                            Delete Subscription
+                          <% end %>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
-
-        <% if @subscriptions.empty? %>
-          <div class="text-center py-5">
-            <i class="bi bi-inbox display-1 text-muted"></i>
-            <h4 class="text-muted mt-3">No subscriptions found</h4>
-            <p class="text-muted">Create your first subscription to get started.</p>
-            <%= link_to new_admin_subscription_path, class: "btn btn-primary" do %>
-              <i class="bi bi-plus-circle"></i> Create Subscription
-            <% end %>
-          </div>
-        <% end %>
       </div>
 
       <!-- Pagination -->
-      <% if @subscriptions.respond_to?(:total_pages) && @subscriptions.total_pages > 1 %>
-        <div class="d-flex justify-content-center mt-4">
-          <%= paginate @subscriptions %>
+      <% if respond_to?(:paginate) && @subscriptions.respond_to?(:total_pages) %>
+        <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">
+              Showing <%= @subscriptions.offset_value + 1 %> - <%= [@subscriptions.offset_value + @subscriptions.length, @subscriptions.total_count].min %> of <%= @subscriptions.total_count %> subscriptions
+            </small>
+          </div>
+          <div>
+            <%= paginate @subscriptions %>
+          </div>
         </div>
       <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-arrow-repeat fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Subscriptions Found</h5>
+        <p class="text-muted mb-4">Start creating subscriptions for your customers to manage recurring orders.</p>
+        <%= link_to "Create Subscription", new_admin_subscription_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Daily Tasks Modal -->
+<div class="modal-overlay" id="dailyTasksModal" style="display: none;">
+  <div class="simple-modal">
+    <div class="modal-header bg-primary text-white">
+      <h5 class="modal-title" id="dailyTasksModalLabel">
+        <i class="bi bi-list-task"></i> Daily Tasks
+      </h5>
+      <button type="button" class="btn-close btn-close-white" onclick="closeModal()" aria-label="Close">&times;</button>
+    </div>
+      <div class="modal-body">
+        <div id="modalLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3 text-muted">Loading daily tasks...</p>
+        </div>
+        <div id="modalContent" style="display: none;">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                  <h6 class="mb-0"><i class="bi bi-info-circle"></i> Subscription Info</h6>
+                </div>
+                <div class="card-body">
+                  <div id="subscriptionInfo">
+                    <!-- Subscription details will be loaded here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                  <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Task Summary</h6>
+                </div>
+                <div class="card-body">
+                  <div id="taskSummary">
+                    <!-- Task summary will be loaded here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-calendar-check"></i> All Daily Tasks</h6>
+              <div class="btn-group btn-group-sm" id="bulkActionButtons" style="display: none;">
+                <button type="button" class="btn btn-success btn-sm bulk-action-btn" onclick="bulkCompleteTasks()">
+                  <i class="bi bi-check-all"></i> Complete Selected
+                </button>
+                <button type="button" class="btn btn-info btn-sm bulk-action-btn" onclick="bulkUpdateTasks()">
+                  <i class="bi bi-pencil-square"></i> Update Selected
+                </button>
+                <button type="button" class="btn btn-warning btn-sm bulk-action-btn" onclick="bulkCancelTasks()">
+                  <i class="bi bi-x-circle"></i> Cancel Selected
+                </button>
+                <button type="button" class="btn btn-danger btn-sm bulk-action-btn" onclick="bulkDeleteTasks()">
+                  <i class="bi bi-trash"></i> Delete Selected
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="selectAllTasks" onchange="toggleAllTasks()">
+                  <label class="form-check-label" for="selectAllTasks">
+                    Select All Tasks
+                  </label>
+                </div>
+                <div id="selectedCountDisplay" class="text-muted">
+                  <span id="selectedTaskCount">0</span> tasks selected
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th width="40">
+                        <input type="checkbox" class="form-check-input" id="headerCheckbox" onchange="toggleAllTasks(this)">
+                      </th>
+                      <th>Date</th>
+                      <th>Day</th>
+                      <th>Quantity</th>
+                      <th>Delivery Person</th>
+                      <th>Status</th>
+                      <th>Completed At</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tasksTableBody">
+                    <!-- Tasks will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+      <button type="button" class="btn btn-primary" id="refreshTasks">
+        <i class="bi bi-arrow-clockwise"></i> Refresh Tasks
+      </button>
     </div>
   </div>
 </div>
 
-<!-- Initialize Select2 -->
+<!-- Modern Subscription Page CSS -->
+<style>
+/* Avatar styling for subscription icons */
+.avatar-sm {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.875rem;
+}
+
+.bg-primary-subtle {
+  background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.bg-info-subtle {
+  background-color: rgba(13, 202, 240, 0.1) !important;
+  border: 1px solid rgba(13, 202, 240, 0.3);
+}
+
+/* Card hover effects matching booking page */
+.card {
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+/* Statistics cards hover effects */
+.col-md-2 .card:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Table styling matching booking page */
+.table-light th {
+  color: #212529 !important;
+  background-color: #f8f9fa !important;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+/* Badge styling */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+  color: #fff !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #212529 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+  color: #fff !important;
+}
+
+/* Progress bar styling */
+.progress {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+  border-radius: 10px;
+  transition: width 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Real-time status indicator matching booking page */
+.real-time-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.status-dot.status-active {
+  background-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+  animation: pulse 2s infinite;
+}
+
+.status-dot.status-inactive {
+  background-color: #6c757d;
+}
+
+.status-dot.status-loading {
+  background-color: #ffc107;
+  animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(40, 167, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+  }
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.3;
+  }
+}
+
+/* Button enhancements */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Form controls */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-check-input:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Dropdown enhancements */
+.dropdown-menu {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  transform: translateX(2px);
+}
+
+.dropdown-header {
+  font-weight: 600;
+  color: #6c757d;
+  padding: 0.5rem 1rem 0.25rem;
+}
+
+/* Custom scrollbar */
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Simple Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.simple-modal {
+  background: white;
+  border-radius: 15px;
+  max-width: 90%;
+  width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.simple-modal .modal-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 15px 15px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.simple-modal .modal-body {
+  padding: 2rem;
+  flex-grow: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.simple-modal .modal-footer {
+  padding: 1rem 2rem;
+  border-top: 1px solid #dee2e6;
+  border-radius: 0 0 15px 15px;
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+}
+
+.simple-modal .btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: white;
+}
+
+/* Loading spinner */
+#modalLoading {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Task row hover */
+#tasksTableBody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Alert positioning */
+.alert.position-fixed {
+  z-index: 9999;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .simple-modal {
+    max-width: 95%;
+    width: 95%;
+    margin: 10px auto;
+    border-radius: 10px;
+  }
+
+  .simple-modal .modal-body {
+    padding: 1rem;
+    max-height: calc(100vh - 160px);
+  }
+
+  .table-responsive {
+    max-height: 300px;
+  }
+
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+
+  .form-select, .form-control {
+    min-width: 150px;
+  }
+}
+</style>
+
+<!-- Initialize Select2 and Modal Functions -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof $ !== 'undefined' && $.fn.select2) {
@@ -319,5 +879,692 @@ document.addEventListener('DOMContentLoaded', function() {
       allowClear: true
     });
   }
+
+  // Setup modal close handlers
+  setupModalHandlers();
 });
+
+let currentSubscriptionId = null;
+
+// Setup modal handlers
+function setupModalHandlers() {
+  const modal = document.getElementById('dailyTasksModal');
+  if (!modal) return;
+
+  // Click outside modal to close
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // ESC key to close
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.style.display === 'block') {
+      closeModal();
+    }
+  });
+}
+
+// Simple close modal function
+function closeModal() {
+  const modal = document.getElementById('dailyTasksModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+
+  // Reset modal content
+  const modalLoading = document.getElementById('modalLoading');
+  const modalContent = document.getElementById('modalContent');
+  if (modalLoading) {
+    modalLoading.style.display = 'block';
+    modalLoading.innerHTML = `
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3 text-muted">Loading daily tasks...</p>
+    `;
+  }
+  if (modalContent) modalContent.style.display = 'none';
+}
+
+// Simple open modal function
+function openDailyTasksModal(subscriptionId) {
+  console.log('Opening modal for subscription:', subscriptionId);
+
+  // Load tasks first
+  loadDailyTasks(subscriptionId);
+
+  // Show modal
+  const modal = document.getElementById('dailyTasksModal');
+  if (modal) {
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+}
+
+// Load daily tasks for a subscription
+function loadDailyTasks(subscriptionId) {
+  currentSubscriptionId = subscriptionId;
+
+  // Show loading, hide content
+  const modalLoading = document.getElementById('modalLoading');
+  const modalContent = document.getElementById('modalContent');
+
+  if (modalLoading) modalLoading.style.display = 'block';
+  if (modalContent) modalContent.style.display = 'none';
+
+  // Update modal title with subscription name
+  const button = document.querySelector(`[data-subscription-id="${subscriptionId}"]`);
+  if (button) {
+    const subscriptionName = button.getAttribute('data-subscription-name');
+    const modalTitle = document.getElementById('dailyTasksModalLabel');
+    if (modalTitle) {
+      modalTitle.innerHTML = `<i class="bi bi-list-task"></i> Daily Tasks - ${subscriptionName}`;
+    }
+  }
+
+  // Fetch data via AJAX with timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  fetch(`/admin/subscriptions/${subscriptionId}/daily_tasks`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    signal: controller.signal
+  })
+  .then(response => {
+    clearTimeout(timeoutId);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    renderModalContent(data);
+    if (modalLoading) modalLoading.style.display = 'none';
+    if (modalContent) modalContent.style.display = 'block';
+  })
+  .catch(error => {
+    console.error('Error loading daily tasks:', error);
+    if (modalLoading) {
+      modalLoading.innerHTML = `
+        <div class="text-center py-5">
+          <i class="bi bi-exclamation-triangle text-danger display-1"></i>
+          <h4 class="text-danger mt-3">Error Loading Tasks</h4>
+          <p class="text-muted">${error.name === 'AbortError' ? 'Request timed out' : 'Please try again later'}</p>
+          <button class="btn btn-primary mt-3" onclick="loadDailyTasks(${subscriptionId})">
+            <i class="bi bi-arrow-clockwise"></i> Retry
+          </button>
+        </div>
+      `;
+    }
+  });
+}
+
+// Render the modal content with fetched data
+function renderModalContent(data) {
+  // Render subscription info
+  document.getElementById('subscriptionInfo').innerHTML = `
+    <div class="row">
+      <div class="col-6"><strong>Customer:</strong></div>
+      <div class="col-6">${data.subscription.customer_name}</div>
+    </div>
+    <div class="row">
+      <div class="col-6"><strong>Product:</strong></div>
+      <div class="col-6">${data.subscription.product_name}</div>
+    </div>
+    <div class="row">
+      <div class="col-6"><strong>Quantity:</strong></div>
+      <div class="col-6">${data.subscription.quantity} ${data.subscription.unit}</div>
+    </div>
+    <div class="row">
+      <div class="col-6"><strong>Pattern:</strong></div>
+      <div class="col-6"><span class="badge bg-info">${data.subscription.delivery_pattern}</span></div>
+    </div>
+    <div class="row">
+      <div class="col-6"><strong>Duration:</strong></div>
+      <div class="col-6">${data.subscription.start_date} to ${data.subscription.end_date}</div>
+    </div>
+  `;
+
+  // Render task summary
+  document.getElementById('taskSummary').innerHTML = `
+    <div class="row text-center">
+      <div class="col-3">
+        <div class="h4 text-primary mb-0">${data.summary.total}</div>
+        <small class="text-muted">Total Tasks</small>
+      </div>
+      <div class="col-3">
+        <div class="h4 text-success mb-0">${data.summary.completed}</div>
+        <small class="text-muted">Completed</small>
+      </div>
+      <div class="col-3">
+        <div class="h4 text-warning mb-0">${data.summary.pending}</div>
+        <small class="text-muted">Pending</small>
+      </div>
+      <div class="col-3">
+        <div class="h4 text-info mb-0">${data.summary.completion_rate}%</div>
+        <small class="text-muted">Complete</small>
+      </div>
+    </div>
+    <div class="progress mt-3" style="height: 25px;">
+      <div class="progress-bar bg-success" style="width: ${data.summary.completion_rate}%">
+        ${data.summary.completion_rate}% Complete
+      </div>
+    </div>
+  `;
+
+  // Render tasks table
+  const tableBody = document.getElementById('tasksTableBody');
+  if (data.tasks.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-4">
+          <i class="bi bi-inbox display-4 text-muted"></i>
+          <h5 class="text-muted mt-3">No tasks found</h5>
+        </td>
+      </tr>
+    `;
+  } else {
+    tableBody.innerHTML = data.tasks.map(task => {
+      const statusBadge = getStatusBadge(task.status);
+      const dayName = new Date(task.delivery_date).toLocaleDateString('en-US', { weekday: 'short' });
+      const formattedDate = new Date(task.delivery_date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      return `
+        <tr data-task-id="${task.id}">
+          <td>
+            <input type="checkbox" class="form-check-input task-checkbox" value="${task.id}" onchange="updateSelectedCount()">
+          </td>
+          <td>
+            <strong>${formattedDate}</strong>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark">${dayName}</span>
+          </td>
+          <td>
+            <span class="badge bg-info editable-quantity" data-task-id="${task.id}" data-current="${task.quantity}">
+              ${task.quantity} ${task.unit || 'units'}
+            </span>
+          </td>
+          <td>
+            ${task.delivery_person ? task.delivery_person.name : '<span class="text-muted">Not assigned</span>'}
+          </td>
+          <td>${statusBadge}</td>
+          <td>
+            ${task.completed_at ?
+              new Date(task.completed_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              }) :
+              '<span class="text-muted">-</span>'
+            }
+          </td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              ${task.status === 'pending' || task.status === 'assigned' ?
+                `<button class="btn btn-outline-success btn-sm" onclick="completeTask(${task.id})" title="Mark Complete">
+                  <i class="bi bi-check"></i>
+                </button>` : ''
+              }
+              ${task.status === 'pending' ?
+                `<button class="btn btn-outline-info btn-sm" onclick="editTask(${task.id})" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>` : ''
+              }
+              ${task.status === 'pending' || task.status === 'assigned' ?
+                `<button class="btn btn-outline-warning btn-sm" onclick="cancelTask(${task.id})" title="Cancel">
+                  <i class="bi bi-x-circle"></i>
+                </button>` : ''
+              }
+              ${task.status === 'paused' ?
+                `<button class="btn btn-outline-success btn-sm" onclick="resumeTask(${task.id})" title="Resume">
+                  <i class="bi bi-play"></i>
+                </button>` : ''
+              }
+              ${task.status === 'pending' ?
+                `<button class="btn btn-outline-secondary btn-sm" onclick="pauseTask(${task.id})" title="Pause">
+                  <i class="bi bi-pause"></i>
+                </button>` : ''
+              }
+              <button class="btn btn-outline-danger btn-sm" onclick="deleteTask(${task.id})" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+// Helper function to get status badge
+function getStatusBadge(status) {
+  const badges = {
+    'pending': '<span class="badge bg-warning">Pending</span>',
+    'completed': '<span class="badge bg-success">Completed</span>',
+    'skipped': '<span class="badge bg-secondary">Skipped</span>',
+    'cancelled': '<span class="badge bg-danger">Cancelled</span>'
+  };
+  return badges[status] || '<span class="badge bg-light text-dark">Unknown</span>';
+}
+
+// Mark task as completed
+function markTaskCompleted(taskId) {
+  if (!confirm('Mark this task as completed?')) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}/mark_completed`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Refresh the tasks
+      loadDailyTasks(currentSubscriptionId);
+      showAlert('Task marked as completed!', 'success');
+    } else {
+      showAlert('Error updating task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error updating task', 'error');
+  });
+}
+
+// View task details (placeholder)
+function viewTaskDetails(taskId) {
+  alert('Task details functionality can be implemented here for task ID: ' + taskId);
+}
+
+// Refresh tasks button - bind after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  const refreshBtn = document.getElementById('refreshTasks');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      if (currentSubscriptionId) {
+        loadDailyTasks(currentSubscriptionId);
+      }
+    });
+  }
+});
+
+// Show alert
+function showAlert(message, type = 'info') {
+  const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+  const alertHtml = `
+    <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;">
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', alertHtml);
+
+  // Auto dismiss after 3 seconds
+  setTimeout(() => {
+    const alert = document.querySelector('.alert');
+    if (alert) alert.remove();
+  }, 3000);
+}
+
+// Individual Task Operations
+
+function completeTask(taskId) {
+  if (!confirm('Mark this task as completed?')) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}/complete`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to complete task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error completing task', 'error');
+  });
+}
+
+function editTask(taskId) {
+  const row = document.querySelector(`tr[data-task-id="${taskId}"]`);
+  const quantityBadge = row.querySelector('.editable-quantity');
+  const currentQuantity = quantityBadge.dataset.current;
+
+  const newQuantity = prompt('Enter new quantity:', currentQuantity);
+  if (newQuantity === null || newQuantity === currentQuantity) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({
+      task: { quantity: parseFloat(newQuantity) }
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.errors ? data.errors.join(', ') : 'Failed to update task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error updating task', 'error');
+  });
+}
+
+function cancelTask(taskId) {
+  if (!confirm('Cancel this task?')) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}/cancel`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to cancel task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error cancelling task', 'error');
+  });
+}
+
+function pauseTask(taskId) {
+  if (!confirm('Pause this task?')) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}/pause`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to pause task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error pausing task', 'error');
+  });
+}
+
+function resumeTask(taskId) {
+  if (!confirm('Resume this task?')) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}/resume`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to resume task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error resuming task', 'error');
+  });
+}
+
+function deleteTask(taskId) {
+  if (!confirm('Delete this task? This action cannot be undone.')) return;
+
+  fetch(`/admin/milk_delivery_tasks/${taskId}`, {
+    method: 'DELETE',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to delete task', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error deleting task', 'error');
+  });
+}
+
+// Bulk Task Operations
+
+function getSelectedTaskIds() {
+  const checkboxes = document.querySelectorAll('.task-checkbox:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function toggleAllTasks() {
+  const selectAll = document.getElementById('selectAllTasks');
+  const checkboxes = document.querySelectorAll('.task-checkbox');
+
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAll.checked;
+  });
+
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const selectedCount = document.querySelectorAll('.task-checkbox:checked').length;
+  const selectedTaskCountElement = document.getElementById('selectedTaskCount');
+  const bulkActionButtons = document.getElementById('bulkActionButtons');
+
+  // Update the count display
+  if (selectedTaskCountElement) {
+    selectedTaskCountElement.textContent = selectedCount;
+  }
+
+  // Show/hide bulk action buttons
+  if (bulkActionButtons) {
+    bulkActionButtons.style.display = selectedCount > 0 ? 'block' : 'none';
+  }
+
+  // Enable/disable bulk action buttons
+  const bulkButtons = document.querySelectorAll('.bulk-action-btn');
+  bulkButtons.forEach(btn => {
+    btn.disabled = selectedCount === 0;
+  });
+}
+
+function bulkCompleteTasks() {
+  const taskIds = getSelectedTaskIds();
+  if (taskIds.length === 0) {
+    showAlert('Please select tasks to complete', 'warning');
+    return;
+  }
+
+  if (!confirm(`Complete ${taskIds.length} selected tasks?`)) return;
+
+  fetch('/admin/milk_delivery_tasks/bulk_complete', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ task_ids: taskIds })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to complete tasks', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error completing tasks', 'error');
+  });
+}
+
+function bulkCancelTasks() {
+  const taskIds = getSelectedTaskIds();
+  if (taskIds.length === 0) {
+    showAlert('Please select tasks to cancel', 'warning');
+    return;
+  }
+
+  if (!confirm(`Cancel ${taskIds.length} selected tasks?`)) return;
+
+  fetch('/admin/milk_delivery_tasks/bulk_cancel', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ task_ids: taskIds })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to cancel tasks', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error cancelling tasks', 'error');
+  });
+}
+
+function bulkDeleteTasks() {
+  const taskIds = getSelectedTaskIds();
+  if (taskIds.length === 0) {
+    showAlert('Please select tasks to delete', 'warning');
+    return;
+  }
+
+  if (!confirm(`Delete ${taskIds.length} selected tasks? This action cannot be undone.`)) return;
+
+  fetch('/admin/milk_delivery_tasks/bulk_delete', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ task_ids: taskIds })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      showAlert(data.message || 'Failed to delete tasks', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error deleting tasks', 'error');
+  });
+}
+
+function bulkUpdateTasks() {
+  const taskIds = getSelectedTaskIds();
+  if (taskIds.length === 0) {
+    showAlert('Please select tasks to update', 'warning');
+    return;
+  }
+
+  const newQuantity = prompt(`Enter new quantity for ${taskIds.length} selected tasks:`);
+  if (newQuantity === null) return;
+
+  fetch('/admin/milk_delivery_tasks/bulk_update', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({
+      task_ids: taskIds,
+      task: { quantity: parseFloat(newQuantity) }
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadDailyTasks(currentSubscriptionId);
+      showAlert(data.message, 'success');
+    } else {
+      const errorMsg = data.failed_tasks ?
+        `${data.message}. Some tasks failed to update.` :
+        (data.message || 'Failed to update tasks');
+      showAlert(errorMsg, 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error updating tasks', 'error');
+  });
+}
 </script>

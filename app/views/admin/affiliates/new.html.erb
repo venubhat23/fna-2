@@ -87,7 +87,6 @@
                 Please provide a valid email address.
               </div>
             </div>
-            <small class="text-muted">This email will be used as the username for login</small>
           </div>
 
           <div class="mb-3">
@@ -115,6 +114,11 @@
             <i class="bi bi-building me-2"></i>
             Business Information
           </h6>
+
+          <div class="mb-3">
+            <%= form.label :company_name, class: "form-label fw-semibold" %>
+            <%= form.text_field :company_name, class: "form-control", placeholder: "Enter company name (optional)" %>
+          </div>
 
           <div class="mb-3">
             <%= form.label :commission_percentage, class: "form-label fw-semibold" %>
@@ -263,13 +267,44 @@
         </div>
       </div>
 
+      <!-- Login Credentials Information -->
+      <div class="row">
+        <div class="col-12">
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-shield-lock me-2"></i>
+            Login Credentials (Auto-generated)
+          </h6>
+        </div>
+
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :username, class: "form-label fw-semibold" %>
+            <%= form.text_field :username, class: "form-control", placeholder: "Username will be auto-generated", id: "username_field", readonly: true %>
+            <small class="text-muted">Username will be generated from the affiliate name</small>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :auto_generated_password, "Password", class: "form-label fw-semibold" %>
+            <input type="text" class="form-control" placeholder="Password will be auto-generated" readonly>
+            <small class="text-muted">Password format: First 4 letters (uppercase) + '@' + current year</small>
+          </div>
+        </div>
+      </div>
+
       <!-- Password Information Alert -->
       <div class="alert alert-info" role="alert">
         <div class="d-flex align-items-start">
           <i class="bi bi-info-circle me-2 mt-1"></i>
           <div>
-            <strong>Automatic Password Generation:</strong>
-            <p class="mb-0 small">A secure password will be automatically generated for this affiliate using their name and current year. The password will be displayed after successful creation and can be found in the affiliate details.</p>
+            <strong>Automatic Credential Generation:</strong>
+            <ul class="mb-0 small mt-1">
+              <li>Username: Generated from affiliate's first and last name</li>
+              <li>Password: First 4 letters of name (uppercase) + '@' + current year</li>
+              <li>These credentials will be displayed after successful creation</li>
+              <li>Credentials can be found in the affiliate details page</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -302,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const firstNameInput = document.getElementById('affiliate_first_name');
   const lastNameInput = document.getElementById('affiliate_last_name');
   const accountHolderInput = document.getElementById('affiliate_account_holder_name');
+  const usernameField = document.getElementById('username_field');
 
   function updateAccountHolderName() {
     if (accountHolderInput && accountHolderInput.value === '') {
@@ -314,8 +350,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  if (firstNameInput) firstNameInput.addEventListener('blur', updateAccountHolderName);
-  if (lastNameInput) lastNameInput.addEventListener('blur', updateAccountHolderName);
+  function generateUsername() {
+    const firstName = firstNameInput ? firstNameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+    const lastName = lastNameInput ? lastNameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
+    if (firstName || lastName) {
+      const baseUsername = firstName + lastName;
+      if (usernameField) {
+        usernameField.value = baseUsername || 'username';
+      }
+    }
+  }
+
+  if (firstNameInput) {
+    firstNameInput.addEventListener('blur', updateAccountHolderName);
+    firstNameInput.addEventListener('input', generateUsername);
+  }
+
+  if (lastNameInput) {
+    lastNameInput.addEventListener('blur', updateAccountHolderName);
+    lastNameInput.addEventListener('input', generateUsername);
+  }
 });
 </script>
 

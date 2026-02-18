@@ -1,4 +1,4 @@
-class Admin::StockMovementsController < ApplicationController
+class Admin::StockMovementsController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_stock_movement, only: [:show]
 

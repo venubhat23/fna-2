@@ -1,4 +1,4 @@
-class Admin::VendorsController < ApplicationController
+class Admin::VendorsController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_vendor, only: [:show, :edit, :update, :destroy, :toggle_status]
   layout 'application'

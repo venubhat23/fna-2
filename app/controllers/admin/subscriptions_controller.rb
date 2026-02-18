@@ -1,20 +1,22 @@
-class Admin::SubscriptionsController < ApplicationController
-  before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :delivery_schedule, :generate_tasks]
+class Admin::SubscriptionsController < Admin::ApplicationController
+  before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :delivery_schedule, :generate_tasks, :daily_tasks]
   before_action :check_sidebar_permission
 
   def index
-    @subscriptions = MilkSubscription.includes(:customer, :product)
+    @subscriptions = MilkSubscription.includes(:customer, :product, milk_delivery_tasks: :delivery_person)
 
     # Apply filters
     @subscriptions = filter_by_status(@subscriptions)
     @subscriptions = filter_by_date_range(@subscriptions)
     @subscriptions = filter_by_customer(@subscriptions)
+    @subscriptions = filter_by_delivery_person(@subscriptions)
 
     @subscriptions = @subscriptions.order(created_at: :desc).page(params[:page]).per(20)
 
     # For filter options
     @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     @products = Product.where(product_type: 'milk').pluck(:name, :id)
+    @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
 
     # Summary statistics
     @stats = calculate_subscription_stats
@@ -28,6 +30,15 @@ class Admin::SubscriptionsController < ApplicationController
   def show
     @delivery_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(:delivery_date)
     @summary = @subscription.subscription_summary
+
+    # Customer pattern data for sidebar
+    @customer_patterns = MilkSubscription.joins(:customer)
+                                        .joins("LEFT JOIN milk_delivery_tasks ON milk_subscriptions.id = milk_delivery_tasks.subscription_id AND DATE(milk_delivery_tasks.delivery_date) = DATE(NOW())")
+                                        .select("customers.first_name, customers.last_name, customers.id as customer_id,
+                                               COUNT(DISTINCT milk_subscriptions.id) as total_subscriptions,
+                                               COUNT(milk_delivery_tasks.id) as daily_tasks_count")
+                                        .group("customers.id, customers.first_name, customers.last_name")
+                                        .order("customers.first_name")
   end
 
   def new
@@ -83,13 +94,22 @@ class Admin::SubscriptionsController < ApplicationController
   end
 
   def pause_subscription
-    @subscription.update(status: 'paused')
-    redirect_to admin_subscription_path(@subscription), notice: 'Subscription paused successfully!'
+    @subscription.update(status: 'paused', is_active: false)
+    # Pause all future delivery tasks (not completed ones)
+    @subscription.milk_delivery_tasks.where(status: 'pending', delivery_date: Date.current..).update_all(status: 'paused')
+
+    paused_tasks_count = @subscription.milk_delivery_tasks.where(status: 'paused').count
+    redirect_to admin_subscription_path(@subscription),
+                notice: "Subscription paused successfully! #{paused_tasks_count} pending delivery tasks have been paused."
   end
 
   def resume_subscription
-    @subscription.update(status: 'active')
-    redirect_to admin_subscription_path(@subscription), notice: 'Subscription resumed successfully!'
+    @subscription.update(status: 'active', is_active: true)
+    # Resume all paused delivery tasks
+    resumed_tasks_count = @subscription.milk_delivery_tasks.where(status: 'paused').update_all(status: 'pending')
+
+    redirect_to admin_subscription_path(@subscription),
+                notice: "Subscription resumed successfully! #{resumed_tasks_count} delivery tasks have been resumed."
   end
 
   def delivery_schedule
@@ -102,6 +122,60 @@ class Admin::SubscriptionsController < ApplicationController
     @subscription.milk_delivery_tasks.destroy_all
     @subscription.generate_all_delivery_tasks
     redirect_to admin_subscription_path(@subscription), notice: 'Delivery tasks regenerated successfully!'
+  end
+
+  def daily_tasks
+    unless @subscription
+      render json: { error: 'Subscription not found' }, status: :not_found and return
+    end
+
+    @delivery_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(:delivery_date)
+
+    # Prepare data for JSON response
+    subscription_data = {
+      customer_name: "#{@subscription.customer.first_name} #{@subscription.customer.last_name}".strip,
+      product_name: @subscription.product.name,
+      quantity: @subscription.quantity,
+      unit: @subscription.unit,
+      delivery_pattern: @subscription.delivery_pattern.humanize,
+      start_date: @subscription.start_date.strftime('%d %b %Y'),
+      end_date: @subscription.end_date.strftime('%d %b %Y')
+    }
+
+    # Calculate summary
+    total_tasks = @delivery_tasks.count
+    completed_tasks = @delivery_tasks.where(status: 'completed').count
+    pending_tasks = @delivery_tasks.where(status: 'pending').count
+    completion_rate = total_tasks > 0 ? (completed_tasks.to_f / total_tasks * 100).round(1) : 0
+
+    summary_data = {
+      total: total_tasks,
+      completed: completed_tasks,
+      pending: pending_tasks,
+      completion_rate: completion_rate
+    }
+
+    # Prepare tasks data
+    tasks_data = @delivery_tasks.map do |task|
+      {
+        id: task.id,
+        delivery_date: task.delivery_date.strftime('%Y-%m-%d'),
+        quantity: task.quantity,
+        unit: @subscription.unit,
+        status: task.status,
+        completed_at: task.completed_at,
+        delivery_person: task.delivery_person ? {
+          id: task.delivery_person.id,
+          name: "#{task.delivery_person.first_name} #{task.delivery_person.last_name}".strip
+        } : nil
+      }
+    end
+
+    render json: {
+      subscription: subscription_data,
+      summary: summary_data,
+      tasks: tasks_data
+    }
   end
 
   # Filter actions
@@ -120,7 +194,13 @@ class Admin::SubscriptionsController < ApplicationController
   private
 
   def set_subscription
-    @subscription = MilkSubscription.find(params[:id])
+    @subscription = MilkSubscription.find_by(id: params[:id])
+    unless @subscription
+      respond_to do |format|
+        format.html { redirect_to admin_subscriptions_path, alert: 'Subscription not found.' }
+        format.json { render json: { error: 'Subscription not found' }, status: :not_found }
+      end
+    end
   end
 
   def subscription_params
@@ -156,6 +236,16 @@ class Admin::SubscriptionsController < ApplicationController
     end
   end
 
+  def filter_by_delivery_person(subscriptions)
+    if params[:delivery_person_id].present?
+      subscriptions.joins(:milk_delivery_tasks)
+                  .where(milk_delivery_tasks: { delivery_person_id: params[:delivery_person_id] })
+                  .distinct
+    else
+      subscriptions
+    end
+  end
+
   def calculate_subscription_stats
     total = MilkSubscription.count
     active = MilkSubscription.where(status: 'active').count
@@ -176,8 +266,12 @@ class Admin::SubscriptionsController < ApplicationController
   end
 
   def check_sidebar_permission
-    unless current_user.has_sidebar_permission?('subscriptions')
-      redirect_to admin_dashboard_path, alert: 'You do not have permission to access this page.'
+    return if action_name == 'daily_tasks' # Allow daily_tasks without sidebar permission check
+    unless current_user && current_user.has_sidebar_permission?('subscriptions')
+      respond_to do |format|
+        format.html { redirect_to admin_dashboard_path, alert: 'You do not have permission to access this page.' }
+        format.json { render json: { error: 'Permission denied' }, status: :forbidden }
+      end
     end
   end
 end
