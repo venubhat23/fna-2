@@ -170,7 +170,7 @@ class Admin::BookingsController < Admin::ApplicationController
 
   def invoice
     respond_to do |format|
-      format.html { render template: 'admin/bookings/invoice_new', layout: 'invoice' }
+      format.html { render template: 'admin/bookings/invoice', layout: 'invoice' }
       format.pdf do
         pdf = WickedPdf.new.pdf_from_string(
           render_to_string('admin/bookings/invoice', layout: 'invoice_pdf'),

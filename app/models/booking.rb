@@ -316,10 +316,14 @@ class Booking < ApplicationRecord
 
   # Calculate final amount after discount
   def calculate_final_amount_after_discount
-    if total_amount.present? && discount_amount.present?
-      self.final_amount_after_discount = total_amount.to_f - discount_amount.to_f
-    elsif total_amount.present?
-      self.final_amount_after_discount = total_amount.to_f
+    # Calculate from subtotal + tax - discount (not from total_amount which may already include discount)
+    base_amount = (subtotal || calculated_subtotal).to_f + (tax_amount || calculated_tax_amount).to_f
+    discount_amt = discount_amount.to_f
+
+    if discount_amt > 0
+      self.final_amount_after_discount = base_amount - discount_amt
+    else
+      self.final_amount_after_discount = base_amount
     end
   end
 

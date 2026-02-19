@@ -6,6 +6,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="browser-extension-disable" content="true">
+    <meta data-grammarly-disable="true">
+    <meta name="grammarly-disable" content="true">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self';">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -51,6 +54,12 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+
+    <!-- Block browser extensions -->
+    <style>
+      grammarly-extension, grammarly-popups, grammarly-mirror { display: none !important; }
+      [data-extension] { display: none !important; }
+    </style>
   </head>
 
   <body class="insurance-app">

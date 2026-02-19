@@ -1,3 +1,4 @@
+
 <!-- Invoice Header with Company Information -->
 <div class="invoice-header">
     <div class="header-content">
@@ -170,11 +171,12 @@
             <span style="font-weight: 500;">₹<%= number_with_delimiter(@booking.calculated_subtotal, delimiter: ',') %></span>
         </div>
 
-        <% if @booking.discount_amount.present? && @booking.discount_amount.to_f > 0 %>
+        <% discount_amount = @booking.discount_amount.to_f %>
+        <% if discount_amount > 0 %>
             <div class="total-row subtotal">
                 <span>Discount:</span>
                 <span style="font-weight: 500; color: #38a169;">
-                    -₹<%= number_with_delimiter(@booking.discount_amount&.to_f || 0, delimiter: ',') %>
+                    -₹<%= number_with_delimiter(discount_amount, delimiter: ',') %>
                 </span>
             </div>
         <% end %>
@@ -184,14 +186,15 @@
             <span style="font-weight: 500;">₹<%= number_with_delimiter(@booking.calculated_tax_amount, delimiter: ',') %></span>
         </div>
 
-        <% if @booking.discount_amount.present? && @booking.discount_amount.to_f > 0 %>
+        <% if discount_amount > 0 %>
+            <% original_total = @booking.calculated_subtotal + @booking.calculated_tax_amount %>
             <div class="total-row subtotal">
                 <span style="text-decoration: line-through; opacity: 0.7;">Original Total:</span>
-                <span style="font-weight: 500; text-decoration: line-through; opacity: 0.7;">₹<%= number_with_delimiter(@booking.calculated_total_amount, delimiter: ',') %></span>
+                <span style="font-weight: 500; text-decoration: line-through; opacity: 0.7;">₹<%= number_with_delimiter(original_total, delimiter: ',') %></span>
             </div>
             <div class="total-row final-total">
                 <span>Final Amount After Discount:</span>
-                <span>₹<%= number_with_delimiter(@booking.final_amount_after_discount&.to_f || (@booking.calculated_total_amount - (@booking.discount_amount&.to_f || 0)), delimiter: ',') %></span>
+                <span>₹<%= number_with_delimiter(original_total - discount_amount, delimiter: ',') %></span>
             </div>
         <% else %>
             <div class="total-row final-total">
