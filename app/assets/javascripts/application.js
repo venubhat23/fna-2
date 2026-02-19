@@ -1,5 +1,7 @@
 // Modern DemoFarm Admin JavaScript
 
+//= require admin/delivery_rules
+
 // Global app object
 window.DemoFarmAdmin = {
 

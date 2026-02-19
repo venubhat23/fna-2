@@ -197,6 +197,21 @@
             <% end %>
           </li>
         <% end %>
+
+        <!-- Delivery People -->
+        <% if show_sidebar_item?('delivery_people') %>
+          <li class="nav-item">
+            <%= link_to admin_delivery_people_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/delivery_people')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-teal">
+                  <i class="bi bi-truck"></i>
+                </div>
+              </div>
+              <span class="nav-text">Delivery People</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
       </ul>
     </div>
 

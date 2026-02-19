@@ -161,13 +161,13 @@
           <!-- Enable Discount Checkbox -->
           <div class="col-12">
             <div class="form-check form-switch">
-              <%= form.check_box :is_discounted, class: "form-check-input", id: "discount_toggle" %>
+              <%= form.check_box :is_discounted, class: "form-check-input", id: "discount_toggle", checked: @product.is_discounted %>
               <%= form.label :is_discounted, "Enable Discount", class: "form-check-label" %>
             </div>
           </div>
 
           <!-- Discount Configuration (hidden by default) -->
-          <div id="discount_config" class="col-12" style="<%= 'display: none;' unless @product.is_discounted %>">
+          <div id="discount_config" class="col-12" style="<%= @product.is_discounted ? '' : 'display: none;' %>">
             <div class="card border-warning">
               <div class="card-header bg-warning bg-opacity-10">
                 <h6 class="card-title mb-0 text-warning">
@@ -196,8 +196,8 @@
                     <%= form.label :discount_value, "Discount Value", class: "form-label" %>
                     <span class="text-danger">*</span>
                     <div class="input-group">
-                      <span class="input-group-text" id="discount_symbol">%</span>
-                      <%= form.number_field :discount_value, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", id: "discount_value" %>
+                      <span class="input-group-text" id="discount_symbol"><%= @product.discount_type == 'fixed' ? '₹' : '%' %></span>
+                      <%= form.number_field :discount_value, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", id: "discount_value", value: @product.discount_value %>
                     </div>
                     <div class="form-text">Enter discount amount or percentage</div>
                   </div>
@@ -207,7 +207,7 @@
                     <%= form.label :discount_amount, "Calculated Discount Amount", class: "form-label" %>
                     <div class="input-group">
                       <span class="input-group-text">₹</span>
-                      <%= form.number_field :discount_amount, class: "form-control", readonly: true, step: 0.01, placeholder: "0.00", id: "discount_amount_display" %>
+                      <%= form.number_field :discount_amount, class: "form-control", readonly: true, step: 0.01, placeholder: "0.00", id: "discount_amount_display", value: @product.discount_amount %>
                     </div>
                     <div class="form-text">Auto-calculated savings amount</div>
                   </div>
@@ -218,11 +218,11 @@
                       <div class="row text-center">
                         <div class="col-md-6">
                           <small class="text-muted d-block">Selling Price</small>
-                          <span class="fw-bold" id="regular_price_display">₹0.00</span>
+                          <span class="fw-bold" id="regular_price_display">₹<%= @product.price || 0 %></span>
                         </div>
                         <div class="col-md-6">
                           <small class="text-muted d-block">Final Amount to Sell</small>
-                          <span class="fw-bold text-success" id="final_discounted_price">₹0.00</span>
+                          <span class="fw-bold text-success" id="final_discounted_price">₹<%= @product.is_discounted && @product.discount_amount ? (@product.price - @product.discount_amount).to_f : (@product.price || 0) %></span>
                         </div>
                       </div>
                     </div>
@@ -708,8 +708,8 @@
           Occasional Product Settings
         </h5>
         <div class="form-check form-switch">
-          <%= form.check_box :is_occasional_product, class: "form-check-input", id: "occasionalProductToggle" %>
-          <%= form.label :is_occasional_product, "Enable Occasional Product", class: "form-check-label" %>
+          <%= form.check_box :is_occasional_product, { class: "form-check-input", id: "occasionalProductToggle" }, "true", "false" %>
+          <%= form.label :is_occasional_product, "Enable Occasional Product", class: "form-check-label", for: "occasionalProductToggle" %>
         </div>
       </div>
       <div class="card-body" id="occasionalProductSettings" style="<%= 'display: none;' unless @product.is_occasional_product %>">
@@ -1005,10 +1005,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // IMPORTANT: Remove any required attributes from occasional date fields on page load
-  // These should only be set dynamically when needed
-  const occasionalStartDate = document.getElementById('occasionalStartDate');
-  const occasionalEndDate = document.getElementById('occasionalEndDate');
+  try {
+    // IMPORTANT: Remove any required attributes from occasional date fields on page load
+    // These should only be set dynamically when needed
+    const occasionalStartDate = document.getElementById('occasionalStartDate');
+    const occasionalEndDate = document.getElementById('occasionalEndDate');
 
   if (occasionalStartDate) {
     occasionalStartDate.removeAttribute('required');
@@ -1288,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Category Search Dropdown Functionality
   const categorySelect = document.getElementById('product_category_id');
-  const searchContainer = categorySelect?.closest('.position-relative').querySelector('.search-dropdown-container');
+  const searchContainer = categorySelect?.closest('.position-relative')?.querySelector('.search-dropdown-container');
   const searchInput = searchContainer?.querySelector('.search-input');
   const searchResults = searchContainer?.querySelector('.search-results');
   let allCategories = [];
@@ -1659,6 +1660,16 @@ document.addEventListener('DOMContentLoaded', function() {
       regularPrice: regularPrice,
       discountAmountDisplay: discountAmountDisplay
     });
+
+    // Ensure discount symbol is correct on page load
+    if (discountType && discountType.value) {
+      if (discountType.value === 'fixed' && discountSymbol) {
+        discountSymbol.textContent = '₹';
+      } else if (discountType.value === 'percentage' && discountSymbol) {
+        discountSymbol.textContent = '%';
+      }
+    }
+
     calculateSimplifiedDiscount();
     calculateProfit();
   }, 100);
@@ -2040,13 +2051,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Occasional Product Functionality
   function initializeOccasionalProduct() {
-    const occasionalToggle = document.getElementById('occasionalProductToggle');
+    // Rails checkbox helpers can be tricky, let's try different selectors
+    let occasionalToggle = document.getElementById('occasionalProductToggle');
+
+    // If not found, try by name attribute
+    if (!occasionalToggle) {
+      occasionalToggle = document.querySelector('input[name="product[is_occasional_product]"][type="checkbox"]');
+    }
+
     const occasionalSettings = document.getElementById('occasionalProductSettings');
     const startDateInput = document.getElementById('occasionalStartDate');
     const endDateInput = document.getElementById('occasionalEndDate');
     const startDateRequired = document.getElementById('startDateRequired');
     const endDateRequired = document.getElementById('endDateRequired');
     const occasionalPreview = document.getElementById('occasionalPreview');
+
+    // Debug logging
+    console.log('Initializing Occasional Product Feature');
+    console.log('Toggle element found:', !!occasionalToggle);
+    console.log('Settings element found:', !!occasionalSettings);
+
+    if (!occasionalToggle || !occasionalSettings) {
+      console.error('Required elements not found for occasional product feature');
+      console.error('Looking for checkbox with ID "occasionalProductToggle" or name "product[is_occasional_product]"');
+      // List all checkboxes for debugging
+      console.log('All checkboxes found:', document.querySelectorAll('input[type="checkbox"]'));
+      return;
+    }
 
     // Schedule type elements
     const scheduleOneTime = document.getElementById('schedule_one_time');
@@ -2076,16 +2107,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Toggle occasional product settings
     if (occasionalToggle) {
+      console.log('Adding change event listener to occasional toggle');
       occasionalToggle.addEventListener('change', function() {
+        console.log('Occasional toggle changed, checked:', this.checked);
         if (this.checked) {
+          console.log('Showing occasional settings');
           occasionalSettings.style.display = 'block';
           updateScheduleTypeDisplay();
         } else {
+          console.log('Hiding occasional settings');
           occasionalSettings.style.display = 'none';
           clearAllScheduleFields();
-          occasionalPreview.classList.add('d-none');
+          if (occasionalPreview) {
+            occasionalPreview.classList.add('d-none');
+          }
         }
       });
+
+      // Trigger initial state
+      console.log('Initial toggle state:', occasionalToggle.checked);
+      if (occasionalToggle.checked) {
+        occasionalSettings.style.display = 'block';
+        updateScheduleTypeDisplay();
+      }
     }
 
     // Schedule type change handlers
@@ -3061,6 +3105,10 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
         });
       }
     });
+  }
+  } catch (error) {
+    console.error('Error initializing product form:', error);
+    // Continue with form functionality even if some features fail
   }
 });
 </script>

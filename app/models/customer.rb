@@ -34,6 +34,9 @@ class Customer < ApplicationRecord
   # Custom password handling until password_digest column is added
   attr_accessor :password, :password_confirmation
 
+  # Virtual attribute for status if column doesn't exist yet
+  attr_accessor :status unless column_names.include?('status')
+
   # Validate password presence and confirmation
   validates :password, presence: true, length: { minimum: 6 }, if: :password_required?
   validates :password_confirmation, presence: true, if: :password_required?
@@ -72,9 +75,9 @@ class Customer < ApplicationRecord
 
   # Optional validations - removed validations for non-existent columns
 
-  # Scopes - status column doesn't exist, so all customers are considered active
-  scope :active, -> { all }
-  scope :inactive, -> { none } # No status column, so return empty relation
+  # Scopes
+  scope :active, -> { column_names.include?('status') ? where(status: true) : all }
+  scope :inactive, -> { column_names.include?('status') ? where(status: false) : none }
 
   # Callbacks
   before_validation :normalize_blank_values, :normalize_mobile_numbers
@@ -97,7 +100,8 @@ class Customer < ApplicationRecord
   end
 
   def active?
-    true # All customers are considered active since there's no status column
+    return status if respond_to?(:status) && !status.nil?
+    true # Default to active if no status column
   end
 
   def has_location?

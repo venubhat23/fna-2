@@ -1,7 +1,7 @@
 class Admin::CustomersController < Admin::ApplicationController
   include LocationData
   include ConfigurablePagination
-  before_action :set_customer, only: [:show, :edit, :update, :destroy, :policy_chart, :trace_commission, :product_selection]
+  before_action :set_customer, only: [:show, :edit, :update, :destroy, :toggle_status, :policy_chart, :trace_commission, :product_selection]
   skip_before_action :ensure_admin, only: [:search_sub_agents]
   skip_before_action :authenticate_user!, only: [:search_sub_agents]
   skip_load_and_authorize_resource only: [:search_sub_agents]
@@ -433,8 +433,22 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # PATCH /admin/customers/1/toggle_status
   def toggle_status
-    # Status functionality disabled - status column doesn't exist in customers table
-    redirect_to admin_customers_path, notice: "Status functionality is not available."
+    # Check if status column exists or use virtual attribute
+    if @customer.respond_to?(:status)
+      current_status = @customer.status.nil? ? true : @customer.status
+      @customer.update(status: !current_status)
+      status_text = @customer.status ? 'enabled' : 'disabled'
+
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: edit_admin_customer_path(@customer), notice: "Customer has been #{status_text}.") }
+        format.json { render json: { status: @customer.status, message: "Customer #{status_text}" } }
+        format.js {
+          render inline: "window.location.reload();"
+        }
+      end
+    else
+      redirect_to admin_customers_path, alert: "Status functionality requires database migration."
+    end
   end
 
   # GET /admin/customers/export
@@ -544,6 +558,10 @@ class Admin::CustomersController < Admin::ApplicationController
       :first_name, :last_name, :middle_name, :email, :mobile,
       :longitude, :latitude, :whatsapp_number, :auto_generated_password,
       :location_obtained_at, :location_accuracy, :password, :password_confirmation,
+      :birth_date, :gender, :marital_status, :pan_no, :gst_no,
+      :company_name, :occupation, :annual_income,
+      :emergency_contact_name, :emergency_contact_number, :blood_group,
+      :nationality, :preferred_language, :notes, :address, :status,
       :personal_image, :house_image, profile_image: []
     )
   end

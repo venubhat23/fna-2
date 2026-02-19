@@ -114,6 +114,174 @@
             </div>
           </div>
 
+          <div class="col-md-4">
+            <%= form.label :birth_date, "Date of Birth", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-calendar text-muted"></i>
+              </span>
+              <%= form.date_field :birth_date, class: "form-control border-start-0", max: Date.current.to_s, placeholder: "Select date of birth" %>
+            </div>
+            <div class="form-text">Used to calculate age and send birthday wishes</div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :gender, "Gender", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-gender-ambiguous text-muted"></i>
+              </span>
+              <%= form.select :gender, options_for_select([['Select Gender', ''], ['Male', 'male'], ['Female', 'female'], ['Other', 'other']]), {}, class: "form-select border-start-0" %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :marital_status, "Marital Status", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-heart text-muted"></i>
+              </span>
+              <%= form.select :marital_status, options_for_select([['Select Status', ''], ['Single', 'single'], ['Married', 'married'], ['Divorced', 'divorced'], ['Widowed', 'widowed']]), {}, class: "form-select border-start-0" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :pan_no, "PAN Number", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-credit-card-2-front text-muted"></i>
+              </span>
+              <%= form.text_field :pan_no, class: "form-control border-start-0 text-uppercase", placeholder: "ABCDE1234F", maxlength: 10, pattern: "[A-Z]{5}[0-9]{4}[A-Z]{1}" %>
+            </div>
+            <div class="form-text">Format: ABCDE1234F</div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :gst_no, "GST Number", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-receipt text-muted"></i>
+              </span>
+              <%= form.text_field :gst_no, class: "form-control border-start-0 text-uppercase", placeholder: "22ABCDE1234F1Z5", maxlength: 15 %>
+            </div>
+            <div class="form-text">15-character GST number for business customers</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Professional Information Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-secondary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-briefcase text-secondary"></i>
+          </div>
+          <h5 class="card-title mb-0">Professional Information</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :company_name, "Company Name", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-building text-muted"></i>
+              </span>
+              <%= form.text_field :company_name, class: "form-control border-start-0", placeholder: "Enter company name" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :occupation, "Occupation", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-person-badge text-muted"></i>
+              </span>
+              <%= form.text_field :occupation, class: "form-control border-start-0", placeholder: "Enter occupation" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :annual_income, "Annual Income", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-currency-rupee text-muted"></i>
+              </span>
+              <%= form.number_field :annual_income, class: "form-control border-start-0", placeholder: "Enter annual income", step: 1000 %>
+            </div>
+            <div class="form-text">Annual income in rupees</div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :preferred_language, "Preferred Language", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-translate text-muted"></i>
+              </span>
+              <%= form.select :preferred_language, options_for_select([['English', 'english'], ['Hindi', 'hindi'], ['Marathi', 'marathi'], ['Gujarati', 'gujarati'], ['Tamil', 'tamil'], ['Telugu', 'telugu'], ['Kannada', 'kannada'], ['Malayalam', 'malayalam'], ['Bengali', 'bengali'], ['Punjabi', 'punjabi']]), { prompt: 'Select Language' }, class: "form-select border-start-0" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Emergency Contact Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-danger bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-telephone-plus text-danger"></i>
+          </div>
+          <h5 class="card-title mb-0">Emergency Contact</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <%= form.label :emergency_contact_name, "Contact Name", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-person-lines-fill text-muted"></i>
+              </span>
+              <%= form.text_field :emergency_contact_name, class: "form-control border-start-0", placeholder: "Emergency contact name" %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :emergency_contact_number, "Contact Number", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-telephone-fill text-muted"></i>
+              </span>
+              <%= form.telephone_field :emergency_contact_number, class: "form-control border-start-0", placeholder: "Emergency contact number" %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :blood_group, "Blood Group", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-droplet text-muted"></i>
+              </span>
+              <%= form.select :blood_group, options_for_select([['Select Blood Group', ''], ['A+', 'A+'], ['A-', 'A-'], ['B+', 'B+'], ['B-', 'B-'], ['AB+', 'AB+'], ['AB-', 'AB-'], ['O+', 'O+'], ['O-', 'O-']]), {}, class: "form-select border-start-0" %>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :nationality, "Nationality", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-flag text-muted"></i>
+              </span>
+              <%= form.text_field :nationality, class: "form-control border-start-0", placeholder: "Enter nationality", value: "Indian" %>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -127,11 +295,20 @@
           <div class="bg-info bg-opacity-10 rounded p-2 me-3">
             <i class="bi bi-geo-alt text-info"></i>
           </div>
-          <h5 class="card-title mb-0">Location Information</h5>
+          <h5 class="card-title mb-0">Address & Location Information</h5>
         </div>
       </div>
       <div class="card-body pt-3">
         <div class="row g-3">
+          <div class="col-12">
+            <%= form.label :address, "Address", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-house text-muted"></i>
+              </span>
+              <%= form.text_area :address, class: "form-control border-start-0", placeholder: "Enter complete address", rows: 2 %>
+            </div>
+          </div>
 
           <!-- Location Section -->
           <div class="col-12">
@@ -179,6 +356,34 @@
                 <span id="locationMessage">Click 'Get Current Location' to automatically fill coordinates</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Information Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-success bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-journal-text text-success"></i>
+          </div>
+          <h5 class="card-title mb-0">Additional Information</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-12">
+            <%= form.label :notes, "Notes", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 align-self-start">
+                <i class="bi bi-pencil-square text-muted"></i>
+              </span>
+              <%= form.text_area :notes, class: "form-control border-start-0", placeholder: "Any additional notes or special requirements", rows: 3 %>
+            </div>
+            <div class="form-text">Add any special notes, preferences, or important information about this customer</div>
           </div>
         </div>
       </div>
