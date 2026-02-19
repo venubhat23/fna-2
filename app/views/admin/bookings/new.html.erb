@@ -1,6 +1,9 @@
 <%# Floating Toggle Buttons %>
 <div class="position-fixed" style="top: 90px; right: 20px; z-index: 1050;">
   <div class="d-flex gap-2">
+    <button type="button" class="btn btn-primary btn-sm shadow-lg" id="productsViewBtn" onclick="showProductsView()" title="Products" style="display: none;">
+      <i class="bi bi-grid"></i>
+    </button>
     <button type="button" class="btn btn-outline-primary btn-sm shadow-lg" id="checkoutViewBtn" onclick="showCheckoutView()" title="Checkout">
       <i class="bi bi-cart-check"></i>
     </button>
@@ -10,6 +13,10 @@
 <%# Large Toggle Buttons %>
 <div class="mb-3">
   <div class="btn-group-lg d-flex gap-3" role="group">
+    <button type="button" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm" id="productsViewBtnLarge" onclick="showProductsView()" style="display: none;">
+      <i class="bi bi-grid me-2"></i>
+      <span class="fw-medium">Products</span>
+    </button>
     <button type="button" class="btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm" id="checkoutViewBtnLarge" onclick="showCheckoutView()">
       <i class="bi bi-cart-check me-2"></i>
       <span class="fw-medium">Checkout</span>
@@ -390,6 +397,33 @@
               </div>
             </div>
 
+            <%# Payment Status %>
+            <div class="mb-4">
+              <h6 class="mb-3"><i class="bi bi-check-circle me-2"></i>Payment Status</h6>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <%= f.check_box :payment_status,
+                        { class: "form-check-input", id: "paymentStatusToggle" },
+                        "paid", "unpaid" %>
+                    <%= f.label :payment_status, "Mark as Paid", class: "form-check-label", for: "paymentStatusToggle" %>
+                  </div>
+                  <div class="form-text">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Toggle this switch if payment has been received
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="alert alert-light border d-flex align-items-center mb-0" id="paymentStatusAlert">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                    <span id="paymentStatusText">Payment not received</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <%# Additional Notes %>
             <div class="mb-4">
               <h6 class="mb-3"><i class="bi bi-chat-square-text me-2"></i>Additional Notes</h6>
@@ -398,6 +432,9 @@
 
             <%# Hidden Fields for Cart Items %>
             <div id="checkoutItemsFields"></div>
+
+            <%# Hidden field for discount amount %>
+            <%= f.hidden_field :discount_amount, value: 0, id: 'hiddenDiscountAmount' %>
 
             <%# Action Buttons %>
             <div class="d-flex gap-2 justify-content-end">
@@ -423,8 +460,8 @@
     <%# Order Summary %>
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent border-0">
-          <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Order Summary</h5>
+        <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 3px solid #667eea;">
+          <h4 class="mb-0 text-black fw-bold"><i class="bi bi-receipt me-2 fs-4 text-primary"></i>ORDER SUMMARY</h4>
         </div>
         <div class="card-body">
           <div id="checkoutOrderSummary">
@@ -436,14 +473,14 @@
               <span>Subtotal</span>
               <span>₹<span id="checkoutSubtotal">0</span></span>
             </div>
-            <div class="d-flex justify-content-between mb-2">
-              <span>GST (18%)</span>
+            <div class="d-flex justify-content-between mb-2" id="gstRow">
+              <span>GST</span>
               <span>₹<span id="checkoutTax">0</span></span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <span>Discount</span>
               <span>
-                ₹<input type="number" id="checkoutDiscount" name="booking[discount_amount]" value="0" min="0" class="form-control form-control-sm d-inline-block w-auto" onchange="updateCheckoutTotals()">
+                ₹<input type="number" id="checkoutDiscount" value="0" min="0" max="999999" step="0.01" class="form-control form-control-sm d-inline-block w-auto" style="width: 80px;" onchange="updateCheckoutTotals()" oninput="updateCheckoutTotals()">
               </span>
             </div>
             <div class="d-flex justify-content-between border-top pt-2 mb-0">
@@ -459,17 +496,18 @@
 
 <%# Floating Cart - Enhanced and Larger %>
 <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1000;">
-  <div class="card border-0 shadow-lg" id="floatingCart" style="min-width: 420px; display: none;">
-    <div class="card-header bg-gradient-primary text-white py-3">
+  <div class="card border-0 shadow-lg" id="floatingCart" style="min-width: 500px; max-width: 550px; display: none;">
+    <div class="card-header py-3" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 3px solid #667eea;">
       <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 d-flex align-items-center">
-          <i class="bi bi-cart3 me-2"></i>Shopping Cart
-        </h5>
+        <h3 class="mb-0 d-flex align-items-center fw-bold text-black">
+          <i class="bi bi-cart3 me-2 fs-2 text-primary"></i>
+          <span style="font-size: 1.75rem; letter-spacing: 1px; color: black; font-weight: 900;">SHOPPING CART</span>
+        </h3>
         <div class="d-flex align-items-center gap-2">
-          <span class="badge bg-white text-primary px-3 py-2" style="font-size: 0.9rem;">
+          <span class="badge bg-primary text-white px-3 py-2" style="font-size: 0.9rem; border: 2px solid #667eea;">
             <span id="cartCount">0</span> items
           </span>
-          <button type="button" class="btn btn-sm btn-link text-white p-0" onclick="minimizeCart()" title="Minimize">
+          <button type="button" class="btn btn-sm btn-link text-dark p-0" onclick="minimizeCart()" title="Minimize">
             <i class="bi bi-dash-lg"></i>
           </button>
         </div>
@@ -487,7 +525,7 @@
           <span class="fw-semibold">₹<span id="cartSubtotal">0</span></span>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="text-muted">Tax (GST 18%)</span>
+          <span class="text-muted" data-gst-label>Tax (GST)</span>
           <span class="fw-semibold">₹<span id="cartTax">0</span></span>
         </div>
         <div class="border-top pt-2">
@@ -503,10 +541,10 @@
     </div>
   </div>
 
-  <%# Minimized Cart Button %>
-  <button class="btn btn-primary btn-lg rounded-circle shadow-lg" id="minimizedCart" style="display: none; width: 60px; height: 60px;" onclick="maximizeCart()" title="Open Cart">
-    <i class="bi bi-cart3"></i>
-    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="minimizedCartCount">0</span>
+  <%# Minimized Cart Button - Enhanced %>
+  <button class="btn btn-primary btn-lg rounded-circle shadow-lg" id="minimizedCart" style="display: none; width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 3px solid white;" onclick="maximizeCart()" title="Open Shopping Cart">
+    <i class="bi bi-cart3 fs-2"></i>
+    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger fs-6" id="minimizedCartCount" style="padding: 5px 10px;">0</span>
   </button>
 </div>
 
@@ -551,7 +589,19 @@ function addToCart(productId, productName, finalPrice, stock, basePrice, gstRate
   document.getElementById(`qty-${productId}`).value = 1;
 
   updateCartDisplay();
-  showNotification(`${productName} added to cart!`, 'success');
+
+  // Add pulse animation to cart
+  const floatingCart = document.getElementById('floatingCart');
+  const minimizedCart = document.getElementById('minimizedCart');
+  if (floatingCart && floatingCart.style.display !== 'none') {
+    floatingCart.classList.add('cart-pulse');
+    setTimeout(() => floatingCart.classList.remove('cart-pulse'), 500);
+  }
+  if (minimizedCart && minimizedCart.style.display !== 'none') {
+    minimizedCart.classList.add('cart-pulse');
+    setTimeout(() => minimizedCart.classList.remove('cart-pulse'), 500);
+  }
+
 }
 
 // Update cart display
@@ -592,8 +642,20 @@ function updateCartDisplay() {
   const sortedItems = Object.entries(cart).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
   for (const [productId, item] of sortedItems) {
-    const itemTotal = item.price * item.quantity;
-    subtotal += itemTotal;
+    const itemBasePrice = item.basePrice || item.price;
+    const itemGSTRate = item.gstRate || 0;
+    let itemTotal;
+
+    if (itemGSTRate > 0) {
+      // Product has GST - calculate base price subtotal separately
+      const itemSubtotal = itemBasePrice * item.quantity;
+      subtotal += itemSubtotal;
+      itemTotal = item.price * item.quantity; // Full price for display
+    } else {
+      // Product has no GST
+      itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+    }
 
     itemsHtml += `
       <div class="cart-item-card mb-3">
@@ -628,14 +690,33 @@ function updateCartDisplay() {
     `;
   }
 
-  // Calculate tax (GST 18%)
-  const tax = subtotal * 0.18;
-  const total = subtotal + tax;
+  // Calculate GST based on individual products
+  let totalGST = 0;
+  for (const [productId, item] of Object.entries(cart)) {
+    const itemGSTRate = item.gstRate || 0;
+    if (itemGSTRate > 0) {
+      const itemBasePrice = item.basePrice || item.price;
+      const itemSubtotal = itemBasePrice * item.quantity;
+      totalGST += itemSubtotal * itemGSTRate / 100;
+    }
+  }
+
+  const total = subtotal + totalGST;
 
   cartItemsEl.innerHTML = itemsHtml;
   cartSubtotalEl.textContent = subtotal.toFixed(2);
-  cartTaxEl.textContent = tax.toFixed(2);
+  cartTaxEl.textContent = totalGST.toFixed(2);
   cartTotalEl.textContent = total.toFixed(2);
+
+  // Update GST label in cart
+  const cartGSTLabel = document.querySelector('#floatingCart .text-muted[data-gst-label]');
+  if (cartGSTLabel) {
+    if (totalGST > 0) {
+      cartGSTLabel.textContent = 'GST';
+    } else {
+      cartGSTLabel.textContent = 'Tax (No GST)';
+    }
+  }
 }
 
 // Minimize cart to icon
@@ -717,11 +798,28 @@ function showProductsView() {
   // Show search and filters section when in products view
   document.getElementById('searchSection').style.display = 'block';
 
-  // Update buttons
-  document.getElementById('productsViewBtn').className = 'btn btn-primary btn-sm shadow-lg';
-  document.getElementById('checkoutViewBtn').className = 'btn btn-outline-primary btn-sm shadow-lg';
-  document.getElementById('productsViewBtnLarge').className = 'btn btn-primary px-3 py-2 rounded-3 shadow-sm';
-  document.getElementById('checkoutViewBtnLarge').className = 'btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm';
+  // Update buttons safely
+  const productsBtn = document.getElementById('productsViewBtn');
+  const checkoutBtn = document.getElementById('checkoutViewBtn');
+  const productsBtnLarge = document.getElementById('productsViewBtnLarge');
+  const checkoutBtnLarge = document.getElementById('checkoutViewBtnLarge');
+
+  if (productsBtn) {
+    productsBtn.style.display = 'none';
+    productsBtn.className = 'btn btn-primary btn-sm shadow-lg';
+  }
+  if (checkoutBtn) {
+    checkoutBtn.style.display = 'block';
+    checkoutBtn.className = 'btn btn-outline-primary btn-sm shadow-lg';
+  }
+  if (productsBtnLarge) {
+    productsBtnLarge.style.display = 'none';
+    productsBtnLarge.className = 'btn btn-primary px-3 py-2 rounded-3 shadow-sm';
+  }
+  if (checkoutBtnLarge) {
+    checkoutBtnLarge.style.display = 'block';
+    checkoutBtnLarge.className = 'btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm';
+  }
 }
 
 // Show Checkout View
@@ -738,11 +836,28 @@ function showCheckoutView() {
   // Hide search and filters section when in checkout view
   document.getElementById('searchSection').style.display = 'none';
 
-  // Update buttons
-  document.getElementById('productsViewBtn').className = 'btn btn-outline-primary btn-sm shadow-lg';
-  document.getElementById('checkoutViewBtn').className = 'btn btn-primary btn-sm shadow-lg';
-  document.getElementById('productsViewBtnLarge').className = 'btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm';
-  document.getElementById('checkoutViewBtnLarge').className = 'btn btn-primary px-3 py-2 rounded-3 shadow-sm';
+  // Update buttons safely
+  const productsBtn = document.getElementById('productsViewBtn');
+  const checkoutBtn = document.getElementById('checkoutViewBtn');
+  const productsBtnLarge = document.getElementById('productsViewBtnLarge');
+  const checkoutBtnLarge = document.getElementById('checkoutViewBtnLarge');
+
+  if (productsBtn) {
+    productsBtn.style.display = 'block';
+    productsBtn.className = 'btn btn-outline-primary btn-sm shadow-lg';
+  }
+  if (checkoutBtn) {
+    checkoutBtn.style.display = 'none';
+    checkoutBtn.className = 'btn btn-primary btn-sm shadow-lg';
+  }
+  if (productsBtnLarge) {
+    productsBtnLarge.style.display = 'block';
+    productsBtnLarge.className = 'btn btn-outline-primary px-3 py-2 rounded-3 shadow-sm';
+  }
+  if (checkoutBtnLarge) {
+    checkoutBtnLarge.style.display = 'none';
+    checkoutBtnLarge.className = 'btn btn-primary px-3 py-2 rounded-3 shadow-sm';
+  }
 
   updateCheckoutDisplay();
 }
@@ -770,14 +885,29 @@ function updateCheckoutDisplay() {
   let fieldIndex = 0;
 
   for (const [productId, item] of Object.entries(cart)) {
-    const itemTotal = item.price * item.quantity;
-    subtotal += itemTotal;
+    const itemBasePrice = item.basePrice || item.price;
+    const itemGSTRate = item.gstRate || 0;
+    let itemTotal;
+    let itemGSTAmount = 0;
+
+    if (itemGSTRate > 0) {
+      // Product has GST enabled
+      const itemSubtotal = itemBasePrice * item.quantity;
+      itemGSTAmount = itemSubtotal * itemGSTRate / 100;
+      itemTotal = itemSubtotal + itemGSTAmount;
+      subtotal += itemSubtotal;
+    } else {
+      // Product has no GST
+      itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+    }
 
     summaryHtml += `
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
           <div class="fw-medium">${item.name}</div>
-          <small class="text-muted">₹${item.price} × ${item.quantity}</small>
+          <small class="text-muted">₹${item.price.toFixed(2)} × ${item.quantity}</small>
+          ${itemGSTRate > 0 ? `<br><small class="text-success">GST ${itemGSTRate}%: ₹${itemGSTAmount.toFixed(2)}</small>` : ''}
         </div>
         <span class="fw-medium">₹${itemTotal.toFixed(2)}</span>
       </div>
@@ -825,19 +955,70 @@ function ensureCartItemsInForm() {
 
 // Update checkout totals
 function updateCheckoutTotals() {
-  let grossTotal = 0;
+  let subtotal = 0;
+  let totalGST = 0;
+
+  // Calculate subtotal and GST based on each product's GST configuration
   for (const [productId, item] of Object.entries(cart)) {
-    grossTotal += item.price * item.quantity;
+    const itemBasePrice = item.basePrice || item.price;
+    const itemGSTRate = item.gstRate || 0;
+
+    if (itemGSTRate > 0) {
+      // Product has GST enabled
+      const itemSubtotal = itemBasePrice * item.quantity;
+      const itemGST = itemSubtotal * itemGSTRate / 100;
+      subtotal += itemSubtotal;
+      totalGST += itemGST;
+    } else {
+      // Product has no GST
+      subtotal += item.price * item.quantity;
+    }
   }
 
-  // Calculate GST-exclusive subtotal (reverse calculation)
-  const tax = grossTotal * 0.18 / 1.18; // GST amount
-  const subtotal = grossTotal - tax; // Subtotal without GST
-  const discount = parseFloat(document.getElementById('checkoutDiscount')?.value || 0);
-  const total = grossTotal - discount; // Final total after discount
+  let discount = parseFloat(document.getElementById('checkoutDiscount')?.value || 0);
 
+  // Validate discount doesn't exceed subtotal + GST
+  const maxDiscount = subtotal + totalGST;
+  if (discount > maxDiscount) {
+    discount = maxDiscount;
+    document.getElementById('checkoutDiscount').value = discount;
+  }
+
+  // Update the hidden field with the discount value
+  const hiddenDiscountField = document.getElementById('hiddenDiscountAmount');
+  if (hiddenDiscountField) {
+    hiddenDiscountField.value = discount;
+    console.log('Updated hidden discount field to:', discount);
+  }
+
+  const total = subtotal + totalGST - discount; // Final total after discount
+
+  // Update display
   document.getElementById('checkoutSubtotal').textContent = subtotal.toFixed(2);
-  document.getElementById('checkoutTax').textContent = tax.toFixed(2);
+
+  // Show/highlight discount row when discount is applied
+  const discountInput = document.getElementById('checkoutDiscount');
+  if (discount > 0) {
+    discountInput.style.borderColor = '#198754';
+    discountInput.style.backgroundColor = '#f8fff9';
+  } else {
+    discountInput.style.borderColor = '';
+    discountInput.style.backgroundColor = '';
+  }
+
+  // Only show GST if there is any GST amount
+  const gstRow = document.getElementById('gstRow');
+  if (gstRow) {
+    if (totalGST > 0) {
+      gstRow.style.display = 'flex';
+      document.getElementById('checkoutTax').textContent = totalGST.toFixed(2);
+    } else {
+      gstRow.style.display = 'none';
+    }
+  } else {
+    document.getElementById('checkoutTax').textContent = totalGST.toFixed(2);
+  }
+
   document.getElementById('checkoutTotal').textContent = total.toFixed(2);
 
   // Update change calculation when total changes
@@ -1337,6 +1518,36 @@ function showProcessingOverlay() {
   document.body.appendChild(overlay);
 }
 
+// Initialize payment status functionality
+function initializePaymentStatus() {
+  const paymentStatusToggle = document.getElementById('paymentStatusToggle');
+  const paymentStatusAlert = document.getElementById('paymentStatusAlert');
+
+  if (!paymentStatusToggle || !paymentStatusAlert) {
+    console.error('Payment status elements not found');
+    return;
+  }
+
+  // Update payment status display
+  function updatePaymentStatusDisplay() {
+    if (paymentStatusToggle.checked) {
+      // Paid status
+      paymentStatusAlert.className = 'alert alert-success border-success bg-success bg-opacity-10 d-flex align-items-center mb-0';
+      paymentStatusAlert.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i><span>Payment received ✓</span>';
+    } else {
+      // Unpaid status
+      paymentStatusAlert.className = 'alert alert-light border d-flex align-items-center mb-0';
+      paymentStatusAlert.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-2"></i><span>Payment not received</span>';
+    }
+  }
+
+  // Listen for changes
+  paymentStatusToggle.addEventListener('change', updatePaymentStatusDisplay);
+
+  // Initial display update
+  updatePaymentStatusDisplay();
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
   initializeCart();
@@ -1358,6 +1569,9 @@ document.addEventListener('DOMContentLoaded', function() {
     categoryFilter.addEventListener('change', applyCategoryFilter);
   }
 
+  // Initialize payment status functionality
+  initializePaymentStatus();
+
   // Add status change listener
   const statusSelect = document.getElementById('booking_status');
   if (statusSelect) {
@@ -1372,6 +1586,21 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         alert('Please add items to cart before submitting');
         return false;
+      }
+
+      // Clean discount input and update hidden field before submission
+      const discountInput = document.getElementById('checkoutDiscount');
+      const hiddenDiscountField = document.getElementById('hiddenDiscountAmount');
+
+      if (discountInput && hiddenDiscountField) {
+        // Clean the discount value - remove any whitespace/newlines
+        let discountValue = discountInput.value || 0;
+        const cleanedValue = discountValue.toString().replace(/\s+/g, '').trim();
+        const numericValue = parseFloat(cleanedValue) || 0;
+
+        discountInput.value = cleanedValue;
+        hiddenDiscountField.value = numericValue;
+        console.log('Final discount value before submission:', numericValue);
       }
 
       // Check if status is selected
@@ -1760,12 +1989,46 @@ document.addEventListener('DOMContentLoaded', function() {
 /* Enhanced Floating Cart Styles */
 #floatingCart {
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.25) !important;
   transition: all 0.3s ease;
+  border: 2px solid #667eea;
+}
+
+#floatingCart .card-header {
+  border-radius: 14px 14px 0 0;
+  padding: 1rem 1.25rem;
+}
+
+#floatingCart .card-header h3 {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 900;
+  color: #000000 !important;
+}
+
+#floatingCart .card-header h3 span {
+  color: #000000 !important;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 #floatingCart:hover {
   box-shadow: 0 15px 50px rgba(0,0,0,0.2) !important;
+}
+
+/* Pulse animation for cart */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.cart-pulse {
+  animation: pulse 0.5s ease-in-out;
 }
 
 .bg-gradient-primary {

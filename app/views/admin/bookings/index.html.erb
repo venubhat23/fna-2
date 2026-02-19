@@ -1,22 +1,98 @@
+
+<!-- Actions Column Icons Styling -->
+<style>
+/* Actions column with icons */
+.actions-column {
+  text-align: center;
+  width: 120px;
+  min-width: 120px;
+}
+
+.action-icons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.action-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* View icon - blue */
+.action-icon.view {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+.action-icon.view:hover {
+  background: #bbdefb;
+  color: #0d47a1;
+}
+
+/* Edit icon - green */
+.action-icon.edit {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+.action-icon.edit:hover {
+  background: #c8e6c9;
+  color: #1b5e20;
+}
+
+/* Delete icon - red */
+.action-icon.delete {
+  background: #ffebee;
+  color: #d32f2f;
+}
+.action-icon.delete:hover {
+  background: #ffcdd2;
+  color: #b71c1c;
+}
+
+/* Invoice icon - purple */
+.action-icon.invoice {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+.action-icon.invoice:hover {
+  background: #e1bee7;
+  color: #4a148c;
+}
+
+.action-icon i {
+  font-size: 14px;
+}
+</style>
+
+
+
+
+
+
+
+
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="mb-1">Booking Management</h2>
-    <p class="text-muted mb-0">Manage all customer bookings and orders</p>
   </div>
   <div class="d-flex gap-2 align-items-center">
     <!-- Real-time Status -->
     <div class="d-flex align-items-center gap-2">
-      <div class="real-time-indicator">
-        <span class="status-dot" id="realtimeStatus"></span>
-        <small class="text-muted" id="lastUpdated">Last updated: <span id="updateTime">--:--:--</span></small>
-      </div>
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
-        <label class="form-check-label text-muted" for="autoRefreshToggle">
-          Auto-refresh
-        </label>
-      </div>
     </div>
     <%= link_to new_admin_booking_path, class: "btn btn-primary" do %>
       <i class="bi bi-plus-lg me-1"></i>
@@ -343,75 +419,26 @@
                       <i class="bi bi-arrows-move"></i>
                     <% end %>
 
-                    <!-- Secondary Actions Dropdown -->
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-three-dots-vertical"></i>
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-end">
-                        <li class="dropdown-header">
-                          <i class="bi bi-tools me-1"></i>Booking Actions
-                        </li>
-                        <li>
-                          <%= link_to edit_admin_booking_path(booking), class: "dropdown-item" do %>
-                            <i class="bi bi-pencil me-2"></i>
-                            Edit Booking
-                          <% end %>
-                        </li>
-
-                        <!-- Invoice Actions -->
-                        <li><hr class="dropdown-divider"></li>
-                        <li class="dropdown-header">
-                          <i class="bi bi-receipt me-1"></i>Invoice Actions
-                        </li>
-
-                        <% if booking.invoice_generated? %>
-                          <li>
-                            <%= link_to invoice_admin_booking_path(booking), class: "dropdown-item", target: "_blank" do %>
-                              <i class="bi bi-file-earmark-pdf me-2 text-primary"></i>
-                              View Invoice
-                            <% end %>
-                          </li>
-                        <% else %>
-                          <li>
-                            <%= link_to generate_invoice_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
-                              <i class="bi bi-receipt me-2 text-success"></i>
-                              Generate Invoice
-                            <% end %>
-                          </li>
+                    <!-- Actions Icons -->
+                    <div class="action-icons">
+                      <%= link_to admin_booking_path(booking), class: "action-icon view", title: "View Booking" do %>
+                        <i class="bi bi-eye"></i>
+                      <% end %>
+                      <%= link_to edit_admin_booking_path(booking), class: "action-icon edit", title: "Edit Booking" do %>
+                        <i class="bi bi-pencil"></i>
+                      <% end %>
+                      <%= link_to admin_booking_path(booking), method: :delete, class: "action-icon delete", title: "Delete Booking", data: { confirm: "Are you sure?" } do %>
+                        <i class="bi bi-trash"></i>
+                      <% end %>
+                      <% if booking.invoice_generated? %>
+                        <%= link_to invoice_admin_booking_path(booking), class: "action-icon invoice", title: "View Invoice", target: "_blank" do %>
+                          <i class="bi bi-receipt"></i>
                         <% end %>
-
-                        <%# Order Conversion - Disabled until order association is properly set up %>
-                        <%# TODO: Re-enable when booking_id column is added to orders table and association is uncommented %>
-                        <%# <% if booking.order.present? %>
-                        <%#   <li> %>
-                        <%#     <%= link_to admin_order_path(booking.order), class: "dropdown-item" do %>
-                        <%#       <i class="bi bi-box me-2 text-info"></i> %>
-                        <%#       View Order %>
-                        <%#     <% end %>
-                        <%#   </li> %>
-                        <%# <% elsif booking.payment_status_paid? %>
-                        <%#   <li> %>
-                        <%#     <%= link_to convert_to_order_admin_booking_path(booking), class: "dropdown-item", method: :patch do %>
-                        <%#       <i class="bi bi-arrow-right me-2 text-warning"></i> %>
-                        <%#       Convert to Order %>
-                        <%#     <% end %>
-                        <%#   </li> %>
-                        <%# <% end %>
-
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                          <%= link_to admin_booking_path(booking), method: :delete,
-                              class: "dropdown-item text-danger",
-                              confirm: "Are you sure you want to delete this booking?",
-                              data: {
-                                confirm: "Are you sure you want to delete booking ##{booking.booking_number}? This action cannot be undone."
-                              } do %>
-                            <i class="bi bi-trash me-2"></i>
-                            Delete Booking
-                          <% end %>
-                        </li>
-                      </ul>
+                      <% else %>
+                        <%= link_to "#", class: "action-icon invoice", title: "Generate Invoice", onclick: "alert('Invoice not generated yet')" do %>
+                          <i class="bi bi-receipt-cutoff"></i>
+                        <% end %>
+                      <% end %>
                     </div>
                   </div>
                 </td>

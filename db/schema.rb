@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_19_065729) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_19_114349) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -199,6 +199,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_19_065729) do
     t.bigint "store_id"
     t.integer "subscription_id"
     t.boolean "is_subscription"
+    t.decimal "final_amount_after_discount"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"

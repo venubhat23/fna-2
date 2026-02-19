@@ -1,0 +1,4032 @@
+<%= form_with model: [:admin, @product], local: true, multipart: true, class: "row g-3", id: "product-form" do |form| %>
+  <% if @product.errors.any? %>
+    <div class="col-12">
+      <div class="alert alert-danger">
+        <h4>Please fix the following errors:</h4>
+        <ul class="mb-0">
+          <% @product.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Details Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Basic Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :name, class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.text_field :name, class: "form-control", placeholder: "Enter product name", required: true %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :category_id, "Category", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="category-select-wrapper">
+              <%= form.select :category_id,
+                  options_for_select([['Search and select category...', '']] + Category.for_select, @product.category_id),
+                  {},
+                  {
+                    class: "form-select category-select",
+                    required: true,
+                    'data-live-search': 'true',
+                    'data-size': '10'
+                  } %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :sku, "SKU", class: "form-label" %>
+            <%= form.text_field :sku, class: "form-control", placeholder: "Enter SKU (leave blank to auto-generate)" %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :status, class: "form-label" %>
+            <%= form.select :status,
+                options_for_select([['Draft', 'draft'], ['Active', 'active'], ['Inactive', 'inactive']], @product.status),
+                {},
+                { class: "form-select" } %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :product_type, "Product Type", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="product-type-selector">
+              <%= form.select :product_type,
+                  options_for_select([['Select Product Type', '']] + Product::PRODUCT_TYPES, @product.product_type || 'Grocery'),
+                  {},
+                  { class: "form-select product-type-select", id: "product_type_select", required: true } %>
+
+            </div>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Choose the category that best describes your product
+            </div>
+          </div>
+
+          <!-- Subscription Enable Option -->
+          <div class="col-12">
+            <div class="subscription-toggle-section">
+              <div class="card border-0 bg-gradient-primary-subtle">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div class="d-flex align-items-center flex-grow-1 me-3">
+                      <div class="subscription-icon-container me-3">
+                        <i class="bi bi-arrow-repeat fs-2 text-primary"></i>
+                      </div>
+                      <div class="flex-grow-1">
+                        <h6 class="mb-1 fw-bold text-dark">
+                          <i class="bi bi-star me-1 text-warning"></i>
+                          Subscription Feature
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                          Enable customers to subscribe for regular delivery of this product
+                        </p>
+                      </div>
+                    </div>
+                    <div class="form-check form-switch form-check-lg flex-shrink-0">
+                      <%= form.check_box :is_subscription_enabled,
+                          class: "form-check-input subscription-toggle",
+                          id: "subscription_toggle",
+                          'data-bs-toggle': "tooltip",
+                          'data-bs-placement': "top",
+                          title: "Enable subscription for this product" %>
+                      <%= form.label :is_subscription_enabled, "", class: "form-check-label" %>
+                    </div>
+                  </div>
+
+                  <!-- Subscription Info -->
+                  <div class="subscription-info mt-3" id="subscriptionInfo" style="<%= 'display: none;' unless @product.is_subscription_enabled %>">
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 mb-0">
+                      <div class="d-flex align-items-start">
+                        <i class="bi bi-info-circle text-info me-2 mt-1"></i>
+                        <div class="small">
+                          <h6 class="alert-heading mb-1 text-info">Subscription Benefits:</h6>
+                          <ul class="mb-0 text-muted">
+                            <li>Customers can set up automatic recurring orders</li>
+                            <li>Choose delivery frequency (daily, weekly, monthly)</li>
+                            <li>Guaranteed regular revenue stream</li>
+                            <li>Higher customer retention and loyalty</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4, placeholder: "Enter product description" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Section -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Pricing</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :buying_price, "Buying Price", class: "form-label" %>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <%= form.number_field :buying_price, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", id: "product_buying_price" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :price, "Selling Price", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <%= form.number_field :price, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", required: true, id: "product_price" %>
+            </div>
+          </div>
+
+          <!-- Enable Discount Checkbox -->
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <%= form.check_box :is_discounted, class: "form-check-input", id: "discount_toggle", checked: @product.is_discounted %>
+              <%= form.label :is_discounted, "Enable Discount", class: "form-check-label" %>
+            </div>
+          </div>
+
+          <!-- Discount Configuration (hidden by default) -->
+          <div id="discount_config" class="col-12" style="<%= @product.is_discounted ? '' : 'display: none;' %>">
+            <div class="card border-warning">
+              <div class="card-header bg-warning bg-opacity-10">
+                <h6 class="card-title mb-0 text-warning">
+                  <i class="bi bi-percent me-1"></i>
+                  Discount Configuration
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <!-- Discount Type -->
+                  <div class="col-md-6">
+                    <%= form.label :discount_type, "Discount Type", class: "form-label" %>
+                    <span class="text-danger">*</span>
+                    <%= form.select :discount_type,
+                        options_for_select([
+                          ['Select Discount Type', ''],
+                          ['Percentage (%)', 'percentage'],
+                          ['Fixed Amount (₹)', 'fixed']
+                        ], @product.discount_type),
+                        {},
+                        { class: "form-select", id: "discount_type" } %>
+                  </div>
+
+                  <!-- Discount Value -->
+                  <div class="col-md-6">
+                    <%= form.label :discount_value, "Discount Value", class: "form-label" %>
+                    <span class="text-danger">*</span>
+                    <div class="input-group">
+                      <span class="input-group-text" id="discount_symbol"><%= @product.discount_type == 'fixed' ? '₹' : '%' %></span>
+                      <%= form.number_field :discount_value, class: "form-control", step: 0.01, min: 0, placeholder: "0.00", id: "discount_value", value: @product.discount_value %>
+                    </div>
+                    <div class="form-text">Enter discount amount or percentage</div>
+                  </div>
+
+                  <!-- Calculated Discount Amount -->
+                  <div class="col-12">
+                    <%= form.label :discount_amount, "Calculated Discount Amount", class: "form-label" %>
+                    <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <%= form.number_field :discount_amount, class: "form-control", readonly: true, step: 0.01, placeholder: "0.00", id: "discount_amount_display", value: @product.discount_amount %>
+                    </div>
+                    <div class="form-text">Auto-calculated savings amount</div>
+                  </div>
+
+                  <!-- Updated Price Display -->
+                  <div class="col-12">
+                    <div class="alert alert-info mb-0" id="updated_price_preview">
+                      <div class="row text-center">
+                        <div class="col-md-6">
+                          <small class="text-muted d-block">Selling Price</small>
+                          <span class="fw-bold" id="regular_price_display">₹<%= @product.price || 0 %></span>
+                        </div>
+                        <div class="col-md-6">
+                          <small class="text-muted d-block">Final Amount to Sell</small>
+                          <span class="fw-bold text-success" id="final_discounted_price">₹<%= @product.is_discounted && @product.discount_amount ? (@product.price - @product.discount_amount).to_f : (@product.price || 0) %></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GST Configuration Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-receipt-cutoff me-2"></i>
+          GST Configuration
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- Enable GST Checkbox -->
+          <div class="col-12">
+            <div class="form-check form-switch form-check-lg">
+              <%= form.check_box :gst_enabled, class: "form-check-input gst-toggle", id: "gst_toggle" %>
+              <%= form.label :gst_enabled, "Enable GST", class: "form-check-label fw-semibold" %>
+              <div class="form-text">Enable GST calculation for this product</div>
+            </div>
+          </div>
+
+          <!-- GST Configuration Fields (hidden by default) -->
+          <div id="gst_config" class="col-12" style="<%= 'display: none;' unless @product.gst_enabled %>">
+            <div class="card border-info">
+              <div class="card-header bg-info bg-opacity-10">
+                <h6 class="card-title mb-0 text-info">
+                  <i class="bi bi-calculator me-1"></i>
+                  GST Tax Configuration
+                </h6>
+                <div class="form-text">Configure GST rates based on your business location and customer delivery location</div>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+
+                  <!-- GST Type Selection -->
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">GST Type</label>
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="gst_type" value="intrastate" id="gst_intrastate">
+                          <label class="form-check-label" for="gst_intrastate">
+                            <strong>Intrastate (Within Same State)</strong>
+                            <small class="d-block text-muted">CGST + SGST applies</small>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="gst_type" value="interstate" id="gst_interstate">
+                          <label class="form-check-label" for="gst_interstate">
+                            <strong>Interstate (Different States)</strong>
+                            <small class="d-block text-muted">IGST applies</small>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="gst_type" value="flexible" id="gst_flexible" checked>
+                          <label class="form-check-label" for="gst_flexible">
+                            <strong>Flexible (Auto-Calculate)</strong>
+                            <small class="d-block text-muted">Automatic based on delivery</small>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Total GST Percentage -->
+                  <div class="col-md-6">
+                    <%= form.label :gst_percentage, "Total GST Rate (%)", class: "form-label" %>
+                    <span class="text-danger">*</span>
+                    <%= form.select :gst_percentage,
+                        options_for_select([
+                          ['Select GST Rate', ''],
+                          ['0% - Nil Rate', '0'],
+                          ['3% - Essential Goods', '3'],
+                          ['5% - Daily Necessities', '5'],
+                          ['12% - Processed Foods', '12'],
+                          ['18% - Most Products', '18'],
+                          ['28% - Luxury Items', '28']
+                        ], @product.gst_percentage),
+                        {},
+                        { class: "form-select", id: "total_gst_rate" } %>
+                    <div class="form-text">Select applicable GST rate for your product category</div>
+                  </div>
+
+                  <!-- HSN Code -->
+                  <div class="col-md-6">
+                    <%= form.label :hsn_code, "HSN/SAC Code", class: "form-label" %>
+                    <%= form.text_field :hsn_code, class: "form-control", placeholder: "e.g., 1001, 2202", id: "hsn_code" %>
+                    <div class="form-text">Harmonized System of Nomenclature code</div>
+                  </div>
+
+                  <!-- Intrastate GST Fields (CGST + SGST) -->
+                  <div id="intrastate_gst_fields" class="col-12">
+                    <div class="card border-success bg-success bg-opacity-5">
+                      <div class="card-header bg-success bg-opacity-10">
+                        <h6 class="mb-0 text-success">
+                          <i class="bi bi-geo-alt me-1"></i>
+                          Intrastate GST (Same State)
+                        </h6>
+                        <small class="text-muted">CGST (Central) + SGST (State) = Total GST</small>
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-3">
+                            <%= form.label :cgst_percentage, "CGST Rate (%)", class: "form-label" %>
+                            <%= form.number_field :cgst_percentage, class: "form-control gst-split-rate", step: 0.01, min: 0, max: 50, placeholder: "0.00", id: "cgst_rate", readonly: true %>
+                            <div class="form-text">Central GST (Auto-calculated)</div>
+                          </div>
+                          <div class="col-md-3">
+                            <%= form.label :sgst_percentage, "SGST Rate (%)", class: "form-label" %>
+                            <%= form.number_field :sgst_percentage, class: "form-control gst-split-rate", step: 0.01, min: 0, max: 50, placeholder: "0.00", id: "sgst_rate", readonly: true %>
+                            <div class="form-text">State GST (Auto-calculated)</div>
+                          </div>
+                          <div class="col-md-3">
+                            <%= form.label :cgst_amount, "CGST Amount (₹)", class: "form-label" %>
+                            <%= form.number_field :cgst_amount, class: "form-control gst-amount", step: 0.01, min: 0, placeholder: "0.00", id: "cgst_amount", readonly: true %>
+                          </div>
+                          <div class="col-md-3">
+                            <%= form.label :sgst_amount, "SGST Amount (₹)", class: "form-label" %>
+                            <%= form.number_field :sgst_amount, class: "form-control gst-amount", step: 0.01, min: 0, placeholder: "0.00", id: "sgst_amount", readonly: true %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Interstate GST Fields (IGST) -->
+                  <div id="interstate_gst_fields" class="col-12">
+                    <div class="card border-primary bg-primary bg-opacity-5">
+                      <div class="card-header bg-primary bg-opacity-10">
+                        <h6 class="mb-0 text-primary">
+                          <i class="bi bi-arrow-left-right me-1"></i>
+                          Interstate GST (Different States)
+                        </h6>
+                        <small class="text-muted">IGST (Integrated) = Total GST</small>
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <%= form.label :igst_percentage, "IGST Rate (%)", class: "form-label" %>
+                            <%= form.number_field :igst_percentage, class: "form-control gst-total-rate", step: 0.01, min: 0, max: 50, placeholder: "0.00", id: "igst_rate", readonly: true %>
+                            <div class="form-text">Integrated GST (Auto-calculated)</div>
+                          </div>
+                          <div class="col-md-6">
+                            <%= form.label :igst_amount, "IGST Amount (₹)", class: "form-label" %>
+                            <%= form.number_field :igst_amount, class: "form-control gst-amount", step: 0.01, min: 0, placeholder: "0.00", id: "igst_amount", readonly: true %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- GST Summary -->
+                  <div class="col-12">
+                    <div class="card border-warning bg-warning bg-opacity-5">
+                      <div class="card-header bg-warning bg-opacity-10">
+                        <h6 class="mb-0 text-warning">
+                          <i class="bi bi-calculator-fill me-1"></i>
+                          Price Breakdown with GST
+                        </h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">Selling Price (Base)</small>
+                              <span class="fw-bold fs-6" id="gst_base_price">₹0.00</span>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">Total GST Amount</small>
+                              <span class="fw-bold fs-6 text-info" id="gst_total_amount">₹0.00</span>
+                              <small class="d-block text-muted">(<span id="gst_effective_rate">0</span>%)</small>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">After Discount</small>
+                              <span class="fw-bold fs-6 text-success" id="gst_discounted_price">₹0.00</span>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <div class="text-center">
+                              <small class="text-muted d-block">Final Price (Inc. GST)</small>
+                              <span class="fw-bold fs-5 text-primary" id="gst_final_price">₹0.00</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Hidden field to store final amount with GST -->
+                        <%= form.hidden_field :final_amount_with_gst, id: "final_amount_with_gst" %>
+                        <%= form.hidden_field :gst_amount, id: "total_gst_amount_hidden" %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Section -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Inventory</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <%= form.label :stock, "Available Stock", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.number_field :stock, class: "form-control", min: 0, placeholder: "0", required: true, id: "product_current_stock" %>
+            <div class="form-text">Current available quantity</div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :unit_type, "Unit", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.select :unit_type,
+                options_for_select([['Select Unit', '']] + Product::UNIT_TYPES, @product.unit_type),
+                {},
+                { class: "form-select", required: true, id: "product_unit_type" } %>
+            <div class="form-text">Unit of measurement for this product (e.g., 1 kg, 1 liter, 1 bottle)</div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :weight, "Weight (kg)", class: "form-label", id: "weight_label" %>
+            <%= form.number_field :weight, class: "form-control", step: 0.001, min: 0, placeholder: "0.000", id: "product_weight" %>
+            <div class="form-text" id="weight_help_text">Enter the weight/quantity in the selected unit</div>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :dimensions, "Dimensions", class: "form-label" %>
+            <%= form.text_field :dimensions, class: "form-control", placeholder: "L x W x H (cm)" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Images Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-images me-2"></i>
+          Product Images
+        </h5>
+        <small class="text-muted">Upload high-quality images to showcase your product</small>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- Image Upload Area -->
+          <div class="col-12">
+            <%= form.label :images, class: "form-label" %>
+            <span class="text-danger">*</span>
+            <div class="image-upload-container">
+              <div class="upload-dropzone" id="imageDropzone">
+                <div class="upload-content text-center py-4">
+                  <div class="upload-icon mb-3">
+                    <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                  </div>
+                  <h6 class="upload-title">Drop images here or click to browse</h6>
+                  <p class="upload-subtitle text-muted mb-3">
+                    Upload multiple product images (JPG, PNG, WebP)
+                  </p>
+                  <%= form.file_field :images,
+                      class: "form-control d-none",
+                      multiple: true,
+                      accept: "image/*",
+                      id: "imageInput" %>
+                  <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Choose Images
+                  </button>
+                </div>
+              </div>
+              <div class="upload-guidelines mt-2">
+                <small class="text-muted">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Guidelines: Max 2MB per image, minimum 800x600px recommended, first image will be the main product image
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- New Images Preview -->
+          <div class="col-12" id="newImagesPreview" style="display: none;">
+            <label class="form-label">
+              <i class="bi bi-eye me-1"></i>
+              New Images Preview
+            </label>
+            <div class="row g-3" id="newImagesContainer">
+              <!-- New images will be shown here -->
+            </div>
+          </div>
+
+          <!-- Current Images Management -->
+          <% if @product.images.attached? %>
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <label class="form-label mb-0">
+                  <i class="bi bi-images me-1"></i>
+                  Product Images (<%= @product.images.count %>)
+                  <span class="badge bg-primary-subtle text-primary ms-2">
+                    <i class="bi bi-star me-1"></i>Main Image Set
+                  </span>
+                </label>
+                <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Add More Images
+                  </button>
+                </div>
+              </div>
+
+              <div class="alert alert-info border-info bg-info bg-opacity-10 mb-3">
+                <div class="d-flex align-items-start">
+                  <i class="bi bi-info-circle text-info me-2 mt-1"></i>
+                  <div class="small">
+                    <strong>Image Management:</strong> First image is your main product image. Click the star icon on any image to set it as main. You can reorder images by setting a new main image.
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3" id="currentImagesContainer">
+                <% if @product.persisted? && @product.images.any? %>
+                  <% @product.images.each_with_index do |image, index| %>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-6" data-image-id="<%= image.id %>">
+                    <div class="image-card position-relative">
+                      <div class="image-wrapper">
+                        <%= image_tag image,
+                            class: "img-thumbnail product-image",
+                            style: "width: 100%; height: 150px; object-fit: cover; cursor: pointer;",
+                            onclick: "previewImage(this.src, '#{image.filename}')" %>
+
+                        <!-- Main Image Badge -->
+                        <% if index == 0 %>
+                          <span class="badge bg-gradient bg-primary position-absolute top-0 start-0 m-2 main-badge">
+                            <i class="bi bi-star-fill me-1"></i>Main Image
+                          </span>
+                        <% else %>
+                          <span class="badge bg-secondary position-absolute top-0 start-0 m-2">
+                            <i class="bi bi-images me-1"></i>Sub Image
+                          </span>
+                        <% end %>
+
+                        <!-- Image Actions -->
+                        <div class="image-actions position-absolute top-0 end-0 m-2">
+                          <div class="btn-group-vertical btn-group-sm" role="group">
+                            <% if index != 0 %>
+                              <button type="button"
+                                      class="btn btn-light btn-sm set-main-btn"
+                                      data-image-id="<%= image.id %>"
+                                      title="Set as main image">
+                                <i class="bi bi-star-fill text-warning"></i>
+                              </button>
+                            <% end %>
+                            <button type="button"
+                                    class="btn btn-danger btn-sm remove-image-btn"
+                                    data-image-id="<%= image.id %>"
+                                    title="Remove image">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Image Info -->
+                      <div class="image-info mt-2">
+                        <small class="text-muted d-block text-truncate" title="<%= image.filename %>">
+                          <%= image.filename %>
+                        </small>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <small class="text-muted">
+                            <%= number_to_human_size(image.byte_size) %>
+                          </small>
+                          <% if index == 0 %>
+                            <small class="badge bg-primary-subtle text-primary">Main</small>
+                          <% else %>
+                            <small class="badge bg-secondary-subtle text-secondary">Sub</small>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <% end %>
+                <% end %>
+              </div>
+
+              <!-- Add More Images Button -->
+              <div class="mt-3 text-center">
+                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                  <i class="bi bi-plus-circle me-2"></i>
+                  Add More Product Images
+                </button>
+                <div class="form-text mt-2">
+                  <i class="bi bi-info-circle me-1"></i>
+                  You can add multiple images. First image is always the main product image.
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <div class="col-12" id="noImagesMessage">
+              <div class="text-center py-4 border-2 border-dashed rounded-3 bg-light">
+                <div class="mb-3">
+                  <i class="bi bi-cloud-upload-fill fs-1 text-primary mb-3"></i>
+                </div>
+                <h6 class="text-dark mb-2">Ready to upload your first product image?</h6>
+                <p class="text-muted mb-3">Click below to select images or drag and drop them above</p>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('imageInput').click()">
+                  <i class="bi bi-upload me-2"></i>
+                  Choose Product Images
+                </button>
+                <div class="form-text mt-3">
+                  <i class="bi bi-info-circle me-1"></i>
+                  First image will be your main product image, others will be sub-images
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Hidden fields for image removal -->
+        <div id="imageRemovalFields"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery Rules Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Delivery Rules</h5>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="add-delivery-rule">
+          <i class="ri-add-line"></i> Add Rule
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="delivery-rules-container">
+          <%= form.fields_for :delivery_rules do |rule_form| %>
+            <%= render 'delivery_rule_fields', f: rule_form %>
+          <% end %>
+        </div>
+
+        <div class="form-text mt-3">
+          <strong>Rule Types:</strong><br>
+          • <strong>All:</strong> Product is available for delivery everywhere<br>
+          • <strong>State:</strong> Available only in selected states<br>
+          • <strong>City:</strong> Available only in selected cities<br>
+          • <strong>Pincode:</strong> Available only for specific pincodes
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Occasional Product Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-calendar-event me-2"></i>
+          Occasional Product Settings
+        </h5>
+        <div class="form-check form-switch">
+          <%= form.check_box :is_occasional_product, { class: "form-check-input", id: "occasionalProductToggle" }, "true", "false" %>
+          <%= form.label :is_occasional_product, "Enable Occasional Product", class: "form-check-label", for: "occasionalProductToggle" %>
+        </div>
+      </div>
+      <div class="card-body" id="occasionalProductSettings" style="<%= 'display: none;' unless @product.is_occasional_product %>">
+        <div class="row g-3">
+          <!-- Description -->
+          <div class="col-12">
+            <div class="alert alert-info border-info bg-info bg-opacity-10 mb-3">
+              <div class="d-flex align-items-start">
+                <i class="bi bi-info-circle text-info me-2 mt-1"></i>
+                <div>
+                  <h6 class="alert-heading mb-1">What are Occasional Products?</h6>
+                  <p class="mb-0 small">
+                    Occasional products can be time-bound for specific dates (one-time) or follow recurring schedules (weekly patterns).
+                    Perfect for seasonal items, limited-time offers, holiday specials, weekly deals, or recurring events.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule Type Selection -->
+          <div class="col-12">
+            <%= form.label :occasional_schedule_type, "Schedule Type", class: "form-label fw-medium" %>
+            <span class="text-danger ms-1">*</span>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="form-check form-check-inline">
+                  <%= form.radio_button :occasional_schedule_type, 'one_time', class: "form-check-input", id: "schedule_one_time", checked: true %>
+                  <%= form.label :occasional_schedule_type, class: "form-check-label", for: "schedule_one_time" do %>
+                    <i class="bi bi-calendar-event me-1"></i>
+                    <strong>One-Time</strong>
+                    <small class="d-block text-muted">Specific start and end dates</small>
+                  <% end %>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check form-check-inline">
+                  <%= form.radio_button :occasional_schedule_type, 'recurring', class: "form-check-input", id: "schedule_recurring" %>
+                  <%= form.label :occasional_schedule_type, class: "form-check-label", for: "schedule_recurring" do %>
+                    <i class="bi bi-arrow-repeat me-1"></i>
+                    <strong>Recurring</strong>
+                    <small class="d-block text-muted">Weekly schedule with specific days and times</small>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- One-Time Schedule Section -->
+          <div id="oneTimeSchedule" class="col-12">
+            <div class="row g-3">
+              <!-- Start Date -->
+              <div class="col-md-6">
+                <%= form.label :occasional_start_date, "Start Date & Time", class: "form-label fw-medium" %>
+                <span class="text-danger ms-1" id="startDateRequired">*</span>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0">
+                    <i class="bi bi-calendar-plus text-muted"></i>
+                  </span>
+                  <%= form.datetime_local_field :occasional_start_date, class: "form-control border-start-0", id: "occasionalStartDate" %>
+                </div>
+                <div class="form-text">When should this product become available?</div>
+              </div>
+
+              <!-- End Date -->
+              <div class="col-md-6">
+                <%= form.label :occasional_end_date, "End Date & Time", class: "form-label fw-medium" %>
+                <span class="text-danger ms-1" id="endDateRequired">*</span>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0">
+                    <i class="bi bi-calendar-x text-muted"></i>
+                  </span>
+                  <%= form.datetime_local_field :occasional_end_date, class: "form-control border-start-0", id: "occasionalEndDate" %>
+                </div>
+                <div class="form-text">When should this product become unavailable?</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recurring Schedule Section -->
+          <div id="recurringSchedule" class="col-12" style="display: none;">
+            <div class="card border-primary">
+              <div class="card-header bg-primary bg-opacity-10">
+                <h6 class="card-title mb-0 text-primary">
+                  <i class="bi bi-arrow-repeat me-1"></i>
+                  Weekly Recurring Schedule
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <!-- From Day and Time -->
+                  <div class="col-md-6">
+                    <label class="form-label fw-medium">
+                      <i class="bi bi-play-circle me-1"></i>
+                      Available From
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-8">
+                        <%= form.select :occasional_recurring_from_day,
+                            options_for_select([
+                              ['Select Day', ''],
+                              ['Monday', 'monday'],
+                              ['Tuesday', 'tuesday'],
+                              ['Wednesday', 'wednesday'],
+                              ['Thursday', 'thursday'],
+                              ['Friday', 'friday'],
+                              ['Saturday', 'saturday'],
+                              ['Sunday', 'sunday']
+                            ], @product.occasional_recurring_from_day),
+                            {},
+                            { class: "form-select", id: "recurringFromDay" } %>
+                      </div>
+                      <div class="col-4">
+                        <%= form.time_field :occasional_recurring_from_time, class: "form-control", id: "recurringFromTime" %>
+                      </div>
+                    </div>
+                    <div class="form-text">Day and time when product becomes available each week</div>
+                  </div>
+
+                  <!-- To Day and Time -->
+                  <div class="col-md-6">
+                    <label class="form-label fw-medium">
+                      <i class="bi bi-stop-circle me-1"></i>
+                      Available Until
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-8">
+                        <%= form.select :occasional_recurring_to_day,
+                            options_for_select([
+                              ['Select Day', ''],
+                              ['Monday', 'monday'],
+                              ['Tuesday', 'tuesday'],
+                              ['Wednesday', 'wednesday'],
+                              ['Thursday', 'thursday'],
+                              ['Friday', 'friday'],
+                              ['Saturday', 'saturday'],
+                              ['Sunday', 'sunday']
+                            ], @product.occasional_recurring_to_day),
+                            {},
+                            { class: "form-select", id: "recurringToDay" } %>
+                      </div>
+                      <div class="col-4">
+                        <%= form.time_field :occasional_recurring_to_time, class: "form-control", id: "recurringToTime" %>
+                      </div>
+                    </div>
+                    <div class="form-text">Day and time when product becomes unavailable each week</div>
+                  </div>
+
+                  <!-- Recurring Examples -->
+                  <div class="col-12">
+                    <div class="alert alert-light border">
+                      <h6 class="mb-2">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Examples:
+                      </h6>
+                      <ul class="mb-0 small">
+                        <li><strong>Weekend Special:</strong> Friday 18:00 to Sunday 23:59</li>
+                        <li><strong>Weekday Deal:</strong> Monday 09:00 to Friday 17:00</li>
+                        <li><strong>Flash Sale:</strong> Wednesday 12:00 to Wednesday 14:00</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <!-- Recurring Preview -->
+                  <div class="col-12">
+                    <div id="recurringPreview" class="alert alert-info d-none">
+                      <div class="row">
+                        <div class="col-md-4">
+                          <h6 class="text-muted mb-1">Schedule Pattern</h6>
+                          <span id="recurringPattern" class="fw-medium">-</span>
+                        </div>
+                        <div class="col-md-4">
+                          <h6 class="text-muted mb-1">Current Status</h6>
+                          <span id="recurringStatus" class="fw-medium">-</span>
+                        </div>
+                        <div class="col-md-4">
+                          <h6 class="text-muted mb-1">Next Change</h6>
+                          <span id="recurringNextChange" class="fw-medium">-</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Occasional Description -->
+          <div class="col-12">
+            <%= form.label :occasional_description, "Occasional Details", class: "form-label fw-medium" %>
+            <%= form.text_area :occasional_description, class: "form-control", rows: 3,
+                placeholder: "Describe this occasional product (e.g., 'Christmas Special Offer', 'Summer Collection', etc.)" %>
+            <div class="form-text">Optional: Add context about why this product is occasional</div>
+          </div>
+
+          <!-- Auto Hide Option -->
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <%= form.check_box :occasional_auto_hide, class: "form-check-input", checked: true %>
+              <%= form.label :occasional_auto_hide, class: "form-check-label fw-medium" do %>
+                <i class="bi bi-eye-slash me-1"></i>
+                Auto-hide when not active
+              <% end %>
+            </div>
+            <div class="form-text">
+              When enabled, this product will be automatically hidden from customers when outside the active date range.
+              When disabled, the product remains visible but may show as "not available" or "coming soon".
+            </div>
+          </div>
+
+          <!-- Date Preview -->
+          <div class="col-12">
+            <div id="occasionalPreview" class="alert alert-light border d-none">
+              <div class="row">
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-1">Duration</h6>
+                  <span id="previewDuration" class="fw-medium">-</span>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-1">Status</h6>
+                  <span id="previewStatus" class="fw-medium">-</span>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-1">Time Remaining</h6>
+                  <span id="previewTimeRemaining" class="fw-medium">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Date Presets -->
+          <div class="col-12">
+            <label class="form-label fw-medium">Quick Date Presets</label>
+            <div class="btn-group btn-group-sm d-flex flex-wrap gap-2" role="group">
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="today">Today</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="tomorrow">Tomorrow</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="this-week">This Week</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="next-week">Next Week</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="this-month">This Month</button>
+              <button type="button" class="btn btn-outline-primary preset-btn" data-preset="next-month">Next Month</button>
+            </div>
+            <div class="form-text">Click any preset to quickly set the date range</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEO Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">SEO & Marketing</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :meta_title, class: "form-label" %>
+            <%= form.text_field :meta_title, class: "form-control", placeholder: "SEO title for search engines" %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :tags, class: "form-label" %>
+            <%= form.text_field :tags, class: "form-control", placeholder: "Comma separated tags" %>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :meta_description, class: "form-label" %>
+            <%= form.text_area :meta_description, class: "form-control", rows: 2, placeholder: "SEO description for search engines" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="col-12">
+    <div class="text-end">
+      <%= link_to admin_products_path, class: "btn btn-secondary me-2" do %>
+        <i class="ri-arrow-left-line"></i> Cancel
+      <% end %>
+
+      <%= form.submit (@product.new_record? ? 'Create Product' : 'Update Product'),
+          class: "btn btn-primary",
+          id: "submit-btn",
+          data: {
+            loading_text: (@product.new_record? ? 'Creating Product...' : 'Updating Product...'),
+            original_text: (@product.new_record? ? 'Create Product' : 'Update Product')
+          } %>
+    </div>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    // IMPORTANT: Remove any required attributes from occasional date fields on page load
+    // These should only be set dynamically when needed
+    const occasionalStartDate = document.getElementById('occasionalStartDate');
+    const occasionalEndDate = document.getElementById('occasionalEndDate');
+
+  if (occasionalStartDate) {
+    occasionalStartDate.removeAttribute('required');
+  }
+  if (occasionalEndDate) {
+    occasionalEndDate.removeAttribute('required');
+  }
+
+  let deliveryRuleIndex = document.querySelectorAll('.delivery-rule-row').length;
+
+  // Image Management System
+  const imageInput = document.getElementById('imageInput');
+  const imageDropzone = document.getElementById('imageDropzone');
+  const newImagesPreview = document.getElementById('newImagesPreview');
+  const newImagesContainer = document.getElementById('newImagesContainer');
+  const imageRemovalFields = document.getElementById('imageRemovalFields');
+
+  let selectedFiles = [];
+  let imagesToRemove = [];
+
+  // Drag and Drop functionality
+  if (imageDropzone) {
+    imageDropzone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    });
+
+    imageDropzone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+    });
+
+    imageDropzone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+
+      const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      if (files.length > 0) {
+        handleFileSelection(files);
+      }
+    });
+  }
+
+  // File input change handler
+  if (imageInput) {
+    imageInput.addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      handleFileSelection(files);
+    });
+  }
+
+  // Handle file selection (drag & drop or file input)
+  function handleFileSelection(files) {
+    selectedFiles = [...selectedFiles, ...files];
+
+    // Validate files
+    const validFiles = [];
+    const invalidFiles = [];
+
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        if (file.size <= 2 * 1024 * 1024) { // 2MB limit
+          validFiles.push(file);
+        } else {
+          invalidFiles.push(`${file.name} (too large - max 2MB)`);
+        }
+      } else {
+        invalidFiles.push(`${file.name} (not an image)`);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      alert('Some files were rejected:\n' + invalidFiles.join('\n'));
+    }
+
+    if (validFiles.length > 0) {
+      displayNewImagePreviews(validFiles);
+      updateImageInput();
+    }
+  }
+
+  // Display preview of new images
+  function displayNewImagePreviews(files) {
+    // Hide "no images" message if it exists
+    const noImagesMessage = document.getElementById('noImagesMessage');
+    if (noImagesMessage) {
+      noImagesMessage.style.display = 'none';
+    }
+
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const col = document.createElement('div');
+        col.className = 'col-lg-2 col-md-3 col-sm-4 col-6';
+        col.innerHTML = `
+          <div class="image-card position-relative">
+            <div class="image-wrapper">
+              <img src="${e.target.result}"
+                   class="img-thumbnail product-image"
+                   style="width: 100%; height: 150px; object-fit: cover; cursor: pointer;"
+                   onclick="previewImage('${e.target.result}', '${file.name}')">
+
+              <!-- New Image Badge -->
+              <span class="badge bg-success position-absolute top-0 start-0 m-2">
+                <i class="bi bi-cloud-upload me-1"></i>Ready to Upload
+              </span>
+
+              <!-- Remove Button -->
+              <div class="image-actions position-absolute top-0 end-0 m-2">
+                <button type="button"
+                        class="btn btn-danger btn-sm remove-new-image-btn"
+                        data-file-index="${selectedFiles.indexOf(file)}"
+                        title="Remove image">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Image Info -->
+            <div class="image-info mt-2">
+              <small class="text-muted d-block text-truncate" title="${file.name}">${file.name}</small>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">${formatFileSize(file.size)}</small>
+                <small class="badge bg-success-subtle text-success">New</small>
+              </div>
+            </div>
+          </div>
+        `;
+
+        newImagesContainer.appendChild(col);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    newImagesPreview.style.display = 'block';
+  }
+
+  // Update the file input with current files
+  function updateImageInput() {
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    imageInput.files = dt.files;
+  }
+
+  // Remove new image
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-new-image-btn')) {
+      const button = e.target.closest('.remove-new-image-btn');
+      const fileIndex = parseInt(button.dataset.fileIndex);
+
+      // Remove from selectedFiles array
+      selectedFiles = selectedFiles.filter((_, index) => index !== fileIndex);
+
+      // Remove from DOM
+      button.closest('.col-lg-2').remove();
+
+      // Update file input
+      updateImageInput();
+
+      // Hide preview if no new images
+      if (selectedFiles.length === 0) {
+        newImagesPreview.style.display = 'none';
+      }
+    }
+  });
+
+  // Remove existing image
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-image-btn')) {
+      const button = e.target.closest('.remove-image-btn');
+      const imageId = button.dataset.imageId;
+
+      if (confirm('Are you sure you want to remove this image?')) {
+        // Add to removal list
+        imagesToRemove.push(imageId);
+
+        // Create hidden field for removal
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'remove_images[]';
+        hiddenField.value = imageId;
+        imageRemovalFields.appendChild(hiddenField);
+
+        // Remove from DOM
+        button.closest('.col-lg-2').remove();
+
+        showNotification('Image marked for removal. Save the form to confirm.', 'warning');
+      }
+    }
+  });
+
+  // Set main image
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.set-main-btn')) {
+      const button = e.target.closest('.set-main-btn');
+      const imageId = button.dataset.imageId;
+
+      // Update all badges and buttons
+      document.querySelectorAll('.main-badge').forEach(badge => {
+        badge.className = 'badge bg-secondary position-absolute top-0 start-0 m-2';
+        badge.innerHTML = '<i class="bi bi-images me-1"></i>Sub Image';
+      });
+
+      // Show all set-main buttons
+      document.querySelectorAll('.set-main-btn').forEach(btn => btn.style.display = 'block');
+
+      // Update all image info badges to 'Sub'
+      document.querySelectorAll('.image-info .badge').forEach(badge => {
+        if (badge.textContent.trim() === 'Main') {
+          badge.className = 'badge bg-secondary-subtle text-secondary';
+          badge.textContent = 'Sub';
+        }
+      });
+
+      // Set new main image
+      const imageCard = button.closest('.image-card');
+      const existingBadge = imageCard.querySelector('.badge');
+      if (existingBadge) {
+        existingBadge.className = 'badge bg-gradient bg-primary position-absolute top-0 start-0 m-2 main-badge';
+        existingBadge.innerHTML = '<i class="bi bi-star-fill me-1"></i>Main Image';
+      }
+
+      // Hide the set-main button for this image
+      button.style.display = 'none';
+
+      // Update image info badge to 'Main'
+      const imageInfoBadge = imageCard.querySelector('.image-info .badge');
+      if (imageInfoBadge) {
+        imageInfoBadge.className = 'badge bg-primary-subtle text-primary';
+        imageInfoBadge.textContent = 'Main';
+      }
+
+      // Create hidden field for main image
+      const existingMainField = document.querySelector('input[name="main_image_id"]');
+      if (existingMainField) {
+        existingMainField.remove();
+      }
+
+      const mainImageField = document.createElement('input');
+      mainImageField.type = 'hidden';
+      mainImageField.name = 'main_image_id';
+      mainImageField.value = imageId;
+      imageRemovalFields.appendChild(mainImageField);
+
+      showNotification('Main image updated successfully!', 'success');
+    }
+  });
+
+  // Helper functions
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showNotification(message, type = 'info') {
+    // Simple notification system
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alert);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      if (alert.parentNode) {
+        alert.remove();
+      }
+    }, 3000);
+  }
+
+  // Category Search Dropdown Functionality
+  const categorySelect = document.getElementById('product_category_id');
+  const searchContainer = categorySelect?.closest('.position-relative')?.querySelector('.search-dropdown-container');
+  const searchInput = searchContainer?.querySelector('.search-input');
+  const searchResults = searchContainer?.querySelector('.search-results');
+  let allCategories = [];
+
+  // Initialize category search dropdown
+  if (categorySelect && searchContainer) {
+    // Collect all categories
+    Array.from(categorySelect.options).forEach(option => {
+      if (option.value) {
+        allCategories.push({
+          value: option.value,
+          text: option.textContent.trim()
+        });
+      }
+    });
+
+    // Show search on select click
+    categorySelect.addEventListener('click', function(e) {
+      e.preventDefault();
+      showCategorySearch();
+    });
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      filterCategories(query);
+    });
+
+    // Hide on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.position-relative')) {
+        hideCategorySearch();
+      }
+    });
+  }
+
+  function showCategorySearch() {
+    categorySelect.style.display = 'none';
+    searchContainer.style.display = 'block';
+    searchInput.focus();
+    filterCategories(''); // Show all initially
+  }
+
+  function hideCategorySearch() {
+    searchContainer.style.display = 'none';
+    categorySelect.style.display = 'block';
+    searchInput.value = '';
+  }
+
+  function filterCategories(query) {
+    const filtered = allCategories.filter(cat =>
+      cat.text.toLowerCase().includes(query)
+    );
+
+    searchResults.innerHTML = '';
+
+    if (filtered.length === 0) {
+      searchResults.innerHTML = '<div class="search-item text-muted p-2">No categories found</div>';
+    } else {
+      filtered.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'search-item p-2 cursor-pointer';
+        item.innerHTML = `<i class="bi bi-tag me-2"></i>${cat.text}`;
+        item.dataset.value = cat.value;
+
+        item.addEventListener('click', function() {
+          categorySelect.value = cat.value;
+          categorySelect.dispatchEvent(new Event('change'));
+          hideCategorySearch();
+        });
+
+        searchResults.appendChild(item);
+      });
+    }
+  }
+
+  // Discount Configuration Functionality
+  const discountToggle = document.getElementById('discount_toggle');
+  const discountConfig = document.getElementById('discount_config');
+  const discountType = document.getElementById('discount_type');
+  const discountValue = document.getElementById('discount_value');
+  const discountSymbol = document.getElementById('discount_symbol');
+  const regularPrice = document.querySelector('#product_price');
+  const discountAmountDisplay = document.querySelector('#discount_amount_display');
+
+  // Toggle discount configuration visibility
+  if (discountToggle) {
+    discountToggle.addEventListener('change', function() {
+      if (this.checked) {
+        discountConfig.style.display = 'block';
+        calculateSimplifiedDiscount(); // Trigger calculation when enabled
+      } else {
+        discountConfig.style.display = 'none';
+        clearDiscountFields();
+      }
+    });
+  }
+
+  // Change discount symbol based on type
+  if (discountType) {
+    discountType.addEventListener('change', function() {
+      console.log('Discount type changed to:', this.value);
+
+      if (this.value === 'percentage') {
+        if (discountSymbol) discountSymbol.textContent = '%';
+        if (discountValue) {
+          discountValue.setAttribute('max', '100');
+          discountValue.setAttribute('placeholder', '0-100');
+        }
+      } else if (this.value === 'fixed') {
+        if (discountSymbol) discountSymbol.textContent = '₹';
+        if (discountValue) {
+          discountValue.removeAttribute('max');
+          discountValue.setAttribute('placeholder', '0.00');
+        }
+      } else {
+        // Reset for "Select Discount Type" or empty value
+        if (discountSymbol) discountSymbol.textContent = '%';
+        if (discountValue) {
+          discountValue.setAttribute('placeholder', 'Select type first');
+        }
+      }
+
+      // Don't clear value when type changes - let user keep their entered value
+      // if (discountValue) discountValue.value = '';
+
+      // Trigger calculation after type change
+      setTimeout(() => calculateSimplifiedDiscount(), 10);
+    });
+  }
+
+  // Calculate discount on value changes
+  [discountValue, regularPrice].forEach(field => {
+    if (field) {
+      field.addEventListener('input', function() {
+        console.log('Field changed:', field.id, 'value:', field.value);
+        setTimeout(() => calculateSimplifiedDiscount(), 10); // Small delay to ensure value is updated
+      });
+      field.addEventListener('change', function() {
+        console.log('Field change event:', field.id, 'value:', field.value);
+        calculateSimplifiedDiscount();
+      });
+      field.addEventListener('keyup', function() {
+        console.log('Field keyup:', field.id, 'value:', field.value);
+        calculateSimplifiedDiscount();
+      });
+    }
+  });
+
+  // Profit calculation functionality
+  const buyingPrice = document.querySelector('#product_buying_price');
+  const profitPreview = document.getElementById('profit_preview');
+
+  // Calculate profit on price changes
+  [buyingPrice, regularPrice].forEach(field => {
+    if (field) {
+      field.addEventListener('input', calculateProfit);
+    }
+  });
+
+  function calculateProfit() {
+    const cost = parseFloat(buyingPrice?.value) || 0;
+    const selling = parseFloat(regularPrice?.value) || 0;
+
+    if (cost > 0) {
+      if (profitPreview) {
+        profitPreview.style.display = 'block';
+      }
+
+      const profit = selling - cost;
+      const marginPercentage = selling > 0 ? ((profit / selling) * 100).toFixed(2) : 0;
+
+      // Show warning if selling price is less than buying price
+      if (selling > 0 && selling < cost) {
+        showPriceWarning(cost, selling);
+      } else {
+        hidePriceWarning();
+      }
+
+      updateProfitPreview(cost, selling, profit, marginPercentage);
+    } else {
+      if (profitPreview) {
+        profitPreview.style.display = 'none';
+      }
+      hidePriceWarning();
+    }
+  }
+
+  function showPriceWarning(cost, selling) {
+    // Check if warning already exists
+    let warningDiv = document.getElementById('price-warning-alert');
+
+    if (!warningDiv) {
+      // Create warning element
+      warningDiv = document.createElement('div');
+      warningDiv.id = 'price-warning-alert';
+      warningDiv.className = 'alert alert-warning d-flex align-items-center mt-3';
+      warningDiv.innerHTML = `
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+          <strong>Warning!</strong> Selling price (₹${selling.toFixed(2)}) is less than buying price (₹${cost.toFixed(2)}).
+          This will result in a loss of ₹${(cost - selling).toFixed(2)} per unit.
+        </div>
+      `;
+
+      // Insert after the price fields
+      const priceSection = regularPrice?.closest('.row');
+      if (priceSection) {
+        priceSection.parentNode.insertBefore(warningDiv, priceSection.nextSibling);
+      }
+    } else {
+      // Update existing warning
+      warningDiv.innerHTML = `
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+          <strong>Warning!</strong> Selling price (₹${selling.toFixed(2)}) is less than buying price (₹${cost.toFixed(2)}).
+          This will result in a loss of ₹${(cost - selling).toFixed(2)} per unit.
+        </div>
+      `;
+    }
+  }
+
+  function hidePriceWarning() {
+    const warningDiv = document.getElementById('price-warning-alert');
+    if (warningDiv) {
+      warningDiv.remove();
+    }
+  }
+
+  function updateProfitPreview(cost, selling, profit, margin) {
+    const costDisplay = document.getElementById('cost_display');
+    const sellingDisplay = document.getElementById('selling_display');
+    const profitDisplay = document.getElementById('profit_display');
+    const marginDisplay = document.getElementById('margin_display');
+    const profitStatus = document.getElementById('profit_status');
+
+    if (costDisplay) costDisplay.textContent = `₹${cost.toFixed(2)}`;
+    if (sellingDisplay) sellingDisplay.textContent = `₹${selling.toFixed(2)}`;
+    if (profitDisplay) {
+      profitDisplay.textContent = `₹${profit.toFixed(2)}`;
+      profitDisplay.className = profit >= 0 ? 'fw-medium text-success' : 'fw-medium text-danger';
+    }
+    if (marginDisplay) {
+      marginDisplay.textContent = `${margin}%`;
+      marginDisplay.className = profit >= 0 ? 'fw-medium text-success' : 'fw-medium text-danger';
+    }
+    if (profitStatus) {
+      let status, statusClass;
+      if (profit > 0) {
+        status = 'Profitable';
+        statusClass = 'text-success';
+      } else if (profit === 0) {
+        status = 'Break Even';
+        statusClass = 'text-warning';
+      } else {
+        status = 'Loss Making';
+        statusClass = 'text-danger';
+      }
+      profitStatus.textContent = status;
+      profitStatus.className = `fw-medium ${statusClass}`;
+    }
+  }
+
+  function calculateSimplifiedDiscount() {
+    const type = discountType?.value;
+    const value = parseFloat(discountValue?.value) || 0;
+    const regular = parseFloat(regularPrice?.value) || 0;
+
+    console.log('Calculating discount:', {
+      type,
+      value,
+      regular,
+      discountTypeElement: discountType,
+      discountValueElement: discountValue,
+      regularPriceElement: regularPrice
+    });
+
+    // Always update the price preview with regular price even if no discount
+    if (regular > 0) {
+      let discountAmount = 0;
+      let finalPrice = regular;
+
+      // Check if we have a valid discount type and value
+      if (type && type !== '' && type !== 'Select Discount Type' && value > 0) {
+        console.log('Processing discount:', type, value);
+
+        if (type === 'percentage') {
+          if (value > 100) {
+            alert('Percentage discount cannot be more than 100%');
+            if (discountValue) discountValue.value = 100;
+            return;
+          }
+          discountAmount = (regular * value / 100);
+          console.log('Percentage calculation:', regular, '*', value, '/ 100 =', discountAmount);
+        } else if (type === 'fixed') {
+          if (value > regular) {
+            alert('Fixed discount cannot be more than the regular price');
+            if (discountValue) discountValue.value = regular;
+            return;
+          }
+          discountAmount = value;
+          console.log('Fixed calculation:', value);
+        }
+        finalPrice = regular - discountAmount;
+        console.log('Final price calculation:', regular, '-', discountAmount, '=', finalPrice);
+      } else {
+        console.log('No valid discount type or value:', { type, value });
+      }
+
+      // Update discount amount display
+      if (discountAmountDisplay) {
+        discountAmountDisplay.value = discountAmount.toFixed(2);
+        console.log('Updated discount amount display:', discountAmount.toFixed(2));
+      }
+
+      updateSimplifiedPricePreview(discountAmount, finalPrice, regular);
+    } else {
+      // No regular price set
+      console.log('No regular price set');
+      updateSimplifiedPricePreview(0, 0, 0);
+    }
+  }
+
+  function updateSimplifiedPricePreview(discountAmount, finalPrice, regularPriceValue) {
+    const regularPriceDisplay = document.getElementById('regular_price_display');
+    const finalDiscountedPrice = document.getElementById('final_discounted_price');
+
+    console.log('Updating price preview:', { discountAmount, finalPrice, regularPriceValue });
+
+    if (regularPriceDisplay) regularPriceDisplay.textContent = `₹${regularPriceValue.toFixed(2)}`;
+    if (finalDiscountedPrice) finalDiscountedPrice.textContent = `₹${finalPrice.toFixed(2)}`;
+  }
+
+  function clearDiscountFields() {
+    if (discountValue) discountValue.value = '';
+    if (discountAmountDisplay) discountAmountDisplay.value = '';
+    updateSimplifiedPricePreview(0, 0, 0);
+  }
+
+  // Add specific event listeners for discount value field
+  if (discountValue) {
+    console.log('Adding specific listeners to discount value field:', discountValue);
+    discountValue.addEventListener('input', function() {
+      console.log('Discount value input event:', this.value);
+      calculateSimplifiedDiscount();
+    });
+    discountValue.addEventListener('propertychange', function() {
+      console.log('Discount value property change:', this.value);
+      calculateSimplifiedDiscount();
+    });
+  }
+
+  // Add specific event listeners for regular price field
+  if (regularPrice) {
+    console.log('Adding specific listeners to regular price field:', regularPrice);
+    regularPrice.addEventListener('input', function() {
+      console.log('Regular price input event:', this.value);
+      calculateSimplifiedDiscount();
+    });
+  }
+
+  // Initialize calculations on page load
+  setTimeout(() => {
+    console.log('Initializing calculations on page load');
+    console.log('Elements found:', {
+      discountType: discountType,
+      discountValue: discountValue,
+      regularPrice: regularPrice,
+      discountAmountDisplay: discountAmountDisplay
+    });
+
+    // Ensure discount symbol is correct on page load
+    if (discountType && discountType.value) {
+      if (discountType.value === 'fixed' && discountSymbol) {
+        discountSymbol.textContent = '₹';
+      } else if (discountType.value === 'percentage' && discountSymbol) {
+        discountSymbol.textContent = '%';
+      }
+    }
+
+    calculateSimplifiedDiscount();
+    calculateProfit();
+  }, 100);
+
+  // Global function for manual testing
+  window.testDiscountCalculation = function() {
+    console.log('Manual test triggered');
+    const type = discountType?.value;
+    const value = discountValue?.value;
+    const price = regularPrice?.value;
+    console.log('Current values:', { type, value, price });
+    calculateSimplifiedDiscount();
+  };
+
+  // Initialize multiselect functionality with error handling
+  try {
+    initializeMultiselectDropdowns();
+  } catch (error) {
+    console.error('Error initializing multiselect dropdowns:', error);
+  }
+
+  // Initialize occasional product functionality
+  initializeOccasionalProduct();
+
+  // Initialize Product Type functionality
+  initializeProductTypeSelector();
+
+  // Initialize Subscription functionality
+  initializeSubscriptionToggle();
+
+  // Handle multiselect change events to update hidden location_data field
+  function updateLocationData(ruleRow) {
+    if (!ruleRow) {
+      console.error('updateLocationData: ruleRow is null');
+      return;
+    }
+
+    const ruleTypeSelect = ruleRow.querySelector('[name*="rule_type"]');
+    const hiddenLocationData = ruleRow.querySelector('.location-data-hidden');
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+    const pincodeInput = ruleRow.querySelector('[name*="location_data_pincodes"]');
+
+    if (!hiddenLocationData || !ruleTypeSelect) return;
+
+    let locationData = [];
+
+    switch(ruleTypeSelect.value) {
+      case 'state':
+        if (stateSelect) {
+          locationData = Array.from(stateSelect.selectedOptions).map(option => option.value);
+        }
+        break;
+      case 'city':
+        if (citySelect) {
+          locationData = Array.from(citySelect.selectedOptions).map(option => option.value);
+        }
+        break;
+      case 'pincode':
+        if (pincodeInput && pincodeInput.value.trim()) {
+          locationData = pincodeInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+        break;
+      case 'all':
+        locationData = [];
+        break;
+    }
+
+    hiddenLocationData.value = JSON.stringify(locationData);
+  }
+
+  // Update filtered cities when states are selected
+  function updateFilteredCities(ruleRow) {
+    if (!ruleRow) return;
+
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const filteredCitiesGroup = ruleRow.querySelector('.filtered-cities-group');
+    const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+
+    if (!stateSelect || !filteredCitiesGroup || !filteredCitiesSelect) return;
+
+    const selectedStates = Array.from(stateSelect.selectedOptions).map(option => option.value);
+
+    if (selectedStates.length > 0) {
+      // Show the filtered cities dropdown
+      filteredCitiesGroup.style.display = 'block';
+
+      // Populate cities for selected states
+      const citiesForStates = [];
+      const stateCityMapping = {
+        'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davangere'],
+        'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli'],
+        'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur', 'Thane'],
+        'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam', 'Alappuzha'],
+        'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Tirupati'],
+        'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar'],
+        'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar'],
+        'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur'],
+        'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Ghaziabad', 'Agra', 'Varanasi', 'Meerut', 'Allahabad'],
+        'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Haldia'],
+        'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali'],
+        'Haryana': ['Chandigarh', 'Faridabad', 'Gurgaon', 'Hisar', 'Panipat', 'Ambala'],
+        'Delhi': ['New Delhi', 'Delhi', 'Gurgaon', 'Faridabad', 'Noida', 'Ghaziabad'],
+        'Madhya Pradesh': ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar'],
+        'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia', 'Darbhanga'],
+        'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur', 'Sambalpur']
+      };
+
+      selectedStates.forEach(state => {
+        if (stateCityMapping[state]) {
+          citiesForStates.push(...stateCityMapping[state]);
+        }
+      });
+
+      // Clear and populate filtered cities dropdown
+      $(filteredCitiesSelect).empty();
+      citiesForStates.sort().forEach(city => {
+        const option = new Option(city, city, false, false);
+        filteredCitiesSelect.appendChild(option);
+      });
+
+      // Refresh Select2
+      $(filteredCitiesSelect).trigger('change');
+
+    } else {
+      // Hide the filtered cities dropdown
+      filteredCitiesGroup.style.display = 'none';
+    }
+  }
+
+  // Filter cities by selected states
+  function filterCitiesByStates(ruleRow) {
+    if (!ruleRow) return;
+
+    const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+
+    if (!stateFilterSelect || !citySelect) return;
+
+    const selectedStates = Array.from(stateFilterSelect.selectedOptions).map(option => option.value);
+
+    // Show/hide options based on selected states
+    const allOptions = citySelect.querySelectorAll('option');
+    allOptions.forEach(option => {
+      if (selectedStates.length === 0) {
+        option.style.display = 'block';
+      } else {
+        // Simple filtering logic - you can enhance this with proper state-city mapping
+        const shouldShow = selectedStates.some(state => {
+          // This is a simplified check - in a real application, you'd have proper city-state mapping
+          return option.value.toLowerCase().includes(state.toLowerCase().substring(0, 3));
+        });
+        option.style.display = shouldShow ? 'block' : 'none';
+      }
+    });
+
+    // Refresh Select2 to reflect changes
+    $(citySelect).trigger('change.select2');
+  }
+
+  // Add change event listeners to multiselects and pincode input
+  function initializeMultiselectDropdowns() {
+    document.querySelectorAll('.delivery-rule-row').forEach(ruleRow => {
+      initializeMultiselectForRow(ruleRow);
+    });
+  }
+
+  // Initialize multiselect functionality for a single row
+  function initializeMultiselectForRow(ruleRow) {
+    if (!ruleRow) {
+      console.error('initializeMultiselectForRow: ruleRow is null');
+      return;
+    }
+
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+    const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+    const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+    const pincodeInput = ruleRow.querySelector('[name*="location_data_pincodes"]');
+
+    if (stateSelect) {
+      // Initialize Select2 for states
+      $(stateSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select states...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+
+      $(stateSelect).on('change', () => {
+        updateLocationData(ruleRow);
+        updateFilteredCities(ruleRow);
+      });
+    }
+    if (citySelect) {
+      // Initialize Select2 for cities
+      $(citySelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select cities...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+
+      $(citySelect).on('change', () => updateLocationData(ruleRow));
+    }
+    if (pincodeInput) {
+      pincodeInput.addEventListener('input', () => updateLocationData(ruleRow));
+    }
+
+    // Initialize additional dropdowns
+    if (filteredCitiesSelect) {
+      $(filteredCitiesSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select cities from chosen states...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+      $(filteredCitiesSelect).on('change', () => updateLocationData(ruleRow));
+    }
+
+    if (stateFilterSelect) {
+      $(stateFilterSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Select states to filter cities...',
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%'
+      });
+      $(stateFilterSelect).on('change', () => updateLocationData(ruleRow));
+    }
+  }
+
+  const addDeliveryRuleBtn = document.getElementById('add-delivery-rule');
+  if (addDeliveryRuleBtn) {
+    addDeliveryRuleBtn.addEventListener('click', function() {
+      const container = document.getElementById('delivery-rules-container');
+      const templateElement = document.getElementById('delivery-rule-template');
+
+      if (!container) {
+        console.error('Delivery rules container not found');
+        return;
+      }
+
+      if (!templateElement) {
+        console.error('Delivery rule template not found');
+        return;
+      }
+
+      const template = templateElement.content.cloneNode(true);
+
+      // Replace index placeholders with actual index
+      const ruleRow = template.querySelector('.delivery-rule-row');
+      if (ruleRow) {
+        ruleRow.innerHTML = ruleRow.innerHTML.replace(/NEW_RECORD/g, deliveryRuleIndex);
+
+        container.appendChild(template);
+        deliveryRuleIndex++;
+
+        // Initialize the new rule type select
+        const newRuleType = ruleRow.querySelector('[name*="rule_type"]');
+        if (newRuleType) {
+          initializeRuleTypeSelect(newRuleType);
+        }
+
+        // Initialize multiselect functionality for the new row
+        initializeMultiselectForRow(ruleRow);
+      }
+    });
+  }
+
+  // Initialize existing rule type selects
+  document.querySelectorAll('[name*="rule_type"]').forEach(initializeRuleTypeSelect);
+
+  function initializeRuleTypeSelect(select) {
+    if (!select) {
+      console.error('initializeRuleTypeSelect: select element is null');
+      return;
+    }
+
+    select.addEventListener('change', function() {
+      const ruleRow = this.closest('.delivery-rule-row');
+      if (!ruleRow) {
+        console.error('Rule row not found');
+        return;
+      }
+
+      const locationGroup = ruleRow.querySelector('.location-data-group');
+      const stateGroup = ruleRow.querySelector('.state-select-group');
+      const cityGroup = ruleRow.querySelector('.city-select-group');
+      const pincodeGroup = ruleRow.querySelector('.pincode-input-group');
+      const filteredCitiesGroup = ruleRow.querySelector('.filtered-cities-group');
+      const statesFilterGroup = ruleRow.querySelector('.states-filter-group');
+      const hiddenLocationData = ruleRow.querySelector('.location-data-hidden');
+
+      // Hide all location input groups first
+      if (stateGroup) stateGroup.style.display = 'none';
+      if (cityGroup) cityGroup.style.display = 'none';
+      if (pincodeGroup) pincodeGroup.style.display = 'none';
+      if (filteredCitiesGroup) filteredCitiesGroup.style.display = 'none';
+      if (statesFilterGroup) statesFilterGroup.style.display = 'none';
+
+      if (this.value === 'everywhere') {
+        if (locationGroup) locationGroup.style.display = 'none';
+        if (hiddenLocationData) hiddenLocationData.value = '';
+      } else {
+        if (locationGroup) locationGroup.style.display = 'block';
+
+        // Show appropriate input group based on rule type
+        switch(this.value) {
+          case 'state':
+            if (stateGroup) stateGroup.style.display = 'block';
+            // Initialize state selection handler for filtered cities
+            initializeStateFilteredCities(ruleRow);
+            break;
+          case 'city':
+            if (cityGroup) cityGroup.style.display = 'block';
+            if (statesFilterGroup) statesFilterGroup.style.display = 'block';
+            // Initialize state filter for cities
+            initializeStateFilter(ruleRow);
+            break;
+          case 'pincode':
+            if (pincodeGroup) pincodeGroup.style.display = 'block';
+            break;
+        }
+      }
+    });
+
+    // Trigger change event for initial setup
+    select.dispatchEvent(new Event('change'));
+  }
+
+  function updateLocationPlaceholder(ruleType, input) {
+    const placeholders = {
+      'state': 'Enter states separated by commas (e.g., Karnataka, Tamil Nadu)',
+      'city': 'Enter cities separated by commas (e.g., Bangalore, Chennai)',
+      'pincode': 'Enter pincodes separated by commas (e.g., 560001, 560002)'
+    };
+
+    input.placeholder = placeholders[ruleType] || '';
+  }
+
+  // Handle remove rule buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-delivery-rule') || e.target.closest('.remove-delivery-rule')) {
+      const ruleRow = e.target.closest('.delivery-rule-row');
+
+      // Destroy Select2 instances before removing
+      const stateSelect = ruleRow.querySelector('.multiselect-states');
+      const citySelect = ruleRow.querySelector('.multiselect-cities');
+      const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+      const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+
+      if (stateSelect && $(stateSelect).data('select2')) {
+        $(stateSelect).select2('destroy');
+      }
+      if (citySelect && $(citySelect).data('select2')) {
+        $(citySelect).select2('destroy');
+      }
+      if (filteredCitiesSelect && $(filteredCitiesSelect).data('select2')) {
+        $(filteredCitiesSelect).select2('destroy');
+      }
+      if (stateFilterSelect && $(stateFilterSelect).data('select2')) {
+        $(stateFilterSelect).select2('destroy');
+      }
+
+      const destroyInput = ruleRow.querySelector('[name*="_destroy"]');
+
+      if (destroyInput) {
+        destroyInput.value = '1';
+        ruleRow.style.display = 'none';
+      } else {
+        ruleRow.remove();
+      }
+    }
+  });
+
+  // Occasional Product Functionality
+  function initializeOccasionalProduct() {
+    // Rails checkbox helpers can be tricky, let's try different selectors
+    let occasionalToggle = document.getElementById('occasionalProductToggle');
+
+    // If not found, try by name attribute
+    if (!occasionalToggle) {
+      occasionalToggle = document.querySelector('input[name="product[is_occasional_product]"][type="checkbox"]');
+    }
+
+    const occasionalSettings = document.getElementById('occasionalProductSettings');
+    const startDateInput = document.getElementById('occasionalStartDate');
+    const endDateInput = document.getElementById('occasionalEndDate');
+    const startDateRequired = document.getElementById('startDateRequired');
+    const endDateRequired = document.getElementById('endDateRequired');
+    const occasionalPreview = document.getElementById('occasionalPreview');
+
+    // Debug logging
+    console.log('Initializing Occasional Product Feature');
+    console.log('Toggle element found:', !!occasionalToggle);
+    console.log('Settings element found:', !!occasionalSettings);
+
+    if (!occasionalToggle || !occasionalSettings) {
+      console.error('Required elements not found for occasional product feature');
+      console.error('Looking for checkbox with ID "occasionalProductToggle" or name "product[is_occasional_product]"');
+      // List all checkboxes for debugging
+      console.log('All checkboxes found:', document.querySelectorAll('input[type="checkbox"]'));
+      return;
+    }
+
+    // Schedule type elements
+    const scheduleOneTime = document.getElementById('schedule_one_time');
+    const scheduleRecurring = document.getElementById('schedule_recurring');
+    const oneTimeSchedule = document.getElementById('oneTimeSchedule');
+    const recurringSchedule = document.getElementById('recurringSchedule');
+
+    // Recurring elements
+    const recurringFromDay = document.getElementById('recurringFromDay');
+    const recurringFromTime = document.getElementById('recurringFromTime');
+    const recurringToDay = document.getElementById('recurringToDay');
+    const recurringToTime = document.getElementById('recurringToTime');
+
+    // Initialize on page load - ensure fields are NEVER required initially
+    if (startDateInput) {
+      startDateInput.removeAttribute('required');
+    }
+    if (endDateInput) {
+      endDateInput.removeAttribute('required');
+    }
+    if (startDateRequired) {
+      startDateRequired.style.display = 'none';
+    }
+    if (endDateRequired) {
+      endDateRequired.style.display = 'none';
+    }
+
+    // Toggle occasional product settings
+    if (occasionalToggle) {
+      console.log('Adding change event listener to occasional toggle');
+      occasionalToggle.addEventListener('change', function() {
+        console.log('Occasional toggle changed, checked:', this.checked);
+        if (this.checked) {
+          console.log('Showing occasional settings');
+          occasionalSettings.style.display = 'block';
+          updateScheduleTypeDisplay();
+        } else {
+          console.log('Hiding occasional settings');
+          occasionalSettings.style.display = 'none';
+          clearAllScheduleFields();
+          if (occasionalPreview) {
+            occasionalPreview.classList.add('d-none');
+          }
+        }
+      });
+
+      // Trigger initial state
+      console.log('Initial toggle state:', occasionalToggle.checked);
+      if (occasionalToggle.checked) {
+        occasionalSettings.style.display = 'block';
+        updateScheduleTypeDisplay();
+      }
+    }
+
+    // Schedule type change handlers
+    if (scheduleOneTime) {
+      scheduleOneTime.addEventListener('change', function() {
+        if (this.checked) {
+          updateScheduleTypeDisplay();
+        }
+      });
+    }
+
+    if (scheduleRecurring) {
+      scheduleRecurring.addEventListener('change', function() {
+        if (this.checked) {
+          updateScheduleTypeDisplay();
+        }
+      });
+    }
+
+    function updateScheduleTypeDisplay() {
+      if (scheduleOneTime && scheduleOneTime.checked) {
+        // Show one-time, hide recurring
+        oneTimeSchedule.style.display = 'block';
+        recurringSchedule.style.display = 'none';
+
+        // Set required fields only if occasional product is enabled
+        if (occasionalToggle && occasionalToggle.checked) {
+          if (startDateInput) {
+            startDateInput.setAttribute('required', 'required');
+            startDateRequired.style.display = 'inline';
+          }
+          if (endDateInput) {
+            endDateInput.setAttribute('required', 'required');
+            endDateRequired.style.display = 'inline';
+          }
+        }
+
+        // Clear recurring fields
+        clearRecurringFields();
+
+      } else if (scheduleRecurring && scheduleRecurring.checked) {
+        // Show recurring, hide one-time
+        oneTimeSchedule.style.display = 'none';
+        recurringSchedule.style.display = 'block';
+
+        // Remove required from one-time fields
+        if (startDateInput) {
+          startDateInput.removeAttribute('required');
+          startDateRequired.style.display = 'none';
+        }
+        if (endDateInput) {
+          endDateInput.removeAttribute('required');
+          endDateRequired.style.display = 'none';
+        }
+
+        // Clear one-time fields
+        clearDateInputs();
+
+        // Initialize recurring preview
+        updateRecurringPreview();
+      }
+    }
+
+    // Date change handlers for one-time schedule
+    if (startDateInput) {
+      startDateInput.addEventListener('change', updateOccasionalPreview);
+    }
+    if (endDateInput) {
+      endDateInput.addEventListener('change', updateOccasionalPreview);
+    }
+
+    // Recurring schedule change handlers
+    [recurringFromDay, recurringFromTime, recurringToDay, recurringToTime].forEach(element => {
+      if (element) {
+        element.addEventListener('change', updateRecurringPreview);
+      }
+    });
+
+    // Date preset handlers
+    document.querySelectorAll('.preset-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const preset = this.dataset.preset;
+        setDatePreset(preset);
+      });
+    });
+
+    function clearRecurringFields() {
+      if (recurringFromDay) recurringFromDay.value = '';
+      if (recurringFromTime) recurringFromTime.value = '';
+      if (recurringToDay) recurringToDay.value = '';
+      if (recurringToTime) recurringToTime.value = '';
+
+      const recurringPreview = document.getElementById('recurringPreview');
+      if (recurringPreview) {
+        recurringPreview.classList.add('d-none');
+      }
+    }
+
+    function clearAllScheduleFields() {
+      clearDateInputs();
+      clearRecurringFields();
+    }
+
+    // Initial setup - only update if occasional product is enabled
+    if (occasionalToggle && occasionalToggle.checked) {
+      updateScheduleTypeDisplay();
+      updateOccasionalPreview();
+    } else {
+      // Ensure fields are not required on initial load
+      clearAllScheduleFields();
+    }
+  }
+
+  function updateOccasionalPreview() {
+    const startDate = document.getElementById('occasionalStartDate').value;
+    const endDate = document.getElementById('occasionalEndDate').value;
+    const preview = document.getElementById('occasionalPreview');
+    const durationEl = document.getElementById('previewDuration');
+    const statusEl = document.getElementById('previewStatus');
+    const timeRemainingEl = document.getElementById('previewTimeRemaining');
+
+    if (!startDate || !endDate) {
+      preview.classList.add('d-none');
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const now = new Date();
+
+    // Validate dates
+    if (start >= end) {
+      preview.classList.remove('d-none');
+      preview.className = 'alert alert-danger border';
+      durationEl.textContent = 'Invalid';
+      statusEl.textContent = 'End date must be after start date';
+      timeRemainingEl.textContent = '-';
+      return;
+    }
+
+    // Calculate duration
+    const durationMs = end - start;
+    const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    let durationText = '';
+    if (days > 0) {
+      durationText = `${days} day${days > 1 ? 's' : ''}`;
+      if (hours > 0) durationText += `, ${hours} hour${hours > 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+      durationText = `${hours} hour${hours > 1 ? 's' : ''}`;
+    } else {
+      durationText = 'Less than 1 hour';
+    }
+
+    // Determine status
+    let status, statusClass, timeRemaining;
+    if (now < start) {
+      status = 'Upcoming';
+      statusClass = 'alert-warning';
+      const timeToStart = start - now;
+      const daysToStart = Math.floor(timeToStart / (1000 * 60 * 60 * 24));
+      timeRemaining = daysToStart > 0 ? `Starts in ${daysToStart} day${daysToStart > 1 ? 's' : ''}` : 'Starts soon';
+    } else if (now >= start && now <= end) {
+      status = 'Active Now';
+      statusClass = 'alert-success';
+      const timeToEnd = end - now;
+      const daysToEnd = Math.floor(timeToEnd / (1000 * 60 * 60 * 24));
+      timeRemaining = daysToEnd > 0 ? `${daysToEnd} day${daysToEnd > 1 ? 's' : ''} remaining` : 'Ending soon';
+    } else {
+      status = 'Expired';
+      statusClass = 'alert-danger';
+      const timeSinceEnd = now - end;
+      const daysSinceEnd = Math.floor(timeSinceEnd / (1000 * 60 * 60 * 24));
+      timeRemaining = daysSinceEnd > 0 ? `Ended ${daysSinceEnd} day${daysSinceEnd > 1 ? 's' : ''} ago` : 'Just ended';
+    }
+
+    // Update preview
+    preview.className = `alert ${statusClass} border`;
+    preview.classList.remove('d-none');
+    durationEl.textContent = durationText;
+    statusEl.textContent = status;
+    timeRemainingEl.textContent = timeRemaining;
+  }
+
+  function setDatePreset(preset) {
+    const startInput = document.getElementById('occasionalStartDate');
+    const endInput = document.getElementById('occasionalEndDate');
+    const now = new Date();
+
+    let start, end;
+
+    switch(preset) {
+      case 'today':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0); // 9 AM today
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0); // 9 PM today
+        break;
+      case 'tomorrow':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0);
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 21, 0);
+        break;
+      case 'this-week':
+        const mondayThisWeek = new Date(now);
+        mondayThisWeek.setDate(now.getDate() - now.getDay() + 1);
+        start = new Date(mondayThisWeek.getFullYear(), mondayThisWeek.getMonth(), mondayThisWeek.getDate(), 9, 0);
+        end = new Date(mondayThisWeek.getFullYear(), mondayThisWeek.getMonth(), mondayThisWeek.getDate() + 6, 21, 0);
+        break;
+      case 'next-week':
+        const mondayNextWeek = new Date(now);
+        mondayNextWeek.setDate(now.getDate() - now.getDay() + 8);
+        start = new Date(mondayNextWeek.getFullYear(), mondayNextWeek.getMonth(), mondayNextWeek.getDate(), 9, 0);
+        end = new Date(mondayNextWeek.getFullYear(), mondayNextWeek.getMonth(), mondayNextWeek.getDate() + 6, 21, 0);
+        break;
+      case 'this-month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1, 9, 0);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 21, 0);
+        break;
+      case 'next-month':
+        start = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0);
+        end = new Date(now.getFullYear(), now.getMonth() + 2, 0, 21, 0);
+        break;
+    }
+
+    if (start && end) {
+      startInput.value = formatDateTimeLocal(start);
+      endInput.value = formatDateTimeLocal(end);
+      updateOccasionalPreview();
+
+      // Add visual feedback
+      startInput.classList.add('border-primary');
+      endInput.classList.add('border-primary');
+      setTimeout(() => {
+        startInput.classList.remove('border-primary');
+        endInput.classList.remove('border-primary');
+      }, 1000);
+    }
+  }
+
+  function clearDateInputs() {
+    const startDateInput = document.getElementById('occasionalStartDate');
+    const endDateInput = document.getElementById('occasionalEndDate');
+    const startDateRequired = document.getElementById('startDateRequired');
+    const endDateRequired = document.getElementById('endDateRequired');
+
+    if (startDateInput) {
+      startDateInput.value = '';
+      startDateInput.removeAttribute('required');
+    }
+    if (endDateInput) {
+      endDateInput.value = '';
+      endDateInput.removeAttribute('required');
+    }
+    if (startDateRequired) {
+      startDateRequired.style.display = 'none';
+    }
+    if (endDateRequired) {
+      endDateRequired.style.display = 'none';
+    }
+
+    updateOccasionalPreview();
+  }
+
+  function formatDateTimeLocal(date) {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+
+  // Recurring Schedule Preview
+  function updateRecurringPreview() {
+    const fromDay = document.getElementById('recurringFromDay')?.value;
+    const fromTime = document.getElementById('recurringFromTime')?.value;
+    const toDay = document.getElementById('recurringToDay')?.value;
+    const toTime = document.getElementById('recurringToTime')?.value;
+
+    const preview = document.getElementById('recurringPreview');
+    const patternEl = document.getElementById('recurringPattern');
+    const statusEl = document.getElementById('recurringStatus');
+    const nextChangeEl = document.getElementById('recurringNextChange');
+
+    if (!fromDay || !fromTime || !toDay || !toTime) {
+      preview.classList.add('d-none');
+      return;
+    }
+
+    // Validate schedule
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const fromDayIndex = dayOrder.indexOf(fromDay);
+    const toDayIndex = dayOrder.indexOf(toDay);
+
+    if (fromDayIndex === -1 || toDayIndex === -1) {
+      preview.classList.add('d-none');
+      return;
+    }
+
+    // Format pattern display
+    let pattern = '';
+    if (fromDayIndex === toDayIndex) {
+      pattern = `Every ${capitalizeFirst(fromDay)} ${formatTime12Hour(fromTime)} - ${formatTime12Hour(toTime)}`;
+    } else if (toDayIndex > fromDayIndex) {
+      pattern = `${capitalizeFirst(fromDay)} ${formatTime12Hour(fromTime)} to ${capitalizeFirst(toDay)} ${formatTime12Hour(toTime)}`;
+    } else {
+      // Spans across week boundary
+      pattern = `${capitalizeFirst(fromDay)} ${formatTime12Hour(fromTime)} to ${capitalizeFirst(toDay)} ${formatTime12Hour(toTime)} (next week)`;
+    }
+
+    // Determine current status
+    const now = new Date();
+    const currentDay = dayOrder[now.getDay() === 0 ? 6 : now.getDay() - 1]; // Convert Sunday=0 to Sunday=6
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const fromTimeMinutes = timeToMinutes(fromTime);
+    const toTimeMinutes = timeToMinutes(toTime);
+
+    let status = 'Inactive';
+    let statusClass = 'alert-secondary';
+    let nextChange = 'N/A';
+
+    // Check if currently active
+    const isActive = isCurrentlyActiveRecurring(currentDay, currentTime, fromDay, fromTime, toDay, toTime);
+
+    if (isActive) {
+      status = 'Active Now';
+      statusClass = 'alert-success';
+      nextChange = calculateNextDeactivation(currentDay, currentTime, toDay, toTime);
+    } else {
+      status = 'Inactive';
+      statusClass = 'alert-secondary';
+      nextChange = calculateNextActivation(currentDay, currentTime, fromDay, fromTime);
+    }
+
+    // Update preview
+    preview.className = `alert ${statusClass} border`;
+    preview.classList.remove('d-none');
+    patternEl.textContent = pattern;
+    statusEl.textContent = status;
+    nextChangeEl.textContent = nextChange;
+  }
+
+  function capitalizeFirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function formatTime12Hour(time24) {
+    const [hours, minutes] = time24.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+  }
+
+  function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function isCurrentlyActiveRecurring(currentDay, currentTime, fromDay, fromTime, toDay, toTime) {
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const currentDayIndex = dayOrder.indexOf(currentDay);
+    const fromDayIndex = dayOrder.indexOf(fromDay);
+    const toDayIndex = dayOrder.indexOf(toDay);
+    const fromTimeMinutes = timeToMinutes(fromTime);
+    const toTimeMinutes = timeToMinutes(toTime);
+
+    if (fromDayIndex === toDayIndex) {
+      // Same day schedule
+      return currentDayIndex === fromDayIndex &&
+             currentTime >= fromTimeMinutes &&
+             currentTime <= toTimeMinutes;
+    } else if (toDayIndex > fromDayIndex) {
+      // Within same week
+      return (currentDayIndex === fromDayIndex && currentTime >= fromTimeMinutes) ||
+             (currentDayIndex > fromDayIndex && currentDayIndex < toDayIndex) ||
+             (currentDayIndex === toDayIndex && currentTime <= toTimeMinutes);
+    } else {
+      // Spans week boundary
+      return (currentDayIndex === fromDayIndex && currentTime >= fromTimeMinutes) ||
+             (currentDayIndex > fromDayIndex) ||
+             (currentDayIndex < toDayIndex) ||
+             (currentDayIndex === toDayIndex && currentTime <= toTimeMinutes);
+    }
+  }
+
+  function calculateNextActivation(currentDay, currentTime, fromDay, fromTime) {
+    // This is a simplified calculation - you might want to make it more sophisticated
+    return `Next ${capitalizeFirst(fromDay)} at ${formatTime12Hour(fromTime)}`;
+  }
+
+  function calculateNextDeactivation(currentDay, currentTime, toDay, toTime) {
+    // This is a simplified calculation - you might want to make it more sophisticated
+    return `${capitalizeFirst(toDay)} at ${formatTime12Hour(toTime)}`;
+  }
+
+  // Product Type Selector Functionality
+  function initializeProductTypeSelector() {
+    const productTypeSelect = document.getElementById('product_type_select');
+    const productTypeCards = document.querySelectorAll('.product-type-card');
+
+    if (!productTypeSelect || productTypeCards.length === 0) return;
+
+    // Update card selection based on dropdown
+    function updateCardSelection() {
+      const selectedType = productTypeSelect.value;
+
+      productTypeCards.forEach(card => {
+        const cardType = card.dataset.type;
+
+        if (cardType === selectedType) {
+          card.classList.add('selected');
+          card.style.transform = 'scale(1.05)';
+          card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
+          card.style.borderWidth = '3px';
+        } else {
+          card.classList.remove('selected');
+          card.style.transform = 'scale(1)';
+          card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+          card.style.borderWidth = '2px';
+        }
+      });
+    }
+
+    // Handle dropdown change
+    productTypeSelect.addEventListener('change', function() {
+      updateCardSelection();
+
+      // Add visual feedback
+      this.style.borderColor = '#28a745';
+      setTimeout(() => {
+        this.style.borderColor = '';
+      }, 1000);
+    });
+
+    // Handle card click
+    productTypeCards.forEach(card => {
+      card.addEventListener('click', function() {
+        const cardType = this.dataset.type;
+        productTypeSelect.value = cardType;
+        updateCardSelection();
+
+        // Add click animation
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          this.style.transform = 'scale(1.05)';
+        }, 150);
+
+        // Trigger change event
+        productTypeSelect.dispatchEvent(new Event('change'));
+      });
+
+      // Add hover effects
+      card.addEventListener('mouseenter', function() {
+        if (!this.classList.contains('selected')) {
+          this.style.transform = 'scale(1.02)';
+          this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+        }
+      });
+
+      card.addEventListener('mouseleave', function() {
+        if (!this.classList.contains('selected')) {
+          this.style.transform = 'scale(1)';
+          this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+        }
+      });
+    });
+
+    // Initial setup
+    updateCardSelection();
+  }
+
+  // Subscription Toggle Functionality
+  function initializeSubscriptionToggle() {
+    const subscriptionToggle = document.getElementById('subscription_toggle');
+    const subscriptionInfo = document.getElementById('subscriptionInfo');
+    const subscriptionIconContainer = document.querySelector('.subscription-icon-container');
+
+    if (!subscriptionToggle || !subscriptionInfo) return;
+
+    // Handle toggle change
+    subscriptionToggle.addEventListener('change', function() {
+      const isEnabled = this.checked;
+
+      // Show/hide info section with smooth animation
+      if (isEnabled) {
+        subscriptionInfo.style.display = 'block';
+        subscriptionInfo.style.opacity = '0';
+        subscriptionInfo.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          subscriptionInfo.style.transition = 'all 0.3s ease';
+          subscriptionInfo.style.opacity = '1';
+          subscriptionInfo.style.transform = 'translateY(0)';
+        }, 10);
+      } else {
+        subscriptionInfo.style.transition = 'all 0.3s ease';
+        subscriptionInfo.style.opacity = '0';
+        subscriptionInfo.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          subscriptionInfo.style.display = 'none';
+        }, 300);
+      }
+
+      // Add visual feedback to toggle
+      if (isEnabled) {
+        this.classList.add('subscription-enabled');
+        if (subscriptionIconContainer) {
+          subscriptionIconContainer.classList.add('rotating');
+          setTimeout(() => {
+            subscriptionIconContainer.classList.remove('rotating');
+          }, 1000);
+        }
+      } else {
+        this.classList.remove('subscription-enabled');
+      }
+
+      // Show notification
+      showSubscriptionNotification(isEnabled);
+    });
+
+    // Initial state
+    if (subscriptionToggle.checked) {
+      subscriptionToggle.classList.add('subscription-enabled');
+    }
+  }
+
+  function showSubscriptionNotification(isEnabled) {
+    const message = isEnabled
+      ? 'Subscription feature enabled! Customers can now set up recurring orders.'
+      : 'Subscription feature disabled. This will be a one-time purchase product.';
+
+    const type = isEnabled ? 'success' : 'info';
+    showNotification(message, type);
+  }
+});
+
+// Global function for image preview modal
+function previewImage(src, filename) {
+  // Create modal for image preview
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Image Preview - ${filename}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img src="${src}" class="img-fluid" style="max-height: 70vh;">
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+
+  modal.addEventListener('hidden.bs.modal', function() {
+    modal.remove();
+  });
+}
+
+  // Dynamic Unit Label Update
+  const unitTypeSelect = document.getElementById('product_unit_type');
+  const weightLabel = document.getElementById('weight_label');
+  const weightField = document.getElementById('product_weight');
+  const weightHelpText = document.getElementById('weight_help_text');
+
+  if (unitTypeSelect && weightLabel && weightField) {
+    // Unit mappings for label and placeholder updates
+    const unitMappings = {
+      'Kg': { label: 'Weight (kg)', placeholder: '0.000', step: '0.001', help: 'Enter weight in kilograms' },
+      'Gram': { label: 'Weight (gm)', placeholder: '0.0', step: '0.1', help: 'Enter weight in grams' },
+      'Liter': { label: 'Volume (L)', placeholder: '0.000', step: '0.001', help: 'Enter volume in liters' },
+      'Ml': { label: 'Volume (ml)', placeholder: '0', step: '1', help: 'Enter volume in milliliters' },
+      'Piece': { label: 'Quantity (pcs)', placeholder: '1', step: '1', help: 'Enter number of pieces' },
+      'Bottle': { label: 'Quantity (bottles)', placeholder: '1', step: '1', help: 'Enter number of bottles' },
+      'Dozen': { label: 'Quantity (dozen)', placeholder: '1', step: '0.5', help: 'Enter quantity in dozens' },
+      'Box': { label: 'Quantity (boxes)', placeholder: '1', step: '1', help: 'Enter number of boxes' },
+      'Packet': { label: 'Quantity (packets)', placeholder: '1', step: '1', help: 'Enter number of packets' },
+      'Bundle': { label: 'Quantity (bundles)', placeholder: '1', step: '1', help: 'Enter number of bundles' },
+      'Can': { label: 'Quantity (cans)', placeholder: '1', step: '1', help: 'Enter number of cans' },
+      'Jar': { label: 'Quantity (jars)', placeholder: '1', step: '1', help: 'Enter number of jars' },
+      'Pouch': { label: 'Quantity (pouches)', placeholder: '1', step: '1', help: 'Enter number of pouches' },
+      'Sachet': { label: 'Quantity (sachets)', placeholder: '1', step: '1', help: 'Enter number of sachets' }
+    };
+
+    function updateWeightField() {
+      const selectedUnit = unitTypeSelect.value;
+      const mapping = unitMappings[selectedUnit];
+
+      if (mapping) {
+        weightLabel.textContent = mapping.label;
+        weightField.placeholder = mapping.placeholder;
+        weightField.step = mapping.step;
+        if (weightHelpText) {
+          weightHelpText.textContent = mapping.help;
+        }
+
+        // Add visual feedback
+        weightField.classList.add('field-updated');
+        setTimeout(() => weightField.classList.remove('field-updated'), 300);
+      }
+    }
+
+    // Listen for unit type changes
+    unitTypeSelect.addEventListener('change', updateWeightField);
+
+    // Update on page load if unit is already selected
+    if (unitTypeSelect.value) {
+      updateWeightField();
+    }
+  }
+
+  // GST Configuration and Calculations
+  const gstToggle = document.getElementById('gst_toggle');
+  const gstConfig = document.getElementById('gst_config');
+  const totalGstRate = document.getElementById('total_gst_rate');
+  const gstTypeRadios = document.querySelectorAll('input[name="gst_type"]');
+
+  // Price fields for calculations
+  const sellingPriceField = document.getElementById('product_price');
+  const buyingPriceField = document.getElementById('product_buying_price');
+  const discountToggle = document.getElementById('discount_toggle');
+  const discountType = document.getElementById('discount_type');
+  const discountValue = document.getElementById('discount_value');
+
+  if (gstToggle && gstConfig) {
+    // Handle GST enable/disable
+    gstToggle.addEventListener('change', function() {
+      const isEnabled = this.checked;
+
+      if (isEnabled) {
+        gstConfig.style.display = 'block';
+        gstConfig.style.opacity = '0';
+        gstConfig.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          gstConfig.style.transition = 'all 0.3s ease';
+          gstConfig.style.opacity = '1';
+          gstConfig.style.transform = 'translateY(0)';
+        }, 10);
+      } else {
+        gstConfig.style.transition = 'all 0.3s ease';
+        gstConfig.style.opacity = '0';
+        gstConfig.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+          gstConfig.style.display = 'none';
+          resetGstCalculations();
+        }, 300);
+      }
+    });
+
+    // Handle GST rate selection
+    if (totalGstRate) {
+      totalGstRate.addEventListener('change', function() {
+        const rate = parseFloat(this.value) || 0;
+        updateGstRates(rate);
+        calculateGst();
+      });
+    }
+
+    // Handle GST type changes
+    gstTypeRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        updateGstDisplay(this.value);
+        calculateGst();
+      });
+    });
+
+    // Listen for price changes to recalculate GST
+    if (sellingPriceField) {
+      sellingPriceField.addEventListener('input', calculateGst);
+      sellingPriceField.addEventListener('blur', calculateGst);
+    }
+    if (discountToggle) {
+      discountToggle.addEventListener('change', calculateGst);
+    }
+    if (discountType) {
+      discountType.addEventListener('change', calculateGst);
+    }
+    if (discountValue) {
+      discountValue.addEventListener('input', calculateGst);
+    }
+
+    // Initial GST calculation if GST is enabled and values exist
+    setTimeout(() => {
+      if (gstToggle.checked && sellingPriceField?.value && totalGstRate?.value) {
+        calculateGst();
+      }
+    }, 500);
+  }
+
+  function updateGstRates(totalRate) {
+    const cgstRate = document.getElementById('cgst_rate');
+    const sgstRate = document.getElementById('sgst_rate');
+    const igstRate = document.getElementById('igst_rate');
+
+    if (totalRate > 0) {
+      // For intrastate: CGST = SGST = Total/2
+      const halfRate = (totalRate / 2).toFixed(2);
+
+      if (cgstRate) cgstRate.value = halfRate;
+      if (sgstRate) sgstRate.value = halfRate;
+      if (igstRate) igstRate.value = totalRate.toFixed(2);
+    } else {
+      if (cgstRate) cgstRate.value = '0.00';
+      if (sgstRate) sgstRate.value = '0.00';
+      if (igstRate) igstRate.value = '0.00';
+    }
+  }
+
+  function updateGstDisplay(gstType) {
+    const intrastateFields = document.getElementById('intrastate_gst_fields');
+    const interstateFields = document.getElementById('interstate_gst_fields');
+
+    if (gstType === 'intrastate') {
+      if (intrastateFields) intrastateFields.style.display = 'block';
+      if (interstateFields) interstateFields.style.display = 'none';
+    } else if (gstType === 'interstate') {
+      if (intrastateFields) intrastateFields.style.display = 'none';
+      if (interstateFields) interstateFields.style.display = 'block';
+    } else {
+      // Flexible - show both
+      if (intrastateFields) intrastateFields.style.display = 'block';
+      if (interstateFields) interstateFields.style.display = 'block';
+    }
+  }
+
+  function calculateGst() {
+    if (!gstToggle || !gstToggle.checked) {
+      resetGstCalculations();
+      return;
+    }
+
+    const sellingPrice = parseFloat(sellingPriceField?.value) || 0;
+    const gstRate = parseFloat(totalGstRate?.value) || 0;
+
+    if (sellingPrice <= 0 || gstRate <= 0) {
+      resetGstCalculations();
+      return;
+    }
+
+    // Calculate base price (selling price is the base price, GST will be added on top)
+    // Base Price = Selling Price (GST will be calculated and added to this)
+    const basePrice = sellingPrice;
+
+    // Calculate discount if enabled
+    let discountAmount = 0;
+    let discountedPrice = basePrice;
+
+    if (discountToggle && discountToggle.checked) {
+      const discountVal = parseFloat(discountValue?.value) || 0;
+      const discType = discountType?.value;
+
+      if (discType === 'percentage') {
+        discountAmount = (basePrice * discountVal) / 100;
+      } else if (discType === 'fixed') {
+        discountAmount = discountVal;
+      }
+
+      discountedPrice = Math.max(0, basePrice - discountAmount);
+    }
+
+    // Calculate GST amounts
+    const totalGstAmount = (discountedPrice * gstRate) / 100;
+    const cgstAmount = totalGstAmount / 2;
+    const sgstAmount = totalGstAmount / 2;
+    const igstAmount = totalGstAmount;
+
+    // Final price with GST
+    const finalPrice = discountedPrice + totalGstAmount;
+
+    // Update GST amount fields
+    updateGstAmountFields(cgstAmount, sgstAmount, igstAmount, totalGstAmount);
+
+    // Update display
+    updateGstDisplay(document.querySelector('input[name="gst_type"]:checked')?.value || 'flexible');
+    updateGstSummary(basePrice, totalGstAmount, discountedPrice, finalPrice, gstRate);
+
+    // Update hidden fields
+    const finalAmountField = document.getElementById('final_amount_with_gst');
+    const gstAmountField = document.getElementById('total_gst_amount_hidden');
+
+    if (finalAmountField) finalAmountField.value = finalPrice.toFixed(2);
+    if (gstAmountField) gstAmountField.value = totalGstAmount.toFixed(2);
+  }
+
+  function updateGstAmountFields(cgstAmount, sgstAmount, igstAmount, totalAmount) {
+    const cgstField = document.getElementById('cgst_amount');
+    const sgstField = document.getElementById('sgst_amount');
+    const igstField = document.getElementById('igst_amount');
+
+    if (cgstField) cgstField.value = cgstAmount.toFixed(2);
+    if (sgstField) sgstField.value = sgstAmount.toFixed(2);
+    if (igstField) igstField.value = igstAmount.toFixed(2);
+  }
+
+  function updateGstSummary(basePrice, gstAmount, discountedPrice, finalPrice, gstRate) {
+    const elements = {
+      gst_base_price: `₹${basePrice.toFixed(2)}`,
+      gst_total_amount: `₹${gstAmount.toFixed(2)}`,
+      gst_discounted_price: `₹${discountedPrice.toFixed(2)}`,
+      gst_final_price: `₹${finalPrice.toFixed(2)}`,
+      gst_effective_rate: gstRate.toFixed(2)
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+
+        // Add animation effect
+        element.classList.add('gst-updated');
+        setTimeout(() => element.classList.remove('gst-updated'), 500);
+      }
+    });
+  }
+
+  function resetGstCalculations() {
+    const resetFields = [
+      'cgst_amount', 'sgst_amount', 'igst_amount',
+      'final_amount_with_gst', 'total_gst_amount_hidden'
+    ];
+
+    resetFields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) field.value = '0.00';
+    });
+
+    const resetDisplays = [
+      'gst_base_price', 'gst_total_amount', 'gst_discounted_price',
+      'gst_final_price', 'gst_effective_rate'
+    ];
+
+    resetDisplays.forEach(displayId => {
+      const element = document.getElementById(displayId);
+      if (element) {
+        element.textContent = displayId === 'gst_effective_rate' ? '0' : '₹0.00';
+      }
+    });
+  }
+
+  // Initialize GST display on page load
+  if (gstToggle && gstToggle.checked) {
+    const selectedGstType = document.querySelector('input[name="gst_type"]:checked')?.value || 'flexible';
+    updateGstDisplay(selectedGstType);
+
+    const currentGstRate = parseFloat(totalGstRate?.value) || 0;
+    if (currentGstRate > 0) {
+      updateGstRates(currentGstRate);
+      calculateGst();
+    }
+  }
+
+// Form submission handler for loading state
+document.getElementById('product-form').addEventListener('submit', function(e) {
+  const submitBtn = document.getElementById('submit-btn');
+  const loadingText = submitBtn.getAttribute('data-loading-text');
+  const originalText = submitBtn.getAttribute('data-original-text');
+
+  // Show loading state
+  submitBtn.innerHTML = loadingText;
+  submitBtn.disabled = true;
+
+  // Re-enable after a delay (in case of validation errors)
+  setTimeout(function() {
+    if (submitBtn.disabled) {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  }, 5000);
+
+  // Function to handle state-filtered cities
+  function initializeStateFilteredCities(ruleRow) {
+    const stateSelect = ruleRow.querySelector('.multiselect-states');
+    const filteredCitiesGroup = ruleRow.querySelector('.filtered-cities-group');
+    const filteredCitiesSelect = ruleRow.querySelector('.multiselect-filtered-cities');
+
+    if (!stateSelect || !filteredCitiesSelect) return;
+
+    // Cities data - this could be loaded from server or defined as a constant
+    const statesCitiesMap = {
+      'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Davangere'],
+      'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli', 'Tirunelveli'],
+      'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur'],
+      'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar'],
+      'Rajasthan': ['Jaipur', 'Udaipur', 'Jodhpur', 'Kota', 'Ajmer', 'Bikaner']
+      // Add more states and cities as needed
+    };
+
+    $(stateSelect).on('change', function() {
+      const selectedStates = Array.from(this.selectedOptions).map(option => option.value);
+
+      if (selectedStates.length > 0) {
+        filteredCitiesGroup.style.display = 'block';
+
+        // Clear existing options
+        filteredCitiesSelect.innerHTML = '';
+
+        // Add cities from selected states
+        selectedStates.forEach(state => {
+          if (statesCitiesMap[state]) {
+            statesCitiesMap[state].forEach(city => {
+              const option = document.createElement('option');
+              option.value = city;
+              option.textContent = city;
+              filteredCitiesSelect.appendChild(option);
+            });
+          }
+        });
+
+        // Initialize or refresh Select2
+        if ($(filteredCitiesSelect).data('select2')) {
+          $(filteredCitiesSelect).select2('destroy');
+        }
+        $(filteredCitiesSelect).select2({
+          theme: 'bootstrap-5',
+          placeholder: 'Select cities from chosen states...',
+          allowClear: true,
+          closeOnSelect: false,
+          width: '100%'
+        });
+      } else {
+        filteredCitiesGroup.style.display = 'none';
+      }
+    });
+  }
+
+  // Function to handle state filter for cities
+  function initializeStateFilter(ruleRow) {
+    const stateFilterSelect = ruleRow.querySelector('.multiselect-state-filter');
+    const citySelect = ruleRow.querySelector('.multiselect-cities');
+
+    if (!stateFilterSelect || !citySelect) return;
+
+    $(stateFilterSelect).on('change', function() {
+      const selectedStates = Array.from(this.selectedOptions).map(option => option.value);
+
+      // Get all city options
+      const allCityOptions = Array.from(citySelect.options);
+
+      if (selectedStates.length > 0) {
+        // Hide cities that don't belong to selected states
+        allCityOptions.forEach(option => {
+          const cityBelongsToSelectedStates = selectedStates.some(state => {
+            const statesCitiesMap = {
+              'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Davangere'],
+              'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli', 'Tirunelveli'],
+              'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur'],
+              'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar'],
+              'Rajasthan': ['Jaipur', 'Udaipur', 'Jodhpur', 'Kota', 'Ajmer', 'Bikaner']
+            };
+            return statesCitiesMap[state] && statesCitiesMap[state].includes(option.value);
+          });
+
+          option.style.display = cityBelongsToSelectedStates ? '' : 'none';
+        });
+      } else {
+        // Show all cities
+        allCityOptions.forEach(option => {
+          option.style.display = '';
+        });
+      }
+
+      // Refresh Select2 to reflect changes
+      if ($(citySelect).data('select2')) {
+        $(citySelect).select2('destroy');
+        $(citySelect).select2({
+          theme: 'bootstrap-5',
+          placeholder: 'Select cities...',
+          allowClear: true,
+          closeOnSelect: false,
+          width: '100%'
+        });
+      }
+    });
+  }
+  } catch (error) {
+    console.error('Error initializing product form:', error);
+    // Continue with form functionality even if some features fail
+  }
+});
+</script>
+
+<style>
+/* Image Upload Styling */
+.image-upload-container {
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.upload-dropzone {
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.upload-dropzone:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+}
+
+.upload-dropzone.drag-over {
+  background: #e7f3ff;
+  border-color: #007bff;
+  transform: scale(1.02);
+}
+
+.image-card {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.image-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.image-wrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-image {
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.product-image:hover {
+  border-color: #007bff;
+  transform: scale(1.05);
+}
+
+.image-actions {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-card:hover .image-actions {
+  opacity: 1;
+}
+
+.image-info {
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 0 0 8px 8px;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Badge Styling */
+.badge {
+  font-size: 0.7rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Button Styling */
+.btn-sm {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.75rem;
+  backdrop-filter: blur(10px);
+}
+
+/* Upload Guidelines */
+.upload-guidelines {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .image-card {
+    margin-bottom: 1rem;
+  }
+
+  .image-actions {
+    opacity: 1; /* Always show on mobile */
+  }
+
+  .btn-group-vertical {
+    flex-direction: row;
+  }
+}
+
+/* Animation for new image additions */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.image-card {
+  animation: slideInUp 0.3s ease;
+}
+
+/* Multiselect dropdown styling */
+.multiselect-states, .multiselect-cities {
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.3s ease;
+}
+
+.multiselect-states:focus, .multiselect-cities:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+  outline: 0;
+}
+
+.multiselect-states option, .multiselect-cities option {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f8f9fa;
+  background-color: #fff;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.multiselect-states option:hover, .multiselect-cities option:hover {
+  background-color: #f8f9fa;
+}
+
+.multiselect-states option:checked, .multiselect-cities option:checked {
+  background-color: #007bff;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Select2 Bootstrap 5 theme customization for delivery rules */
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple {
+  min-height: 38px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+.delivery-rule-row .select2-container--bootstrap-5.select2-container--focus .select2-selection--multiple {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+  background-color: #007bff;
+  border: 1px solid #007bff;
+  color: #fff;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  margin: 0.125rem;
+  font-size: 0.875rem;
+}
+
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+  color: #fff;
+  margin-right: 0.25rem;
+}
+
+.delivery-rule-row .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: #ffcccc;
+}
+
+/* Additional styling for filtered cities and state filter dropdowns */
+.filtered-cities-group, .states-filter-group {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.multiselect-filtered-cities, .multiselect-state-filter {
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.3s ease;
+}
+
+.multiselect-filtered-cities:focus, .multiselect-state-filter:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+  outline: 0;
+}
+
+.delivery-rule-row {
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.delivery-rule-row:hover {
+  background: #e9ecef;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Occasional Product Styling */
+#occasionalProductSettings {
+  transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.preset-btn.active,
+.preset-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#occasionalPreview {
+  transition: all 0.3s ease;
+}
+
+#occasionalPreview.alert-success {
+  border-left: 4px solid #28a745;
+}
+
+#occasionalPreview.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+
+#occasionalPreview.alert-danger {
+  border-left: 4px solid #dc3545;
+}
+
+.datetime-input-highlight {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25) !important;
+  transition: all 0.3s ease;
+}
+
+/* Calendar icon animation */
+.bi-calendar-event {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Category Search Dropdown Styling */
+.search-dropdown-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.search-input {
+  border: none;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  box-shadow: none;
+  border-color: #007bff;
+  outline: none;
+}
+
+.search-results {
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 0 0 6px 6px;
+}
+
+.search-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.search-item:hover {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item.text-muted {
+  cursor: default;
+  font-style: italic;
+}
+
+.search-item.text-muted:hover {
+  background-color: transparent;
+  color: #6c757d;
+}
+
+/* Enhance the select appearance when search is active */
+.searchable-select {
+  cursor: pointer;
+}
+
+.searchable-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Product Type Selector Styling */
+.product-type-selector {
+  position: relative;
+}
+
+.product-type-select {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+}
+
+.product-type-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.3rem rgba(0,123,255,0.25);
+  background: #ffffff;
+}
+
+.product-type-cards {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+.product-type-card {
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+}
+
+.product-type-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.product-type-card:hover::before {
+  left: 100%;
+}
+
+.product-type-card:hover {
+  cursor: pointer;
+}
+
+.product-type-card.selected {
+  position: relative;
+}
+
+.product-type-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.9);
+  color: #28a745;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.product-type-card i {
+  display: block;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease;
+}
+
+.product-type-card:hover i {
+  transform: scale(1.1);
+}
+
+.product-type-card:active {
+  transform: scale(0.95) !important;
+}
+
+/* Card specific styling */
+.product-type-card[data-type="Milk"] {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+  border-color: #2196f3 !important;
+}
+
+.product-type-card[data-type="Grocery"] {
+  background: linear-gradient(135deg, #f3e5f5, #e1bee7) !important;
+  border-color: #9c27b0 !important;
+}
+
+.product-type-card[data-type="Vegetable"] {
+  background: linear-gradient(135deg, #e8f5e8, #c8e6c9) !important;
+  border-color: #4caf50 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .product-type-cards .col-4 {
+    margin-bottom: 12px;
+  }
+
+  .product-type-card {
+    padding: 16px 8px;
+  }
+
+  .product-type-card i {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animation keyframes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.product-type-card.selected {
+  animation: pulse 0.6s ease-in-out;
+}
+
+/* Subscription Toggle Styling */
+.subscription-toggle-section {
+  margin-bottom: 1.5rem;
+}
+
+.subscription-toggle-section .card {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.subscription-toggle-section .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(13, 110, 253, 0.1), transparent);
+  transition: left 0.8s ease;
+}
+
+.subscription-toggle-section .card:hover::before {
+  left: 100%;
+}
+
+.subscription-icon-container {
+  width: 60px;
+  height: 60px;
+  background: rgba(13, 110, 253, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.subscription-icon-container i {
+  transition: transform 0.3s ease;
+}
+
+.subscription-icon-container.rotating i {
+  animation: rotate360 1s ease-in-out;
+}
+
+.subscription-toggle {
+  transform: scale(1.3);
+  accent-color: #28a745;
+  transition: all 0.3s ease;
+}
+
+.subscription-toggle:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.subscription-toggle.subscription-enabled {
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.subscription-info {
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-check-lg .form-check-input {
+  width: 3rem;
+  height: 1.5rem;
+}
+
+.form-check-lg .form-check-input:checked[type=checkbox] {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+
+/* Subscription card hover effects */
+.subscription-toggle-section .card:hover {
+  transform: translateY(-2px);
+  border-color: #007bff;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.subscription-toggle-section .card:hover .subscription-icon-container {
+  background: rgba(13, 110, 253, 0.2);
+  transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .subscription-toggle-section .card-body {
+    padding: 1.5rem !important;
+  }
+
+  .subscription-icon-container {
+    width: 50px;
+    height: 50px;
+    margin-right: 0.75rem !important;
+  }
+
+  .subscription-icon-container i {
+    font-size: 1.25rem !important;
+  }
+
+  .subscription-toggle {
+    transform: scale(1.1);
+  }
+}
+
+/* Animation keyframes for subscription */
+@keyframes rotate360 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subscription-info {
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Special styling when subscription is enabled */
+.subscription-enabled + .form-check-label::after {
+  content: '✓';
+  color: #28a745;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+/* Enhanced subscription toggle layout */
+@media (max-width: 992px) {
+  .subscription-toggle-section .d-flex {
+    flex-direction: column !important;
+    align-items: start !important;
+  }
+
+  .subscription-toggle-section .flex-shrink-0 {
+    margin-top: 1rem;
+    align-self: center;
+  }
+}
+
+/* Field update animation for unit changes */
+.field-updated {
+  border-color: #28a745 !important;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
+  transition: all 0.3s ease;
+}
+
+/* Category select improvements */
+.category-select-wrapper .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  cursor: pointer;
+}
+
+.category-select-wrapper .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* GST Configuration Styles */
+.gst-toggle {
+  transform: scale(1.2);
+  accent-color: #17a2b8;
+  transition: all 0.3s ease;
+}
+
+.gst-toggle:checked {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+}
+
+#gst_config {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gst-split-rate, .gst-total-rate, .gst-amount {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #6c757d;
+}
+
+.gst-split-rate:focus, .gst-total-rate:focus, .gst-amount:focus {
+  background-color: #fff;
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.gst-updated {
+  background-color: #d4edda !important;
+  border-color: #28a745 !important;
+  color: #155724 !important;
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+}
+
+/* GST Type Radio Buttons */
+.form-check-input[type="radio"][name="gst_type"]:checked + .form-check-label {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.form-check-input[type="radio"][name="gst_type"]:checked + .form-check-label strong {
+  color: #0d6efd;
+}
+
+/* GST Cards Styling */
+.card.border-success {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.card.border-primary {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.card.border-warning {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.card.border-info {
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+/* GST Summary Cards Hover Effects */
+.card.border-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+
+.card.border-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+}
+
+.card.border-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+}
+
+.card.border-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.2);
+}
+
+/* Responsive GST Layout */
+@media (max-width: 768px) {
+  .gst-toggle {
+    transform: scale(1.1);
+  }
+
+  #gst_config .row .col-md-4,
+  #gst_config .row .col-md-6,
+  #gst_config .row .col-md-3 {
+    margin-bottom: 1rem;
+  }
+
+  .card-header h6 {
+    font-size: 0.9rem;
+  }
+}
+
+/* Animation for GST field updates */
+@keyframes gstFieldUpdate {
+  0% {
+    background-color: #d4edda;
+    transform: scale(1);
+  }
+  50% {
+    background-color: #c3e6cb;
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: #f8f9fa;
+    transform: scale(1);
+  }
+}
+
+.gst-field-animate {
+  animation: gstFieldUpdate 0.5s ease-in-out;
+}
+
+/* GST calculation loader */
+.gst-calculating::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #17a2b8;
+  border-radius: 50%;
+  border-top: 2px solid transparent;
+  animation: spin 0.8s linear infinite;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* HSN Code field styling */
+#hsn_code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+#hsn_code:focus {
+  border-color: #17a2b8;
+  box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+}
+
+/* GST Toggle Section Enhancement */
+.form-check-lg .form-check-input {
+  width: 2.5rem;
+  height: 1.25rem;
+  border-radius: 1rem;
+}
+
+.form-check-lg .form-check-label {
+  font-size: 1.1rem;
+  padding-left: 0.5rem;
+}
+</style>
+
+<!-- Template for new delivery rules -->
+<template id="delivery-rule-template">
+  <div class="delivery-rule-row border rounded p-3 mb-3">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Rule Type</label>
+        <select name="product[delivery_rules_attributes][NEW_RECORD][rule_type]" class="form-select">
+          <option value="">Select Type</option>
+          <option value="everywhere">All Locations</option>
+          <option value="state">Specific States</option>
+          <option value="city">Specific Cities</option>
+          <option value="pincode">Specific Pincodes</option>
+        </select>
+      </div>
+
+      <div class="col-md-4 location-data-group" style="display: none;">
+        <label class="form-label">Location Data</label>
+
+        <!-- State Multiselect -->
+        <div class="state-select-group" style="display: none;">
+          <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_states][]" multiple class="form-control multiselect-states" data-placeholder="Select states...">
+            <% indian_states.each do |state| %>
+              <option value="<%= state %>"><%= state %></option>
+            <% end %>
+          </select>
+          <div class="form-text">Select one or more states for delivery</div>
+
+          <!-- Cities filtered by selected states -->
+          <div class="filtered-cities-group mt-3" style="display: none;">
+            <label class="form-label">Cities in Selected States</label>
+            <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_filtered_cities][]" multiple class="form-control multiselect-filtered-cities" data-placeholder="Select cities from chosen states...">
+            </select>
+            <div class="form-text">Select specific cities within the chosen states (optional)</div>
+          </div>
+        </div>
+
+        <!-- City Multiselect -->
+        <div class="city-select-group" style="display: none;">
+          <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_cities][]" multiple class="form-control multiselect-cities" data-placeholder="Select cities...">
+            <% all_indian_cities.each do |city| %>
+              <option value="<%= city %>"><%= city %></option>
+            <% end %>
+          </select>
+          <div class="form-text">Select one or more cities for delivery</div>
+
+          <!-- States filter for selected cities -->
+          <div class="states-filter-group mt-3" style="display: none;">
+            <label class="form-label">Filter by States</label>
+            <select name="product[delivery_rules_attributes][NEW_RECORD][location_data_state_filter][]" multiple class="form-control multiselect-state-filter" data-placeholder="Select states to filter cities...">
+              <% indian_states.each do |state| %>
+                <option value="<%= state %>"><%= state %></option>
+              <% end %>
+            </select>
+            <div class="form-text">Filter the cities list by selecting specific states (optional)</div>
+          </div>
+        </div>
+
+        <!-- Pincode Input -->
+        <div class="pincode-input-group" style="display: none;">
+          <textarea name="product[delivery_rules_attributes][NEW_RECORD][location_data_pincodes]" class="form-control" rows="2" placeholder="Enter pincodes separated by commas (e.g., 560001, 560002)"></textarea>
+          <div class="form-text">Enter pincodes separated by commas</div>
+        </div>
+
+        <!-- Hidden field to store the final JSON data -->
+        <input type="hidden" name="product[delivery_rules_attributes][NEW_RECORD][location_data]" class="location-data-hidden">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Delivery Days</label>
+        <input type="number" name="product[delivery_rules_attributes][NEW_RECORD][delivery_days]" class="form-control" min="1" value="7">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Delivery Charge (₹)</label>
+        <input type="number" name="product[delivery_rules_attributes][NEW_RECORD][delivery_charge]" class="form-control" step="0.01" min="0" value="0">
+      </div>
+
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="button" class="btn btn-outline-danger remove-delivery-rule">
+          <i class="ri-delete-bin-line"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

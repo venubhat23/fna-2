@@ -63,9 +63,29 @@ class Admin::BookingsController < Admin::ApplicationController
     @booking = Booking.new(booking_params)
     @booking.user = current_user
     @booking.booking_date = Time.current
-    # Remove the automatic status setting since it's now selected by the user
-    # @booking.status = :ordered_and_delivery_pending
-    @booking.payment_status = params[:booking][:payment_method] == 'cash' ? :paid : :unpaid
+
+    # Clean and validate discount amount
+    discount_value = params[:booking][:discount_amount] if params[:booking]
+    Rails.logger.info "Processing discount value: #{discount_value.inspect}"
+
+    if discount_value.present?
+      # Clean the discount value - remove all whitespace, newlines, etc.
+      cleaned_discount = discount_value.to_s.gsub(/\s+/, '').strip
+      discount_amount = cleaned_discount.to_f
+      @booking.discount_amount = discount_amount > 0 ? discount_amount : 0
+      Rails.logger.info "Applied discount: #{@booking.discount_amount}"
+    else
+      @booking.discount_amount = 0
+    end
+
+    # Set payment status from form (user can manually mark as paid/unpaid)
+    payment_status_value = params[:booking][:payment_status]
+    if payment_status_value == 'paid'
+      @booking.payment_status = :paid
+    else
+      @booking.payment_status = :unpaid
+    end
+    Rails.logger.info "Payment status set to: #{@booking.payment_status}"
 
     # Validate stock availability before saving
     unless validate_stock_availability(@booking)
@@ -80,6 +100,9 @@ class Admin::BookingsController < Admin::ApplicationController
       # Calculate totals after saving
       @booking.calculate_totals
       @booking.save
+
+      # Log the calculated totals for debugging
+      Rails.logger.info "Booking totals - Subtotal: #{@booking.subtotal}, Tax: #{@booking.tax_amount}, Discount: #{@booking.discount_amount}, Total: #{@booking.total_amount}"
 
       # Automatically generate invoice for all bookings
       @booking.generate_invoice_number

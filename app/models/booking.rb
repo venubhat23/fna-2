@@ -47,6 +47,7 @@ class Booking < ApplicationRecord
 
   before_validation :generate_booking_number, on: :create
   before_validation :calculate_totals
+  before_validation :calculate_final_amount_after_discount
   after_validation :ensure_total_amount_present
   after_update :allocate_inventory, if: :saved_change_to_status?
 
@@ -76,6 +77,9 @@ class Booking < ApplicationRecord
 
   def create_booking_invoice_record
     return if booking_invoices.any? # Avoid duplicates
+
+    # Ensure totals are calculated before creating invoice
+    calculate_totals
 
     booking_invoices.create!(
       customer: self.customer,
@@ -122,9 +126,17 @@ class Booking < ApplicationRecord
       end
     end
 
+    # Ensure discount doesn't exceed subtotal + tax
+    current_discount = discount_amount.to_f
+    max_discount = items_total + total_gst
+    if current_discount > max_discount
+      current_discount = max_discount
+      self.discount_amount = current_discount
+    end
+
     self.subtotal = items_total.round(2)
     self.tax_amount = total_gst.round(2)
-    self.total_amount = (items_total + total_gst - (discount_amount || 0)).round(2)
+    self.total_amount = (items_total + total_gst - current_discount).round(2)
   end
 
   def calculate_totals!
@@ -300,6 +312,15 @@ class Booking < ApplicationRecord
   # Also define as a method to prevent Rails from trying to load association
   def order=(value)
     # Do nothing for now
+  end
+
+  # Calculate final amount after discount
+  def calculate_final_amount_after_discount
+    if total_amount.present? && discount_amount.present?
+      self.final_amount_after_discount = total_amount.to_f - discount_amount.to_f
+    elsif total_amount.present?
+      self.final_amount_after_discount = total_amount.to_f
+    end
   end
 
   private

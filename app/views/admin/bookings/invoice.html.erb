@@ -184,10 +184,21 @@
             <span style="font-weight: 500;">₹<%= number_with_delimiter(@booking.calculated_tax_amount, delimiter: ',') %></span>
         </div>
 
-        <div class="total-row final-total">
-            <span>Total Amount:</span>
-            <span>₹<%= number_with_delimiter(@booking.calculated_total_amount, delimiter: ',') %></span>
-        </div>
+        <% if @booking.discount_amount.present? && @booking.discount_amount.to_f > 0 %>
+            <div class="total-row subtotal">
+                <span style="text-decoration: line-through; opacity: 0.7;">Original Total:</span>
+                <span style="font-weight: 500; text-decoration: line-through; opacity: 0.7;">₹<%= number_with_delimiter(@booking.calculated_total_amount, delimiter: ',') %></span>
+            </div>
+            <div class="total-row final-total">
+                <span>Final Amount After Discount:</span>
+                <span>₹<%= number_with_delimiter(@booking.final_amount_after_discount&.to_f || (@booking.calculated_total_amount - (@booking.discount_amount&.to_f || 0)), delimiter: ',') %></span>
+            </div>
+        <% else %>
+            <div class="total-row final-total">
+                <span>Total Amount:</span>
+                <span>₹<%= number_with_delimiter(@booking.calculated_total_amount, delimiter: ',') %></span>
+            </div>
+        <% end %>
 
         <% if @booking.payment_status_paid? %>
             <div style="margin-top: 15px; text-align: center;">
