@@ -3,31 +3,21 @@ class Product < ApplicationRecord
   PRODUCT_TYPES = [
     ['Milk', 'Milk'],
     ['Grocery', 'Grocery'],
-    ['Vegetable', 'Vegetable']
+    ['Fruit & Vegetable', 'Fruit & Vegetable']
   ].freeze
 
   PRODUCT_TYPE_OPTIONS = {
     'Milk' => { icon: 'bi-cup-straw', color: '#e3f2fd', border: '#2196f3', text: '#1976d2' },
     'Grocery' => { icon: 'bi-basket', color: '#f3e5f5', border: '#9c27b0', text: '#7b1fa2' },
-    'Vegetable' => { icon: 'bi-flower1', color: '#e8f5e8', border: '#4caf50', text: '#388e3c' }
+    'Fruit & Vegetable' => { icon: 'bi-flower1', color: '#e8f5e8', border: '#4caf50', text: '#388e3c' }
   }.freeze
 
-  # Unit Type Constants for Vendor Management
+  # Unit Type Constants - Fixed Options Only
   UNIT_TYPES = [
     ['Kg', 'Kg'],
-    ['Liter', 'Liter'],
     ['Bottle', 'Bottle'],
-    ['Piece', 'Piece'],
-    ['Gram', 'Gram'],
-    ['Dozen', 'Dozen'],
     ['Box', 'Box'],
-    ['Packet', 'Packet'],
-    ['Ml', 'Ml'],
-    ['Bundle', 'Bundle'],
-    ['Can', 'Can'],
-    ['Jar', 'Jar'],
-    ['Pouch', 'Pouch'],
-    ['Sachet', 'Sachet']
+    ['Liter', 'Liter']
   ].freeze
 
   belongs_to :category
@@ -50,7 +40,8 @@ class Product < ApplicationRecord
   has_many :sale_items, dependent: :destroy
   has_many :stock_movements, dependent: :destroy
 
-  has_many_attached :images
+  has_one_attached :image
+  has_many_attached :additional_images
 
   validates :name, presence: true
   validates :sku, presence: true, uniqueness: { case_sensitive: false }
@@ -67,8 +58,8 @@ class Product < ApplicationRecord
   validates :discount_type, inclusion: { in: ['percentage', 'fixed'], message: 'must be percentage or fixed' }, allow_blank: true
   validates :discount_value, numericality: { greater_than: 0 }, allow_blank: true
   validates :original_price, numericality: { greater_than: 0 }, allow_blank: true
-  validates :occasional_start_date, presence: true, if: :is_occasional_product?
-  validates :occasional_end_date, presence: true, if: :is_occasional_product?
+  validates :occasional_start_date, presence: true, if: :requires_occasional_dates?
+  validates :occasional_end_date, presence: true, if: :requires_occasional_dates?
 
   # GST validations
   validates :gst_percentage, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }, if: :gst_enabled?
@@ -355,6 +346,13 @@ class Product < ApplicationRecord
     Time.current > occasional_end_date
   end
 
+  def requires_occasional_dates?
+    return false unless is_occasional_product?
+    # For now, we'll make dates optional for all occasional products
+    # In future, this could be based on occasional_schedule_type or other logic
+    false
+  end
+
   def occasional_status_text
     return 'Regular Product' unless is_occasional_product?
 
@@ -416,7 +414,7 @@ class Product < ApplicationRecord
       'bg-primary-subtle text-primary'
     when 'Grocery'
       'bg-purple-subtle text-purple'
-    when 'Vegetable'
+    when 'Fruit & Vegetable'
       'bg-success-subtle text-success'
     else
       'bg-secondary-subtle text-secondary'
@@ -613,8 +611,21 @@ class Product < ApplicationRecord
   alias_method :has_ratings?, :has_reviews?
   alias_method :rating_summary_text, :review_summary_text
 
+  # Helper method to get all images (main + additional) for views
+  def images
+    all_images = []
+    all_images << image if image.attached?
+    all_images.concat(additional_images.to_a) if additional_images.attached?
+    all_images
+  end
+
+  # Check if any images are attached
+  def images_attached?
+    image.attached? || additional_images.attached?
+  end
+
   def main_image
-    images.attached? ? images.first : nil
+    image.attached? ? image : nil
   end
 
   def formatted_price

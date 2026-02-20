@@ -1,0 +1,761 @@
+<style>
+/* Professional Product Form Styles */
+.professional-form-wrapper {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2px;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+}
+
+.professional-form-container {
+  background: white;
+  border-radius: 18px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.form-header-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.form-header-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 60%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(35deg);
+}
+
+.form-header-banner h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+
+.form-header-banner p {
+  margin: 0.5rem 0 0 0;
+  opacity: 0.95;
+  font-size: 1.1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.form-section {
+  padding: 2rem;
+  border-bottom: 1px solid #f0f2f5;
+  transition: all 0.3s ease;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.form-section:hover {
+  background: #fafbfc;
+}
+
+.section-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1d23;
+  margin-bottom: 0.5rem;
+}
+
+.section-description {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.form-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.form-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.modern-input-group {
+  position: relative;
+}
+
+.modern-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.modern-label .required {
+  color: #dc3545;
+  margin-left: 3px;
+}
+
+.modern-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.modern-input.has-icon {
+  padding-left: 3rem;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #adb5bd;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+.modern-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px 12px;
+  padding-right: 2.5rem;
+}
+
+.toggle-switch-container {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch-container:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  margin-right: 1rem;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ccc;
+  transition: 0.4s;
+  border-radius: 30px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background: white;
+  transition: 0.4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(30px);
+}
+
+.toggle-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.image-upload-container {
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: #fafbfc;
+}
+
+.image-upload-container:hover {
+  border-color: #667eea;
+  background: white;
+  transform: scale(1.02);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-modern {
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary-modern:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary-modern {
+  background: white;
+  color: #495057;
+  border: 2px solid #e9ecef;
+}
+
+.btn-secondary-modern:hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.price-input-group {
+  position: relative;
+}
+
+.price-prefix {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.price-input {
+  padding-left: 2.5rem;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section {
+  animation: slideIn 0.5s ease forwards;
+  animation-delay: calc(var(--section-index, 0) * 0.1s);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-grid-2,
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-header-banner {
+    padding: 1.5rem;
+  }
+
+  .form-header-banner h2 {
+    font-size: 1.5rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-modern {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Loading States */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+</style>
+
+<div class="professional-form-wrapper">
+  <div class="professional-form-container">
+    <!-- Form Header -->
+    <div class="form-header-banner">
+      <h2>
+        <i class="bi bi-box-seam me-2"></i>
+        <%= @product.new_record? ? "Create New Product" : "Edit Product" %>
+      </h2>
+      <p>Fill in the details below to <%= @product.new_record? ? "add a new product to your catalog" : "update product information" %></p>
+    </div>
+
+    <%= form_with model: [:admin, @product], local: true, multipart: true, id: "professional-product-form" do |form| %>
+      <% if @product.errors.any? %>
+        <div class="alert alert-danger m-4" role="alert">
+          <h5 class="alert-heading">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Please fix the following errors:
+          </h5>
+          <ul class="mb-0">
+            <% @product.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Basic Information Section -->
+      <div class="form-section" style="--section-index: 0;">
+        <div class="section-icon">
+          <i class="bi bi-info-circle"></i>
+        </div>
+        <h3 class="section-title">Basic Information</h3>
+        <p class="section-description">Enter the primary details about your product</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="modern-input-group">
+            <%= form.label :name, class: "modern-label" do %>
+              Product Name <span class="required">*</span>
+            <% end %>
+            <%= form.text_field :name, class: "modern-input", placeholder: "e.g., Organic Green Tea", required: true %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :category_id, "Category", class: "modern-label" do %>
+              Category <span class="required">*</span>
+            <% end %>
+            <%= form.select :category_id,
+                options_for_select(Category.pluck(:name, :id), @product.category_id),
+                { prompt: '— Select Category —' },
+                { class: "modern-input modern-select", required: true } %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :sku, "SKU Code", class: "modern-label" %>
+            <%= form.text_field :sku, class: "modern-input", placeholder: "Auto-generated if left blank" %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :status, "Product Status", class: "modern-label" %>
+            <%= form.select :status,
+                options_for_select([['🟢 Active', 'active'], ['📝 Draft', 'draft'], ['🔴 Inactive', 'inactive']], @product.status),
+                {},
+                { class: "modern-input modern-select" } %>
+          </div>
+        </div>
+
+        <div class="form-grid form-grid-1 mt-4">
+          <div class="modern-input-group">
+            <%= form.label :description, "Product Description", class: "modern-label" %>
+            <%= form.text_area :description, class: "modern-input", rows: 4,
+                placeholder: "Provide a detailed description of your product..." %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing & Finance Section -->
+      <div class="form-section" style="--section-index: 1;">
+        <div class="section-icon">
+          <i class="bi bi-currency-rupee"></i>
+        </div>
+        <h3 class="section-title">Pricing & Finance</h3>
+        <p class="section-description">Set up pricing and tax configuration</p>
+
+        <div class="form-grid form-grid-3">
+          <div class="modern-input-group">
+            <%= form.label :buying_price, "Cost Price", class: "modern-label" %>
+            <div class="price-input-group">
+              <span class="price-prefix">₹</span>
+              <%= form.number_field :buying_price, class: "modern-input price-input",
+                  step: "0.01", placeholder: "0.00" %>
+            </div>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :price, class: "modern-label" do %>
+              Selling Price <span class="required">*</span>
+            <% end %>
+            <div class="price-input-group">
+              <span class="price-prefix">₹</span>
+              <%= form.number_field :price, class: "modern-input price-input",
+                  step: "0.01", placeholder: "0.00", required: true %>
+            </div>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :discount_price, "Offer Price", class: "modern-label" %>
+            <div class="price-input-group">
+              <span class="price-prefix">₹</span>
+              <%= form.number_field :discount_price, class: "modern-input price-input",
+                  step: "0.01", placeholder: "0.00" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="toggle-switch-container">
+            <div class="toggle-switch">
+              <%= form.check_box :gst_enabled, id: "gst-toggle" %>
+              <label class="toggle-slider" for="gst-toggle"></label>
+            </div>
+            <div>
+              <div class="toggle-label">Enable GST</div>
+              <small class="text-muted">Apply Goods and Services Tax to this product</small>
+            </div>
+          </div>
+
+          <div class="form-grid form-grid-2 mt-3" id="gst-options" style="display: none;">
+            <div class="modern-input-group">
+              <%= form.label :gst_percentage, "GST Rate", class: "modern-label" %>
+              <%= form.select :gst_percentage,
+                  options_for_select([['5%', 5], ['12%', 12], ['18%', 18], ['28%', 28]], @product.gst_percentage),
+                  { prompt: '— Select GST Rate —' },
+                  { class: "modern-input modern-select" } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Management Section -->
+      <div class="form-section" style="--section-index: 2;">
+        <div class="section-icon">
+          <i class="bi bi-box2"></i>
+        </div>
+        <h3 class="section-title">Inventory Management</h3>
+        <p class="section-description">Track your product stock and units</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="modern-input-group">
+            <%= form.label :stock, class: "modern-label" do %>
+              Available Stock <span class="required">*</span>
+            <% end %>
+            <div class="position-relative">
+              <i class="bi bi-archive input-icon"></i>
+              <%= form.number_field :stock, class: "modern-input has-icon",
+                  placeholder: "0", required: true %>
+            </div>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :unit, "Unit Type", class: "modern-label" %>
+            <div class="position-relative">
+              <i class="bi bi-rulers input-icon"></i>
+              <%= form.text_field :unit, class: "modern-input has-icon",
+                  placeholder: "e.g., kg, piece, bottle, pack" %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Type Section -->
+      <div class="form-section" style="--section-index: 3;">
+        <div class="section-icon">
+          <i class="bi bi-tags"></i>
+        </div>
+        <h3 class="section-title">Product Classification</h3>
+        <p class="section-description">Categorize your product type</p>
+
+        <div class="form-grid form-grid-3">
+          <% ['Grocery', 'Medicine', 'Occasional'].each do |type| %>
+            <label class="product-type-card">
+              <%= form.radio_button :product_type, type, class: "product-type-radio" %>
+              <div class="type-card-content">
+                <div class="type-icon">
+                  <% case type %>
+                  <% when 'Grocery' %>
+                    <i class="bi bi-basket2"></i>
+                  <% when 'Medicine' %>
+                    <i class="bi bi-capsule"></i>
+                  <% when 'Occasional' %>
+                    <i class="bi bi-calendar-event"></i>
+                  <% end %>
+                </div>
+                <div class="type-name"><%= type %></div>
+              </div>
+            </label>
+          <% end %>
+        </div>
+
+        <div class="mt-4">
+          <div class="toggle-switch-container">
+            <div class="toggle-switch">
+              <%= form.check_box :is_subscription_enabled, id: "subscription-toggle" %>
+              <label class="toggle-slider" for="subscription-toggle"></label>
+            </div>
+            <div>
+              <div class="toggle-label">Enable Subscription</div>
+              <small class="text-muted">Allow customers to subscribe for regular delivery</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Media Section -->
+      <div class="form-section" style="--section-index: 4;">
+        <div class="section-icon">
+          <i class="bi bi-image"></i>
+        </div>
+        <h3 class="section-title">Product Media</h3>
+        <p class="section-description">Upload images to showcase your product</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="modern-input-group">
+            <label class="modern-label">Primary Image</label>
+            <div class="image-upload-container">
+              <i class="bi bi-cloud-upload upload-icon"></i>
+              <p class="mb-2">Click to upload main image</p>
+              <%= form.file_field :image, class: "d-none", id: "main-image-input" %>
+              <label for="main-image-input" class="btn btn-outline-primary btn-sm">Choose File</label>
+              <div id="main-image-preview" class="mt-2"></div>
+            </div>
+          </div>
+
+          <div class="modern-input-group">
+            <label class="modern-label">Gallery Images</label>
+            <div class="image-upload-container">
+              <i class="bi bi-images upload-icon"></i>
+              <p class="mb-2">Upload multiple images</p>
+              <%= form.file_field :additional_images, multiple: true, class: "d-none", id: "gallery-input" %>
+              <label for="gallery-input" class="btn btn-outline-primary btn-sm">Choose Files</label>
+              <div id="gallery-preview" class="mt-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <%= link_to admin_products_path, class: "btn-modern btn-secondary-modern" do %>
+          <i class="bi bi-x-circle"></i>
+          Cancel
+        <% end %>
+
+        <button type="submit" class="btn-modern btn-primary-modern">
+          <i class="bi bi-check-circle"></i>
+          <%= @product.new_record? ? "Create Product" : "Update Product" %>
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+/* Product Type Cards */
+.product-type-card {
+  position: relative;
+  cursor: pointer;
+  display: block;
+}
+
+.product-type-radio {
+  position: absolute;
+  opacity: 0;
+}
+
+.type-card-content {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.product-type-radio:checked + .type-card-content {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.type-icon {
+  font-size: 2rem;
+  color: #adb5bd;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.product-type-radio:checked + .type-card-content .type-icon {
+  color: #667eea;
+}
+
+.type-name {
+  font-weight: 500;
+  color: #495057;
+}
+
+.product-type-radio:checked + .type-card-content .type-name {
+  color: #667eea;
+  font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // GST Toggle
+  const gstToggle = document.getElementById('gst-toggle');
+  const gstOptions = document.getElementById('gst-options');
+
+  if (gstToggle && gstOptions) {
+    gstToggle.addEventListener('change', function() {
+      gstOptions.style.display = this.checked ? 'grid' : 'none';
+    });
+
+    // Initialize state
+    gstOptions.style.display = gstToggle.checked ? 'grid' : 'none';
+  }
+
+  // Image Preview
+  const mainImageInput = document.getElementById('main-image-input');
+  const mainImagePreview = document.getElementById('main-image-preview');
+
+  if (mainImageInput && mainImagePreview) {
+    mainImageInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          mainImagePreview.innerHTML = `<img src="${e.target.result}" style="max-width: 100px; margin-top: 10px; border-radius: 8px;">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Gallery Preview
+  const galleryInput = document.getElementById('gallery-input');
+  const galleryPreview = document.getElementById('gallery-preview');
+
+  if (galleryInput && galleryPreview) {
+    galleryInput.addEventListener('change', function() {
+      galleryPreview.innerHTML = '';
+      Array.from(this.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.cssText = 'width: 60px; margin: 5px; border-radius: 6px;';
+          galleryPreview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+
+  // Form Validation Enhancement
+  const form = document.getElementById('professional-product-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+      submitBtn.disabled = true;
+    });
+  }
+
+  // Price Warning
+  const buyingPrice = document.querySelector('input[name="product[buying_price]"]');
+  const sellingPrice = document.querySelector('input[name="product[price]"]');
+
+  if (buyingPrice && sellingPrice) {
+    sellingPrice.addEventListener('blur', function() {
+      if (buyingPrice.value && this.value) {
+        if (parseFloat(this.value) < parseFloat(buyingPrice.value)) {
+          this.style.borderColor = '#dc3545';
+          setTimeout(() => {
+            this.style.borderColor = '';
+          }, 3000);
+        }
+      }
+    });
+  }
+});
+</script>

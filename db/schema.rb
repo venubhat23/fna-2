@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_19_114349) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_19_163301) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -262,6 +262,24 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_19_114349) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["code"], name: "index_coupons_on_code", unique: true
+  end
+
+  create_table "customer_addresses", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.string "name"
+    t.string "mobile"
+    t.string "address_type"
+    t.text "address"
+    t.string "landmark"
+    t.string "city"
+    t.string "state"
+    t.string "pincode"
+    t.decimal "latitude"
+    t.decimal "longitude"
+    t.boolean "is_default"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_customer_addresses_on_customer_id"
   end
 
   create_table "customer_wallets", force: :cascade do |t|

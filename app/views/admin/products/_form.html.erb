@@ -159,21 +159,28 @@
           </div>
 
           <!-- Enable Discount Checkbox -->
-          <div class="col-12">
-            <div class="form-check form-switch">
-              <%= form.check_box :is_discounted, class: "form-check-input", id: "discount_toggle", checked: @product.is_discounted %>
-              <%= form.label :is_discounted, "Enable Discount", class: "form-check-label" %>
+          <div class="col-12 mt-3">
+            <div class="alert alert-warning border-warning">
+              <div class="form-check form-switch d-flex align-items-center">
+                <%= form.check_box :is_discounted, class: "form-check-input me-3", id: "discount_toggle", checked: @product.is_discounted, style: "transform: scale(1.5);" %>
+                <%= form.label :is_discounted, class: "form-check-label fw-bold fs-5" do %>
+                  <i class="bi bi-percent-lg me-2 text-warning"></i>
+                  ENABLE DISCOUNT
+                <% end %>
+              </div>
+              <small class="text-muted">Toggle this to offer special pricing to customers</small>
             </div>
           </div>
 
-          <!-- Discount Configuration (hidden by default) -->
-          <div id="discount_config" class="col-12" style="<%= @product.is_discounted ? '' : 'display: none;' %>">
-            <div class="card border-warning">
-              <div class="card-header bg-warning bg-opacity-10">
-                <h6 class="card-title mb-0 text-warning">
-                  <i class="bi bi-percent me-1"></i>
-                  Discount Configuration
-                </h6>
+          <!-- Discount Configuration -->
+          <div id="discount_config" class="col-12" style="<%= @product.is_discounted ? 'display: block;' : 'display: none;' %>">
+            <div class="card border-warning border-2 shadow-sm">
+              <div class="card-header bg-warning text-dark py-3">
+                <h5 class="card-title mb-0 fw-bold">
+                  <i class="bi bi-percent-lg me-2"></i>
+                  DISCOUNT CONFIGURATION
+                </h5>
+                <small class="text-dark">Set up special pricing for this product</small>
               </div>
               <div class="card-body">
                 <div class="row g-3">
@@ -216,13 +223,17 @@
                   <div class="col-12">
                     <div class="alert alert-info mb-0" id="updated_price_preview">
                       <div class="row text-center">
-                        <div class="col-md-6">
-                          <small class="text-muted d-block">Selling Price</small>
-                          <span class="fw-bold" id="regular_price_display">₹<%= @product.price || 0 %></span>
+                        <div class="col-md-4">
+                          <small class="text-muted d-block">Original Price</small>
+                          <span class="fw-bold" id="regular_price_display">₹<%= number_with_precision(@product.price || 0, precision: 2) %></span>
                         </div>
-                        <div class="col-md-6">
-                          <small class="text-muted d-block">Final Amount to Sell</small>
-                          <span class="fw-bold text-success" id="final_discounted_price">₹<%= @product.is_discounted && @product.discount_amount ? (@product.price - @product.discount_amount).to_f : (@product.price || 0) %></span>
+                        <div class="col-md-4">
+                          <small class="text-muted d-block">Discount Amount</small>
+                          <span class="fw-bold text-danger" id="discount_amount_text">₹<%= number_with_precision(@product.discount_amount || 0, precision: 2) %></span>
+                        </div>
+                        <div class="col-md-4">
+                          <small class="text-muted d-block">Final Selling Price</small>
+                          <span class="fw-bold text-success fs-5" id="final_discounted_price">₹<%= number_with_precision((@product.is_discounted && @product.discount_amount ? (@product.price.to_f - @product.discount_amount.to_f) : (@product.price || 0)), precision: 2) %></span>
                         </div>
                       </div>
                     </div>
@@ -992,6 +1003,9 @@
         <i class="ri-arrow-left-line"></i> Cancel
       <% end %>
 
+      <!-- Hidden field for discount amount -->
+      <%= form.hidden_field :discount_amount, id: "product_discount_amount" %>
+
       <%= form.submit (@product.new_record? ? 'Create Product' : 'Update Product'),
           class: "btn btn-primary",
           id: "submit-btn",
@@ -1011,12 +1025,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const occasionalStartDate = document.getElementById('occasionalStartDate');
     const occasionalEndDate = document.getElementById('occasionalEndDate');
 
-  if (occasionalStartDate) {
-    occasionalStartDate.removeAttribute('required');
-  }
-  if (occasionalEndDate) {
-    occasionalEndDate.removeAttribute('required');
-  }
+    if (occasionalStartDate) {
+      occasionalStartDate.removeAttribute('required');
+    }
+    if (occasionalEndDate) {
+      occasionalEndDate.removeAttribute('required');
+    }
 
   let deliveryRuleIndex = document.querySelectorAll('.delivery-rule-row').length;
 
@@ -1375,17 +1389,47 @@ document.addEventListener('DOMContentLoaded', function() {
   const regularPrice = document.querySelector('#product_price');
   const discountAmountDisplay = document.querySelector('#discount_amount_display');
 
+  console.log('Discount elements found:', {
+    toggle: !!discountToggle,
+    config: !!discountConfig,
+    type: !!discountType,
+    value: !!discountValue
+  });
+
   // Toggle discount configuration visibility
-  if (discountToggle) {
-    discountToggle.addEventListener('change', function() {
-      if (this.checked) {
+  if (discountToggle && discountConfig) {
+    // Remove any inline display style that might be overriding
+    if (discountToggle.checked) {
+      discountConfig.style.display = 'block';
+      discountConfig.style.visibility = 'visible';
+      discountConfig.style.opacity = '1';
+    }
+
+    discountToggle.addEventListener('change', function(e) {
+      console.log('Discount toggle changed:', e.target.checked);
+      if (e.target.checked === true || e.target.checked === 'true') {
         discountConfig.style.display = 'block';
-        calculateSimplifiedDiscount(); // Trigger calculation when enabled
+        discountConfig.style.visibility = 'visible';
+        discountConfig.style.opacity = '1';
+        console.log('Showing discount config - display set to:', discountConfig.style.display);
+        setTimeout(() => calculateSimplifiedDiscount(), 100);
       } else {
         discountConfig.style.display = 'none';
+        console.log('Hiding discount config');
         clearDiscountFields();
       }
     });
+
+    // Force visible if checked on page load
+    if (discountToggle.checked) {
+      console.log('Discount is checked on load, forcing visible');
+      discountConfig.style.display = 'block';
+      discountConfig.style.visibility = 'visible';
+      discountConfig.style.opacity = '1';
+      setTimeout(() => calculateSimplifiedDiscount(), 100);
+    }
+  } else {
+    console.error('Discount elements missing:', { toggle: !discountToggle, config: !discountConfig });
   }
 
   // Change discount symbol based on type
@@ -1605,6 +1649,40 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Updated discount amount display:', discountAmount.toFixed(2));
       }
 
+      // Update price preview displays
+      const regularPriceDisplay = document.getElementById('regular_price_display');
+      const discountAmountText = document.getElementById('discount_amount_text');
+      const finalDiscountedPrice = document.getElementById('final_discounted_price');
+      const updatedPricePreview = document.getElementById('updated_price_preview');
+
+      if (regularPriceDisplay) {
+        regularPriceDisplay.textContent = `₹${regular.toFixed(2)}`;
+      }
+
+      if (discountAmountText) {
+        discountAmountText.textContent = `₹${discountAmount.toFixed(2)}`;
+      }
+
+      if (finalDiscountedPrice) {
+        finalDiscountedPrice.textContent = `₹${finalPrice.toFixed(2)}`;
+        // Add visual effect for price change
+        finalDiscountedPrice.classList.remove('price-updated');
+        void finalDiscountedPrice.offsetWidth; // Trigger reflow
+        finalDiscountedPrice.classList.add('price-updated');
+      }
+
+      // Show the price preview section
+      if (updatedPricePreview && discountToggle?.checked) {
+        updatedPricePreview.style.display = 'block';
+      }
+
+      // Update the hidden discount_amount field for form submission
+      const hiddenDiscountAmount = document.getElementById('product_discount_amount');
+      if (hiddenDiscountAmount) {
+        hiddenDiscountAmount.value = discountAmount.toFixed(2);
+        console.log('Updated hidden discount amount:', discountAmount.toFixed(2));
+      }
+
       updateSimplifiedPricePreview(discountAmount, finalPrice, regular);
     } else {
       // No regular price set
@@ -1615,18 +1693,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function updateSimplifiedPricePreview(discountAmount, finalPrice, regularPriceValue) {
     const regularPriceDisplay = document.getElementById('regular_price_display');
+    const discountAmountText = document.getElementById('discount_amount_text');
     const finalDiscountedPrice = document.getElementById('final_discounted_price');
 
     console.log('Updating price preview:', { discountAmount, finalPrice, regularPriceValue });
 
-    if (regularPriceDisplay) regularPriceDisplay.textContent = `₹${regularPriceValue.toFixed(2)}`;
-    if (finalDiscountedPrice) finalDiscountedPrice.textContent = `₹${finalPrice.toFixed(2)}`;
+    if (regularPriceDisplay) {
+      regularPriceDisplay.textContent = `₹${regularPriceValue.toFixed(2)}`;
+    }
+
+    if (discountAmountText) {
+      discountAmountText.textContent = `₹${discountAmount.toFixed(2)}`;
+      // Change color based on whether there's a discount
+      if (discountAmount > 0) {
+        discountAmountText.className = 'fw-bold text-danger';
+      } else {
+        discountAmountText.className = 'fw-bold text-muted';
+      }
+    }
+
+    if (finalDiscountedPrice) {
+      finalDiscountedPrice.textContent = `₹${finalPrice.toFixed(2)}`;
+      // Make final price bigger if there's a discount
+      if (discountAmount > 0) {
+        finalDiscountedPrice.className = 'fw-bold text-success fs-5';
+      } else {
+        finalDiscountedPrice.className = 'fw-bold text-success';
+      }
+    }
   }
 
   function clearDiscountFields() {
     if (discountValue) discountValue.value = '';
     if (discountAmountDisplay) discountAmountDisplay.value = '';
-    updateSimplifiedPricePreview(0, 0, 0);
+
+    // Clear hidden field
+    const hiddenDiscountAmount = document.getElementById('product_discount_amount');
+    if (hiddenDiscountAmount) {
+      hiddenDiscountAmount.value = '0';
+    }
+
+    // Reset discount type to default
+    if (discountType) {
+      discountType.value = '';
+    }
+
+    // Get current price for preview update
+    const currentPrice = parseFloat(regularPrice?.value) || 0;
+    updateSimplifiedPricePreview(0, currentPrice, currentPrice);
   }
 
   // Add specific event listeners for discount value field
@@ -1668,6 +1782,13 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (discountType.value === 'percentage' && discountSymbol) {
         discountSymbol.textContent = '%';
       }
+    }
+
+    // Ensure price preview is visible if discount is enabled on page load
+    const updatedPricePreview = document.getElementById('updated_price_preview');
+    if (updatedPricePreview && discountToggle?.checked) {
+      updatedPricePreview.style.display = 'block';
+      console.log('Showing price preview on load');
     }
 
     calculateSimplifiedDiscount();
@@ -1944,7 +2065,13 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Initialize existing rule type selects
-  document.querySelectorAll('[name*="rule_type"]').forEach(initializeRuleTypeSelect);
+  document.querySelectorAll('[name*="rule_type"]').forEach(select => {
+    initializeRuleTypeSelect(select);
+    // Trigger change event to show/hide appropriate dropdowns for existing rules
+    if (select.value) {
+      select.dispatchEvent(new Event('change'));
+    }
+  });
 
   function initializeRuleTypeSelect(select) {
     if (!select) {
@@ -1981,20 +2108,39 @@ document.addEventListener('DOMContentLoaded', function() {
         if (locationGroup) locationGroup.style.display = 'block';
 
         // Show appropriate input group based on rule type
+        console.log('Rule type changed to:', this.value);
         switch(this.value) {
           case 'state':
-            if (stateGroup) stateGroup.style.display = 'block';
+            if (stateGroup) {
+              stateGroup.style.display = 'block';
+              console.log('Showing state group');
+            }
+            // Always show the filtered cities dropdown when state is selected
+            if (filteredCitiesGroup) {
+              filteredCitiesGroup.style.display = 'block';
+              console.log('Showing filtered cities group for state selection');
+            }
             // Initialize state selection handler for filtered cities
             initializeStateFilteredCities(ruleRow);
             break;
           case 'city':
-            if (cityGroup) cityGroup.style.display = 'block';
-            if (statesFilterGroup) statesFilterGroup.style.display = 'block';
+            if (cityGroup) {
+              cityGroup.style.display = 'block';
+              console.log('Showing city group');
+            }
+            // Always show the state filter dropdown when city is selected
+            if (statesFilterGroup) {
+              statesFilterGroup.style.display = 'block';
+              console.log('Showing state filter group for city selection');
+            }
             // Initialize state filter for cities
             initializeStateFilter(ruleRow);
             break;
           case 'pincode':
-            if (pincodeGroup) pincodeGroup.style.display = 'block';
+            if (pincodeGroup) {
+              pincodeGroup.style.display = 'block';
+              console.log('Showing pincode group');
+            }
             break;
         }
       }
@@ -2106,13 +2252,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Toggle occasional product settings
-    if (occasionalToggle) {
+    if (occasionalToggle && occasionalSettings) {
       console.log('Adding change event listener to occasional toggle');
-      occasionalToggle.addEventListener('change', function() {
-        console.log('Occasional toggle changed, checked:', this.checked);
-        if (this.checked) {
+
+      // Force initial visibility if checked
+      if (occasionalToggle.checked) {
+        occasionalSettings.style.display = 'block';
+        occasionalSettings.style.visibility = 'visible';
+        occasionalSettings.style.opacity = '1';
+      }
+
+      occasionalToggle.addEventListener('change', function(e) {
+        console.log('Occasional toggle changed, checked:', e.target.checked);
+        if (e.target.checked === true || e.target.checked === 'true') {
           console.log('Showing occasional settings');
           occasionalSettings.style.display = 'block';
+          occasionalSettings.style.visibility = 'visible';
+          occasionalSettings.style.opacity = '1';
           updateScheduleTypeDisplay();
         } else {
           console.log('Hiding occasional settings');
@@ -2124,11 +2280,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
-      // Trigger initial state
+      // Trigger initial state with delay to ensure DOM is ready
       console.log('Initial toggle state:', occasionalToggle.checked);
       if (occasionalToggle.checked) {
         occasionalSettings.style.display = 'block';
-        updateScheduleTypeDisplay();
+        occasionalSettings.style.visibility = 'visible';
+        occasionalSettings.style.opacity = '1';
+        setTimeout(() => updateScheduleTypeDisplay(), 100);
       }
     }
 
@@ -3810,6 +3968,27 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   color: #155724 !important;
   transform: scale(1.02);
   transition: all 0.3s ease;
+}
+
+.price-updated {
+  animation: priceUpdate 0.5s ease;
+  color: #28a745 !important;
+  font-weight: bold;
+}
+
+@keyframes priceUpdate {
+  0% {
+    transform: scale(1);
+    color: inherit;
+  }
+  50% {
+    transform: scale(1.1);
+    color: #28a745;
+  }
+  100% {
+    transform: scale(1);
+    color: #28a745;
+  }
 }
 
 /* GST Type Radio Buttons */

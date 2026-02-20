@@ -5,7 +5,7 @@ class Admin::ProductsController < Admin::ApplicationController
   before_action :authenticate_user!
 
   def index
-    @products = Product.includes(:category, images_attachments: :blob)
+    @products = Product.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
 
     if params[:search].present?
       @products = @products.search(params[:search])
@@ -246,43 +246,46 @@ class Admin::ProductsController < Admin::ApplicationController
     return unless params[:remove_images].present?
 
     image_ids_to_remove = params[:remove_images].map(&:to_i)
-    images_to_remove = @product.images.where(id: image_ids_to_remove)
 
+    # Handle main image removal
+    if @product.image.attached? && image_ids_to_remove.include?(@product.image.id)
+      Rails.logger.info "Removing main image: #{@product.image.filename}"
+      @product.image.purge
+    end
+
+    # Handle additional images removal
+    images_to_remove = @product.additional_images.where(id: image_ids_to_remove)
     images_to_remove.each do |image|
-      Rails.logger.info "Removing image: #{image.filename}"
+      Rails.logger.info "Removing additional image: #{image.filename}"
       image.purge
     end
 
-    Rails.logger.info "Removed #{images_to_remove.count} images from product #{@product.id}"
+    Rails.logger.info "Removed #{images_to_remove.count} additional images from product #{@product.id}"
   end
 
   def handle_main_image_setting
     return unless params[:main_image_id].present?
 
     main_image_id = params[:main_image_id].to_i
-    main_image = @product.images.find_by(id: main_image_id)
 
+    # Check if it's currently an additional image
+    main_image = @product.additional_images.find_by(id: main_image_id)
     return unless main_image
 
-    # Get all current images
-    current_images = @product.images.order(:created_at)
+    # Move the selected image from additional_images to main image
+    current_main = @product.image if @product.image.attached?
 
-    # If the main image is already first, do nothing
-    return if current_images.first == main_image
+    # Detach from additional images
+    @product.additional_images.detach(main_image.blob)
 
-    # Remove the main image from its current position
-    images_array = current_images.to_a
-    images_array.delete(main_image)
-
-    # Add the main image to the beginning
-    reordered_images = [main_image] + images_array
-
-    # Detach all images and reattach in new order
-    @product.images.detach
-
-    reordered_images.each do |image|
-      @product.images.attach(image.blob)
+    # If there was a main image, move it to additional images
+    if current_main
+      @product.additional_images.attach(current_main.blob)
+      @product.image.detach
     end
+
+    # Set as main image
+    @product.image.attach(main_image.blob)
 
     Rails.logger.info "Set image #{main_image_id} as main image for product #{@product.id}"
   end
@@ -367,7 +370,8 @@ class Admin::ProductsController < Admin::ApplicationController
       :is_occasional_product, :occasional_start_date, :occasional_end_date, :occasional_description, :occasional_auto_hide,
       :occasional_schedule_type, :occasional_recurring_from_day, :occasional_recurring_from_time,
       :occasional_recurring_to_day, :occasional_recurring_to_time,
-      images: [],
+      :image,
+      additional_images: [],
       remove_images: [],
       delivery_rules_attributes: [
         :id, :rule_type, :location_data, :is_excluded, :delivery_days, :delivery_charge, :_destroy,

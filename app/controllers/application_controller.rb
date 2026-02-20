@@ -9,8 +9,8 @@ class ApplicationController < ActionController::Base
   before_action :set_cache_control_headers
   before_action :ensure_session_security
 
-  # Devise authentication
-  before_action :authenticate_user!
+  # Devise authentication (skip for mobile API)
+  before_action :authenticate_user!, unless: :mobile_api?
   before_action :configure_permitted_parameters, if: :devise_controller?
 
   # Authorization
@@ -158,5 +158,81 @@ class ApplicationController < ActionController::Base
     session.delete(:login_time)
     session.delete(:last_activity)
     session.delete(:session_id)
+  end
+
+  # Mobile API helper methods
+  def mobile_api?
+    request.path.start_with?('/api/v1/mobile') || params[:controller]&.include?('mobile')
+  end
+
+  def authenticate_mobile_token!
+    token = extract_token_from_header
+
+    return render_unauthorized('Token not provided') unless token
+
+    begin
+      decoded_token = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: 'HS256')
+      @current_mobile_user_id = decoded_token[0]['account_id']
+      @current_mobile_user_type = decoded_token[0]['account_type']
+
+      case @current_mobile_user_type
+      when 'customer'
+        @current_customer = Customer.find_by(id: @current_mobile_user_id)
+        return render_unauthorized('Customer not found') unless @current_customer
+      when 'delivery_person'
+        @current_delivery_person = DeliveryPerson.find_by(id: @current_mobile_user_id)
+        return render_unauthorized('Delivery person not found') unless @current_delivery_person
+      else
+        return render_unauthorized('Invalid account type')
+      end
+
+    rescue JWT::ExpiredSignature
+      render_unauthorized('Token has expired')
+    rescue JWT::DecodeError
+      render_unauthorized('Invalid token')
+    rescue => e
+      Rails.logger.error "Mobile token authentication error: #{e.message}"
+      render_unauthorized('Authentication failed')
+    end
+  end
+
+  def extract_token_from_header
+    header = request.headers['Authorization']
+    header&.split(' ')&.last
+  end
+
+  def render_unauthorized(message = 'Unauthorized access')
+    render json: {
+      success: false,
+      message: message
+    }, status: :unauthorized
+  end
+
+  def generate_mobile_jwt_token(account, account_type)
+    payload = {
+      account_id: account.id,
+      account_type: account_type,
+      exp: 30.days.from_now.to_i,
+      iat: Time.current.to_i
+    }
+
+    JWT.encode(payload, Rails.application.secret_key_base, 'HS256')
+  end
+
+  def format_mobile_number(mobile)
+    return nil if mobile.blank?
+    # Remove all non-digit characters
+    clean_mobile = mobile.to_s.gsub(/\D/, '')
+
+    # Handle different mobile number formats
+    if clean_mobile.length == 10 && clean_mobile.match?(/\A[6-9]\d{9}\z/)
+      return clean_mobile
+    elsif clean_mobile.length == 12 && clean_mobile.start_with?('91') && clean_mobile[2..-1].match?(/\A[6-9]\d{9}\z/)
+      return clean_mobile[2..-1]
+    elsif clean_mobile.length == 13 && clean_mobile.start_with?('+91')
+      return clean_mobile[3..-1]
+    else
+      return nil
+    end
   end
 end

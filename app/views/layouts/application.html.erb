@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="browser-extension-disable" content="true">
-    <meta data-grammarly-disable="true">
-    <meta name="grammarly-disable" content="true">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self';">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -50,16 +46,6 @@
     <% end %>
     <%= stylesheet_link_tag "auth", "data-turbo-track": "reload" if !user_signed_in? %>
 
-    <!-- Force cache refresh -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-
-    <!-- Block browser extensions -->
-    <style>
-      grammarly-extension, grammarly-popups, grammarly-mirror { display: none !important; }
-      [data-extension] { display: none !important; }
-    </style>
   </head>
 
   <body class="insurance-app">
@@ -314,175 +300,6 @@
         }
       });
 
-      // Enhanced session security and browser navigation handling
-      <% if user_signed_in? %>
-        // Comprehensive authentication bypass prevention
-        let sessionValid = true;
-        let lastValidationTime = Date.now();
-
-        // Store session markers for validation
-        const sessionMarkers = {
-          loginTime: <%= session[:login_time] || 0 %>,
-          userId: <%= current_user.id %>,
-          sessionId: '<%= session[:session_id] %>'
-        };
-
-        // Function to validate session integrity
-        function validateSession() {
-          return fetch('/dashboard', {
-            method: 'HEAD',
-            credentials: 'same-origin',
-            cache: 'no-cache',
-            headers: {
-              'X-Session-Validation': 'true',
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          }).then(response => {
-            if (!response.ok) {
-              throw new Error('Session invalid');
-            }
-            lastValidationTime = Date.now();
-            return true;
-          }).catch(() => {
-            sessionValid = false;
-            forceReAuthentication('Session validation failed');
-            return false;
-          });
-        }
-
-        // Force re-authentication
-        function forceReAuthentication(reason) {
-          console.warn('Authentication required:', reason);
-          sessionStorage.clear();
-          localStorage.clear();
-
-          // Clear any cached data
-          if ('caches' in window) {
-            caches.keys().then(names => {
-              names.forEach(name => caches.delete(name));
-            });
-          }
-
-          window.location.replace('/sessions/new');
-        }
-
-        // Enhanced back/forward button detection
-        window.addEventListener('pageshow', function(event) {
-          const now = Date.now();
-
-          // Detect if page was loaded from cache (back/forward button)
-          if (event.persisted) {
-            console.warn('Page loaded from cache - validating session');
-
-            // Always validate session for cached pages
-            validateSession().then(valid => {
-              if (!valid) {
-                forceReAuthentication('Cached page access denied');
-              }
-            });
-          }
-
-          // Check for navigation type
-          if (performance.navigation && performance.navigation.type === 2) {
-            console.warn('Back/forward navigation detected');
-
-            // Force validation for back/forward navigation
-            validateSession().then(valid => {
-              if (!valid) {
-                forceReAuthentication('Back/forward navigation denied');
-              }
-            });
-          }
-
-          // Check if too much time has passed since last validation
-          if (now - lastValidationTime > 60000) { // 1 minute
-            validateSession();
-          }
-        });
-
-        // Monitor for tab visibility changes (user switching tabs)
-        document.addEventListener('visibilitychange', function() {
-          if (!document.hidden) {
-            // Tab became visible - validate session
-            const now = Date.now();
-            if (now - lastValidationTime > 30000) { // 30 seconds
-              validateSession();
-            }
-          }
-        });
-
-        // Monitor for focus changes
-        window.addEventListener('focus', function() {
-          const now = Date.now();
-          if (now - lastValidationTime > 30000) { // 30 seconds
-            validateSession();
-          }
-        });
-
-        // Enhanced activity tracking
-        let lastActivity = Date.now();
-        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-
-        activityEvents.forEach(event => {
-          document.addEventListener(event, function() {
-            const now = Date.now();
-            lastActivity = now;
-
-            // Periodic session validation
-            if (now - lastValidationTime > 120000) { // 2 minutes
-              validateSession();
-            }
-          }, true);
-        });
-
-        // Handle navigation away from page
-        window.addEventListener('beforeunload', function(event) {
-          sessionStorage.setItem('lastActiveTime', Date.now().toString());
-          sessionStorage.setItem('userLoggedIn', 'true');
-        });
-
-        // Validate on page load
-        window.addEventListener('load', function() {
-          const lastActiveTime = parseInt(sessionStorage.getItem('lastActiveTime') || '0');
-          const wasLoggedIn = sessionStorage.getItem('userLoggedIn') === 'true';
-          const now = Date.now();
-
-          // If returning after being away for more than 5 minutes, validate
-          if (wasLoggedIn && lastActiveTime && (now - lastActiveTime > 300000)) {
-            validateSession().then(valid => {
-              if (!valid) {
-                forceReAuthentication('Session timeout after inactivity');
-              }
-            });
-          }
-
-          // Always validate on initial load
-          setTimeout(() => {
-            validateSession();
-          }, 1000);
-        });
-
-        // Prevent browser caching aggressive measures
-        window.addEventListener('unload', function() {
-          // Clear session storage on actual page unload
-          if (performance.navigation.type === 0) { // Normal navigation
-            sessionStorage.clear();
-          }
-        });
-
-        // Detect attempts to access cached content
-        if (performance.getEntriesByType) {
-          const navigationEntries = performance.getEntriesByType('navigation');
-          if (navigationEntries.length > 0) {
-            const entry = navigationEntries[0];
-            if (entry.type === 'back_forward') {
-              console.warn('Back/forward cache access detected');
-              validateSession();
-            }
-          }
-        }
-
-      <% end %>
     </script>
 
     <!-- Global Form Enhancement Script -->

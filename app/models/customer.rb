@@ -28,25 +28,46 @@ class Customer < ApplicationRecord
   # accepts_nested_attributes_for :documents, allow_destroy: true, reject_if: :all_blank
   # accepts_nested_attributes_for :uploaded_documents, allow_destroy: true, reject_if: :all_blank
 
-  # Password support for customer login (temporarily using plain text storage)
-  # has_secure_password
-
-  # Custom password handling until password_digest column is added
-  attr_accessor :password, :password_confirmation
+  # Password support for customer login
+  has_secure_password validations: false
 
   # Virtual attribute for status if column doesn't exist yet
   attr_accessor :status unless column_names.include?('status')
 
-  # Validate password presence and confirmation
+  # Validate password presence and confirmation only when password is set
   validates :password, presence: true, length: { minimum: 6 }, if: :password_required?
   validates :password_confirmation, presence: true, if: :password_required?
   validates_confirmation_of :password, if: :password_required?
 
-  # Store password in auto_generated_password field for now
-  before_save :store_password_in_auto_generated_field, if: :password_required?
+  # Store password in password_digest if column exists, otherwise in auto_generated_password
+  before_save :handle_password_storage, if: :password_required?
 
   def password_required?
-    password.present? || new_record?
+    password.present?
+  end
+
+  def authenticate(password)
+    if respond_to?(:password_digest) && password_digest.present?
+      # Use bcrypt if password_digest column exists
+      BCrypt::Password.new(password_digest).is_password?(password)
+    elsif auto_generated_password.present?
+      # Fallback to plain text comparison
+      auto_generated_password == password
+    else
+      false
+    end
+  end
+
+  private
+
+  def handle_password_storage
+    if respond_to?(:password_digest)
+      # Store encrypted password in password_digest column
+      self.password_digest = BCrypt::Password.create(password)
+    else
+      # Fallback to storing in auto_generated_password field
+      self.auto_generated_password = password
+    end
   end
 
   def store_password_in_auto_generated_field

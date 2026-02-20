@@ -1,0 +1,230 @@
+<%= form_with model: [:admin, @product], local: true, multipart: true, class: "row g-3", id: "product-form" do |form| %>
+  <% if @product.errors.any? %>
+    <div class="col-12">
+      <div class="alert alert-danger">
+        <h4>Please fix the following errors:</h4>
+        <ul class="mb-0">
+          <% @product.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Details Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Basic Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :name, class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.text_field :name, class: "form-control", placeholder: "Enter product name", required: true %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :category_id, "Category", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.select :category_id,
+                options_for_select(Category.pluck(:name, :id), @product.category_id),
+                { prompt: 'Select a category' },
+                { class: "form-select", required: true } %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :sku, "SKU", class: "form-label" %>
+            <%= form.text_field :sku, class: "form-control", placeholder: "Enter SKU (leave blank to auto-generate)" %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :status, class: "form-label" %>
+            <%= form.select :status,
+                options_for_select([['Draft', 'draft'], ['Active', 'active'], ['Inactive', 'inactive']], @product.status),
+                {},
+                { class: "form-select" } %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :product_type, "Product Type", class: "form-label" %>
+            <%= form.select :product_type,
+                options_for_select(Product::PRODUCT_TYPES || [['Grocery', 'Grocery'], ['Medicine', 'Medicine'], ['Occasional', 'Occasional']], @product.product_type),
+                {},
+                { class: "form-select", required: true } %>
+          </div>
+
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4, placeholder: "Enter product description" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Pricing</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <%= form.label :buying_price, "Buying Price", class: "form-label" %>
+            <%= form.number_field :buying_price, class: "form-control", step: "0.01", placeholder: "0.00" %>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :price, "Selling Price", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.number_field :price, class: "form-control", step: "0.01", placeholder: "0.00", required: true %>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :discount_price, "Discount Price", class: "form-label" %>
+            <%= form.number_field :discount_price, class: "form-control", step: "0.01", placeholder: "0.00" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Section -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Inventory</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :stock, "Available Stock", class: "form-label" %>
+            <span class="text-danger">*</span>
+            <%= form.number_field :stock, class: "form-control", placeholder: "0", required: true %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :unit, class: "form-label" %>
+            <%= form.text_field :unit, class: "form-control", placeholder: "e.g., kg, piece, bottle" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GST Configuration -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">GST Configuration</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-check form-switch">
+              <%= form.check_box :gst_enabled, class: "form-check-input" %>
+              <%= form.label :gst_enabled, "Enable GST", class: "form-check-label" %>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :gst_percentage, "GST Percentage", class: "form-label" %>
+            <%= form.select :gst_percentage,
+                options_for_select([['5%', 5], ['12%', 12], ['18%', 18], ['28%', 28]], @product.gst_percentage),
+                { prompt: 'Select GST %' },
+                { class: "form-select" } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subscription -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Subscription Settings</h5>
+      </div>
+      <div class="card-body">
+        <div class="form-check form-switch">
+          <%= form.check_box :is_subscription_enabled, class: "form-check-input" %>
+          <%= form.label :is_subscription_enabled, "Enable Subscription", class: "form-check-label" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Images -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Product Images</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :image, "Main Image", class: "form-label" %>
+            <%= form.file_field :image, class: "form-control" %>
+            <% if @product.image.present? %>
+              <div class="mt-2">
+                <small>Current: <%= @product.image.filename %></small>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :additional_images, "Additional Images", class: "form-label" %>
+            <%= form.file_field :additional_images, multiple: true, class: "form-control" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit Button -->
+  <div class="col-12">
+    <div class="d-flex justify-content-end gap-2">
+      <%= link_to "Cancel", admin_products_path, class: "btn btn-secondary" %>
+      <%= form.submit @product.new_record? ? "Create Product" : "Update Product", class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Simple form enhancements
+  const form = document.getElementById('product-form');
+  if (form) {
+    // GST toggle
+    const gstEnabled = document.querySelector('input[name="product[gst_enabled]"]');
+    const gstPercentage = document.querySelector('select[name="product[gst_percentage]"]');
+
+    if (gstEnabled && gstPercentage) {
+      gstEnabled.addEventListener('change', function() {
+        gstPercentage.disabled = !this.checked;
+      });
+
+      // Initialize on load
+      gstPercentage.disabled = !gstEnabled.checked;
+    }
+
+    // Price validation
+    const buyingPrice = document.querySelector('input[name="product[buying_price]"]');
+    const sellingPrice = document.querySelector('input[name="product[price]"]');
+
+    if (sellingPrice) {
+      sellingPrice.addEventListener('blur', function() {
+        if (buyingPrice && buyingPrice.value && this.value) {
+          if (parseFloat(this.value) < parseFloat(buyingPrice.value)) {
+            alert('Warning: Selling price is less than buying price!');
+          }
+        }
+      });
+    }
+  }
+});
+</script>

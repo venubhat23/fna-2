@@ -25,7 +25,7 @@
             <div class="col-xl-4 col-md-8 mx-auto">
               <!-- Product Images -->
               <div class="product-img-slider sticky-side-div">
-                <% if @product.images.attached? %>
+                <% if @product.images_attached? %>
                   <div class="swiper product-thumbnail-slider p-2 rounded bg-light">
                     <div class="swiper-wrapper">
                       <% @product.images.each do |image| %>
@@ -34,14 +34,14 @@
                         </div>
                       <% end %>
                     </div>
-                    <% if @product.images.count > 1 %>
+                    <% if @product.images.size > 1 %>
                       <div class="swiper-button-next"></div>
                       <div class="swiper-button-prev"></div>
                     <% end %>
                   </div>
 
                   <!-- Thumbnail navigation -->
-                  <% if @product.images.count > 1 %>
+                  <% if @product.images.size > 1 %>
                     <div class="swiper product-nav-slider mt-2">
                       <div class="swiper-wrapper">
                         <% @product.images.each do |image| %>

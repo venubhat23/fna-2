@@ -114,16 +114,18 @@ class DeliveryPerson < ApplicationRecord
   def mobile_number_format
     return if mobile.blank?
 
-    unless mobile.match?(/\A[6-9][0-9]{9}\z/)
-      errors.add(:mobile, 'must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9')
+    cleaned = mobile.to_s.gsub(/\D/, '')
+    unless cleaned.match?(/\A\d{10}\z/) || cleaned.match?(/\A\d{12}\z/)
+      errors.add(:mobile, 'must be a 10 or 12 digit number')
     end
   end
 
   def emergency_contact_mobile_format
     return if emergency_contact_mobile.blank?
 
-    unless emergency_contact_mobile.match?(/\A[6-9][0-9]{9}\z/)
-      errors.add(:emergency_contact_mobile, 'must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9')
+    cleaned = emergency_contact_mobile.to_s.gsub(/\D/, '')
+    unless cleaned.match?(/\A\d{10}\z/) || cleaned.match?(/\A\d{12}\z/)
+      errors.add(:emergency_contact_mobile, 'must be a 10 or 12 digit number')
     end
   end
 
@@ -133,38 +135,7 @@ class DeliveryPerson < ApplicationRecord
     # Remove all non-digit characters
     cleaned = number.to_s.gsub(/\D/, '')
 
-    # Handle different formats
-    case cleaned.length
-    when 10
-      # Already 10 digits, validate it starts with 6-9
-      cleaned.match?(/\A[6-9]/) ? cleaned : nil
-    when 13
-      # +91XXXXXXXXXX format - remove country code
-      if cleaned.start_with?('91')
-        mobile = cleaned[2..-1]
-        mobile.match?(/\A[6-9]/) ? mobile : nil
-      else
-        nil
-      end
-    when 12
-      # 91XXXXXXXXXX format (12 digits) - remove country code
-      if cleaned.start_with?('91')
-        mobile = cleaned[2..-1]
-        mobile.match?(/\A[6-9]/) ? mobile : nil
-      else
-        nil
-      end
-    when 11
-      # 91XXXXXXXXXX format - remove country code
-      if cleaned.start_with?('91')
-        mobile = cleaned[2..-1]
-        mobile.match?(/\A[6-9]/) ? mobile : nil
-      else
-        nil
-      end
-    else
-      # Return nil if we can't normalize
-      nil
-    end
+    # Accept 10 or 12 digits as is, keep other lengths for storage
+    cleaned
   end
 end

@@ -1,0 +1,1637 @@
+<style>
+/* Professional Product Form Styles */
+.professional-form-wrapper {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2px;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+}
+
+.professional-form-container {
+  background: white;
+  border-radius: 18px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.form-header-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.form-header-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 60%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(35deg);
+}
+
+.form-header-banner h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+
+.form-header-banner p {
+  margin: 0.5rem 0 0 0;
+  opacity: 0.95;
+  font-size: 1.1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.form-section {
+  padding: 2rem;
+  border-bottom: 1px solid #f0f2f5;
+  transition: all 0.3s ease;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.form-section:hover {
+  background: #fafbfc;
+}
+
+.section-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1d23;
+  margin-bottom: 0.5rem;
+}
+
+.section-description {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.form-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.form-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.form-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.modern-input-group {
+  position: relative;
+}
+
+.modern-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.modern-label .required {
+  color: #dc3545;
+  margin-left: 3px;
+}
+
+.modern-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.modern-input.has-icon {
+  padding-left: 3rem;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #adb5bd;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+.modern-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px 12px;
+  padding-right: 2.5rem;
+}
+
+.toggle-switch-container {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch-container:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  margin-right: 1rem;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ccc;
+  transition: 0.4s;
+  border-radius: 30px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background: white;
+  transition: 0.4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(30px);
+}
+
+.toggle-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.image-upload-container {
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: #fafbfc;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.image-upload-container:hover {
+  border-color: #667eea;
+  background: white;
+  transform: scale(1.02);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-modern {
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary-modern:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary-modern {
+  background: white;
+  color: #495057;
+  border: 2px solid #e9ecef;
+}
+
+.btn-secondary-modern:hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.price-input-group {
+  position: relative;
+}
+
+.price-prefix {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.price-input {
+  padding-left: 2.5rem;
+}
+
+.delivery-rule-card {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: white;
+  margin-bottom: 1rem;
+}
+
+.rule-type-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.help-text {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+/* Product Type Cards */
+.product-type-card {
+  position: relative;
+  cursor: pointer;
+  display: block;
+}
+
+.product-type-radio {
+  position: absolute;
+  opacity: 0;
+}
+
+.type-card-content {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.product-type-radio:checked + .type-card-content {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.type-icon {
+  font-size: 2rem;
+  color: #adb5bd;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.product-type-radio:checked + .type-card-content .type-icon {
+  color: #667eea;
+}
+
+.type-name {
+  font-weight: 500;
+  color: #495057;
+}
+
+.product-type-radio:checked + .type-card-content .type-name {
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* Discount Type Cards */
+.discount-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.discount-type-card {
+  position: relative;
+  cursor: pointer;
+  display: block;
+}
+
+.discount-type-radio {
+  position: absolute;
+  opacity: 0;
+}
+
+.discount-card-content {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.discount-type-radio:checked + .discount-card-content {
+  border-color: #28a745;
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+}
+
+.discount-icon {
+  font-size: 1.5rem;
+  color: #adb5bd;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.discount-type-radio:checked + .discount-card-content .discount-icon {
+  color: #28a745;
+}
+
+.discount-name {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.discount-type-radio:checked + .discount-card-content .discount-name {
+  color: #28a745;
+  font-weight: 600;
+}
+
+/* Price Calculation Display */
+.price-calculation-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.calculation-header {
+  color: #495057;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.calculation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.discount-row {
+  color: #dc3545;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.75rem;
+}
+
+.final-row {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.savings-badge {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  text-align: center;
+  font-weight: 500;
+  margin-top: 1rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Occasional Product Configuration */
+.occasion-config-card {
+  background: linear-gradient(135deg, #fff8e1 0%, #fffbf0 100%);
+  border: 2px solid #ffecb3;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1);
+}
+
+.config-title {
+  color: #f57f17;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.feature-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.feature-toggle {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.feature-toggle:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.feature-toggle .toggle-switch {
+  margin-right: 1rem;
+  margin-bottom: 0;
+}
+
+.feature-info .feature-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.feature-info small {
+  color: #666;
+}
+
+/* Image Preview */
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.preview-image {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e9ecef;
+}
+
+.preview-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section {
+  animation: slideIn 0.5s ease forwards;
+  animation-delay: calc(var(--section-index, 0) * 0.1s);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-header-banner {
+    padding: 1.5rem;
+  }
+
+  .form-header-banner h2 {
+    font-size: 1.5rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-modern {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<div class="professional-form-wrapper">
+  <div class="professional-form-container">
+    <!-- Form Header -->
+    <div class="form-header-banner">
+      <h2>
+        <i class="bi bi-box-seam me-2"></i>
+        <%= @product.new_record? ? "Create New Product" : "Edit Product" %>
+      </h2>
+      <p>Fill in the details below to <%= @product.new_record? ? "add a new product to your catalog" : "update product information" %></p>
+    </div>
+
+    <%= form_with model: [:admin, @product], local: true, multipart: true, id: "professional-product-form" do |form| %>
+      <% if @product.errors.any? %>
+        <div class="alert alert-danger m-4" role="alert">
+          <h5 class="alert-heading">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Please fix the following errors:
+          </h5>
+          <ul class="mb-0">
+            <% @product.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Basic Details Section -->
+      <div class="form-section" style="--section-index: 0;">
+        <div class="section-icon">
+          <i class="bi bi-info-circle"></i>
+        </div>
+        <h3 class="section-title">Basic Details</h3>
+        <p class="section-description">Enter the primary details about your product</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="modern-input-group">
+            <%= form.label :name, class: "modern-label" do %>
+              Name <span class="required">*</span>
+            <% end %>
+            <%= form.text_field :name, class: "modern-input", placeholder: "Enter product name", required: true %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :category_id, "Category", class: "modern-label" do %>
+              Category <span class="required">*</span>
+            <% end %>
+            <%= form.select :category_id,
+                options_for_select(Category.pluck(:name, :id), @product.category_id),
+                { prompt: '— Select Category —' },
+                { class: "modern-input modern-select", required: true } %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :sku, "SKU", class: "modern-label" %>
+            <%= form.text_field :sku, class: "modern-input", placeholder: "Enter SKU (leave blank to auto-generate)" %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :status, "Status", class: "modern-label" %>
+            <%= form.select :status,
+                options_for_select([['Active', 'active'], ['Draft', 'draft'], ['Inactive', 'inactive']], @product.status || 'active'),
+                {},
+                { class: "modern-input modern-select" } %>
+          </div>
+        </div>
+
+        <!-- Product Type Selection -->
+        <div class="mt-4">
+          <label class="modern-label">
+            Product Type <span class="required">*</span>
+          </label>
+          <div class="form-grid form-grid-3">
+            <% ['Grocery', 'Medicine', 'Occasional'].each do |type| %>
+              <label class="product-type-card">
+                <%= form.radio_button :product_type, type, class: "product-type-radio", checked: @product.product_type == type %>
+                <div class="type-card-content">
+                  <div class="type-icon">
+                    <% case type %>
+                    <% when 'Grocery' %>
+                      <i class="bi bi-basket2"></i>
+                    <% when 'Medicine' %>
+                      <i class="bi bi-capsule"></i>
+                    <% when 'Occasional' %>
+                      <i class="bi bi-calendar-event"></i>
+                    <% end %>
+                  </div>
+                  <div class="type-name"><%= type %></div>
+                </div>
+              </label>
+            <% end %>
+          </div>
+          <div class="help-text">
+            <i class="bi bi-info-circle me-1"></i>
+            Choose the category that best describes your product
+          </div>
+        </div>
+
+        <!-- Subscription Feature -->
+        <div class="mt-4">
+          <div class="toggle-switch-container">
+            <div class="toggle-switch">
+              <%= form.check_box :is_subscription_enabled, id: "subscription-toggle" %>
+              <label class="toggle-slider" for="subscription-toggle"></label>
+            </div>
+            <div>
+              <div class="toggle-label">Subscription Feature</div>
+              <small class="text-muted">Enable customers to subscribe for regular delivery of this product</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mt-4">
+          <div class="modern-input-group">
+            <%= form.label :description, "Description", class: "modern-label" %>
+            <%= form.text_area :description, class: "modern-input", rows: 4, placeholder: "Enter product description" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Section -->
+      <div class="form-section" style="--section-index: 1;">
+        <div class="section-icon">
+          <i class="bi bi-currency-rupee"></i>
+        </div>
+        <h3 class="section-title">Pricing</h3>
+        <p class="section-description">Set up pricing and discount configuration</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="modern-input-group">
+            <%= form.label :buying_price, "Buying Price", class: "modern-label" %>
+            <div class="price-input-group">
+              <span class="price-prefix">₹</span>
+              <%= form.number_field :buying_price, class: "modern-input price-input",
+                  step: "0.01", placeholder: "0.00" %>
+            </div>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :price, class: "modern-label" do %>
+              Selling Price <span class="required">*</span>
+            <% end %>
+            <div class="price-input-group">
+              <span class="price-prefix">₹</span>
+              <%= form.number_field :price, class: "modern-input price-input",
+                  step: "0.01", placeholder: "0.00", required: true %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enable Discount -->
+        <div class="mt-4">
+          <div class="toggle-switch-container">
+            <div class="toggle-switch">
+              <%= form.check_box :discount_enabled, id: "discount-toggle", checked: @product.discount_price.present? %>
+              <label class="toggle-slider" for="discount-toggle"></label>
+            </div>
+            <div>
+              <div class="toggle-label">Enable Discount</div>
+              <small class="text-muted">Offer special pricing to customers</small>
+            </div>
+          </div>
+
+          <div class="discount-configuration mt-3" id="discount-options" style="<%= @product.discount_price.present? ? '' : 'display: none;' %>">
+            <!-- Discount Type Selection -->
+            <div class="discount-type-selector mb-3">
+              <label class="modern-label">Discount Type</label>
+              <div class="discount-type-cards">
+                <label class="discount-type-card">
+                  <%= form.radio_button :discount_type, "fixed", class: "discount-type-radio", checked: true %>
+                  <div class="discount-card-content">
+                    <div class="discount-icon">
+                      <i class="bi bi-currency-rupee"></i>
+                    </div>
+                    <div class="discount-name">Fixed Amount</div>
+                    <small>₹100 off</small>
+                  </div>
+                </label>
+
+                <label class="discount-type-card">
+                  <%= form.radio_button :discount_type, "percentage", class: "discount-type-radio" %>
+                  <div class="discount-card-content">
+                    <div class="discount-icon">
+                      <i class="bi bi-percent"></i>
+                    </div>
+                    <div class="discount-name">Percentage</div>
+                    <small>10% off</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Discount Value Input -->
+            <div class="form-grid form-grid-2">
+              <div class="modern-input-group" id="fixed-discount-input">
+                <%= form.label :discount_amount, "Discount Amount", class: "modern-label" %>
+                <div class="price-input-group">
+                  <span class="price-prefix">₹</span>
+                  <%= form.number_field :discount_amount, class: "modern-input price-input",
+                      step: "0.01", placeholder: "0.00", id: "discount-amount-field" %>
+                </div>
+              </div>
+
+              <div class="modern-input-group" id="percentage-discount-input" style="display: none;">
+                <%= form.label :discount_percentage, "Discount Percentage", class: "modern-label" %>
+                <div class="price-input-group">
+                  <span class="price-prefix">%</span>
+                  <%= form.number_field :discount_percentage, class: "modern-input price-input",
+                      step: "0.01", placeholder: "0.00", min: "0", max: "100", id: "discount-percentage-field" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Final Price Display -->
+            <div class="final-price-display mt-4">
+              <div class="price-calculation-card">
+                <div class="calculation-header">
+                  <i class="bi bi-calculator me-2"></i>
+                  <strong>Price Calculation</strong>
+                </div>
+                <div class="calculation-body">
+                  <div class="price-row">
+                    <span>Original Price:</span>
+                    <span id="original-price-display">₹0.00</span>
+                  </div>
+                  <div class="price-row discount-row">
+                    <span>Discount:</span>
+                    <span id="discount-display">-₹0.00</span>
+                  </div>
+                  <div class="price-row final-row">
+                    <span><strong>Final Price:</strong></span>
+                    <span id="final-price-display"><strong>₹0.00</strong></span>
+                  </div>
+                  <div class="savings-badge" id="savings-badge" style="display: none;">
+                    <i class="bi bi-tag-fill me-1"></i>
+                    <span id="savings-text">Save ₹0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Store final price in hidden field -->
+            <%= form.hidden_field :discount_price, id: "final-discount-price" %>
+          </div>
+        </div>
+
+        <!-- GST Configuration -->
+        <div class="mt-4">
+          <h5 class="section-title" style="font-size: 1rem;">GST Configuration</h5>
+          <div class="toggle-switch-container">
+            <div class="toggle-switch">
+              <%= form.check_box :gst_enabled, id: "gst-toggle" %>
+              <label class="toggle-slider" for="gst-toggle"></label>
+            </div>
+            <div>
+              <div class="toggle-label">Enable GST</div>
+              <small class="text-muted">Enable GST calculation for this product</small>
+            </div>
+          </div>
+
+          <div class="form-grid form-grid-2 mt-3" id="gst-options" style="display: none;">
+            <div class="modern-input-group">
+              <%= form.label :gst_percentage, "GST Percentage", class: "modern-label" %>
+              <%= form.select :gst_percentage,
+                  options_for_select([['5%', 5], ['12%', 12], ['18%', 18], ['28%', 28]], @product.gst_percentage),
+                  { prompt: '— Select GST Rate —' },
+                  { class: "modern-input modern-select" } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Section -->
+      <div class="form-section" style="--section-index: 2;">
+        <div class="section-icon">
+          <i class="bi bi-box2"></i>
+        </div>
+        <h3 class="section-title">Inventory</h3>
+        <p class="section-description">Manage stock and product specifications</p>
+
+        <div class="form-grid form-grid-3">
+          <div class="modern-input-group">
+            <%= form.label :stock, class: "modern-label" do %>
+              Available Stock <span class="required">*</span>
+            <% end %>
+            <%= form.number_field :stock, class: "modern-input",
+                placeholder: "0", required: true %>
+            <div class="help-text">Current available quantity</div>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :unit, class: "modern-label" do %>
+              Unit <span class="required">*</span>
+            <% end %>
+            <%= form.select :unit,
+                options_for_select([
+                  # Weight Units
+                  ['Weight Units', [
+                    ['Kilogram (kg)', 'kg'],
+                    ['Gram (g)', 'g'],
+                    ['Pound (lb)', 'lb'],
+                    ['Ounce (oz)', 'oz']
+                  ]],
+                  # Volume Units
+                  ['Volume Units', [
+                    ['Liter (l)', 'liter'],
+                    ['Milliliter (ml)', 'ml'],
+                    ['Gallon', 'gallon'],
+                    ['Bottle', 'bottle'],
+                    ['Can', 'can'],
+                    ['Cup', 'cup'],
+                    ['Tablespoon (tbsp)', 'tbsp'],
+                    ['Teaspoon (tsp)', 'tsp']
+                  ]],
+                  # Count/Quantity Units
+                  ['Quantity Units', [
+                    ['Piece (pc)', 'piece'],
+                    ['Pack', 'pack'],
+                    ['Box', 'box'],
+                    ['Dozen', 'dozen'],
+                    ['Set', 'set'],
+                    ['Pair', 'pair'],
+                    ['Bundle', 'bundle']
+                  ]],
+                  # Length Units
+                  ['Length Units', [
+                    ['Meter (m)', 'm'],
+                    ['Centimeter (cm)', 'cm'],
+                    ['Inch', 'inch'],
+                    ['Foot (ft)', 'ft'],
+                    ['Yard', 'yard']
+                  ]],
+                  # Area Units
+                  ['Area Units', [
+                    ['Square Meter (sq m)', 'sqm'],
+                    ['Square Foot (sq ft)', 'sqft']
+                  ]],
+                  # Medical/Pharmacy Units
+                  ['Medical Units', [
+                    ['Tablet', 'tablet'],
+                    ['Capsule', 'capsule'],
+                    ['Syringe', 'syringe'],
+                    ['Vial', 'vial'],
+                    ['Strip', 'strip'],
+                    ['Sachet', 'sachet']
+                  ]]
+                ], @product.unit_type),
+                { prompt: '— Select Unit —' },
+                { class: "modern-input modern-select", required: true } %>
+            <div class="help-text">Unit of measurement for this product (e.g., 1 kg, 1 liter, 1 bottle)</div>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :weight, "Weight (kg)", class: "modern-label" %>
+            <%= form.number_field :weight, class: "modern-input",
+                step: "0.001", placeholder: "0.000" %>
+            <div class="help-text">Enter the weight/quantity in the selected unit</div>
+          </div>
+        </div>
+
+        <div class="form-grid form-grid-2 mt-4">
+          <div class="modern-input-group">
+            <%= form.label :dimensions, "Dimensions", class: "modern-label" %>
+            <%= form.text_field :dimensions, class: "modern-input",
+                placeholder: "L x W x H (cm)" %>
+            <div class="help-text">Product dimensions in centimeters</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Images Section -->
+      <div class="form-section" style="--section-index: 3;">
+        <div class="section-icon">
+          <i class="bi bi-image"></i>
+        </div>
+        <h3 class="section-title">Product Images</h3>
+        <p class="section-description">Upload high-quality images to showcase your product</p>
+
+        <div class="modern-input-group">
+          <label class="modern-label">
+            Images <span class="required">*</span>
+          </label>
+          <div class="image-upload-container" id="image-drop-zone">
+            <i class="bi bi-cloud-upload upload-icon"></i>
+            <h5>Drop images here or click to browse</h5>
+            <p class="mb-2">Upload multiple product images (JPG, PNG, WebP)</p>
+            <%= form.file_field :images, multiple: true, class: "d-none", id: "image-input", accept: "image/*" %>
+            <label for="image-input" class="btn btn-outline-primary">Choose Images</label>
+
+            <div class="help-text mt-3">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>Guidelines:</strong> Max 2MB per image, minimum 800x600px recommended, first image will be the main product image
+            </div>
+          </div>
+
+          <div id="image-preview" class="image-preview"></div>
+
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-lightbulb me-2"></i>
+            <strong>Ready to upload your first product image?</strong><br>
+            Click below to select images or drag and drop them above<br>
+            <small>First image will be your main product image, others will be sub-images</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delivery Rules Section -->
+      <div class="form-section" style="--section-index: 4;">
+        <div class="section-icon">
+          <i class="bi bi-truck"></i>
+        </div>
+        <h3 class="section-title">Delivery Rules</h3>
+        <p class="section-description">Configure delivery options and charges</p>
+
+        <div class="delivery-rule-card">
+          <div class="form-grid form-grid-3">
+            <div class="modern-input-group">
+              <%= form.label :delivery_rule_type, "Rule Type", class: "modern-label" %>
+              <%= form.select :delivery_rule_type,
+                  options_for_select([['All Locations', 'all'], ['State Specific', 'state'], ['City Specific', 'city'], ['Pincode Specific', 'pincode']], 'all'),
+                  {},
+                  { class: "modern-input modern-select", id: "delivery-rule-type" } %>
+            </div>
+
+            <div class="modern-input-group">
+              <%= form.label :delivery_days, "Delivery days", class: "modern-label" %>
+              <%= form.number_field :delivery_days, class: "modern-input",
+                  value: 7, min: 1, placeholder: "7" %>
+            </div>
+
+            <div class="modern-input-group">
+              <%= form.label :delivery_charge, "Delivery Charge (₹)", class: "modern-label" %>
+              <div class="price-input-group">
+                <span class="price-prefix">₹</span>
+                <%= form.number_field :delivery_charge, class: "modern-input price-input",
+                    step: "0.01", placeholder: "0.0" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location Selection Fields -->
+          <div class="location-selection mt-4" id="location-fields" style="display: none;">
+            <!-- State Selection -->
+            <div class="modern-input-group mb-3" id="state-selection" style="display: none;">
+              <label class="modern-label">Select States</label>
+              <select class="modern-input modern-select" multiple id="delivery-states" name="product[delivery_states][]">
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                <option value="Assam">Assam</option>
+                <option value="Bihar">Bihar</option>
+                <option value="Chhattisgarh">Chhattisgarh</option>
+                <option value="Goa">Goa</option>
+                <option value="Gujarat">Gujarat</option>
+                <option value="Haryana">Haryana</option>
+                <option value="Himachal Pradesh">Himachal Pradesh</option>
+                <option value="Jharkhand">Jharkhand</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Madhya Pradesh">Madhya Pradesh</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Manipur">Manipur</option>
+                <option value="Meghalaya">Meghalaya</option>
+                <option value="Mizoram">Mizoram</option>
+                <option value="Nagaland">Nagaland</option>
+                <option value="Odisha">Odisha</option>
+                <option value="Punjab">Punjab</option>
+                <option value="Rajasthan">Rajasthan</option>
+                <option value="Sikkim">Sikkim</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Telangana">Telangana</option>
+                <option value="Tripura">Tripura</option>
+                <option value="Uttar Pradesh">Uttar Pradesh</option>
+                <option value="Uttarakhand">Uttarakhand</option>
+                <option value="West Bengal">West Bengal</option>
+              </select>
+              <div class="help-text">Hold Ctrl/Cmd to select multiple states</div>
+            </div>
+
+            <!-- City Selection -->
+            <div class="modern-input-group mb-3" id="city-selection" style="display: none;">
+              <label class="modern-label">Select Cities</label>
+              <select class="modern-input modern-select" multiple id="delivery-cities" name="product[delivery_cities][]">
+                <option value="Mumbai">Mumbai</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Bangalore">Bangalore</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Kolkata">Kolkata</option>
+                <option value="Pune">Pune</option>
+                <option value="Ahmedabad">Ahmedabad</option>
+                <option value="Surat">Surat</option>
+                <option value="Jaipur">Jaipur</option>
+                <option value="Lucknow">Lucknow</option>
+                <option value="Kanpur">Kanpur</option>
+                <option value="Nagpur">Nagpur</option>
+                <option value="Indore">Indore</option>
+                <option value="Thane">Thane</option>
+                <option value="Bhopal">Bhopal</option>
+                <option value="Visakhapatnam">Visakhapatnam</option>
+                <option value="Pimpri-Chinchwad">Pimpri-Chinchwad</option>
+                <option value="Patna">Patna</option>
+                <option value="Vadodara">Vadodara</option>
+                <option value="Ludhiana">Ludhiana</option>
+                <option value="Agra">Agra</option>
+                <option value="Nashik">Nashik</option>
+                <option value="Faridabad">Faridabad</option>
+                <option value="Meerut">Meerut</option>
+                <option value="Rajkot">Rajkot</option>
+                <option value="Kalyan-Dombivali">Kalyan-Dombivali</option>
+                <option value="Vasai-Virar">Vasai-Virar</option>
+                <option value="Varanasi">Varanasi</option>
+                <option value="Srinagar">Srinagar</option>
+              </select>
+              <div class="help-text">Hold Ctrl/Cmd to select multiple cities</div>
+            </div>
+
+            <!-- Pincode Selection -->
+            <div class="modern-input-group mb-3" id="pincode-selection" style="display: none;">
+              <label class="modern-label">Enter Pincodes</label>
+              <textarea class="modern-input" rows="3" id="delivery-pincodes" name="product[delivery_pincodes]"
+                placeholder="Enter pincodes separated by commas (e.g., 400001, 400002, 400003)"></textarea>
+              <div class="help-text">Enter pincodes separated by commas. You can add multiple pincodes</div>
+            </div>
+          </div>
+
+          <div class="help-text mt-3">
+            <strong>Rule Types:</strong><br>
+            • <strong>All:</strong> Product is available for delivery everywhere<br>
+            • <strong>State:</strong> Available only in selected states<br>
+            • <strong>City:</strong> Available only in selected cities<br>
+            • <strong>Pincode:</strong> Available only for specific pincodes
+          </div>
+        </div>
+      </div>
+
+      <!-- Occasional Product Settings -->
+      <div class="form-section" style="--section-index: 5;">
+        <div class="section-icon">
+          <i class="bi bi-calendar-event"></i>
+        </div>
+        <h3 class="section-title">Occasional Product Settings</h3>
+        <p class="section-description">Configure settings for seasonal or occasion-based products</p>
+
+        <div class="toggle-switch-container">
+          <div class="toggle-switch">
+            <%= form.check_box :is_occasional, id: "occasional-toggle" %>
+            <label class="toggle-slider" for="occasional-toggle"></label>
+          </div>
+          <div>
+            <div class="toggle-label">Enable Occasional Product</div>
+            <small class="text-muted">Mark this product as seasonal or occasion-specific</small>
+          </div>
+        </div>
+
+        <!-- Occasional Product Configuration -->
+        <div class="occasional-configuration mt-4" id="occasional-options" style="display: none;">
+          <div class="occasion-config-card">
+            <h5 class="config-title">
+              <i class="bi bi-gear me-2"></i>
+              Occasion Configuration
+            </h5>
+
+            <!-- Occasion Type -->
+            <div class="form-grid form-grid-2 mb-4">
+              <div class="modern-input-group">
+                <%= form.label :occasion_type, "Occasion Type", class: "modern-label" %>
+                <%= form.select :occasion_type,
+                    options_for_select([
+                      ['Festival & Religious', [
+                        ['Diwali', 'diwali'],
+                        ['Holi', 'holi'],
+                        ['Dussehra', 'dussehra'],
+                        ['Eid', 'eid'],
+                        ['Christmas', 'christmas'],
+                        ['New Year', 'new_year'],
+                        ['Raksha Bandhan', 'raksha_bandhan'],
+                        ['Karva Chauth', 'karva_chauth'],
+                        ['Navratri', 'navratri'],
+                        ['Ganesh Chaturthi', 'ganesh_chaturthi']
+                      ]],
+                      ['Seasonal', [
+                        ['Summer', 'summer'],
+                        ['Winter', 'winter'],
+                        ['Monsoon', 'monsoon'],
+                        ['Spring', 'spring']
+                      ]],
+                      ['Special Events', [
+                        ['Valentine\'s Day', 'valentines'],
+                        ['Mother\'s Day', 'mothers_day'],
+                        ['Father\'s Day', 'fathers_day'],
+                        ['Birthday Special', 'birthday'],
+                        ['Anniversary', 'anniversary'],
+                        ['Wedding Season', 'wedding']
+                      ]],
+                      ['Sales Events', [
+                        ['Republic Day Sale', 'republic_day'],
+                        ['Independence Day Sale', 'independence_day'],
+                        ['Black Friday', 'black_friday'],
+                        ['Cyber Monday', 'cyber_monday'],
+                        ['End of Season', 'end_season']
+                      ]]
+                    ]),
+                    { prompt: '— Select Occasion —' },
+                    { class: "modern-input modern-select" } %>
+              </div>
+
+              <div class="modern-input-group">
+                <%= form.label :occasion_priority, "Priority Level", class: "modern-label" %>
+                <%= form.select :occasion_priority,
+                    options_for_select([
+                      ['🔥 High Priority', 'high'],
+                      ['⚡ Medium Priority', 'medium'],
+                      ['📅 Low Priority', 'low']
+                    ]),
+                    { prompt: '— Set Priority —' },
+                    { class: "modern-input modern-select" } %>
+              </div>
+            </div>
+
+            <!-- Date Configuration -->
+            <div class="form-grid form-grid-2 mb-4">
+              <div class="modern-input-group">
+                <%= form.label :occasion_start_date, "Occasion Start Date", class: "modern-label" %>
+                <%= form.date_field :occasion_start_date, class: "modern-input" %>
+                <div class="help-text">When should this product be available for the occasion</div>
+              </div>
+
+              <div class="modern-input-group">
+                <%= form.label :occasion_end_date, "Occasion End Date", class: "modern-label" %>
+                <%= form.date_field :occasion_end_date, class: "modern-input" %>
+                <div class="help-text">Last day this product should be featured for the occasion</div>
+              </div>
+            </div>
+
+            <!-- Occasion Features -->
+            <div class="occasion-features">
+              <label class="modern-label mb-3">Occasion Features</label>
+
+              <div class="feature-toggle-grid">
+                <div class="feature-toggle">
+                  <div class="toggle-switch">
+                    <%= form.check_box :is_gift_wrap_available, id: "gift-wrap-toggle" %>
+                    <label class="toggle-slider" for="gift-wrap-toggle"></label>
+                  </div>
+                  <div class="feature-info">
+                    <div class="feature-name">🎁 Gift Wrapping</div>
+                    <small>Offer gift wrapping for this product</small>
+                  </div>
+                </div>
+
+                <div class="feature-toggle">
+                  <div class="toggle-switch">
+                    <%= form.check_box :is_express_delivery, id: "express-delivery-toggle" %>
+                    <label class="toggle-slider" for="express-delivery-toggle"></label>
+                  </div>
+                  <div class="feature-info">
+                    <div class="feature-name">🚀 Express Delivery</div>
+                    <small>Enable faster delivery for occasions</small>
+                  </div>
+                </div>
+
+                <div class="feature-toggle">
+                  <div class="toggle-switch">
+                    <%= form.check_box :is_bulk_order_available, id: "bulk-order-toggle" %>
+                    <label class="toggle-slider" for="bulk-order-toggle"></label>
+                  </div>
+                  <div class="feature-info">
+                    <div class="feature-name">📦 Bulk Orders</div>
+                    <small>Allow bulk ordering for occasions</small>
+                  </div>
+                </div>
+
+                <div class="feature-toggle">
+                  <div class="toggle-switch">
+                    <%= form.check_box :is_pre_order_available, id: "pre-order-toggle" %>
+                    <label class="toggle-slider" for="pre-order-toggle"></label>
+                  </div>
+                  <div class="feature-info">
+                    <div class="feature-name">⏰ Pre-Orders</div>
+                    <small>Accept pre-orders before the occasion</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Occasion Message -->
+            <div class="modern-input-group mt-4">
+              <%= form.label :occasion_message, "Special Occasion Message", class: "modern-label" %>
+              <%= form.text_area :occasion_message, class: "modern-input", rows: 3,
+                  placeholder: "Enter a special message to display with this product during the occasion..." %>
+              <div class="help-text">This message will be displayed prominently when the occasion is active</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEO & Marketing Section -->
+      <div class="form-section" style="--section-index: 6;">
+        <div class="section-icon">
+          <i class="bi bi-search"></i>
+        </div>
+        <h3 class="section-title">SEO & Marketing</h3>
+        <p class="section-description">Optimize your product for search engines and marketing</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="modern-input-group">
+            <%= form.label :meta_title, "Meta title", class: "modern-label" %>
+            <%= form.text_field :meta_title, class: "modern-input",
+                placeholder: "SEO title for search engines" %>
+          </div>
+
+          <div class="modern-input-group">
+            <%= form.label :tags, "Tags", class: "modern-label" %>
+            <%= form.text_field :tags, class: "modern-input",
+                placeholder: "Comma separated tags" %>
+          </div>
+        </div>
+
+        <div class="modern-input-group mt-3">
+          <%= form.label :meta_description, "Meta description", class: "modern-label" %>
+          <%= form.text_area :meta_description, class: "modern-input", rows: 3,
+              placeholder: "SEO description for search engines" %>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <%= link_to admin_products_path, class: "btn-modern btn-secondary-modern" do %>
+          <i class="bi bi-x-circle"></i>
+          Cancel
+        <% end %>
+
+        <button type="submit" class="btn-modern btn-primary-modern">
+          <i class="bi bi-check-circle"></i>
+          <%= @product.new_record? ? "Create Product" : "Update Product" %>
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // GST Toggle
+  const gstToggle = document.getElementById('gst-toggle');
+  const gstOptions = document.getElementById('gst-options');
+
+  if (gstToggle && gstOptions) {
+    gstToggle.addEventListener('change', function() {
+      gstOptions.style.display = this.checked ? 'grid' : 'none';
+    });
+    gstOptions.style.display = gstToggle.checked ? 'grid' : 'none';
+  }
+
+  // Discount Toggle
+  const discountToggle = document.getElementById('discount-toggle');
+  const discountOptions = document.getElementById('discount-options');
+
+  if (discountToggle && discountOptions) {
+    discountToggle.addEventListener('change', function() {
+      discountOptions.style.display = this.checked ? 'block' : 'none';
+      if (this.checked) {
+        calculateFinalPrice();
+      }
+    });
+  }
+
+  // Discount Type Selection
+  const discountTypeRadios = document.querySelectorAll('.discount-type-radio');
+  const fixedDiscountInput = document.getElementById('fixed-discount-input');
+  const percentageDiscountInput = document.getElementById('percentage-discount-input');
+
+  discountTypeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      if (this.value === 'fixed') {
+        fixedDiscountInput.style.display = 'block';
+        percentageDiscountInput.style.display = 'none';
+      } else {
+        fixedDiscountInput.style.display = 'none';
+        percentageDiscountInput.style.display = 'block';
+      }
+      calculateFinalPrice();
+    });
+  });
+
+  // Price Calculation
+  const sellingPriceField = document.querySelector('input[name="product[price]"]');
+  const discountAmountField = document.getElementById('discount-amount-field');
+  const discountPercentageField = document.getElementById('discount-percentage-field');
+
+  // Add event listeners for real-time calculation
+  if (sellingPriceField) {
+    sellingPriceField.addEventListener('input', calculateFinalPrice);
+  }
+  if (discountAmountField) {
+    discountAmountField.addEventListener('input', calculateFinalPrice);
+  }
+  if (discountPercentageField) {
+    discountPercentageField.addEventListener('input', calculateFinalPrice);
+  }
+
+  function calculateFinalPrice() {
+    const sellingPrice = parseFloat(sellingPriceField?.value || 0);
+    const discountType = document.querySelector('.discount-type-radio:checked')?.value || 'fixed';
+    const discountAmount = parseFloat(discountAmountField?.value || 0);
+    const discountPercentage = parseFloat(discountPercentageField?.value || 0);
+
+    // Update original price display
+    document.getElementById('original-price-display').textContent = `₹${sellingPrice.toFixed(2)}`;
+
+    let discountValue = 0;
+    let finalPrice = sellingPrice;
+
+    if (discountToggle && discountToggle.checked) {
+      if (discountType === 'fixed') {
+        discountValue = Math.min(discountAmount, sellingPrice); // Can't discount more than selling price
+        finalPrice = sellingPrice - discountValue;
+      } else if (discountType === 'percentage') {
+        discountValue = (sellingPrice * discountPercentage) / 100;
+        finalPrice = sellingPrice - discountValue;
+      }
+
+      // Update display
+      document.getElementById('discount-display').textContent = `-₹${discountValue.toFixed(2)}`;
+      document.getElementById('final-price-display').innerHTML = `<strong>₹${finalPrice.toFixed(2)}</strong>`;
+
+      // Show/hide savings badge
+      const savingsBadge = document.getElementById('savings-badge');
+      const savingsText = document.getElementById('savings-text');
+
+      if (discountValue > 0) {
+        savingsBadge.style.display = 'block';
+        const savingsPercentage = ((discountValue / sellingPrice) * 100).toFixed(1);
+        savingsText.textContent = `Save ₹${discountValue.toFixed(2)} (${savingsPercentage}% off)`;
+      } else {
+        savingsBadge.style.display = 'none';
+      }
+
+      // Update hidden field
+      document.getElementById('final-discount-price').value = finalPrice.toFixed(2);
+    } else {
+      // No discount
+      document.getElementById('discount-display').textContent = '-₹0.00';
+      document.getElementById('final-price-display').innerHTML = `<strong>₹${sellingPrice.toFixed(2)}</strong>`;
+      document.getElementById('savings-badge').style.display = 'none';
+      document.getElementById('final-discount-price').value = '';
+    }
+  }
+
+  // Initialize calculation on page load
+  calculateFinalPrice();
+
+  // Delivery Rules Handler
+  const deliveryRuleType = document.getElementById('delivery-rule-type');
+  const locationFields = document.getElementById('location-fields');
+  const stateSelection = document.getElementById('state-selection');
+  const citySelection = document.getElementById('city-selection');
+  const pincodeSelection = document.getElementById('pincode-selection');
+
+  if (deliveryRuleType) {
+    deliveryRuleType.addEventListener('change', function() {
+      const selectedType = this.value;
+
+      // Hide all location fields first
+      locationFields.style.display = 'none';
+      stateSelection.style.display = 'none';
+      citySelection.style.display = 'none';
+      pincodeSelection.style.display = 'none';
+
+      // Show appropriate fields based on selection
+      if (selectedType !== 'all') {
+        locationFields.style.display = 'block';
+
+        switch(selectedType) {
+          case 'state':
+            stateSelection.style.display = 'block';
+            break;
+          case 'city':
+            citySelection.style.display = 'block';
+            break;
+          case 'pincode':
+            pincodeSelection.style.display = 'block';
+            break;
+        }
+      }
+    });
+  }
+
+  // Occasional Product Toggle
+  const occasionalToggle = document.getElementById('occasional-toggle');
+  const occasionalOptions = document.getElementById('occasional-options');
+
+  if (occasionalToggle && occasionalOptions) {
+    occasionalToggle.addEventListener('change', function() {
+      occasionalOptions.style.display = this.checked ? 'block' : 'none';
+    });
+  }
+
+  // Image Upload Handling
+  const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
+  const dropZone = document.getElementById('image-drop-zone');
+
+  if (imageInput && imagePreview && dropZone) {
+    // File input change
+    imageInput.addEventListener('change', handleImageSelect);
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.style.borderColor = '#667eea';
+      this.style.background = 'white';
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.style.borderColor = '#dee2e6';
+      this.style.background = '#fafbfc';
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.style.borderColor = '#dee2e6';
+      this.style.background = '#fafbfc';
+
+      const files = e.dataTransfer.files;
+      handleImageFiles(files);
+    });
+
+    dropZone.addEventListener('click', function() {
+      imageInput.click();
+    });
+  }
+
+  function handleImageSelect(e) {
+    const files = e.target.files;
+    handleImageFiles(files);
+  }
+
+  function handleImageFiles(files) {
+    imagePreview.innerHTML = '';
+    Array.from(files).forEach((file, index) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const previewDiv = document.createElement('div');
+          previewDiv.className = 'preview-image';
+          previewDiv.innerHTML = `
+            <img src="${e.target.result}" alt="Preview ${index + 1}">
+            <button type="button" class="remove-image" onclick="this.parentElement.remove()">×</button>
+          `;
+          imagePreview.appendChild(previewDiv);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Form Validation
+  const form = document.getElementById('professional-product-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+      submitBtn.disabled = true;
+    });
+  }
+
+  // Price Warning
+  const buyingPrice = document.querySelector('input[name="product[buying_price]"]');
+  const sellingPrice = document.querySelector('input[name="product[price]"]');
+
+  if (buyingPrice && sellingPrice) {
+    sellingPrice.addEventListener('blur', function() {
+      if (buyingPrice.value && this.value) {
+        if (parseFloat(this.value) < parseFloat(buyingPrice.value)) {
+          this.style.borderColor = '#dc3545';
+          setTimeout(() => {
+            this.style.borderColor = '';
+          }, 3000);
+        }
+      }
+    });
+  }
+});
+</script>

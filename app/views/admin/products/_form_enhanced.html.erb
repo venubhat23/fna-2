@@ -1,0 +1,1355 @@
+<style>
+/* Enhanced Product Form Styles - Professional Version */
+.enhanced-form-wrapper {
+  background: transparent;
+  padding: 0;
+  max-width: none;
+}
+
+.form-section {
+  padding: 2rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 1.5rem;
+}
+
+.section-title i {
+  margin-right: 0.5rem;
+  color: #667eea;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.form-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.form-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.required-mark {
+  color: #dc3545;
+  margin-left: 3px;
+}
+
+.form-control, .form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.help-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+.help-text i {
+  color: #667eea;
+  margin-right: 0.25rem;
+}
+
+/* Product Type Cards */
+.product-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.product-type-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.product-type-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.type-card-content {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.product-type-card input[type="radio"]:checked + .type-card-content {
+  border-color: #667eea;
+  background: #f8f9ff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.type-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #667eea;
+}
+
+.type-name {
+  font-weight: 500;
+  color: #212529;
+}
+
+/* Delivery Rules Section */
+.delivery-rule-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+/* Occasional Product Toggle */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  margin-right: 1rem;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 30px;
+  transition: 0.3s;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #667eea;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(30px);
+}
+
+/* Calendar styles */
+.date-input-group {
+  position: relative;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+}
+
+/* Radio button groups */
+.radio-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+}
+
+.radio-option input[type="radio"] {
+  margin-right: 0.5rem;
+}
+
+.radio-option label {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Submit buttons */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  padding: 2rem;
+  background: #f8f9fa;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: white;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.btn-secondary:hover {
+  background: #f8f9fa;
+}
+
+/* Discount Section Styles */
+.discount-section {
+  margin-top: 2rem;
+}
+
+.discount-config-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #dee2e6;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-addon {
+  padding: 0.75rem;
+  background: #e9ecef;
+  border: 1px solid #ced4da;
+  border-radius: 0 6px 6px 0;
+  color: #495057;
+  font-weight: 500;
+}
+
+.input-group .form-control {
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+
+.final-price-display {
+  display: flex;
+  align-items: center;
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.final-price-display .currency-symbol {
+  padding: 0 0.5rem;
+  font-size: 1.2rem;
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.final-price-display input {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0;
+}
+
+/* SEO Section Styles */
+.seo-section {
+  background: #f0f7ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seo-header {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.seo-header:hover {
+  background: linear-gradient(135deg, #357ae8 0%, #2e8e47 100%);
+}
+
+.seo-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.seo-header i {
+  margin-right: 0.5rem;
+}
+
+.seo-toggle-icon {
+  transition: transform 0.3s ease;
+  font-size: 1.2rem;
+}
+
+.seo-toggle-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.seo-content {
+  padding: 1.5rem;
+  display: none;
+}
+
+.seo-content.show {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.character-count {
+  font-size: 0.875rem;
+  color: #6c757d;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.character-count.warning {
+  color: #ffc107;
+}
+
+.character-count.error {
+  color: #dc3545;
+}
+</style>
+
+<div class="enhanced-form-wrapper">
+  <%= form_with(model: [:admin, product], local: true, html: { id: "enhanced-product-form" }) do |form| %>
+
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="bi bi-info-circle"></i>
+        Basic Information
+      </h3>
+
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <%= form.label :name, class: "form-label" do %>
+            Product Name <span class="required-mark">*</span>
+          <% end %>
+          <%= form.text_field :name, class: "form-control", placeholder: "Enter product name", required: true %>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :category_id, class: "form-label" do %>
+            Category <span class="required-mark">*</span>
+          <% end %>
+          <%= form.select :category_id,
+              options_from_collection_for_select(Category.active, :id, :name, product.category_id),
+              { prompt: "— Select Category —" },
+              { class: "form-select", required: true } %>
+        </div>
+      </div>
+
+      <!-- Product Type Selection (Required) -->
+      <div class="form-group">
+        <label class="form-label">
+          Product Type <span class="required-mark">*</span>
+        </label>
+        <div class="product-type-cards">
+          <% Product::PRODUCT_TYPES.each do |display, value| %>
+            <label class="product-type-card">
+              <%= form.radio_button :product_type, value,
+                  required: true,
+                  checked: product.product_type == value %>
+              <div class="type-card-content">
+                <div class="type-icon">
+                  <% case value %>
+                  <% when 'Milk' %>
+                    <i class="bi bi-cup-straw"></i>
+                  <% when 'Grocery' %>
+                    <i class="bi bi-basket"></i>
+                  <% when 'Fruit & Vegetable' %>
+                    <i class="bi bi-flower1"></i>
+                  <% end %>
+                </div>
+                <div class="type-name"><%= display %></div>
+              </div>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Unit Selection (Required) -->
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <%= form.label :unit_type, class: "form-label" do %>
+            Unit <span class="required-mark">*</span>
+          <% end %>
+          <%= form.select :unit_type,
+              options_for_select(Product::UNIT_TYPES, product.unit_type),
+              { prompt: "— Select Unit —" },
+              { class: "form-select", required: true } %>
+          <div class="help-text">Select the measurement unit for this product</div>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :sku, "SKU", class: "form-label" %>
+          <%= form.text_field :sku, class: "form-control", placeholder: "Auto-generated if left blank" %>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :description, "Description", class: "form-label" %>
+        <%= form.text_area :description, class: "form-control", rows: 4, placeholder: "Enter product description" %>
+      </div>
+    </div>
+
+    <!-- Pricing & Inventory Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="bi bi-currency-rupee"></i>
+        Pricing & Inventory
+      </h3>
+
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <%= form.label :buying_price, class: "form-label" do %>
+            Buying Price (₹) <span class="required-mark">*</span>
+          <% end %>
+          <%= form.number_field :buying_price, class: "form-control",
+              step: "0.01", required: true, placeholder: "0.00",
+              id: "buying-price" %>
+          <div class="help-text">Your purchase/cost price</div>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :price, class: "form-label" do %>
+            Selling Price (₹) <span class="required-mark">*</span>
+          <% end %>
+          <%= form.number_field :price, class: "form-control",
+              step: "0.01", required: true, placeholder: "0.00",
+              id: "selling-price" %>
+          <div class="help-text">Price at which you sell to customers</div>
+        </div>
+      </div>
+
+      <!-- Discount Section -->
+      <div class="discount-section mt-4">
+        <div class="toggle-container">
+          <div class="toggle-switch">
+            <%= form.check_box :is_discounted, id: "discount-toggle" %>
+            <label class="toggle-slider" for="discount-toggle"></label>
+          </div>
+          <div>
+            <strong>Enable Discount</strong><br>
+            <small class="text-muted">Apply discount to this product</small>
+          </div>
+        </div>
+
+        <div id="discount-config" style="display: none;" class="mt-3">
+          <div class="discount-config-card">
+            <!-- Discount Type Selection -->
+            <div class="form-group">
+              <label class="form-label">Discount Type</label>
+              <div class="radio-group">
+                <div class="radio-option">
+                  <%= form.radio_button :discount_type, 'percentage',
+                      id: "discount-percentage", checked: product.discount_type == 'percentage' %>
+                  <label for="discount-percentage">
+                    <i class="bi bi-percent"></i> Percentage (%)
+                  </label>
+                </div>
+                <div class="radio-option">
+                  <%= form.radio_button :discount_type, 'fixed',
+                      id: "discount-fixed", checked: product.discount_type == 'fixed' %>
+                  <label for="discount-fixed">
+                    <i class="bi bi-currency-rupee"></i> Fixed Amount (₹)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid form-grid-2">
+              <!-- Percentage Discount Input -->
+              <div class="form-group" id="percentage-input" style="display: none;">
+                <%= form.label :discount_value, "Discount Percentage", class: "form-label" %>
+                <div class="input-group">
+                  <%= form.number_field :discount_value, class: "form-control",
+                      step: "0.01", min: 0, max: 100,
+                      placeholder: "10", id: "discount-percentage-value" %>
+                  <span class="input-addon">%</span>
+                </div>
+                <div class="help-text">Enter percentage (e.g., 10 for 10% off)</div>
+              </div>
+
+              <!-- Fixed Discount Input -->
+              <div class="form-group" id="fixed-input" style="display: none;">
+                <%= form.label :discount_value, "Discount Amount", class: "form-label" %>
+                <div class="input-group">
+                  <span class="input-addon">₹</span>
+                  <%= form.number_field :discount_value, class: "form-control",
+                      step: "0.01", min: 0,
+                      placeholder: "50", id: "discount-fixed-value" %>
+                </div>
+                <div class="help-text">Enter fixed discount amount in rupees</div>
+              </div>
+
+              <!-- Final Price (Read-only) -->
+              <div class="form-group">
+                <label class="form-label">Final Price After Discount</label>
+                <div class="final-price-display">
+                  <span class="currency-symbol">₹</span>
+                  <input type="text" id="final-price" class="form-control" readonly
+                         value="0.00" style="font-weight: bold; color: #28a745;">
+                </div>
+                <div class="help-text">Auto-calculated based on discount</div>
+                <%= form.hidden_field :discount_price, id: "discount-price-hidden" %>
+              </div>
+            </div>
+
+            <!-- Discount Summary -->
+            <div id="discount-summary" class="alert alert-info mt-3" style="display: none;">
+              <strong>Discount Applied:</strong>
+              <span id="discount-summary-text"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Section -->
+      <div class="form-grid form-grid-2 mt-4">
+        <div class="form-group">
+          <%= form.label :stock, class: "form-label" do %>
+            Available Stock <span class="required-mark">*</span>
+          <% end %>
+          <%= form.number_field :stock, class: "form-control",
+              min: 0, required: true, placeholder: "0" %>
+          <div class="help-text">Current available quantity</div>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :weight, "Weight/Quantity", class: "form-label" %>
+          <%= form.number_field :weight, class: "form-control",
+              step: "0.001", placeholder: "1.000" %>
+          <div class="help-text">Weight or quantity per unit</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :dimensions, "Dimensions", class: "form-label" %>
+        <%= form.text_field :dimensions, class: "form-control",
+            placeholder: "30cm x 20cm x 10cm" %>
+        <div class="help-text">Product dimensions (optional)</div>
+      </div>
+    </div>
+
+    <!-- 📦 Delivery Rules Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="bi bi-truck"></i>
+        📦 Delivery Rules
+      </h3>
+
+      <div class="delivery-rule-card">
+        <!-- Delivery Type Selection -->
+        <div class="form-group">
+          <label class="form-label">Delivery Coverage</label>
+          <select id="delivery-type" class="form-select">
+            <option value="everywhere">Deliver Everywhere</option>
+            <option value="state">Specific States Only</option>
+            <option value="city">Specific Cities Only</option>
+            <option value="pincode">Specific Pincodes Only</option>
+          </select>
+          <div class="help-text">
+            <i class="bi bi-info-circle"></i>
+            Choose how you want to define your delivery coverage area
+          </div>
+        </div>
+
+        <!-- A) States Selection with Select2 Multi-Select -->
+        <div id="states-selection" class="form-group" style="display: none;">
+          <label class="form-label">
+            <i class="bi bi-geo-alt"></i>
+            Select States (Multi-Select)
+          </label>
+          <select id="delivery-states" class="form-select select2-states" multiple
+                  name="product[delivery_rules_attributes][0][location_data_states][]"
+                  data-placeholder="Search and select states...">
+            <option value="Andhra Pradesh">Andhra Pradesh</option>
+            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+            <option value="Assam">Assam</option>
+            <option value="Bihar">Bihar</option>
+            <option value="Chhattisgarh">Chhattisgarh</option>
+            <option value="Delhi">Delhi</option>
+            <option value="Goa">Goa</option>
+            <option value="Gujarat">Gujarat</option>
+            <option value="Haryana">Haryana</option>
+            <option value="Himachal Pradesh">Himachal Pradesh</option>
+            <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+            <option value="Jharkhand">Jharkhand</option>
+            <option value="Karnataka">Karnataka</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Madhya Pradesh">Madhya Pradesh</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Manipur">Manipur</option>
+            <option value="Meghalaya">Meghalaya</option>
+            <option value="Mizoram">Mizoram</option>
+            <option value="Nagaland">Nagaland</option>
+            <option value="Odisha">Odisha</option>
+            <option value="Punjab">Punjab</option>
+            <option value="Rajasthan">Rajasthan</option>
+            <option value="Sikkim">Sikkim</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Telangana">Telangana</option>
+            <option value="Tripura">Tripura</option>
+            <option value="Uttar Pradesh">Uttar Pradesh</option>
+            <option value="Uttarakhand">Uttarakhand</option>
+            <option value="West Bengal">West Bengal</option>
+          </select>
+          <div class="help-text">
+            <i class="bi bi-search"></i>
+            Search and select multiple states for delivery coverage
+          </div>
+        </div>
+
+        <!-- B) Cities Selection with Dynamic Loading -->
+        <div id="cities-selection" class="form-group" style="display: none;">
+          <label class="form-label">
+            <i class="bi bi-buildings"></i>
+            Select Cities (Multi-Select)
+          </label>
+
+          <!-- State Filter for Cities -->
+          <div class="mb-3">
+            <label class="form-label text-sm">Filter by State</label>
+            <select id="state-filter-for-cities" class="form-select select2-single"
+                    data-placeholder="Select a state to load cities...">
+              <option value="">— All States —</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Kerala">Kerala</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="West Bengal">West Bengal</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Haryana">Haryana</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Bihar">Bihar</option>
+              <option value="Odisha">Odisha</option>
+              <option value="Telangana">Telangana</option>
+              <option value="Andhra Pradesh">Andhra Pradesh</option>
+            </select>
+          </div>
+
+          <!-- Cities Multi-Select -->
+          <select id="delivery-cities" class="form-select select2-cities" multiple
+                  name="product[delivery_rules_attributes][0][location_data_cities][]"
+                  data-placeholder="First select a state above, then choose cities...">
+            <!-- Cities will be loaded dynamically based on state selection -->
+          </select>
+          <div class="help-text">
+            <i class="bi bi-arrow-up-circle"></i>
+            First select a state above to load available cities, then choose multiple cities
+          </div>
+        </div>
+
+        <!-- C) Pincodes Input -->
+        <div id="pincodes-selection" class="form-group" style="display: none;">
+          <label class="form-label">
+            <i class="bi bi-mailbox"></i>
+            Enter Pincodes
+          </label>
+          <textarea id="delivery-pincodes" class="form-control" rows="4"
+                    name="product[delivery_rules_attributes][0][location_data_pincodes]"
+                    placeholder="Enter pincodes separated by commas&#10;&#10;Example:&#10;600001, 600002, 600003, 560001, 400001"></textarea>
+          <div class="help-text">
+            <i class="bi bi-info-circle"></i>
+            Enter multiple pincodes separated by commas. Each pincode should be 6 digits.
+          </div>
+        </div>
+
+        <!-- Hidden Fields for Delivery Rules -->
+        <input type="hidden" name="product[delivery_rules_attributes][0][rule_type]" id="delivery-rule-type" value="everywhere">
+        <input type="hidden" name="product[delivery_rules_attributes][0][delivery_charge]" value="0">
+      </div>
+    </div>
+
+    <!-- Occasional Product Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="bi bi-calendar-event"></i>
+        Enable Occasional Product
+      </h3>
+
+      <div class="toggle-container">
+        <div class="toggle-switch">
+          <%= form.check_box :is_occasional_product, id: "occasional-toggle" %>
+          <label class="toggle-slider" for="occasional-toggle"></label>
+        </div>
+        <div>
+          <strong>Enable Occasional Product</strong><br>
+          <small class="text-muted">Make this product available only during specific times</small>
+        </div>
+      </div>
+
+      <div id="occasional-settings" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Occasional Type</label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" id="one-time" name="occasional_type" value="one_time" checked>
+              <label for="one-time">One Time</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="recurring" name="occasional_type" value="recurring">
+              <label for="recurring">Recurring</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- One Time Settings -->
+        <div id="one-time-settings">
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <%= form.label :occasional_start_date, "Start Date", class: "form-label" %>
+              <div class="date-input-group">
+                <%= form.datetime_field :occasional_start_date, class: "form-control" %>
+                <i class="bi bi-calendar calendar-icon"></i>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <%= form.label :occasional_end_date, "End Date", class: "form-label" %>
+              <div class="date-input-group">
+                <%= form.datetime_field :occasional_end_date, class: "form-control" %>
+                <i class="bi bi-calendar calendar-icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recurring Settings -->
+        <div id="recurring-settings" style="display: none;">
+          <!-- For recurring products, no date fields are needed -->
+          <div class="form-group">
+            <div class="help-text">
+              <i class="bi bi-info-circle"></i>
+              This product will be available according to the recurring schedule settings below
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Recurring Type</label>
+            <%= form.select :occasional_schedule_type,
+                options_for_select([['Weekly', 'weekly'], ['Monthly', 'monthly']]),
+                { prompt: "— Select Recurring Type —" },
+                { class: "form-select", id: "recurring-type" } %>
+          </div>
+
+          <!-- Weekly Settings -->
+          <div id="weekly-settings" style="display: none;">
+            <div class="form-grid form-grid-2">
+              <div class="form-group">
+                <%= form.label :occasional_recurring_from_day, "Day of Week", class: "form-label" %>
+                <%= form.select :occasional_recurring_from_day,
+                    options_for_select([
+                      ['Monday', 'monday'],
+                      ['Tuesday', 'tuesday'],
+                      ['Wednesday', 'wednesday'],
+                      ['Thursday', 'thursday'],
+                      ['Friday', 'friday'],
+                      ['Saturday', 'saturday'],
+                      ['Sunday', 'sunday']
+                    ]),
+                    { prompt: "— Select Day —" },
+                    { class: "form-select" } %>
+              </div>
+
+              <div class="form-group">
+                <%= form.label :occasional_recurring_from_time, "Time", class: "form-label" %>
+                <%= form.time_field :occasional_recurring_from_time, class: "form-control" %>
+              </div>
+            </div>
+
+            <div class="form-grid form-grid-2">
+              <div class="form-group">
+                <%= form.label :occasional_recurring_to_day, "Valid Until Day", class: "form-label" %>
+                <%= form.select :occasional_recurring_to_day,
+                    options_for_select([
+                      ['Monday', 'monday'],
+                      ['Tuesday', 'tuesday'],
+                      ['Wednesday', 'wednesday'],
+                      ['Thursday', 'thursday'],
+                      ['Friday', 'friday'],
+                      ['Saturday', 'saturday'],
+                      ['Sunday', 'sunday']
+                    ]),
+                    { prompt: "— Select Day —" },
+                    { class: "form-select" } %>
+              </div>
+
+              <div class="form-group">
+                <%= form.label :occasional_recurring_to_time, "Until Time", class: "form-label" %>
+                <%= form.time_field :occasional_recurring_to_time, class: "form-control" %>
+              </div>
+            </div>
+            <div class="help-text">
+              Example: Every Friday 5:00 PM, valid from Friday to Sunday 10:00 PM
+            </div>
+          </div>
+
+          <!-- Monthly Settings -->
+          <div id="monthly-settings" style="display: none;">
+            <!-- Monthly settings simplified - using existing model attributes -->
+            <div class="help-text">
+              <i class="bi bi-info-circle"></i>
+              Monthly recurring products will be available throughout the month
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEO & Marketing Section -->
+    <div class="form-section">
+      <div class="seo-section">
+        <div class="seo-header" onclick="toggleSeoSection()">
+          <h3>
+            <i class="bi bi-graph-up"></i>
+            📈 SEO & Marketing
+          </h3>
+          <i class="bi bi-chevron-down seo-toggle-icon" id="seo-toggle-icon"></i>
+        </div>
+
+        <div class="seo-content" id="seo-content">
+          <div class="form-group">
+            <%= form.label :meta_title, "Meta Title", class: "form-label" %>
+            <%= form.text_field :meta_title, class: "form-control",
+                placeholder: "Enter SEO title for search engines",
+                maxlength: 60, id: "meta-title" %>
+            <div class="help-text">SEO title for search engines</div>
+            <div class="character-count" id="meta-title-count">0 / 60 characters</div>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :tags, "Tags", class: "form-label" %>
+            <%= form.text_field :tags, class: "form-control",
+                placeholder: "milk, organic milk, fresh dairy" %>
+            <div class="help-text">Comma separated tags for better searchability</div>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :meta_description, "Meta Description", class: "form-label" %>
+            <%= form.text_area :meta_description, class: "form-control",
+                rows: 3, placeholder: "Enter SEO description for search engines",
+                maxlength: 160, id: "meta-description" %>
+            <div class="help-text">SEO description for search engines</div>
+            <div class="character-count" id="meta-description-count">0 / 160 characters</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <div class="action-left">
+        <i class="bi bi-info-circle"></i>
+        All fields marked with <span class="required-mark">*</span> are required
+      </div>
+      <div class="action-right">
+        <%= link_to "Cancel", admin_products_path, class: "btn btn-secondary" %>
+        <%= form.submit product.new_record? ? "Create Product" : "Update Product",
+            class: "btn btn-primary",
+            data: { disable_with: "Saving..." } %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Include Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 🔧 Initialize Select2 for Delivery Rules
+
+  // States multi-select with search
+  $('.select2-states').select2({
+    placeholder: "🔍 Search and select states...",
+    allowClear: true,
+    width: '100%',
+    closeOnSelect: false,
+    searchInputPlaceholder: 'Type to search states...'
+  });
+
+  // State filter for cities (single select)
+  $('.select2-single').select2({
+    placeholder: "🏛️ Select a state to load cities...",
+    allowClear: true,
+    width: '100%'
+  });
+
+  // Cities multi-select (initially disabled)
+  $('.select2-cities').select2({
+    placeholder: "🏙️ First select a state above to load cities...",
+    allowClear: true,
+    width: '100%',
+    closeOnSelect: false
+  });
+
+  // 📦 Enhanced Delivery Rules Handler
+  const deliveryType = document.getElementById('delivery-type');
+  const deliveryRuleType = document.getElementById('delivery-rule-type');
+  const statesSelection = document.getElementById('states-selection');
+  const citiesSelection = document.getElementById('cities-selection');
+  const pincodesSelection = document.getElementById('pincodes-selection');
+
+  deliveryType.addEventListener('change', function() {
+    // Hide all selections first
+    statesSelection.style.display = 'none';
+    citiesSelection.style.display = 'none';
+    pincodesSelection.style.display = 'none';
+
+    // Update hidden field for backend
+    deliveryRuleType.value = this.value;
+
+    // Show relevant selection based on choice
+    switch(this.value) {
+      case 'state':
+        statesSelection.style.display = 'block';
+        break;
+      case 'city':
+        citiesSelection.style.display = 'block';
+        break;
+      case 'pincode':
+        pincodesSelection.style.display = 'block';
+        break;
+      case 'everywhere':
+      default:
+        // No additional fields needed for everywhere
+        break;
+    }
+  });
+
+  // 🏙️ Dynamic Cities Loading Handler
+  const stateFilterForCities = document.getElementById('state-filter-for-cities');
+  const deliveryCities = document.getElementById('delivery-cities');
+
+  // 📍 Comprehensive Cities Data by State
+  const citiesByState = {
+    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Tiruppur', 'Erode', 'Vellore', 'Thoothukudi', 'Dindigul', 'Thanjavur', 'Ranipet', 'Sivakasi', 'Karur'],
+    'Karnataka': ['Bangalore', 'Mysore', 'Hubli-Dharwad', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davanagere', 'Bellary', 'Bijapur', 'Shimoga', 'Tumkur', 'Raichur', 'Bidar', 'Hospet', 'Hassan'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Kalyan-Dombivli', 'Vasai-Virar', 'Aurangabad', 'Navi Mumbai', 'Solapur', 'Amravati', 'Sangli', 'Malegaon', 'Akola', 'Latur'],
+    'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam', 'Palakkad', 'Alappuzha', 'Kannur', 'Kottayam', 'Malappuram', 'Trichur', 'Alathur', 'Vatakara', 'Kanhangad', 'Payyanur'],
+    'Delhi': ['New Delhi', 'Delhi Cantonment', 'Narela', 'Najafgarh', 'Alipur'],
+    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Junagadh', 'Gandhinagar', 'Akola', 'Anand'],
+    'West Bengal': ['Kolkata', 'Asansol', 'Siliguri', 'Durgapur', 'Bardhaman', 'Malda', 'Baharampur', 'Habra', 'Kharagpur', 'Shantipur'],
+    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Ghaziabad', 'Agra', 'Varanasi', 'Meerut', 'Allahabad', 'Bareilly', 'Aligarh', 'Moradabad'],
+    'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur', 'Bhilwara', 'Alwar', 'Bharatpur', 'Sikar'],
+    'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali', 'Firozpur', 'Batala', 'Pathankot', 'Moga'],
+    'Haryana': ['Faridabad', 'Gurgaon', 'Panipat', 'Ambala', 'Yamunanagar', 'Rohtak', 'Hisar', 'Karnal', 'Sonipat', 'Panchkula'],
+    'Madhya Pradesh': ['Indore', 'Bhopal', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar', 'Dewas', 'Satna', 'Ratlam', 'Rewa'],
+    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia', 'Darbhanga', 'Bihar Sharif', 'Arrah', 'Begusarai', 'Katihar'],
+    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Brahmapur', 'Sambalpur', 'Puri', 'Balasore', 'Bhadrak', 'Baripada', 'Jharsuguda'],
+    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar', 'Ramagundam', 'Mahabubnagar', 'Nalgonda', 'Adilabad', 'Suryapet'],
+    'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Tirupati', 'Kakinada', 'Anantapur', 'Vizianagaram']
+  };
+
+  // Dynamic Cities Loading when State Filter changes
+  stateFilterForCities.addEventListener('change', function() {
+    const selectedState = this.value;
+
+    // Clear existing cities
+    deliveryCities.innerHTML = '';
+
+    if (selectedState && citiesByState[selectedState]) {
+      // Add cities for selected state
+      citiesByState[selectedState].forEach(city => {
+        const option = new Option(city, city);
+        deliveryCities.add(option);
+      });
+
+      // Update placeholder and reinitialize Select2
+      $(deliveryCities).select2('destroy');
+      $(deliveryCities).select2({
+        placeholder: `Select cities from ${selectedState}...`,
+        allowClear: true,
+        width: '100%',
+        searchInputPlaceholder: 'Search cities...'
+      });
+    } else {
+      // Reset to default state
+      $(deliveryCities).select2('destroy');
+      $(deliveryCities).select2({
+        placeholder: 'First select a state above to load cities...',
+        allowClear: true,
+        width: '100%'
+      });
+    }
+  });
+
+  // Occasional Product Toggle
+  const occasionalToggle = document.getElementById('occasional-toggle');
+  const occasionalSettings = document.getElementById('occasional-settings');
+
+  occasionalToggle.addEventListener('change', function() {
+    occasionalSettings.style.display = this.checked ? 'block' : 'none';
+  });
+
+  // Occasional Type Handler
+  const oneTimeRadio = document.getElementById('one-time');
+  const recurringRadio = document.getElementById('recurring');
+  const oneTimeSettings = document.getElementById('one-time-settings');
+  const recurringSettings = document.getElementById('recurring-settings');
+
+  function handleOccasionalType() {
+    if (oneTimeRadio.checked) {
+      oneTimeSettings.style.display = 'block';
+      recurringSettings.style.display = 'none';
+    } else {
+      oneTimeSettings.style.display = 'none';
+      recurringSettings.style.display = 'block';
+    }
+  }
+
+  oneTimeRadio.addEventListener('change', handleOccasionalType);
+  recurringRadio.addEventListener('change', handleOccasionalType);
+
+  // Recurring Type Handler
+  const recurringType = document.getElementById('recurring-type');
+  const weeklySettings = document.getElementById('weekly-settings');
+  const monthlySettings = document.getElementById('monthly-settings');
+
+  recurringType.addEventListener('change', function() {
+    weeklySettings.style.display = 'none';
+    monthlySettings.style.display = 'none';
+
+    if (this.value === 'weekly') {
+      weeklySettings.style.display = 'block';
+    } else if (this.value === 'monthly') {
+      monthlySettings.style.display = 'block';
+    }
+  });
+
+  // Discount Configuration
+  const discountToggle = document.getElementById('discount-toggle');
+  const discountConfig = document.getElementById('discount-config');
+  const discountPercentageRadio = document.getElementById('discount-percentage');
+  const discountFixedRadio = document.getElementById('discount-fixed');
+  const percentageInput = document.getElementById('percentage-input');
+  const fixedInput = document.getElementById('fixed-input');
+  const sellingPriceInput = document.getElementById('selling-price');
+  const buyingPriceInput = document.getElementById('buying-price');
+  const discountPercentageValue = document.getElementById('discount-percentage-value');
+  const discountFixedValue = document.getElementById('discount-fixed-value');
+  const finalPriceInput = document.getElementById('final-price');
+  const discountPriceHidden = document.getElementById('discount-price-hidden');
+  const discountSummary = document.getElementById('discount-summary');
+  const discountSummaryText = document.getElementById('discount-summary-text');
+
+  // Show/hide discount configuration
+  if (discountToggle) {
+    discountToggle.addEventListener('change', function() {
+      if (this.checked) {
+        discountConfig.style.display = 'block';
+        // Show default discount type
+        if (discountPercentageRadio.checked) {
+          percentageInput.style.display = 'block';
+          fixedInput.style.display = 'none';
+        } else if (discountFixedRadio.checked) {
+          fixedInput.style.display = 'block';
+          percentageInput.style.display = 'none';
+        } else {
+          // Default to percentage if nothing selected
+          discountPercentageRadio.checked = true;
+          percentageInput.style.display = 'block';
+          fixedInput.style.display = 'none';
+        }
+        calculateFinalPrice();
+      } else {
+        discountConfig.style.display = 'none';
+        finalPriceInput.value = sellingPriceInput.value || '0.00';
+        discountPriceHidden.value = '';
+        discountSummary.style.display = 'none';
+      }
+    });
+
+    // Trigger on page load if discount is enabled
+    if (discountToggle.checked) {
+      discountConfig.style.display = 'block';
+      if (discountPercentageRadio.checked) {
+        percentageInput.style.display = 'block';
+      } else if (discountFixedRadio.checked) {
+        fixedInput.style.display = 'block';
+      }
+      calculateFinalPrice();
+    }
+  }
+
+  // Handle discount type change
+  if (discountPercentageRadio) {
+    discountPercentageRadio.addEventListener('change', function() {
+      if (this.checked) {
+        percentageInput.style.display = 'block';
+        fixedInput.style.display = 'none';
+        discountFixedValue.value = '';
+        calculateFinalPrice();
+      }
+    });
+  }
+
+  if (discountFixedRadio) {
+    discountFixedRadio.addEventListener('change', function() {
+      if (this.checked) {
+        fixedInput.style.display = 'block';
+        percentageInput.style.display = 'none';
+        discountPercentageValue.value = '';
+        calculateFinalPrice();
+      }
+    });
+  }
+
+  // Calculate final price function
+  function calculateFinalPrice() {
+    if (!discountToggle.checked) {
+      finalPriceInput.value = sellingPriceInput.value || '0.00';
+      discountPriceHidden.value = '';
+      return;
+    }
+
+    const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+    let finalPrice = sellingPrice;
+    let discountAmount = 0;
+    let summaryText = '';
+
+    if (discountPercentageRadio.checked) {
+      const percentage = parseFloat(discountPercentageValue.value) || 0;
+
+      // Validation
+      if (percentage > 100) {
+        discountPercentageValue.value = 100;
+        percentage = 100;
+      }
+      if (percentage < 0) {
+        discountPercentageValue.value = 0;
+        percentage = 0;
+      }
+
+      discountAmount = (sellingPrice * percentage) / 100;
+      finalPrice = sellingPrice - discountAmount;
+      summaryText = `${percentage}% off (₹${discountAmount.toFixed(2)} discount)`;
+    } else if (discountFixedRadio.checked) {
+      discountAmount = parseFloat(discountFixedValue.value) || 0;
+
+      // Validation
+      if (discountAmount > sellingPrice) {
+        alert('Discount cannot be greater than selling price!');
+        discountFixedValue.value = sellingPrice;
+        discountAmount = sellingPrice;
+      }
+      if (discountAmount < 0) {
+        discountFixedValue.value = 0;
+        discountAmount = 0;
+      }
+
+      finalPrice = sellingPrice - discountAmount;
+      const percentage = sellingPrice > 0 ? ((discountAmount / sellingPrice) * 100).toFixed(1) : 0;
+      summaryText = `₹${discountAmount.toFixed(2)} off (${percentage}% discount)`;
+    }
+
+    // Ensure final price is never negative
+    if (finalPrice < 0) {
+      finalPrice = 0;
+    }
+
+    finalPriceInput.value = finalPrice.toFixed(2);
+    discountPriceHidden.value = finalPrice.toFixed(2);
+
+    // Show discount summary
+    if (discountAmount > 0) {
+      discountSummaryText.textContent = summaryText;
+      discountSummary.style.display = 'block';
+    } else {
+      discountSummary.style.display = 'none';
+    }
+  }
+
+  // Add event listeners for price calculations
+  if (sellingPriceInput) {
+    sellingPriceInput.addEventListener('input', calculateFinalPrice);
+  }
+  if (discountPercentageValue) {
+    discountPercentageValue.addEventListener('input', calculateFinalPrice);
+  }
+  if (discountFixedValue) {
+    discountFixedValue.addEventListener('input', calculateFinalPrice);
+  }
+
+  // SEO Character Counters
+  const metaTitleInput = document.getElementById('meta-title');
+  const metaTitleCount = document.getElementById('meta-title-count');
+  const metaDescriptionInput = document.getElementById('meta-description');
+  const metaDescriptionCount = document.getElementById('meta-description-count');
+
+  if (metaTitleInput && metaTitleCount) {
+    metaTitleInput.addEventListener('input', function() {
+      const length = this.value.length;
+      metaTitleCount.textContent = `${length} / 60 characters`;
+      metaTitleCount.className = 'character-count';
+      if (length > 60) {
+        metaTitleCount.className += ' error';
+      } else if (length > 50) {
+        metaTitleCount.className += ' warning';
+      }
+    });
+    // Trigger on load
+    metaTitleInput.dispatchEvent(new Event('input'));
+  }
+
+  if (metaDescriptionInput && metaDescriptionCount) {
+    metaDescriptionInput.addEventListener('input', function() {
+      const length = this.value.length;
+      metaDescriptionCount.textContent = `${length} / 160 characters`;
+      metaDescriptionCount.className = 'character-count';
+      if (length > 160) {
+        metaDescriptionCount.className += ' error';
+      } else if (length > 150) {
+        metaDescriptionCount.className += ' warning';
+      }
+    });
+    // Trigger on load
+    metaDescriptionInput.dispatchEvent(new Event('input'));
+  }
+
+  // Form submission handler
+  const form = document.getElementById('enhanced-product-form');
+  form.addEventListener('submit', function(e) {
+    // Validate discount if enabled
+    if (discountToggle.checked) {
+      const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+
+      if (discountPercentageRadio.checked) {
+        const percentage = parseFloat(discountPercentageValue.value) || 0;
+        if (percentage > 100) {
+          e.preventDefault();
+          alert('Discount percentage cannot exceed 100%');
+          return false;
+        }
+      } else if (discountFixedRadio.checked) {
+        const fixedAmount = parseFloat(discountFixedValue.value) || 0;
+        if (fixedAmount > sellingPrice) {
+          e.preventDefault();
+          alert('Discount amount cannot be greater than selling price');
+          return false;
+        }
+      }
+    }
+
+    // Collect delivery rules data
+    const deliveryTypeValue = deliveryType.value;
+
+    if (deliveryTypeValue === 'states') {
+      const selectedStates = $('#delivery-states').val();
+      // Add to form data
+    } else if (deliveryTypeValue === 'cities') {
+      const selectedCities = $('#delivery-cities').val();
+      // Add to form data
+    } else if (deliveryTypeValue === 'pincodes') {
+      const pincodes = document.getElementById('delivery-pincodes').value;
+      // Add to form data
+    }
+  });
+});
+
+// SEO Section Toggle Function
+function toggleSeoSection() {
+  const seoContent = document.getElementById('seo-content');
+  const seoToggleIcon = document.getElementById('seo-toggle-icon');
+
+  if (seoContent.classList.contains('show')) {
+    seoContent.classList.remove('show');
+    seoToggleIcon.classList.remove('rotated');
+  } else {
+    seoContent.classList.add('show');
+    seoToggleIcon.classList.add('rotated');
+  }
+}
+</script>

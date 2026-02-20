@@ -1,0 +1,902 @@
+{
+  "info": {
+    "name": "Dhanvantri Mobile API Collection",
+    "description": "Complete API collection for Dhanvantri Mobile App including customer and delivery person endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "delivery_person_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Customer Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"middle_name\": \"William\",\n  \"email\": \"john.doe@example.com\",\n  \"mobile\": \"9876543210\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"address\": \"123 Main Street, Apartment 4B\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400001\",\n  \"whatsapp_number\": \"9876543210\",\n  \"latitude\": 19.0760,\n  \"longitude\": 72.8777\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"auth_token\", jsonData.data.token);",
+                  "    pm.environment.set(\"customer_id\", jsonData.data.customer_id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delivery Person Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"auth_token\", jsonData.data.token);",
+                  "    pm.environment.set(\"delivery_person_id\", jsonData.data.delivery_person_id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9876543210\",\n  \"password\": \"delivery123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email_or_mobile\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/forgot_password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "forgot_password"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. E-Commerce",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products?category_id=1&min_price=100&max_price=1000&sort_by=price_low&page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "products"],
+              "query": [
+                {
+                  "key": "category_id",
+                  "value": "1"
+                },
+                {
+                  "key": "min_price",
+                  "value": "100"
+                },
+                {
+                  "key": "max_price",
+                  "value": "1000"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "price_low"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "products", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/search?query=organic rice&page=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "organic rice"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Pincode Delivery",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/check-pincode/400001",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "delivery", "check-pincode", "400001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_ids\": [1, 2, 3],\n  \"pincode\": \"400001\",\n  \"delivery_date\": \"2024-02-22\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "delivery", "validate"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Bookings & Orders",
+      "item": [
+        {
+          "name": "Create Booking (Place Order)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking\": {\n    \"customer_name\": \"John Doe\",\n    \"customer_email\": \"john@example.com\",\n    \"customer_phone\": \"9876543210\",\n    \"delivery_address\": \"123 Main St, Apartment 4B, Mumbai\",\n    \"pincode\": \"400001\",\n    \"latitude\": 19.0760,\n    \"longitude\": 72.8777,\n    \"payment_method\": \"cod\",\n    \"notes\": \"Please call before delivery\",\n    \"booking_items_attributes\": [\n      {\n        \"product_id\": 1,\n        \"quantity\": 2,\n        \"price\": 225.00\n      },\n      {\n        \"product_id\": 3,\n        \"quantity\": 1,\n        \"price\": 150.00\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "bookings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/bookings?status=confirmed&page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "confirmed"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/orders/101",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "orders", "101"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Subscriptions",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscription\": {\n    \"product_id\": 1,\n    \"quantity\": 2,\n    \"frequency\": \"daily\",\n    \"start_date\": \"2024-02-25\",\n    \"end_date\": \"2024-03-25\",\n    \"delivery_time\": \"morning\",\n    \"delivery_address\": \"123 Main St, Mumbai\",\n    \"pincode\": \"400001\",\n    \"special_instructions\": \"Ring doorbell twice\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions?status=active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "10"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/10/pause",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "10", "pause"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/10/resume",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "10", "resume"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/10/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "10", "cancel"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Delivery Person",
+      "item": [
+        {
+          "name": "Get Today's Deliveries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/today",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "today"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/201",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "201"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Delivery Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_location\": {\n    \"latitude\": 19.0750,\n    \"longitude\": 72.8775\n  },\n  \"estimated_arrival_minutes\": 15\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/201/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "201", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_proof\": {\n    \"recipient_name\": \"John Doe\",\n    \"signature\": \"base64_encoded_signature_image\",\n    \"photo\": \"base64_encoded_delivery_photo\",\n    \"otp\": \"1234\"\n  },\n  \"payment_collected\": {\n    \"amount\": 682.50,\n    \"method\": \"cash\"\n  },\n  \"location\": {\n    \"latitude\": 19.0760,\n    \"longitude\": 72.8777\n  },\n  \"notes\": \"Delivered successfully to customer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/201/complete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "201", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Delivery Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 19.0755,\n  \"longitude\": 72.8776,\n  \"timestamp\": \"2024-02-22T09:50:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/201/update_location",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "201", "update_location"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Mark Deliveries Done",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_ids\": [101, 102, 103, 104, 105],\n  \"delivery_person_id\": 12,\n  \"completed_at\": \"2024-02-20T15:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bulk_mark_done",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "bulk_mark_done"]
+            },
+            "description": "Mark multiple deliveries as completed in a single request"
+          },
+          "response": [
+            {
+              "name": "Success - All Done",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"5 deliveries marked as done\",\n  \"data\": {\n    \"updated_count\": 5,\n    \"updated_delivery_ids\": [101, 102, 103, 104, 105]\n  }\n}",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"delivery_ids\": [101, 102, 103, 104, 105],\n  \"delivery_person_id\": 12,\n  \"completed_at\": \"2024-02-20T15:30:00Z\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Partial Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"3 of 5 deliveries marked as done\",\n  \"data\": {\n    \"updated_count\": 3,\n    \"updated_delivery_ids\": [101, 102, 103],\n    \"failed_ids\": [104, 105],\n    \"errors\": [\n      {\n        \"id\": 104,\n        \"error\": \"Already completed\"\n      },\n      {\n        \"id\": 105,\n        \"error\": \"Delivery not found\"\n      }\n    ]\n  }\n}",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"delivery_ids\": [101, 102, 103, 104, 105],\n  \"delivery_person_id\": 12,\n  \"completed_at\": \"2024-02-20T15:30:00Z\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Error - No IDs",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"No delivery IDs provided\"\n}",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"delivery_ids\": [],\n  \"delivery_person_id\": 12\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bulk Update Deliveries",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_person_id\": 123,\n  \"updates\": [\n    {\n      \"booking_id\": 456,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2024-02-20T14:30:00Z\",\n      \"proof_of_delivery\": \"base64_encoded_image_optional\",\n      \"delivery_notes\": \"Left with security\",\n      \"customer_signature\": \"base64_encoded_signature_optional\",\n      \"latitude\": 28.6139,\n      \"longitude\": 77.2090\n    },\n    {\n      \"booking_id\": 457,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2024-02-20T14:45:00Z\",\n      \"delivery_notes\": \"Delivered to customer directly\",\n      \"latitude\": 28.6145,\n      \"longitude\": 77.2095\n    },\n    {\n      \"booking_id\": 458,\n      \"status\": \"failed\",\n      \"attempted_at\": \"2024-02-20T15:00:00Z\",\n      \"failure_reason\": \"Customer not available\",\n      \"latitude\": 28.6150,\n      \"longitude\": 77.2100\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bulk_update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "bulk_update"]
+            },
+            "description": "Update multiple deliveries with different statuses and details"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"3 deliveries updated successfully\",\n  \"data\": {\n    \"total_processed\": 3,\n    \"successful_updates\": 2,\n    \"failed_updates\": 1,\n    \"results\": [\n      {\n        \"booking_id\": 456,\n        \"status\": \"success\",\n        \"message\": \"Delivery marked as completed\",\n        \"booking_number\": \"BK20240220ABC123\"\n      },\n      {\n        \"booking_id\": 457,\n        \"status\": \"success\",\n        \"message\": \"Delivery marked as completed\",\n        \"booking_number\": \"BK20240220ABC124\"\n      },\n      {\n        \"booking_id\": 458,\n        \"status\": \"error\",\n        \"message\": \"Booking already delivered\",\n        \"booking_number\": \"BK20240220ABC125\"\n      }\n    ],\n    \"summary\": {\n      \"delivered_count\": 2,\n      \"failed_count\": 1,\n      \"pending_count\": 0\n    }\n  }\n}",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"delivery_person_id\": 123,\n  \"updates\": [\n    {\n      \"booking_id\": 456,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2024-02-20T14:30:00Z\",\n      \"delivery_notes\": \"Left with security\",\n      \"latitude\": 28.6139,\n      \"longitude\": 77.2090\n    },\n    {\n      \"booking_id\": 457,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2024-02-20T14:45:00Z\",\n      \"delivery_notes\": \"Delivered to customer directly\",\n      \"latitude\": 28.6145,\n      \"longitude\": 77.2095\n    },\n    {\n      \"booking_id\": 458,\n      \"status\": \"failed\",\n      \"attempted_at\": \"2024-02-20T15:00:00Z\",\n      \"failure_reason\": \"Customer not available\",\n      \"latitude\": 28.6150,\n      \"longitude\": 77.2100\n    }\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "Validation Error",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    {\n      \"booking_id\": 459,\n      \"error\": \"Booking not found\"\n    },\n    {\n      \"booking_id\": 460,\n      \"error\": \"Invalid status transition from 'cancelled' to 'delivered'\"\n    }\n  ]\n}",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"delivery_person_id\": 123,\n  \"updates\": [\n    {\n      \"booking_id\": 459,\n      \"status\": \"delivered\"\n    },\n    {\n      \"booking_id\": 460,\n      \"status\": \"delivered\"\n    }\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Unauthorized: Invalid or expired token\"\n}",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer invalid_token"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Customer Profile",
+      "item": [
+        {
+          "name": "Get Customer Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"mobile\": \"9876543210\",\n  \"address\": \"456 New Street\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400002\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Utility",
+      "item": [
+        {
+          "name": "Get App Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/app_config",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "settings", "app_config"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Pincode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/validate_pincode/400001",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "settings", "validate_pincode", "400001"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
