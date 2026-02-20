@@ -1,14 +1,59 @@
 class Admin::InvoicesController < Admin::ApplicationController
-  before_action :set_invoice, only: [:show, :edit, :update, :destroy]
+  before_action :set_invoice, only: [:show, :edit, :update, :destroy, :mark_as_paid]
 
   def index
-    @invoices = Invoice.includes(:customer, :invoice_items)
-                      .order(created_at: :desc)
-                      .limit(50)
+    # Base query with includes
+    base_query = Invoice.includes(:customer, :invoice_items)
+
+    # Apply search filters
+    if params[:search].present?
+      search_term = "%#{params[:search]}%"
+      base_query = base_query.joins(:customer)
+                            .where("invoices.invoice_number ILIKE ? OR
+                                    customers.first_name ILIKE ? OR
+                                    customers.last_name ILIKE ? OR
+                                    customers.email ILIKE ? OR
+                                    customers.mobile ILIKE ?",
+                                   search_term, search_term, search_term, search_term, search_term)
+    end
+
+    # Apply status filter
+    if params[:status].present? && params[:status] != 'all'
+      base_query = base_query.where(payment_status: params[:status])
+    end
+
+    # Apply date range filter
+    if params[:date_from].present?
+      base_query = base_query.where('invoice_date >= ?', Date.parse(params[:date_from]))
+    end
+
+    if params[:date_to].present?
+      base_query = base_query.where('invoice_date <= ?', Date.parse(params[:date_to]))
+    end
+
+    # Get filtered invoices with pagination
+    @invoices = base_query.order(created_at: :desc)
+                         .limit(params[:limit]&.to_i || 50)
+                         .offset(params[:offset]&.to_i || 0)
+
+    # Calculate summary statistics
+    @stats = calculate_invoice_stats(base_query)
   end
 
   def show
     @invoice_items = @invoice.invoice_items.includes(:milk_delivery_task)
+  end
+
+  def mark_as_paid
+    @invoice.update!(
+      payment_status: :fully_paid,
+      status: :paid,
+      paid_at: Time.current
+    )
+
+    redirect_to admin_invoice_path(@invoice), notice: 'Invoice marked as paid successfully.'
+  rescue => e
+    redirect_to admin_invoice_path(@invoice), alert: "Error marking invoice as paid: #{e.message}"
   end
 
   def customers
@@ -170,5 +215,21 @@ class Admin::InvoicesController < Admin::ApplicationController
     else
       raise invoice.errors.full_messages.join(', ')
     end
+  end
+
+  def calculate_invoice_stats(query)
+    stats = query.group(:payment_status).sum(:total_amount)
+
+    {
+      total_invoices: query.count,
+      total_amount: query.sum(:total_amount) || 0,
+      paid_amount: stats['fully_paid'] || 0,
+      pending_amount: (stats['unpaid'] || 0) + (stats['partially_paid'] || 0),
+      partially_paid_amount: stats['partially_paid'] || 0,
+      paid_count: query.where(payment_status: 'fully_paid').count,
+      pending_count: query.where(payment_status: ['unpaid', 'partially_paid']).count,
+      this_month_count: query.where(invoice_date: Date.current.beginning_of_month..Date.current.end_of_month).count,
+      this_month_amount: query.where(invoice_date: Date.current.beginning_of_month..Date.current.end_of_month).sum(:total_amount) || 0
+    }
   end
 end
