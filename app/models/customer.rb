@@ -58,24 +58,6 @@ class Customer < ApplicationRecord
     end
   end
 
-  private
-
-  def handle_password_storage
-    if respond_to?(:password_digest)
-      # Store encrypted password in password_digest column
-      self.password_digest = BCrypt::Password.create(password)
-    else
-      # Fallback to storing in auto_generated_password field
-      self.auto_generated_password = password
-    end
-  end
-
-  def store_password_in_auto_generated_field
-    if password.present?
-      self.auto_generated_password = password
-    end
-  end
-
   # Validations
   validates :first_name, presence: true
   validates :last_name, presence: true
@@ -163,6 +145,22 @@ class Customer < ApplicationRecord
   end
 
   private
+
+  def handle_password_storage
+    if respond_to?(:password_digest)
+      # Store encrypted password in password_digest column
+      self.password_digest = BCrypt::Password.create(password)
+    else
+      # Fallback to storing in auto_generated_password field
+      self.auto_generated_password = password
+    end
+  end
+
+  def store_password_in_auto_generated_field
+    if password.present?
+      self.auto_generated_password = password
+    end
+  end
 
   def bust_cache
     Rails.cache.delete("customer_#{id}_full_name")

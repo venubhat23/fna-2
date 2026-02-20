@@ -43,7 +43,8 @@ class Admin::BookingsController < Admin::ApplicationController
                        .includes(
                          :category,
                          :stock_batches,
-                         images_attachments: :blob
+                         image_attachment: :blob,
+                         additional_images_attachments: :blob
                        )
                        .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active' AND stock_batches.quantity_remaining > 0")
                        .select(
@@ -89,7 +90,7 @@ class Admin::BookingsController < Admin::ApplicationController
 
     # Validate stock availability before saving
     unless validate_stock_availability(@booking)
-      @products = Product.active.includes(:category, images_attachments: :blob)
+      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
       @customers = Customer.all.order(:first_name, :last_name)
       @stores = Store.where(status: true)
       render :new, status: :unprocessable_entity
@@ -119,7 +120,7 @@ class Admin::BookingsController < Admin::ApplicationController
       Rails.logger.error "Booking creation failed: #{@booking.errors.full_messages.join(', ')}"
       Rails.logger.error "Booking items errors: #{@booking.booking_items.map(&:errors).map(&:full_messages).flatten.join(', ')}"
 
-      @products = Product.active.includes(:category, images_attachments: :blob)
+      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
       @customers = Customer.all.order(:first_name, :last_name)
       @stores = Store.where(status: true)
       flash.now[:alert] = @booking.errors.full_messages.join(', ')
@@ -128,18 +129,18 @@ class Admin::BookingsController < Admin::ApplicationController
   end
 
   def show
-    @booking_items = @booking.booking_items.includes(product: [:category, images_attachments: :blob])
+    @booking_items = @booking.booking_items.includes(product: [:category, image_attachment: :blob, additional_images_attachments: :blob])
   end
 
   def edit
-    @products = Product.active.includes(:category, images_attachments: :blob)
+    @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
     @customers = Customer.all.order(:first_name, :last_name)
   end
 
   def update
     # Validate stock availability for updates
     unless validate_stock_availability(@booking, is_update: true)
-      @products = Product.active.includes(:category, images_attachments: :blob)
+      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
       @customers = Customer.all.order(:first_name, :last_name)
       render :edit, status: :unprocessable_entity
       return
@@ -148,7 +149,7 @@ class Admin::BookingsController < Admin::ApplicationController
     if @booking.update(booking_params)
       redirect_to admin_booking_path(@booking), notice: 'Booking updated successfully!'
     else
-      @products = Product.active.includes(:category, images_attachments: :blob)
+      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
       @customers = Customer.all.order(:first_name, :last_name)
       render :edit
     end

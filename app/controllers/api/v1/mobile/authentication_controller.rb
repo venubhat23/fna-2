@@ -250,7 +250,8 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
   end
 
   def register_customer
-    customer_params = params.permit(:first_name, :last_name, :email, :mobile, :password, :password_confirmation, :user_type, :role)
+    customer_params = params.permit(:first_name, :last_name, :middle_name, :email, :mobile, :password, :password_confirmation,
+                                   :user_type, :role, :address, :city, :state, :pincode, :whatsapp_number, :latitude, :longitude)
 
     # Validate required fields
     if customer_params[:first_name].blank? || customer_params[:last_name].blank? ||
@@ -334,13 +335,16 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
       ActiveRecord::Base.transaction do
         # Create Customer record (without password validations)
         customer = Customer.new(
-          customer_type: 'individual',
           first_name: customer_params[:first_name],
           last_name: customer_params[:last_name],
+          middle_name: customer_params[:middle_name],
           email: customer_params[:email],
           mobile: mobile_number, # Use formatted mobile number
-          status: true,
-          added_by: 'self_registration'
+          address: customer_params[:address],
+          whatsapp_number: customer_params[:whatsapp_number],
+          latitude: customer_params[:latitude],
+          longitude: customer_params[:longitude],
+          status: true
         )
         customer.save!(validate: false)  # Skip validations to avoid password requirements
 
@@ -348,9 +352,14 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
         user = User.new(
           first_name: customer_params[:first_name],
           last_name: customer_params[:last_name],
+          middle_name: customer_params[:middle_name],
           email: customer_params[:email],
           mobile: mobile_number, # Use formatted mobile number
           user_type: 'customer',
+          address: customer_params[:address],
+          city: customer_params[:city],
+          state: customer_params[:state],
+          pincode: customer_params[:pincode],
           status: true
         )
 

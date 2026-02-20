@@ -40,7 +40,7 @@ class Admin::OrdersController < Admin::ApplicationController
   end
 
   def show
-    @order_items = @order.order_items.includes(product: [:category, images_attachments: :blob])
+    @order_items = @order.order_items.includes(product: [:category, image_attachment: :blob, additional_images_attachments: :blob])
   end
 
   def update_status

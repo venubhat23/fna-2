@@ -638,7 +638,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
 
   # GET /api/v1/mobile/ecommerce/products/:id
   def product_details
-    @product = Product.active.includes(:category, :product_reviews, images_attachments: :blob).find(params[:id])
+    @product = Product.active.includes(:category, :product_reviews, image_attachment: :blob, additional_images_attachments: :blob).find(params[:id])
 
     # Get related products from same category
     related_products = Product.active.in_stock

@@ -195,8 +195,9 @@ Rails.application.routes.draw do
       end
       collection do
         post :generate_invoice
-        get :bulk_invoice_form
         post :generate_bulk_invoices
+        get :customers
+        post :generate
       end
     end
     # Users (Admins/Agents) management
