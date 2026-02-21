@@ -1,6 +1,7 @@
 class MilkSubscription < ApplicationRecord
   belongs_to :customer
   belongs_to :product
+  belongs_to :delivery_person, optional: true
   has_many :milk_delivery_tasks, foreign_key: 'subscription_id', dependent: :destroy
 
   validates :quantity, presence: true, numericality: { greater_than: 0 }
@@ -50,7 +51,8 @@ class MilkSubscription < ApplicationRecord
         quantity: quantity,
         unit: unit,
         delivery_date: date,
-        status: 'pending'
+        status: 'pending',
+        delivery_person: delivery_person
       )
     end
   end

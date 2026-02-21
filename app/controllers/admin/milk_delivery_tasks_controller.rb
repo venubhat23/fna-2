@@ -33,7 +33,7 @@ class Admin::MilkDeliveryTasksController < Admin::ApplicationController
   end
 
   def complete
-    if @task.update(status: 'delivered', completed_at: Time.current)
+    if @task.update(status: 'completed', completed_at: Time.current)
       render json: {
         success: true,
         message: 'Task marked as completed',
@@ -147,7 +147,7 @@ class Admin::MilkDeliveryTasksController < Admin::ApplicationController
 
     tasks = MilkDeliveryTask.where(id: task_ids, status: ['pending', 'assigned'])
     completed_count = tasks.update_all(
-      status: 'delivered',
+      status: 'completed',
       completed_at: Time.current
     )
 

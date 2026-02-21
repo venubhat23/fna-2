@@ -68,58 +68,71 @@
             </div>
           </div>
 
-          <!-- Step 2: Product Selection -->
+          <!-- Step 2: Products Selection -->
           <div class="col-md-6 mb-4">
             <div class="card h-100">
-              <div class="card-header bg-success text-white">
-                <h6 class="mb-0"><i class="bi bi-box"></i> Step 2: Select Product & Quantity</h6>
+              <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-box"></i> Step 2: Select Products & Quantities</h6>
+                <button type="button" class="btn btn-sm btn-light" id="addProductBtn">
+                  <i class="bi bi-plus-circle me-1"></i>Add Product
+                </button>
               </div>
               <div class="card-body">
-                <div class="mb-3">
-                  <%= form.label :product_id, "Product", class: "form-label fw-bold" %>
-                  <%= form.select :product_id,
-                      options_for_select([['Select Product...', '']] + @products, @subscription.product_id),
-                      {},
-                      {
-                        class: "form-select select2-product",
-                        required: true
-                      } %>
-                  <div class="invalid-feedback">
-                    Please select a product.
-                  </div>
-                </div>
+                <!-- Products Container -->
+                <div id="productsContainer">
+                  <div class="product-item mb-3 p-3 border rounded" data-product-index="0">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="text-primary mb-0">
+                        <i class="bi bi-box-seam me-1"></i>Product #1
+                      </h6>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-product-btn d-none">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
 
-                <div class="row">
-                  <div class="col-md-8">
-                    <%= form.label :quantity, "Quantity", class: "form-label fw-bold" %>
-                    <%= form.number_field :quantity,
-                        value: @subscription.quantity || 1,
-                        step: 0.1,
-                        min: 0.1,
-                        class: "form-control form-control-lg",
-                        required: true %>
-                    <div class="invalid-feedback">
-                      Please enter a valid quantity.
+                    <div class="mb-3">
+                      <label class="form-label fw-bold">Product</label>
+                      <select name="subscription[products][0][product_id]" class="form-select select2-product" required>
+                        <option value="">Select Product...</option>
+                        <% @products.each do |product| %>
+                          <option value="<%= product[1] %>"><%= product[0] %></option>
+                        <% end %>
+                      </select>
+                      <div class="invalid-feedback">Please select a product.</div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Quantity</label>
+                        <input type="number" name="subscription[products][0][quantity]"
+                               class="form-control" value="1" step="0.1" min="0.1" required>
+                        <div class="invalid-feedback">Please enter a valid quantity.</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Unit</label>
+                        <select name="subscription[products][0][unit]" class="form-select">
+                          <option value="liter">Liter</option>
+                          <option value="ml">ML</option>
+                          <option value="packet">Packet</option>
+                          <option value="bottle">Bottle</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Product Info Display -->
+                    <div class="product-info d-none mt-3">
+                      <div class="alert alert-info alert-sm">
+                        <div class="product-details"></div>
+                      </div>
                     </div>
                   </div>
-                  <div class="col-md-4">
-                    <%= form.label :unit, "Unit", class: "form-label fw-bold" %>
-                    <%= form.select :unit,
-                        options_for_select([
-                          ['Liter', 'liter'],
-                          ['ML', 'ml'],
-                          ['Packet', 'packet'],
-                          ['Bottle', 'bottle']
-                        ], @subscription.unit || 'liter'),
-                        {},
-                        { class: "form-select" } %>
-                  </div>
                 </div>
 
-                <!-- Product Info Display -->
-                <div id="product-info" class="d-none mt-3">
-                  <div class="alert alert-success">
-                    <div id="product-details"></div>
+                <!-- Summary Display -->
+                <div id="productsSummary" class="mt-3 p-3 bg-light rounded">
+                  <h6 class="mb-2"><i class="bi bi-list-check me-1"></i>Products Summary</h6>
+                  <div id="summaryContent">
+                    <p class="mb-0 text-muted">Add products to see summary</p>
                   </div>
                 </div>
               </div>
@@ -175,7 +188,7 @@
 
                 <!-- Date Range for Daily/Alternate -->
                 <div id="date-range-section" class="row mb-4">
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <%= form.label :start_date, "Start Date", class: "form-label fw-bold" %>
                     <%= form.date_field :start_date,
                         value: @subscription.start_date || Date.tomorrow,
@@ -185,7 +198,7 @@
                       Please select a start date.
                     </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <%= form.label :end_date, "End Date", class: "form-label fw-bold" %>
                     <%= form.date_field :end_date,
                         value: @subscription.end_date || 1.month.from_now.to_date,
@@ -195,7 +208,7 @@
                       Please select an end date.
                     </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <%= form.label :delivery_time, "Delivery Time", class: "form-label fw-bold" %>
                     <%= form.select :delivery_time,
                         options_for_select([
@@ -205,6 +218,17 @@
                         ], @subscription.delivery_time || 'morning'),
                         {},
                         { class: "form-select form-select-lg" } %>
+                  </div>
+                  <div class="col-md-3">
+                    <%= form.label :delivery_person_id, "Delivery Person", class: "form-label fw-bold" %>
+                    <%= form.select :delivery_person_id,
+                        options_for_select([['Select Delivery Person (Optional)', '']] + @delivery_people, @subscription.delivery_person_id),
+                        {},
+                        {
+                          class: "form-select form-select-lg select2-delivery-person",
+                          "data-placeholder" => "Select delivery person..."
+                        } %>
+                    <small class="form-text text-muted">Leave blank for auto-assignment</small>
                   </div>
                 </div>
 
@@ -328,7 +352,7 @@
           <div class="col-12">
             <div class="card">
               <div class="card-body text-center">
-                <%= form.submit "Create Subscription & Generate Tasks",
+                <%= form.submit "Create Subscription & Generate Daily Tasks",
                     class: "btn btn-primary btn-lg me-3",
                     id: "submit-btn" %>
                 <%= link_to "Cancel", admin_subscriptions_path,
@@ -572,11 +596,69 @@
     max-height: 200px;
   }
 }
+
+/* Multiple Products Styling */
+.product-item {
+  transition: all 0.3s ease;
+  border: 2px solid #e9ecef !important;
+}
+
+.product-item:hover {
+  border-color: #007bff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.product-item.border-primary {
+  border-color: #007bff !important;
+  background: rgba(13, 110, 253, 0.02);
+}
+
+.remove-product-btn {
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.remove-product-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+#productsSummary {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+#addProductBtn {
+  transition: all 0.2s ease;
+}
+
+#addProductBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.alert-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.product-info {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 
 <!-- JavaScript for Dynamic Form Behavior -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  let productCounter = 0;
+
   // Initialize Select2
   if (typeof $ !== 'undefined' && $.fn.select2) {
     $('.select2-customer').select2({
@@ -585,12 +667,198 @@ document.addEventListener('DOMContentLoaded', function() {
       allowClear: true
     });
 
-    $('.select2-product').select2({
+    $('.select2-delivery-person').select2({
       theme: 'bootstrap-5',
-      placeholder: 'Select product...',
+      placeholder: 'Select delivery person...',
       allowClear: true
     });
+
+    initializeProductSelects();
   }
+
+  // Initialize product selects
+  function initializeProductSelects() {
+    $('.select2-product').each(function() {
+      if (!$(this).hasClass('select2-hidden-accessible')) {
+        $(this).select2({
+          theme: 'bootstrap-5',
+          placeholder: 'Select product...',
+          allowClear: true
+        });
+      }
+    });
+  }
+
+  // Add Product Button
+  document.getElementById('addProductBtn').addEventListener('click', function() {
+    addNewProduct();
+  });
+
+  // Add new product entry
+  function addNewProduct() {
+    productCounter++;
+    const productsContainer = document.getElementById('productsContainer');
+
+    const productOptions = '<% @products.each do |product| %><option value="<%= product[1] %>"><%= product[0] %></option><% end %>';
+
+    const newProductHTML = `
+      <div class="product-item mb-3 p-3 border rounded" data-product-index="${productCounter}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="text-primary mb-0">
+            <i class="bi bi-box-seam me-1"></i>Product #${productCounter + 1}
+          </h6>
+          <button type="button" class="btn btn-sm btn-outline-danger remove-product-btn">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Product</label>
+          <select name="subscription[products][${productCounter}][product_id]" class="form-select select2-product" required>
+            <option value="">Select Product...</option>
+            ${productOptions}
+          </select>
+          <div class="invalid-feedback">Please select a product.</div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Quantity</label>
+            <input type="number" name="subscription[products][${productCounter}][quantity]"
+                   class="form-control" value="1" step="0.1" min="0.1" required>
+            <div class="invalid-feedback">Please enter a valid quantity.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Unit</label>
+            <select name="subscription[products][${productCounter}][unit]" class="form-select">
+              <option value="liter">Liter</option>
+              <option value="ml">ML</option>
+              <option value="packet">Packet</option>
+              <option value="bottle">Bottle</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Product Info Display -->
+        <div class="product-info d-none mt-3">
+          <div class="alert alert-info alert-sm">
+            <div class="product-details"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    productsContainer.insertAdjacentHTML('beforeend', newProductHTML);
+
+    // Show remove buttons for all products if we have more than 1
+    updateRemoveButtons();
+
+    // Initialize Select2 for new select
+    initializeProductSelects();
+
+    // Update product numbers
+    updateProductNumbers();
+
+    // Update summary
+    updateProductsSummary();
+  }
+
+  // Remove product functionality
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-product-btn')) {
+      e.preventDefault();
+      const productItem = e.target.closest('.product-item');
+      productItem.remove();
+      updateRemoveButtons();
+      updateProductNumbers();
+      updateProductsSummary();
+    }
+  });
+
+  // Update remove button visibility
+  function updateRemoveButtons() {
+    const productItems = document.querySelectorAll('.product-item');
+    const removeButtons = document.querySelectorAll('.remove-product-btn');
+
+    if (productItems.length > 1) {
+      removeButtons.forEach(btn => btn.classList.remove('d-none'));
+    } else {
+      removeButtons.forEach(btn => btn.classList.add('d-none'));
+    }
+  }
+
+  // Update product numbers
+  function updateProductNumbers() {
+    const productItems = document.querySelectorAll('.product-item');
+    productItems.forEach((item, index) => {
+      const header = item.querySelector('h6');
+      header.innerHTML = `<i class="bi bi-box-seam me-1"></i>Product #${index + 1}`;
+
+      // Update form field names to maintain sequential indexing
+      const selects = item.querySelectorAll('select, input');
+      selects.forEach(field => {
+        const name = field.getAttribute('name');
+        if (name) {
+          const newName = name.replace(/\[\d+\]/, `[${index}]`);
+          field.setAttribute('name', newName);
+        }
+      });
+
+      item.setAttribute('data-product-index', index);
+    });
+  }
+
+  // Update products summary
+  function updateProductsSummary() {
+    const productItems = document.querySelectorAll('.product-item');
+    const summaryContent = document.getElementById('summaryContent');
+
+    if (productItems.length === 0) {
+      summaryContent.innerHTML = '<p class="mb-0 text-muted">Add products to see summary</p>';
+      return;
+    }
+
+    let summaryHTML = '<div class="row g-2">';
+    let hasValidProducts = false;
+
+    productItems.forEach((item, index) => {
+      const productSelect = item.querySelector('select[name*="product_id"]');
+      const quantityInput = item.querySelector('input[name*="quantity"]');
+      const unitSelect = item.querySelector('select[name*="unit"]');
+
+      if (productSelect.value) {
+        hasValidProducts = true;
+        const productText = productSelect.options[productSelect.selectedIndex].text;
+        const quantity = quantityInput.value || '1';
+        const unit = unitSelect.options[unitSelect.selectedIndex].text;
+
+        summaryHTML += `
+          <div class="col-md-6 col-lg-4">
+            <div class="p-2 bg-white rounded border">
+              <small class="fw-bold text-primary d-block">${productText}</small>
+              <small class="text-muted">${quantity} ${unit} per delivery</small>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    summaryHTML += '</div>';
+
+    if (hasValidProducts) {
+      summaryContent.innerHTML = summaryHTML;
+    } else {
+      summaryContent.innerHTML = '<p class="mb-0 text-muted">Select products to see summary</p>';
+    }
+  }
+
+  // Listen for product/quantity changes
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('select[name*="product_id"], input[name*="quantity"], select[name*="unit"]')) {
+      updateProductsSummary();
+      updateCostEstimation();
+    }
+  });
 
   // Calendar functionality
   let currentDate = new Date();
@@ -684,6 +952,14 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         document.getElementById('customer-info').classList.add('d-none');
       }
+    });
+  }
+
+  // Delivery person selection handler
+  const deliveryPersonSelect = document.getElementById('milk_subscription_delivery_person_id');
+  if (deliveryPersonSelect) {
+    deliveryPersonSelect.addEventListener('change', function() {
+      updateSchedulePreview(); // Update preview to show delivery person assignment
     });
   }
 
@@ -884,6 +1160,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const start = startDate?.value;
     const end = endDate?.value;
     const qty = quantity?.value || 1;
+    const deliveryPersonSelect = document.getElementById('milk_subscription_delivery_person_id');
+    const deliveryPersonText = deliveryPersonSelect?.value ?
+      deliveryPersonSelect.options[deliveryPersonSelect.selectedIndex].text : 'Auto-assigned';
 
     if (!start || !end || !pattern) return;
 
@@ -916,16 +1195,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalQty = formatNumber(deliveryCount * qty);
     document.getElementById('preview-content').innerHTML = `
       <p class="mb-1"><strong>${previewText}</strong></p>
-      <p class="mb-0">Total quantity: ${totalQty} units</p>
+      <p class="mb-1">Total quantity: ${totalQty} units</p>
+      <p class="mb-0"><i class="bi bi-person-badge me-1"></i><strong>Delivery Person:</strong> ${deliveryPersonText}</p>
     `;
 
     updateCostEstimation(deliveryCount);
   }
 
   function updateCostEstimation(deliveryCount = null) {
-    const productSelect = document.getElementById('milk_subscription_product_id');
-    const qty = quantity?.value || 1;
-
     if (!deliveryCount) {
       // Calculate based on current preview
       const pattern = document.querySelector('input[name="milk_subscription[delivery_pattern]"]:checked')?.value;
@@ -947,29 +1224,57 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    if (productSelect && productSelect.value && deliveryCount > 0) {
-      // You can make an AJAX call here to get actual product price
-      // For now, using placeholder values
-      const pricePerUnit = 30; // This should come from backend
-      const totalQuantity = formatNumber(deliveryCount * parseFloat(qty));
-      const totalAmount = formatNumber(totalQuantity * pricePerUnit);
+    if (deliveryCount > 0) {
+      const productItems = document.querySelectorAll('.product-item');
+      let totalEstimate = 0;
+      let hasValidProducts = false;
+      let costDetailsHTML = '<div class="row">';
 
-      document.getElementById('cost-details').innerHTML = `
-        <div class="row">
-          <div class="col-md-3">
-            <strong>Deliveries:</strong> ${deliveryCount}
+      productItems.forEach((item, index) => {
+        const productSelect = item.querySelector('select[name*="product_id"]');
+        const quantityInput = item.querySelector('input[name*="quantity"]');
+
+        if (productSelect.value && quantityInput.value) {
+          hasValidProducts = true;
+          const productText = productSelect.options[productSelect.selectedIndex].text;
+          const quantity = parseFloat(quantityInput.value) || 1;
+          const pricePerUnit = 30; // This should come from backend
+          const totalQuantity = formatNumber(deliveryCount * quantity);
+          const productTotal = formatNumber(totalQuantity * pricePerUnit);
+          totalEstimate += parseFloat(productTotal);
+
+          costDetailsHTML += `
+            <div class="col-md-6 mb-2">
+              <div class="p-2 bg-light rounded">
+                <strong class="text-primary d-block">${productText}</strong>
+                <small>Qty: ${totalQuantity} units × ₹${formatNumber(pricePerUnit)} = ₹${productTotal}</small>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      if (hasValidProducts) {
+        costDetailsHTML += `
           </div>
-          <div class="col-md-3">
-            <strong>Total Quantity:</strong> ${totalQuantity} units
+          <div class="row mt-2">
+            <div class="col-12">
+              <div class="p-3 bg-primary bg-opacity-10 rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span><strong>Total Deliveries:</strong> ${deliveryCount}</span>
+                  <span><strong>Total Amount:</strong> ₹${formatNumber(totalEstimate)}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="col-md-3">
-            <strong>Rate:</strong> ₹${formatNumber(pricePerUnit)}/unit
-          </div>
-          <div class="col-md-3">
-            <strong>Total Amount:</strong> ₹${totalAmount}
-          </div>
-        </div>
-      `;
+        `;
+
+        document.getElementById('cost-details').innerHTML = costDetailsHTML;
+      } else {
+        document.getElementById('cost-details').innerHTML = '<p class="mb-0">Select products to see cost estimation</p>';
+      }
+    } else {
+      document.getElementById('cost-details').innerHTML = '<p class="mb-0">Select dates to see cost estimation</p>';
     }
   }
 

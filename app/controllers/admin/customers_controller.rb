@@ -352,9 +352,9 @@ class Admin::CustomersController < Admin::ApplicationController
           #   end
           # end
 
+          # Always create User account for consistency with mobile API
           # Create User account - auto-generate password if not provided
-          should_create_user = user_enter_password == '1' ||
-                             (@customer.email.present? && password.blank?)
+          should_create_user = @customer.email.present? # Always create user if email exists
 
           if should_create_user
             if password.present? && password_confirmation.present?
@@ -364,12 +364,20 @@ class Admin::CustomersController < Admin::ApplicationController
                 User.create!(
                   first_name: @customer.first_name,
                   last_name: @customer.last_name,
+                  middle_name: @customer.middle_name,
                   email: @customer.email,
                   mobile: @customer.mobile,
                   password: generated_password,
                   password_confirmation: generated_password,
                   user_type: 'customer',
-                  status: true
+                  address: @customer.address,
+                  city: params[:customer][:city] || 'Unknown',
+                  state: params[:customer][:state] || 'Unknown',
+                  pincode: params[:customer][:pincode] || '000000',
+                  country: 'India',  # Match mobile API default
+                  status: true,
+                  is_active: true,
+                  is_verified: false
                 )
                 redirect_to admin_customer_path(@customer), notice: 'Customer and login account created successfully.'
               else
@@ -385,12 +393,20 @@ class Admin::CustomersController < Admin::ApplicationController
               User.create!(
                 first_name: @customer.first_name,
                 last_name: @customer.last_name,
+                middle_name: @customer.middle_name,
                 email: @customer.email,
                 mobile: @customer.mobile,
                 password: generated_password,
                 password_confirmation: generated_password,
                 user_type: 'customer',
-                status: true
+                address: @customer.address,
+                city: params[:customer][:city] || 'Unknown',
+                state: params[:customer][:state] || 'Unknown',
+                pincode: params[:customer][:pincode] || '000000',
+                country: 'India',  # Match mobile API default
+                status: true,
+                is_active: true,
+                is_verified: false
               )
               # Store generated password in flash for display (in production, send via email/SMS)
               flash[:generated_password] = generated_password

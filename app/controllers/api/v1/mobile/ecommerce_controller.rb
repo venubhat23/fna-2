@@ -1028,7 +1028,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
         id: product.category_id,
         name: product.category&.name
       },
-      images: product.images.attached? ? product.images.map { |img| url_for(img) } : [],
+      images: product.images_attached? ? product.images.map { |img| url_for(img) } : [],
       rating: {
         average: product.average_rating.to_f,
         count: product.total_reviews
@@ -1144,7 +1144,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
         id: subscription.product.id,
         name: subscription.product.name,
         price: subscription.product.selling_price.to_f,
-        image: subscription.product.images.attached? ? url_for(subscription.product.images.first) : nil
+        image: subscription.product.images_attached? ? url_for(subscription.product.images.first) : nil
       },
       created_at: subscription.created_at,
       updated_at: subscription.updated_at

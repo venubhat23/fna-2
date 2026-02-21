@@ -50,17 +50,66 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def create
-    @subscription = MilkSubscription.new(subscription_params)
-    @subscription.created_by = current_user.id
-    @subscription.total_amount = @subscription.calculate_total_amount
+    products_data = params[:subscription][:products] || {}
 
-    if @subscription.save
-      redirect_to admin_subscription_path(@subscription), notice: 'Subscription created successfully and all delivery tasks generated!'
-    else
+    if products_data.empty?
+      flash.now[:alert] = 'Please select at least one product for the subscription.'
       @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
       @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
       @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
       render :new
+      return
+    end
+
+    created_subscriptions = []
+    created_tasks = []
+    errors = []
+
+    MilkSubscription.transaction do
+      products_data.each do |index, product_data|
+        next if product_data[:product_id].blank?
+
+        subscription_attributes = subscription_params.merge(
+          product_id: product_data[:product_id],
+          quantity: product_data[:quantity],
+          unit: product_data[:unit] || 'liter',
+          created_by: current_user.id
+        )
+
+        subscription = MilkSubscription.new(subscription_attributes)
+        subscription.total_amount = subscription.calculate_total_amount
+
+        if subscription.save
+          created_subscriptions << subscription
+
+          # Generate daily delivery tasks for this subscription
+          tasks_count = generate_delivery_tasks_for_subscription(subscription)
+          created_tasks << { subscription: subscription, tasks_count: tasks_count }
+        else
+          errors << "Product #{Product.find(product_data[:product_id]).name}: #{subscription.errors.full_messages.join(', ')}"
+        end
+      end
+
+      if errors.any?
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    if errors.any?
+      flash.now[:alert] = "Failed to create subscriptions: #{errors.join('; ')}"
+      @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
+      @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
+      @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
+      render :new
+    else
+      total_tasks = created_tasks.sum { |ct| ct[:tasks_count] }
+      message = "Successfully created #{created_subscriptions.count} subscriptions with #{total_tasks} delivery tasks!"
+
+      if created_subscriptions.count == 1
+        redirect_to admin_subscription_path(created_subscriptions.first), notice: message
+      else
+        redirect_to admin_subscriptions_path, notice: message
+      end
     end
   end
 
@@ -205,8 +254,8 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def subscription_params
     params.require(:milk_subscription).permit(
-      :customer_id, :product_id, :quantity, :unit, :start_date, :end_date,
-      :delivery_time, :delivery_pattern, :specific_dates, :status, :is_active
+      :customer_id, :start_date, :end_date, :delivery_time, :delivery_pattern,
+      :specific_dates, :status, :is_active, :delivery_person_id
     )
   end
 
@@ -263,6 +312,63 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       today_deliveries: today_deliveries,
       pending_today: pending_today
     }
+  end
+
+  def generate_delivery_tasks_for_subscription(subscription)
+    return 0 unless subscription.persisted?
+
+    # Delete existing tasks if any
+    subscription.milk_delivery_tasks.destroy_all
+
+    delivery_dates = calculate_delivery_dates(subscription)
+    tasks_created = 0
+
+    delivery_dates.each do |date|
+      task = subscription.milk_delivery_tasks.create!(
+        customer: subscription.customer,
+        product: subscription.product,
+        quantity: subscription.quantity,
+        unit: subscription.unit,
+        delivery_date: date,
+        status: 'pending',
+        delivery_person: subscription.delivery_person
+      )
+
+      tasks_created += 1 if task.persisted?
+    end
+
+    tasks_created
+  end
+
+  def calculate_delivery_dates(subscription)
+    dates = []
+    start_date = subscription.start_date
+    end_date = subscription.end_date
+
+    case subscription.delivery_pattern
+    when 'daily'
+      current_date = start_date
+      while current_date <= end_date
+        dates << current_date
+        current_date += 1.day
+      end
+    when 'alternate'
+      current_date = start_date
+      while current_date <= end_date
+        dates << current_date
+        current_date += 2.days
+      end
+    when 'specific_dates'
+      if subscription.specific_dates.present?
+        specific_dates = JSON.parse(subscription.specific_dates)
+        specific_dates.each do |date_str|
+          date = Date.parse(date_str)
+          dates << date if date >= start_date && date <= end_date
+        end
+      end
+    end
+
+    dates.sort
   end
 
   def check_sidebar_permission
