@@ -501,61 +501,109 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
 
   # GET /api/v1/mobile/ecommerce/search
   def search
-    query = params[:q] || params[:search]
-    return json_response({ success: false, message: 'Search query is required' }, :bad_request) if query.blank?
+    query = params[:query] || params[:q] || params[:search]
+    if query.blank?
+      return json_response({
+        success: false,
+        message: 'Search query is required',
+        data: {
+          products: [],
+          search_query: query,
+          pagination: {
+            current_page: 1,
+            per_page: 20,
+            total_count: 0,
+            total_pages: 0,
+            has_next_page: false,
+            has_prev_page: false
+          }
+        }
+      }, :bad_request)
+    end
 
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
-    @products = Product.active.in_stock.search(query)
+    begin
+      @products = Product.active.in_stock.search(query)
 
-    # Apply additional filters
-    @products = @products.where(category_id: params[:category_id]) if params[:category_id].present?
-    @products = @products.where('price >= ?', params[:min_price]) if params[:min_price].present?
-    @products = @products.where('price <= ?', params[:max_price]) if params[:max_price].present?
+      # Apply additional filters
+      @products = @products.where(category_id: params[:category_id]) if params[:category_id].present?
+      @products = @products.where('price >= ?', params[:min_price]) if params[:min_price].present?
+      @products = @products.where('price <= ?', params[:max_price]) if params[:max_price].present?
 
-    # Apply sorting
-    case params[:sort_by]
-    when 'price_low' then @products = @products.order(:price)
-    when 'price_high' then @products = @products.order(price: :desc)
-    when 'name' then @products = @products.order(:name)
-    when 'newest' then @products = @products.recent
-    when 'rating'
-      @products = @products.joins(:product_reviews)
-                           .group('products.id')
-                           .order('AVG(product_reviews.rating) DESC NULLS LAST')
-    else
-      @products = @products.order(:name)
-    end
+      # Handle count for queries with GROUP BY
+      has_grouping = false
 
-    total_count = @products.count
-    @products = @products.offset((page - 1) * per_page).limit(per_page)
+      # Apply sorting
+      case params[:sort_by]
+      when 'price_low' then @products = @products.order(:price)
+      when 'price_high' then @products = @products.order(price: :desc)
+      when 'name' then @products = @products.order(:name)
+      when 'newest' then @products = @products.recent
+      when 'rating'
+        @products = @products.joins(:product_reviews)
+                             .group('products.id')
+                             .order('AVG(product_reviews.rating) DESC NULLS LAST')
+        has_grouping = true
+      else
+        @products = @products.order(:name)
+      end
 
-    products_data = @products.map { |product| format_product_data(product) }
+      # Get count properly based on whether we have grouping
+      if has_grouping
+        total_count = @products.count.is_a?(Hash) ? @products.count.keys.count : @products.count
+      else
+        total_count = @products.count
+      end
 
-    json_response({
-      success: true,
-      data: {
-        products: products_data,
-        search_query: query,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
+      @products = @products.offset((page - 1) * per_page).limit(per_page)
+      products_data = @products.map { |product| format_product_data(product) }
+
+      json_response({
+        success: true,
+        data: {
+          products: products_data,
+          search_query: query,
+          pagination: {
+            current_page: page,
+            per_page: per_page,
+            total_count: total_count,
+            total_pages: (total_count.to_f / per_page).ceil,
+            has_next_page: page < (total_count.to_f / per_page).ceil,
+            has_prev_page: page > 1
+          },
+          applied_filters: {
+            category_id: params[:category_id],
+            min_price: params[:min_price],
+            max_price: params[:max_price],
+            sort_by: params[:sort_by]
+          }
         },
-        applied_filters: {
-          category_id: params[:category_id],
-          min_price: params[:min_price],
-          max_price: params[:max_price],
-          sort_by: params[:sort_by]
+        message: "Found #{total_count} products for '#{query}'"
+      })
+    rescue => e
+      Rails.logger.error "Search API Error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+
+      json_response({
+        success: false,
+        message: 'An error occurred while searching products',
+        data: {
+          products: [],
+          search_query: query,
+          pagination: {
+            current_page: page,
+            per_page: per_page,
+            total_count: 0,
+            total_pages: 0,
+            has_next_page: false,
+            has_prev_page: false
+          }
         }
-      },
-      message: "Found #{total_count} products for '#{query}'"
-    })
+      }, :internal_server_error)
+    end
   end
 
   # GET /api/v1/mobile/ecommerce/featured_products
@@ -564,35 +612,86 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
-    # Get featured products (you may need to add a featured flag to products)
-    @products = Product.active.in_stock
+    begin
+      # Get featured products (you may need to add a featured flag to products)
+      @products = Product.active.in_stock
 
-    # If there's no featured flag, get high-rated or recent products
-    @products = @products.joins(:product_reviews)
-                        .group('products.id')
-                        .having('AVG(product_reviews.rating) >= ?', 4.0)
-                        .order('AVG(product_reviews.rating) DESC')
+      # If there's no featured flag, get high-rated or recent products
+      @products = @products.joins(:product_reviews)
+                          .group('products.id')
+                          .having('AVG(product_reviews.rating) >= ?', 4.0)
+                          .order('AVG(product_reviews.rating) DESC')
 
-    total_count = @products.count
-    @products = @products.offset((page - 1) * per_page).limit(per_page)
+      # Since we're using GROUP BY, count returns a Hash
+      # We need to get the actual count of unique products
+      total_count = @products.count
+      if total_count.is_a?(Hash)
+        total_count = total_count.keys.count
+      end
 
-    products_data = @products.map { |product| format_product_data(product) }
+      @products = @products.offset((page - 1) * per_page).limit(per_page)
+      products_data = @products.map { |product| format_product_data(product) }
 
-    json_response({
-      success: true,
-      data: {
-        products: products_data,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
-        }
-      },
-      message: 'Featured products retrieved successfully'
-    })
+      json_response({
+        success: true,
+        data: {
+          products: products_data,
+          pagination: {
+            current_page: page,
+            per_page: per_page,
+            total_count: total_count,
+            total_pages: (total_count.to_f / per_page).ceil,
+            has_next_page: page < (total_count.to_f / per_page).ceil,
+            has_prev_page: page > 1
+          }
+        },
+        message: 'Featured products retrieved successfully'
+      })
+    rescue => e
+      Rails.logger.error "Featured Products API Error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+
+      # Fallback to recent products if featured products query fails
+      begin
+        @products = Product.active.in_stock.recent.limit(per_page)
+        products_data = @products.map { |product| format_product_data(product) }
+        total_count = Product.active.in_stock.count
+
+        json_response({
+          success: true,
+          data: {
+            products: products_data,
+            pagination: {
+              current_page: page,
+              per_page: per_page,
+              total_count: [total_count, per_page].min,
+              total_pages: 1,
+              has_next_page: false,
+              has_prev_page: false
+            }
+          },
+          message: 'Recent products retrieved successfully (fallback)'
+        })
+      rescue => fallback_error
+        Rails.logger.error "Featured Products Fallback Error: #{fallback_error.message}"
+
+        json_response({
+          success: false,
+          message: 'Unable to retrieve featured products',
+          data: {
+            products: [],
+            pagination: {
+              current_page: page,
+              per_page: per_page,
+              total_count: 0,
+              total_pages: 0,
+              has_next_page: false,
+              has_prev_page: false
+            }
+          }
+        }, :internal_server_error)
+      end
+    end
   end
 
   # GET /api/v1/mobile/ecommerce/filters
@@ -894,64 +993,128 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
 
   # POST /api/v1/mobile/ecommerce/delivery/validate
   def validate_delivery
-    pincode = params[:pincode]
-    product_id = params[:product_id]
+    # Handle both direct parameters and nested parameters
+    pincode = params[:pincode] || params.dig(:ecommerce, :pincode)
+    product_ids = params[:product_ids] || params.dig(:ecommerce, :product_ids) || [params[:product_id] || params.dig(:ecommerce, :product_id)].compact
+    delivery_date = params[:delivery_date] || params.dig(:ecommerce, :delivery_date)
 
-    return json_response({ success: false, message: 'Pincode and Product ID are required' }, :bad_request) if pincode.blank? || product_id.blank?
+    return json_response({ success: false, message: 'Pincode and Product IDs are required' }, :bad_request) if pincode.blank? || product_ids.blank?
 
     begin
-      product = Product.find(product_id)
       pincode_validation = validate_pincode(pincode)
 
-      if pincode_validation[:valid]
-        # Check product availability and delivery rules
-        delivery_info = product.delivery_info_for(pincode)
-        stock_available = product.in_stock?
-
-        result = {
-          pincode: pincode,
-          product_id: product.id,
-          product_name: product.name,
-          pincode_valid: true,
-          location_info: pincode_validation,
-          delivery_available: delivery_info[:deliverable] && stock_available,
-          estimated_delivery_days: delivery_info[:delivery_days],
-          delivery_charge: delivery_info[:delivery_charge].to_f,
-          stock_available: stock_available,
-          stock_quantity: product.stock,
-          reasons: []
-        }
-
-        unless stock_available
-          result[:reasons] << 'Product is out of stock'
-        end
-
-        unless delivery_info[:deliverable]
-          result[:reasons] << 'Delivery not available in this area'
-        end
-
-        json_response({
-          success: result[:delivery_available],
-          data: result,
-          message: result[:delivery_available] ?
-            "Product can be delivered to #{pincode}" :
-            "Product cannot be delivered to #{pincode}: #{result[:reasons].join(', ')}"
-        })
-      else
-        json_response({
+      unless pincode_validation[:valid]
+        return json_response({
           success: false,
           data: {
             pincode: pincode,
-            product_id: product.id,
             pincode_valid: false,
             location_info: pincode_validation,
-            delivery_available: false
+            delivery_available: false,
+            products: []
           },
           message: 'Invalid pincode'
         })
       end
-    rescue ActiveRecord::RecordNotFound
-      json_response({ success: false, message: 'Product not found' }, :not_found)
+
+      # Process each product
+      products_results = []
+      all_deliverable = true
+      unavailable_products = []
+
+      product_ids.each do |product_id|
+        begin
+          product = Product.find(product_id)
+
+          # Check product availability and delivery rules
+          delivery_info = product.delivery_info_for(pincode)
+          stock_available = product.in_stock?
+
+          product_result = {
+            product_id: product.id,
+            product_name: product.name,
+            product_sku: product.sku,
+            price: product.selling_price.to_f,
+            stock_available: stock_available,
+            stock_quantity: product.stock,
+            delivery_available: delivery_info[:deliverable] && stock_available,
+            estimated_delivery_days: delivery_info[:delivery_days],
+            delivery_charge: delivery_info[:delivery_charge].to_f,
+            reasons: []
+          }
+
+          unless stock_available
+            product_result[:reasons] << 'Product is out of stock'
+            all_deliverable = false
+            unavailable_products << product_result
+          end
+
+          unless delivery_info[:deliverable]
+            product_result[:reasons] << 'Delivery not available in this area'
+            all_deliverable = false
+            unavailable_products << product_result
+          end
+
+          products_results << product_result
+
+        rescue ActiveRecord::RecordNotFound
+          product_result = {
+            product_id: product_id,
+            product_name: 'Unknown',
+            product_sku: nil,
+            price: 0,
+            stock_available: false,
+            stock_quantity: 0,
+            delivery_available: false,
+            estimated_delivery_days: 0,
+            delivery_charge: 0,
+            reasons: ['Product not found']
+          }
+
+          products_results << product_result
+          unavailable_products << product_result
+          all_deliverable = false
+        end
+      end
+
+      # Prepare response data
+      response_data = {
+        pincode: pincode,
+        delivery_date: delivery_date,
+        pincode_valid: true,
+        location_info: pincode_validation,
+        overall_delivery_available: all_deliverable,
+        products: products_results,
+        unavailable_products: unavailable_products,
+        summary: {
+          total_products: products_results.length,
+          deliverable_products: products_results.count { |p| p[:delivery_available] },
+          unavailable_products: unavailable_products.length,
+          total_delivery_charge: products_results.sum { |p| p[:delivery_charge] }
+        }
+      }
+
+      message = if all_deliverable
+        "All products can be delivered to #{pincode}"
+      else
+        "#{unavailable_products.length} out of #{products_results.length} products cannot be delivered to #{pincode}"
+      end
+
+      json_response({
+        success: all_deliverable,
+        data: response_data,
+        message: message
+      })
+
+    rescue => e
+      Rails.logger.error "Delivery validation error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+
+      json_response({
+        success: false,
+        message: 'An error occurred while validating delivery',
+        error: e.message
+      }, :internal_server_error)
     end
   end
 
