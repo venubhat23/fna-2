@@ -166,6 +166,7 @@ class ImportMasterSubscriptionJob < ApplicationJob
   end
 
   def calculate_random_tasks(customer_format, start_date, end_date)
+    # Use the model's selected_days method which properly handles JSON serialization
     selected_days = customer_format.selected_days
     return [] if selected_days.empty?
 
@@ -180,6 +181,7 @@ class ImportMasterSubscriptionJob < ApplicationJob
       current_date += 1.day
     end
 
+    Rails.logger.info "Random pattern for customer format #{customer_format.id}: selected days #{selected_days}, generated #{dates.size} task dates"
     dates
   end
 end
