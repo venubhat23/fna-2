@@ -1,6 +1,7 @@
 class Admin::CustomerFormatsController < Admin::ApplicationController
   before_action :set_customer_format, only: [:show, :edit, :update, :destroy, :toggle_status]
   before_action :check_sidebar_permission
+  skip_before_action :check_sidebar_permission, only: [:import_from_master]
 
   def index
     @customer_formats = CustomerFormat.includes(:customer, :product, :delivery_person)
@@ -100,6 +101,37 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
     render json: { results: delivery_people }
   end
 
+  # Import from Master Subscription action
+  def import_from_master
+    month = params[:month].to_i
+    year = params[:year].to_i
+
+    # Validate parameters
+    if month < 1 || month > 12 || year < Date.current.year || year > Date.current.year + 5
+      respond_to do |format|
+        format.json { render json: { success: false, message: 'Invalid month or year selected.' }, status: :bad_request }
+      end
+      return
+    end
+
+    begin
+      # Queue the background job
+      ImportMasterSubscriptionJob.perform_later(month, year)
+
+      message = "Copy process started successfully. Please wait 10 minutes. Subscriptions are being created in the background."
+
+      respond_to do |format|
+        format.json { render json: { success: true, message: message } }
+      end
+    rescue => e
+      Rails.logger.error "Error starting import job: #{e.message}"
+
+      respond_to do |format|
+        format.json { render json: { success: false, message: 'Failed to start import process. Please try again.' }, status: :internal_server_error }
+      end
+    end
+  end
+
   private
 
   def set_customer_format
@@ -110,7 +142,7 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
   end
 
   def customer_format_params
-    params.require(:customer_format).permit(:customer_id, :pattern, :quantity, :product_id, :delivery_person_id, :status)
+    params.require(:customer_format).permit(:customer_id, :pattern, :quantity, :product_id, :delivery_person_id, :status, days: [])
   end
 
   def load_form_data

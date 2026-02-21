@@ -1,2 +1,631 @@
-<h1>Admin::CustomerFormats#index</h1>
-<p>Find me in app/views/admin/customer_formats/index.html.erb</p>
+<% content_for :title, "Customer Formats" %>
+
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-clipboard-data text-primary"></i>
+      Customer Formats Management
+    </h1>
+    <div class="btn-group">
+      <%= link_to new_admin_customer_format_path, class: "btn btn-primary" do %>
+        <i class="bi bi-plus-circle"></i> Create Format
+      <% end %>
+      <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importSubscriptionModal">
+        <i class="bi bi-download"></i> Import from Master Subscription
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Formats</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:total] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-clipboard-data fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Active Formats</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:active] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Inactive Formats</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><%= @stats[:inactive] %></div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-pause-circle fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Top Pattern</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">
+                <%= @stats[:pattern_counts].max_by { |k, v| v }&.first&.humanize || 'None' %>
+              </div>
+            </div>
+            <div class="col-auto">
+              <i class="bi bi-graph-up fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">
+        <i class="bi bi-funnel"></i> Filters & Search
+      </h6>
+    </div>
+    <div class="card-body">
+      <%= form_with url: admin_customer_formats_path, method: :get, local: true, class: "row g-3" do |form| %>
+        <div class="col-md-3">
+          <%= form.select :status,
+              options_for_select([['All Status', ''], ['Active', 'active'], ['Inactive', 'not_active']], params[:status]),
+              {},
+              { class: "form-select", onchange: "this.form.submit()" } %>
+        </div>
+        <div class="col-md-3">
+          <%= form.select :customer_id,
+              options_for_select([['All Customers', '']] + @customers, params[:customer_id]),
+              {},
+              { class: "form-select", onchange: "this.form.submit()" } %>
+        </div>
+        <div class="col-md-3">
+          <%= form.select :product_id,
+              options_for_select([['All Products', '']] + @products, params[:product_id]),
+              {},
+              { class: "form-select", onchange: "this.form.submit()" } %>
+        </div>
+        <div class="col-md-3">
+          <%= form.select :delivery_person_id,
+              options_for_select([['All Delivery People', '']] + @delivery_people, params[:delivery_person_id]),
+              {},
+              { class: "form-select", onchange: "this.form.submit()" } %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Customer Formats Table -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+      <h6 class="m-0 font-weight-bold text-primary">
+        <i class="bi bi-table"></i> Customer Formats List
+      </h6>
+      <small class="text-muted">Total: <%= @customer_formats.respond_to?(:total_count) ? @customer_formats.total_count : @customer_formats.count %> formats</small>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped" id="customer-formats-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Product</th>
+              <th>Pattern</th>
+              <th>Quantity</th>
+              <th>Delivery Person</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @customer_formats.each do |format| %>
+              <tr>
+                <td><%= format.id %></td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="mr-3">
+                      <div class="icon-circle bg-primary">
+                        <i class="bi bi-person text-white"></i>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="font-weight-bold"><%= "#{format.customer.first_name} #{format.customer.last_name}" %></div>
+                      <div class="small text-gray-600"><%= format.customer.email %></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="font-weight-bold"><%= format.product.name %></span>
+                </td>
+                <td>
+                  <span class="badge bg-info text-white"><%= format.pattern.humanize %></span>
+                </td>
+                <td>
+                  <span class="font-weight-bold text-primary"><%= format.quantity %></span>
+                </td>
+                <td>
+                  <% if format.delivery_person %>
+                    <div class="d-flex align-items-center">
+                      <div class="mr-2">
+                        <div class="icon-circle bg-success">
+                          <i class="bi bi-person-badge text-white"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="font-weight-bold"><%= "#{format.delivery_person.first_name} #{format.delivery_person.last_name}" %></div>
+                      </div>
+                    </div>
+                  <% else %>
+                    <span class="text-muted">Not Assigned</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if format.status == 'active' %>
+                    <span class="badge bg-success">Active</span>
+                  <% else %>
+                    <span class="badge bg-secondary">Inactive</span>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="text-gray-900"><%= format.created_at.strftime('%d %b %Y') %></span>
+                  <div class="small text-gray-600"><%= format.created_at.strftime('%I:%M %p') %></div>
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <%= link_to admin_customer_format_path(format), class: "btn btn-sm btn-outline-primary", title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    <%= link_to edit_admin_customer_format_path(format), class: "btn btn-sm btn-outline-info", title: "Edit" do %>
+                      <i class="bi bi-pencil"></i>
+                    <% end %>
+                    <%= link_to [:toggle_status, :admin, format], method: :patch, class: "btn btn-sm btn-outline-#{format.status == 'active' ? 'warning' : 'success'}", title: "#{format.status == 'active' ? 'Deactivate' : 'Activate'}" do %>
+                      <i class="bi bi-#{format.status == 'active' ? 'pause' : 'play'}-circle"></i>
+                    <% end %>
+                    <%= link_to admin_customer_format_path(format), method: :delete,
+                        confirm: "Are you sure you want to delete this customer format?",
+                        class: "btn btn-sm btn-outline-danger",
+                        title: "Delete" do %>
+                      <i class="bi bi-trash"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+
+        <% if @customer_formats.empty? %>
+          <div class="text-center py-5">
+            <i class="bi bi-clipboard-x text-gray-400" style="font-size: 3rem;"></i>
+            <h5 class="mt-3 text-gray-600">No Customer Formats Found</h5>
+            <p class="text-gray-500">Create your first customer format to get started.</p>
+            <%= link_to new_admin_customer_format_path, class: "btn btn-primary" do %>
+              <i class="bi bi-plus-circle"></i> Create First Format
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @customer_formats.respond_to?(:total_pages) %>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <div>
+            <small class="text-muted">
+              Showing <%= @customer_formats.offset_value + 1 %> - <%= [@customer_formats.offset_value + @customer_formats.length, @customer_formats.total_count].min %> of <%= @customer_formats.total_count %> customer formats
+            </small>
+          </div>
+          <div>
+            <%= paginate @customer_formats %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+.icon-circle {
+  height: 2.5rem;
+  width: 2.5rem;
+  border-radius: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.border-left-primary {
+  border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+  border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+  border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+  border-left: 0.25rem solid #f6c23e !important;
+}
+
+#customer-formats-table th {
+  border-top: none;
+  background-color: #f8f9fc;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5a5c69;
+}
+
+.table-responsive {
+  border-radius: 0.35rem;
+}
+
+/* Import Modal Styles - Simple and Clean */
+#importSubscriptionModal .modal-content {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+#importSubscriptionModal .modal-header {
+  border-radius: 15px 15px 0 0;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#importSubscriptionModal .modal-body {
+  padding: 2rem;
+}
+
+#importSubscriptionModal .btn-close-white {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+#importSubscriptionModal .btn-close-white:hover {
+  opacity: 1;
+}
+
+#importSubscriptionModal .form-select {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+#importSubscriptionModal .form-select:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+#importSubscriptionModal .btn-success {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+#importSubscriptionModal .btn-success:hover {
+  background: linear-gradient(135deg, #20c997, #28a745);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+</style>
+
+<!-- Import from Master Subscription Modal - Standard Bootstrap Modal -->
+<div class="modal fade" id="importSubscriptionModal" tabindex="-1" aria-labelledby="importSubscriptionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="importSubscriptionModalLabel">
+          <i class="bi bi-download me-2"></i>Import from Master Subscription
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+    <div class="modal-body">
+      <div id="importModalLoading" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-success" role="status">
+          <span class="visually-hidden">Processing...</span>
+        </div>
+        <p class="mt-3 text-muted">Processing import request...</p>
+      </div>
+
+      <div id="importModalContent">
+        <%= form_with url: import_from_master_admin_customer_formats_path, method: :post, local: false, html: { id: "importSubscriptionForm" } do |form| %>
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                  <h6 class="mb-0"><i class="bi bi-calendar-month"></i> Select Month</h6>
+                </div>
+                <div class="card-body">
+                  <%= form.select :month,
+                      options_for_select([
+                        ['January', 1], ['February', 2], ['March', 3], ['April', 4],
+                        ['May', 5], ['June', 6], ['July', 7], ['August', 8],
+                        ['September', 9], ['October', 10], ['November', 11], ['December', 12]
+                      ], Date.current.month),
+                      {},
+                      { class: "form-select", id: "import_month", required: true } %>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                  <h6 class="mb-0"><i class="bi bi-calendar-year"></i> Select Year</h6>
+                </div>
+                <div class="card-body">
+                  <%= form.select :year,
+                      options_for_select((Date.current.year..(Date.current.year + 2)).map { |year| [year, year] }, Date.current.year),
+                      {},
+                      { class: "form-select", id: "import_year", required: true } %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-info mb-4">
+            <div class="card-header bg-info text-white">
+              <h6 class="mb-0"><i class="bi bi-info-circle"></i> Import Process Information</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="text-primary">What will be created:</h6>
+                  <ul class="small">
+                    <li>Monthly subscriptions for selected period</li>
+                    <li>Daily tasks based on delivery patterns</li>
+                    <li>Customer-specific delivery schedules</li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-warning">Important Notes:</h6>
+                  <ul class="small">
+                    <li>Only active customer formats will be processed</li>
+                    <li>Process runs in background (~10 minutes)</li>
+                    <li>Duplicates are automatically prevented</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-secondary">
+            <div class="card-header bg-secondary text-white">
+              <h6 class="mb-0"><i class="bi bi-list-check"></i> Current Active Formats</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <h4 class="text-primary"><%= CustomerFormat.active.count %></h4>
+                    <small class="text-muted">Active Formats</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <h4 class="text-success"><%= CustomerFormat.active.joins(:customer).count %></h4>
+                    <small class="text-muted">Customers</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <h4 class="text-warning"><%= CustomerFormat.active.joins(:product).distinct.count %></h4>
+                    <small class="text-muted">Products</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <h4 class="text-info"><%= CustomerFormat.active.group(:pattern).count.keys.count %></h4>
+                    <small class="text-muted">Patterns</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success btn-lg" id="importSubmitBtn" onclick="processImport()">
+          <i class="bi bi-gear me-2" id="importBtnIcon"></i>
+          <span class="spinner-border spinner-border-sm me-2 d-none" id="importSpinner"></span>
+          <span id="importBtnText">Copy to This Month</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Import Modal JavaScript - Bootstrap modal integration
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Bootstrap modal
+  const importModal = document.getElementById('importSubscriptionModal');
+  if (importModal) {
+    importModal.addEventListener('hidden.bs.modal', function() {
+      resetImportModal();
+    });
+  }
+});
+
+// Reset import modal when closed
+function resetImportModal() {
+  const modalLoading = document.getElementById('importModalLoading');
+  const modalContent = document.getElementById('importModalContent');
+  const importForm = document.getElementById('importSubscriptionForm');
+  const importBtn = document.getElementById('importSubmitBtn');
+  const importBtnText = document.getElementById('importBtnText');
+  const importSpinner = document.getElementById('importSpinner');
+  const importBtnIcon = document.getElementById('importBtnIcon');
+
+  if (modalLoading) modalLoading.style.display = 'none';
+  if (modalContent) modalContent.style.display = 'block';
+
+  // Reset form and button state
+  if (importForm) importForm.reset();
+  if (importBtn) importBtn.disabled = false;
+  if (importBtnText) importBtnText.textContent = 'Copy to This Month';
+  if (importSpinner) importSpinner.classList.add('d-none');
+  if (importBtnIcon) importBtnIcon.classList.remove('d-none');
+}
+
+// Process import function
+function processImport() {
+  console.log('Processing import...');
+
+  const importForm = document.getElementById('importSubscriptionForm');
+  const importBtn = document.getElementById('importSubmitBtn');
+  const importBtnText = document.getElementById('importBtnText');
+  const importSpinner = document.getElementById('importSpinner');
+  const importBtnIcon = document.getElementById('importBtnIcon');
+  const modalLoading = document.getElementById('importModalLoading');
+  const modalContent = document.getElementById('importModalContent');
+
+  if (!importForm) return;
+
+  // Show loading state
+  importBtn.disabled = true;
+  importBtnText.textContent = 'Processing...';
+  importSpinner.classList.remove('d-none');
+  importBtnIcon.classList.add('d-none');
+
+  // Show loading modal content
+  modalContent.style.display = 'none';
+  modalLoading.style.display = 'block';
+  modalLoading.innerHTML = `
+    <div class="spinner-border text-success" role="status">
+      <span class="visually-hidden">Processing...</span>
+    </div>
+    <p class="mt-3 text-muted">Starting import process...</p>
+  `;
+
+  // Get form data
+  const formData = new FormData(importForm);
+
+  fetch(importForm.action, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Show success in modal loading area
+      modalLoading.innerHTML = `
+        <div class="text-center py-5">
+          <i class="bi bi-check-circle text-success display-1"></i>
+          <h4 class="text-success mt-3">Import Started Successfully!</h4>
+          <p class="text-muted">${data.message}</p>
+          <button class="btn btn-success mt-3" data-bs-dismiss="modal">
+            <i class="bi bi-check"></i> Close
+          </button>
+        </div>
+      `;
+
+      // Show success alert on page
+      showAlert('success', data.message);
+
+      // Auto-close modal after 3 seconds
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('importSubscriptionModal'));
+        if (modal) modal.hide();
+      }, 3000);
+    } else {
+      throw new Error(data.message || 'Import failed');
+    }
+  })
+  .catch(error => {
+    console.error('Import error:', error);
+
+    // Show error in modal
+    modalLoading.innerHTML = `
+      <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle text-danger display-1"></i>
+        <h4 class="text-danger mt-3">Import Failed</h4>
+        <p class="text-muted">${error.message}</p>
+        <button class="btn btn-primary mt-3" onclick="processImport()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
+        <button class="btn btn-secondary mt-3 ms-2" data-bs-dismiss="modal">
+          <i class="bi bi-x"></i> Close
+        </button>
+      </div>
+    `;
+
+    // Show error alert on page
+    showAlert('danger', error.message);
+  })
+  .finally(() => {
+    // Reset button state (will be hidden anyway due to loading screen)
+    importBtn.disabled = false;
+    importBtnText.textContent = 'Copy to This Month';
+    importSpinner.classList.add('d-none');
+    importBtnIcon.classList.remove('d-none');
+  });
+}
+
+// Show alert function (following subscription modal style)
+function showAlert(type, message) {
+  const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+  const iconClass = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+  const strongText = type === 'success' ? 'Success!' : 'Error!';
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+  alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+  alertDiv.innerHTML = `
+    <i class="${iconClass} me-2"></i>
+    <strong>${strongText}</strong> ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+
+  document.body.appendChild(alertDiv);
+
+  // Auto-remove alert after 10 seconds
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 10000);
+}
+</script>
