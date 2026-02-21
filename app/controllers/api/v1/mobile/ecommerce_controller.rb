@@ -71,7 +71,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
       @products = @products.order(:name)
     end
 
+    # Handle count for grouped queries (like rating sort)
     total_count = @products.count
+    total_count = total_count.is_a?(Hash) ? total_count.keys.count : total_count
     @products = @products.offset((page - 1) * per_page).limit(per_page)
 
     products_data = @products.map { |product| format_product_data(product) }

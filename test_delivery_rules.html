@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Rules Test</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Select2 CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <style>
+        .container { margin-top: 30px; }
+        .delivery-rule-row {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .location-data-group { margin-top: 15px; }
+        .form-text { color: #6c757d; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Delivery Rules Test</h2>
+
+        <div class="delivery-rule-row">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Rule Type</label>
+                    <select id="rule_type" class="form-select">
+                        <option value="">Select Type</option>
+                        <option value="everywhere">All Locations</option>
+                        <option value="state">Specific States</option>
+                        <option value="city">Specific Cities</option>
+                        <option value="pincode">Specific Pincodes</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 location-data-group" style="display: none;">
+                    <!-- State Selection -->
+                    <div class="state-select-group" style="display: none;">
+                        <label class="form-label">Select States</label>
+                        <select id="states" multiple class="form-control">
+                            <option value="Karnataka">Karnataka</option>
+                            <option value="Tamil Nadu">Tamil Nadu</option>
+                            <option value="Maharashtra">Maharashtra</option>
+                            <option value="Gujarat">Gujarat</option>
+                            <option value="Rajasthan">Rajasthan</option>
+                            <option value="Kerala">Kerala</option>
+                            <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        </select>
+                        <div class="form-text">Select one or more states for delivery</div>
+
+                        <!-- Filtered Cities -->
+                        <div class="filtered-cities-group mt-3" style="display: none;">
+                            <label class="form-label">Cities in Selected States</label>
+                            <select id="filtered_cities" multiple class="form-control">
+                            </select>
+                            <div class="form-text">Optional: Select specific cities within the chosen states</div>
+                        </div>
+                    </div>
+
+                    <!-- City Selection -->
+                    <div class="city-select-group" style="display: none;">
+                        <label class="form-label">Select Cities</label>
+                        <select id="cities" multiple class="form-control">
+                            <option value="Bangalore">Bangalore</option>
+                            <option value="Mumbai">Mumbai</option>
+                            <option value="Chennai">Chennai</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Pune">Pune</option>
+                            <option value="Hyderabad">Hyderabad</option>
+                            <option value="Kolkata">Kolkata</option>
+                        </select>
+                        <div class="form-text">Select one or more cities for delivery</div>
+                    </div>
+
+                    <!-- Pincode Input -->
+                    <div class="pincode-input-group" style="display: none;">
+                        <label class="form-label">Enter Pincodes</label>
+                        <textarea id="pincodes" class="form-control" rows="3" placeholder="Enter pincodes separated by commas (e.g., 560001, 560002, 400001)"></textarea>
+                        <div class="form-text">Enter pincodes separated by commas</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Selected Values</label>
+                    <div id="output" class="alert alert-info">
+                        No selection made
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Cities mapping
+            const statesCitiesMap = {
+                'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore'],
+                'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem'],
+                'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik'],
+                'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot'],
+                'Rajasthan': ['Jaipur', 'Udaipur', 'Jodhpur', 'Kota'],
+                'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode'],
+                'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Tirupati']
+            };
+
+            // Initialize Select2
+            $('#states').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Select states...',
+                allowClear: true,
+                closeOnSelect: false,
+                width: '100%'
+            });
+
+            $('#cities').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Select cities...',
+                allowClear: true,
+                closeOnSelect: false,
+                width: '100%'
+            });
+
+            $('#filtered_cities').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Select cities from chosen states...',
+                allowClear: true,
+                closeOnSelect: false,
+                width: '100%'
+            });
+
+            // Handle rule type change
+            $('#rule_type').on('change', function() {
+                const ruleType = $(this).val();
+
+                // Hide all groups first
+                $('.location-data-group, .state-select-group, .city-select-group, .pincode-input-group, .filtered-cities-group').hide();
+
+                if (ruleType === 'everywhere') {
+                    $('#output').text('Delivery available everywhere');
+                } else if (ruleType) {
+                    $('.location-data-group').show();
+
+                    switch(ruleType) {
+                        case 'state':
+                            $('.state-select-group').show();
+                            break;
+                        case 'city':
+                            $('.city-select-group').show();
+                            break;
+                        case 'pincode':
+                            $('.pincode-input-group').show();
+                            break;
+                    }
+                } else {
+                    $('#output').text('No selection made');
+                }
+            });
+
+            // Handle state selection change
+            $('#states').on('change', function() {
+                const selectedStates = $(this).val() || [];
+
+                if (selectedStates.length > 0) {
+                    $('.filtered-cities-group').show();
+
+                    // Update filtered cities
+                    $('#filtered_cities').empty();
+
+                    selectedStates.forEach(state => {
+                        if (statesCitiesMap[state]) {
+                            statesCitiesMap[state].forEach(city => {
+                                $('#filtered_cities').append(new Option(city, city));
+                            });
+                        }
+                    });
+
+                    $('#filtered_cities').trigger('change.select2');
+                    $('#output').html('<strong>Selected States:</strong><br>' + selectedStates.join(', '));
+                } else {
+                    $('.filtered-cities-group').hide();
+                    $('#output').text('No states selected');
+                }
+            });
+
+            // Handle filtered cities selection
+            $('#filtered_cities').on('change', function() {
+                const selectedStates = $('#states').val() || [];
+                const selectedCities = $(this).val() || [];
+
+                let output = '<strong>Selected States:</strong><br>' + selectedStates.join(', ');
+                if (selectedCities.length > 0) {
+                    output += '<br><br><strong>Selected Cities:</strong><br>' + selectedCities.join(', ');
+                }
+                $('#output').html(output);
+            });
+
+            // Handle city selection change
+            $('#cities').on('change', function() {
+                const selectedCities = $(this).val() || [];
+                if (selectedCities.length > 0) {
+                    $('#output').html('<strong>Selected Cities:</strong><br>' + selectedCities.join(', '));
+                } else {
+                    $('#output').text('No cities selected');
+                }
+            });
+
+            // Handle pincode input change
+            $('#pincodes').on('input', function() {
+                const pincodes = $(this).val().split(',').map(p => p.trim()).filter(p => p);
+                if (pincodes.length > 0) {
+                    $('#output').html('<strong>Entered Pincodes:</strong><br>' + pincodes.join(', '));
+                } else {
+                    $('#output').text('No pincodes entered');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

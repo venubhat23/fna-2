@@ -3,6 +3,10 @@ class SystemSetting < ApplicationRecord
   validates :value, presence: true
   validates :setting_type, presence: true
 
+  # Business details validations
+  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
+  validates :upi_id, format: { with: /\A[a-zA-Z0-9.\-_]+@[a-zA-Z0-9.\-_]+\z/, message: "must be a valid UPI ID" }, allow_blank: true
+
   # Class method to get a setting value by key
   def self.get_value(key)
     setting = find_by(key: key)
@@ -93,5 +97,43 @@ class SystemSetting < ApplicationRecord
       default_ambassador_commission: params[:default_ambassador_commission],
       default_company_expenses: params[:default_company_expenses]
     )
+  end
+
+  # Business Settings Methods
+
+  # Singleton pattern to get the current business settings
+  def self.business_settings
+    find_by(key: 'business_config') || new
+  end
+
+  # Update business settings
+  def self.update_business_settings(params)
+    setting = find_or_create_by(key: 'business_config') do |s|
+      s.value = 'business configuration'
+      s.setting_type = 'configuration'
+      s.description = 'Business configuration settings'
+    end
+
+    setting.update!(
+      business_name: params[:business_name],
+      address: params[:address],
+      mobile: params[:mobile],
+      email: params[:email],
+      gstin: params[:gstin],
+      pan_number: params[:pan_number],
+      account_holder_name: params[:account_holder_name],
+      bank_name: params[:bank_name],
+      account_number: params[:account_number],
+      ifsc_code: params[:ifsc_code],
+      upi_id: params[:upi_id],
+      terms_and_conditions: params[:terms_and_conditions]
+    )
+
+    setting
+  end
+
+  def formatted_terms_and_conditions
+    return [] if terms_and_conditions.blank?
+    terms_and_conditions.split("\n").map(&:strip).reject(&:empty?)
   end
 end

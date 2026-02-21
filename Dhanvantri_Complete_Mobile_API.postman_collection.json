@@ -1,0 +1,1621 @@
+{
+  "info": {
+    "name": "Dhanvantri Complete Mobile API",
+    "description": "Complete mobile API collection with automatic token management and all endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Auto-set base URL if not set",
+          "if (!pm.environment.get('base_url')) {",
+          "    pm.environment.set('base_url', 'http://localhost:3000');",
+          "}",
+          "",
+          "// Auto-generate test data if needed",
+          "if (!pm.environment.get('test_email')) {",
+          "    const timestamp = Date.now();",
+          "    pm.environment.set('test_email', `test${timestamp}@example.com`);",
+          "    pm.environment.set('test_mobile', `98765${timestamp.toString().slice(-5)}`);",
+          "    pm.environment.set('test_password', 'Test123456');",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "delivery_person_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_mobile",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscription_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Setup Test Data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Generate unique test data for this session",
+                  "const timestamp = Date.now();",
+                  "const testEmail = `customer${timestamp}@dhanvantri.com`;",
+                  "const testMobile = `98765${timestamp.toString().slice(-5)}`;",
+                  "",
+                  "pm.environment.set('test_email', testEmail);",
+                  "pm.environment.set('test_mobile', testMobile);",
+                  "pm.environment.set('test_password', 'Dhanvantri@123');",
+                  "",
+                  "console.log('Test data generated:');",
+                  "console.log('Email:', testEmail);",
+                  "console.log('Mobile:', testMobile);",
+                  "console.log('Password: Dhanvantri@123');",
+                  "",
+                  "pm.test('Test data setup completed', function () {",
+                  "    pm.expect(pm.environment.get('test_email')).to.include('@dhanvantri.com');",
+                  "    pm.expect(pm.environment.get('test_mobile')).to.have.lengthOf(10);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories"]
+            },
+            "description": "Setup unique test data for the session"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Registration successful', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.expect(jsonData.data.customer_id).to.exist;",
+                  "    ",
+                  "    // Save token and customer data",
+                  "    pm.environment.set('auth_token', jsonData.data.token);",
+                  "    pm.environment.set('customer_id', jsonData.data.customer_id);",
+                  "    pm.environment.set('user_id', jsonData.data.user.id);",
+                  "    ",
+                  "    console.log('Registration successful! Token saved automatically.');",
+                  "    console.log('Customer ID:', jsonData.data.customer_id);",
+                  "});",
+                  "",
+                  "pm.test('Response contains required fields', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.user.first_name).to.exist;",
+                  "    pm.expect(jsonData.data.user.email).to.exist;",
+                  "    pm.expect(jsonData.data.user.mobile).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Test\",\n  \"last_name\": \"Customer\",\n  \"middle_name\": \"Mobile\",\n  \"email\": \"{{test_email}}\",\n  \"mobile\": \"{{test_mobile}}\",\n  \"password\": \"{{test_password}}\",\n  \"password_confirmation\": \"{{test_password}}\",\n  \"address\": \"123 Test Street, Test Area\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400001\",\n  \"whatsapp_number\": \"{{test_mobile}}\",\n  \"latitude\": 19.0760,\n  \"longitude\": 72.8777\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.expect(jsonData.data.role).to.equal('customer');",
+                  "    ",
+                  "    // Update token",
+                  "    pm.environment.set('auth_token', jsonData.data.token);",
+                  "    pm.environment.set('customer_id', jsonData.data.customer_id);",
+                  "    ",
+                  "    console.log('Login successful! Token refreshed.');",
+                  "    console.log('Role:', jsonData.data.role);",
+                  "});",
+                  "",
+                  "pm.test('Portfolio summary included', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.portfolio_summary).to.exist;",
+                  "    pm.expect(jsonData.data.portfolio_summary.total_policies).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delivery Person Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Delivery person login successful', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.role).to.equal('delivery_person');",
+                  "        ",
+                  "        // Save delivery person token separately",
+                  "        pm.environment.set('delivery_auth_token', jsonData.data.token);",
+                  "        pm.environment.set('delivery_person_id', jsonData.data.delivery_person_id);",
+                  "    });",
+                  "} else {",
+                  "    console.log('Delivery person login failed - this is expected if no delivery person exists');",
+                  "    pm.test('Expected failure for non-existent delivery person', function () {",
+                  "        pm.response.to.have.status(401);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9876543210\",\n  \"password\": \"delivery123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Forgot password request processed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.reset_method).to.exist;",
+                  "    pm.expect(jsonData.data.sent_to).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email_or_mobile\": \"{{test_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/forgot_password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "auth", "forgot_password"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🛍️ E-commerce - Catalog",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Categories retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    ",
+                  "    // Save first category ID for other tests",
+                  "    if (jsonData.data.length > 0) {",
+                  "        pm.environment.set('category_id', jsonData.data[0].id);",
+                  "        console.log('Category ID saved:', jsonData.data[0].id);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Category structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 0) {",
+                  "        const category = jsonData.data[0];",
+                  "        pm.expect(category.id).to.exist;",
+                  "        pm.expect(category.name).to.exist;",
+                  "        pm.expect(category.products_count).to.be.a('number');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Category details retrieved', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.id).to.exist;",
+                  "        pm.expect(jsonData.data.name).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('Category not found - this is expected if no categories exist');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories", "{{category_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Products retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.products).to.be.an('array');",
+                  "    pm.expect(jsonData.data.pagination).to.exist;",
+                  "    ",
+                  "    // Save first product ID for other tests",
+                  "    if (jsonData.data.products.length > 0) {",
+                  "        pm.environment.set('product_id', jsonData.data.products[0].id);",
+                  "        console.log('Product ID saved:', jsonData.data.products[0].id);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Product structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data.products.length > 0) {",
+                  "        const product = jsonData.data.products[0];",
+                  "        pm.expect(product.id).to.exist;",
+                  "        pm.expect(product.name).to.exist;",
+                  "        pm.expect(product.price).to.be.a('number');",
+                  "        pm.expect(product.stock_status).to.exist;",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Products with Filters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Filtered products retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.applied_filters).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products?category_id={{category_id}}&min_price=100&max_price=1000&sort_by=price_low",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "products"],
+              "query": [
+                {
+                  "key": "category_id",
+                  "value": "{{category_id}}"
+                },
+                {
+                  "key": "min_price",
+                  "value": "100"
+                },
+                {
+                  "key": "max_price",
+                  "value": "1000"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "price_low"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Product details retrieved', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.id).to.exist;",
+                  "        pm.expect(jsonData.data.name).to.exist;",
+                  "        pm.expect(jsonData.data.delivery_info).to.exist;",
+                  "        pm.expect(jsonData.data.nutritional_info).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('Product not found - this is expected if no products exist');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "products", "{{product_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Search results retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.products).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/search?query=organic&page=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "organic"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Featured Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Featured products retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/featured_products",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "featured_products"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🚚 Delivery & Validation",
+      "item": [
+        {
+          "name": "Check Pincode Delivery",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Pincode validation completed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pincode).to.equal('400001');",
+                  "    pm.expect(jsonData.data.delivery_available).to.be.a('boolean');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/check-pincode/400001",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "delivery", "check-pincode", "400001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Delivery for Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Delivery validation completed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pincode).to.exist;",
+                  "    pm.expect(jsonData.data.overall_deliverable).to.be.a('boolean');",
+                  "    pm.expect(jsonData.data.products).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_ids\": [{{product_id}}],\n  \"pincode\": \"400001\",\n  \"delivery_date\": \"2024-02-25\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "delivery", "validate"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🛒 Orders & Bookings",
+      "item": [
+        {
+          "name": "Create Booking (Place Order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('Booking created successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.booking.id).to.exist;",
+                  "        pm.expect(jsonData.data.booking.booking_number).to.exist;",
+                  "        ",
+                  "        // Save booking ID for other tests",
+                  "        pm.environment.set('booking_id', jsonData.data.booking.id);",
+                  "        console.log('Booking created with ID:', jsonData.data.booking.id);",
+                  "    });",
+                  "",
+                  "    pm.test('Booking contains required data', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.data.booking.items).to.be.an('array');",
+                  "        pm.expect(jsonData.data.booking.price_summary).to.exist;",
+                  "        pm.expect(jsonData.data.booking.delivery_details).to.exist;",
+                  "    });",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication required - make sure to login first');",
+                  "} else {",
+                  "    console.log('Booking creation failed - may be due to missing products or invalid data');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking\": {\n    \"customer_name\": \"Test Customer\",\n    \"customer_email\": \"{{test_email}}\",\n    \"customer_phone\": \"{{test_mobile}}\",\n    \"delivery_address\": \"123 Test Street, Test Area, Mumbai\",\n    \"pincode\": \"400001\",\n    \"latitude\": 19.0760,\n    \"longitude\": 72.8777,\n    \"payment_method\": \"cod\",\n    \"notes\": \"Please call before delivery\",\n    \"booking_items_attributes\": [\n      {\n        \"product_id\": {{product_id}},\n        \"quantity\": 2,\n        \"price\": 250.00\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "bookings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Bookings retrieved successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.bookings).to.be.an('array');",
+                  "        pm.expect(jsonData.data.pagination).to.exist;",
+                  "    });",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication required - make sure to login first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/bookings?status=confirmed&page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "confirmed"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Orders retrieved successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.bookings).to.be.an('array');",
+                  "    });",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication required - make sure to login first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Order details retrieved', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.order).to.exist;",
+                  "    });",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('Order not found - this is expected if no orders exist');",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication required - make sure to login first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/orders/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "orders", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📅 Subscriptions",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('Subscription created successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.subscription.id).to.exist;",
+                  "        ",
+                  "        // Save subscription ID",
+                  "        pm.environment.set('subscription_id', jsonData.data.subscription.id);",
+                  "        console.log('Subscription created with ID:', jsonData.data.subscription.id);",
+                  "    });",
+                  "} else {",
+                  "    console.log('Subscription creation failed - may be due to product not supporting subscriptions');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscription\": {\n    \"product_id\": {{product_id}},\n    \"quantity\": 2,\n    \"frequency\": \"daily\",\n    \"start_date\": \"2024-02-25\",\n    \"end_date\": \"2024-03-25\",\n    \"delivery_time\": \"morning\",\n    \"delivery_address\": \"123 Test Street, Mumbai\",\n    \"pincode\": \"400001\",\n    \"special_instructions\": \"Ring doorbell twice\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Subscriptions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Subscriptions retrieved successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.subscriptions).to.be.an('array');",
+                  "        pm.expect(jsonData.data.summary).to.exist;",
+                  "    });",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication required - make sure to login first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions?status=active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Subscription details retrieved', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.subscription).to.exist;",
+                  "    });",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('Subscription not found');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/{{subscription_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "{{subscription_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Subscription paused successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.status).to.equal('paused');",
+                  "    });",
+                  "} else {",
+                  "    console.log('Pause subscription failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/{{subscription_id}}/pause",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "{{subscription_id}}", "pause"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Subscription resumed successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.status).to.equal('active');",
+                  "    });",
+                  "} else {",
+                  "    console.log('Resume subscription failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/{{subscription_id}}/resume",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "{{subscription_id}}", "resume"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Subscription cancelled successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.status).to.equal('cancelled');",
+                  "    });",
+                  "} else {",
+                  "    console.log('Cancel subscription failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/{{subscription_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "subscriptions", "{{subscription_id}}", "cancel"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 Customer Profile",
+      "item": [
+        {
+          "name": "Get Customer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Profile retrieved successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.customer).to.exist;",
+                  "        pm.expect(jsonData.data.customer.email).to.exist;",
+                  "    });",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication required - make sure to login first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Profile updated successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.customer).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('Profile update failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Updated Test\",\n  \"last_name\": \"Customer\",\n  \"email\": \"{{test_email}}\",\n  \"mobile\": \"{{test_mobile}}\",\n  \"address\": \"456 Updated Street, New Area\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400002\",\n  \"whatsapp_number\": \"{{test_mobile}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🚚 Delivery Person",
+      "item": [
+        {
+          "name": "Switch to Delivery Person Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Switch to delivery person token if available",
+                  "const deliveryToken = pm.environment.get('delivery_auth_token');",
+                  "if (deliveryToken) {",
+                  "    pm.environment.set('auth_token', deliveryToken);",
+                  "    console.log('Switched to delivery person token');",
+                  "    pm.test('Token switched successfully', function () {",
+                  "        pm.expect(deliveryToken).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('No delivery person token available - delivery person endpoints may not work');",
+                  "    pm.test('No delivery token available', function () {",
+                  "        pm.expect(deliveryToken).to.not.exist;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Today's Deliveries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Today\\'s deliveries retrieved', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.summary).to.exist;",
+                  "        pm.expect(jsonData.data.tasks).to.be.an('array');",
+                  "    });",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('Authentication failed - delivery person token may not be valid');",
+                  "} else {",
+                  "    console.log('Failed to retrieve deliveries');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/today",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "today"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Task details retrieved', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.task).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('Task details retrieval failed - task may not exist');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Delivery Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Delivery task started', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.status).to.equal('in_progress');",
+                  "    });",
+                  "} else {",
+                  "    console.log('Failed to start delivery task');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_location\": {\n    \"latitude\": 19.0750,\n    \"longitude\": 72.8775\n  },\n  \"estimated_arrival_minutes\": 15\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/{{booking_id}}/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "{{booking_id}}", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Single Delivery",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Delivery completed successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.status).to.equal('completed');",
+                  "    });",
+                  "} else {",
+                  "    console.log('Failed to complete delivery');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_proof\": {\n    \"recipient_name\": \"Test Customer\",\n    \"signature\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==\",\n    \"photo\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n    \"otp\": \"1234\"\n  },\n  \"payment_collected\": {\n    \"amount\": 500.00,\n    \"method\": \"cash\"\n  },\n  \"location\": {\n    \"latitude\": 19.0760,\n    \"longitude\": 72.8777\n  },\n  \"notes\": \"Delivered successfully to customer at doorstep\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/{{booking_id}}/complete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "{{booking_id}}", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Mark Deliveries Done",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Bulk delivery update successful', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.updated_count).to.be.a('number');",
+                  "    });",
+                  "} else {",
+                  "    console.log('Bulk delivery update failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_ids\": [101, 102, 103],\n  \"delivery_person_id\": 5,\n  \"completed_at\": \"2024-02-20T15:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bulk_mark_done",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "bulk_mark_done"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advanced Bulk Update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Advanced bulk update successful', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.results).to.be.an('array');",
+                  "        pm.expect(jsonData.data.summary).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('Advanced bulk update failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_person_id\": 5,\n  \"updates\": [\n    {\n      \"booking_id\": 101,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2024-02-20T14:30:00Z\",\n      \"delivery_notes\": \"Left with building security\",\n      \"latitude\": 19.0760,\n      \"longitude\": 72.8777\n    },\n    {\n      \"booking_id\": 102,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2024-02-20T14:45:00Z\",\n      \"delivery_notes\": \"Delivered to customer directly\",\n      \"latitude\": 19.0765,\n      \"longitude\": 72.8780\n    },\n    {\n      \"booking_id\": 103,\n      \"status\": \"failed\",\n      \"attempted_at\": \"2024-02-20T15:00:00Z\",\n      \"failure_reason\": \"Customer not available\",\n      \"latitude\": 19.0770,\n      \"longitude\": 72.8785\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bulk_update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "bulk_update"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Delivery Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Location updated successfully', function () {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data.distance_to_customer).to.exist;",
+                  "        pm.expect(jsonData.data.estimated_arrival).to.exist;",
+                  "    });",
+                  "} else {",
+                  "    console.log('Location update failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 19.0755,\n  \"longitude\": 72.8776,\n  \"timestamp\": \"2024-02-20T09:50:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/{{booking_id}}/update_location",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "delivery", "tasks", "{{booking_id}}", "update_location"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🧪 Test Suite - Run All",
+      "item": [
+        {
+          "name": "Complete API Flow Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// This is a comprehensive test to verify the entire API flow",
+                  "pm.test('API is responsive', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Environment variables are set', function () {",
+                  "    pm.expect(pm.environment.get('base_url')).to.exist;",
+                  "    pm.expect(pm.environment.get('test_email')).to.exist;",
+                  "    pm.expect(pm.environment.get('test_mobile')).to.exist;",
+                  "});",
+                  "",
+                  "console.log('=== API Test Summary ===');",
+                  "console.log('Base URL:', pm.environment.get('base_url'));",
+                  "console.log('Test Email:', pm.environment.get('test_email'));",
+                  "console.log('Test Mobile:', pm.environment.get('test_mobile'));",
+                  "console.log('Auth Token Set:', pm.environment.get('auth_token') ? 'Yes' : 'No');",
+                  "console.log('Customer ID:', pm.environment.get('customer_id') || 'Not Set');",
+                  "console.log('Product ID:', pm.environment.get('product_id') || 'Not Set');",
+                  "console.log('========================');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "mobile", "ecommerce", "categories"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

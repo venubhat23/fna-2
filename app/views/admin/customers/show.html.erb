@@ -125,6 +125,68 @@
       </div>
     </div>
 
+    <!-- Login Credentials -->
+    <% user = User.find_by(email: @customer.email) %>
+    <% if user %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">
+          <i class="bi bi-key me-2 text-primary"></i>
+          Login Credentials
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <strong class="text-muted d-block">Username (Email)</strong>
+            <div class="d-flex align-items-center">
+              <span class="me-2"><%= user.email %></span>
+              <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('<%= user.email %>')">
+                <i class="bi bi-copy"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <strong class="text-muted d-block">Password</strong>
+            <div class="d-flex align-items-center">
+              <span class="me-2 font-monospace">
+                <% if @customer.auto_generated_password.present? %>
+                  <%= @customer.auto_generated_password %>
+                <% else %>
+                  <span class="text-muted">Set by customer</span>
+                <% end %>
+              </span>
+              <% if @customer.auto_generated_password.present? %>
+                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('<%= @customer.auto_generated_password %>')">
+                  <i class="bi bi-copy"></i>
+                </button>
+              <% end %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <strong class="text-muted d-block">User Type</strong>
+            <span class="badge bg-info"><%= user.user_type.titleize %></span>
+          </div>
+          <div class="col-md-6">
+            <strong class="text-muted d-block">Account Status</strong>
+            <span class="badge bg-<%= user.status? ? 'success' : 'danger' %>">
+              <%= user.status? ? 'Active' : 'Inactive' %>
+            </span>
+          </div>
+          <div class="col-12">
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>Login URL:</strong>
+              <a href="<%= request.base_url %>/mobile/login" target="_blank" class="alert-link">
+                <%= request.base_url %>/mobile/login
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% end %>
+
     <!-- Professional Information -->
     <% if @customer.company_name.present? || @customer.occupation.present? || @customer.annual_income.present? %>
     <div class="card border-0 shadow-sm mb-4">
@@ -456,3 +518,60 @@
   padding-left: 10px;
 }
 </style>
+
+<script>
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    // Use modern clipboard API
+    navigator.clipboard.writeText(text).then(() => {
+      showCopySuccess();
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      fallbackCopyTextToClipboard(text);
+    });
+  } else {
+    // Fallback for older browsers
+    fallbackCopyTextToClipboard(text);
+  }
+}
+
+function fallbackCopyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      showCopySuccess();
+    } else {
+      console.error('Fallback: Copying text command was unsuccessful');
+    }
+  } catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+  }
+
+  document.body.removeChild(textArea);
+}
+
+function showCopySuccess() {
+  // Create a temporary success message
+  const message = document.createElement('div');
+  message.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+  message.style.zIndex = '9999';
+  message.innerHTML = '<i class="bi bi-check-circle me-2"></i>Copied to clipboard!';
+  document.body.appendChild(message);
+
+  // Remove the message after 2 seconds
+  setTimeout(() => {
+    if (document.body.contains(message)) {
+      document.body.removeChild(message);
+    }
+  }, 2000);
+}
+</script>

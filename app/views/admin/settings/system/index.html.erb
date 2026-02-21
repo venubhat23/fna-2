@@ -12,6 +12,22 @@
   </div>
 </div>
 
+<!-- Navigation Tabs -->
+<ul class="nav nav-pills nav-fill mb-4" id="systemTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="business-settings-tab" data-bs-toggle="pill" data-bs-target="#business-settings"
+            type="button" role="tab" aria-controls="business-settings" aria-selected="true">
+      <i class="bi bi-building me-2"></i>Business Settings
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="system-config-tab" data-bs-toggle="pill" data-bs-target="#system-config"
+            type="button" role="tab" aria-controls="system-config" aria-selected="false">
+      <i class="bi bi-gear me-2"></i>System Configuration
+    </button>
+  </li>
+</ul>
+
 <!-- Statistics Cards -->
 <div class="row mb-4">
   <div class="col-xl-3 col-md-6 mb-3">
@@ -78,6 +94,153 @@
     </div>
   </div>
 </div>
+
+<!-- Tab Content -->
+<div class="tab-content" id="systemTabContent">
+
+  <!-- Business Settings Tab -->
+  <div class="tab-pane fade show active" id="business-settings" role="tabpanel" aria-labelledby="business-settings-tab">
+
+    <%= form_with url: admin_settings_system_path, method: :patch, local: true, class: "needs-validation", novalidate: true do |form| %>
+      <%= hidden_field_tag :business_settings_update, "true" %>
+
+      <div class="row">
+        <!-- Business Details Section -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h4><i class="bi bi-building me-2"></i>Brand & Business Details</h4>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <%= form.label :business_name, "Brand Name", class: "form-label" %>
+                <%= form.text_field :business_name, class: "form-control", required: true,
+                    placeholder: "Enter your brand name",
+                    value: @business_setting.business_name.present? ? @business_setting.business_name : "Atma Nirbhar Farm" %>
+                <small class="form-text text-muted">This will be displayed as your brand name on invoices and documents</small>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :address, class: "form-label" %>
+                <%= form.text_area :address, rows: 3, class: "form-control", value: @business_setting.address %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :mobile, class: "form-label" %>
+                <%= form.text_field :mobile, class: "form-control", required: true, value: @business_setting.mobile %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :email, class: "form-label" %>
+                <%= form.email_field :email, class: "form-control", required: true, value: @business_setting.email %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :gstin, "GSTIN", class: "form-label" %>
+                <%= form.text_field :gstin, class: "form-control", value: @business_setting.gstin %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :pan_number, "PAN Number", class: "form-label" %>
+                <%= form.text_field :pan_number, class: "form-control", value: @business_setting.pan_number %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Details Section -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h4><i class="bi bi-bank me-2"></i>Bank Details</h4>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <%= form.label :account_holder_name, class: "form-label" %>
+                <%= form.text_field :account_holder_name, class: "form-control", required: true, value: @business_setting.account_holder_name %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :bank_name, class: "form-label" %>
+                <%= form.text_field :bank_name, class: "form-control", required: true, value: @business_setting.bank_name %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :account_number, class: "form-label" %>
+                <%= form.text_field :account_number, class: "form-control", required: true, value: @business_setting.account_number %>
+              </div>
+
+              <div class="mb-3">
+                <%= form.label :ifsc_code, "IFSC Code", class: "form-label" %>
+                <%= form.text_field :ifsc_code, class: "form-control", required: true, value: @business_setting.ifsc_code %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- UPI Payment Section -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h4><i class="bi bi-phone me-2"></i>UPI Payment</h4>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <%= form.label :upi_id, "UPI ID", class: "form-label" %>
+                <%= form.text_field :upi_id, class: "form-control", placeholder: "yourname@paytm or yourname@upi", value: @business_setting.upi_id %>
+                <div class="form-text">Enter your UPI ID to generate QR code automatically</div>
+              </div>
+
+              <% if @business_setting.upi_id.present? && @business_setting.qr_code_path.present? %>
+                <div class="mb-3">
+                  <label class="form-label">UPI QR Code</label>
+                  <div class="text-center">
+                    <%= image_tag @business_setting.qr_code_path, alt: "UPI QR Code", class: "img-fluid", style: "max-width: 150px;" %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms and Conditions Section -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h4><i class="bi bi-file-text me-2"></i>Terms and Conditions</h4>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <%= form.label :terms_and_conditions, class: "form-label" %>
+                <%= form.text_area :terms_and_conditions, rows: 5, class: "form-control",
+                    placeholder: "Enter terms and conditions for your customers",
+                    value: @business_setting.terms_and_conditions %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-body text-center">
+              <div class="actions">
+                <%= form.submit "Update Business Settings", class: "btn btn-primary btn-lg me-2" %>
+                <%= link_to "Cancel", admin_settings_system_path, class: "btn btn-secondary btn-lg" %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+  </div>
+
+  <!-- System Configuration Tab -->
+  <div class="tab-pane fade" id="system-config" role="tabpanel" aria-labelledby="system-config-tab">
 
 <div class="row">
   <div class="col-lg-8">
@@ -215,4 +378,59 @@
       </div>
     </div>
   </div>
-</div>
+
+  </div> <!-- End of System Configuration Tab -->
+
+</div> <!-- End of Tab Content -->
+
+<script>
+// Bootstrap form validation
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+
+// Tab Management
+document.addEventListener('DOMContentLoaded', function() {
+  // Store active tab in localStorage
+  const tabs = document.querySelectorAll('#systemTabs button[data-bs-toggle="pill"]');
+  const activeTab = localStorage.getItem('systemActiveTab');
+
+  if (activeTab) {
+    const tabButton = document.querySelector(`#systemTabs button[data-bs-target="${activeTab}"]`);
+    if (tabButton) {
+      const tab = new bootstrap.Tab(tabButton);
+      tab.show();
+    }
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function(e) {
+      localStorage.setItem('systemActiveTab', e.target.getAttribute('data-bs-target'));
+    });
+  });
+});
+
+// UPI Functions
+function copyUpiId() {
+  const upiId = document.getElementById('upi-id')?.textContent;
+  if (upiId) {
+    navigator.clipboard.writeText(upiId).then(function() {
+      alert('UPI ID copied to clipboard!');
+    }, function() {
+      alert('Failed to copy UPI ID');
+    });
+  }
+}
+</script>

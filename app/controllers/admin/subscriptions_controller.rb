@@ -240,6 +240,67 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     redirect_to admin_subscriptions_path(status: 'expired')
   end
 
+  # Generate daily tasks for all active subscriptions
+  def generate_all_daily_tasks
+    begin
+      active_subscriptions = MilkSubscription.where(status: 'active', is_active: true)
+
+      if active_subscriptions.empty?
+        render json: {
+          success: false,
+          message: 'No active subscriptions found to generate tasks for.'
+        }
+        return
+      end
+
+      total_tasks_generated = 0
+      subscriptions_processed = 0
+      failed_subscriptions = []
+
+      active_subscriptions.find_each do |subscription|
+        begin
+          tasks_count = generate_delivery_tasks_for_subscription(subscription)
+          total_tasks_generated += tasks_count
+          subscriptions_processed += 1
+        rescue => e
+          failed_subscriptions << {
+            subscription_id: subscription.id,
+            error: e.message
+          }
+        end
+      end
+
+      if failed_subscriptions.any?
+        render json: {
+          success: false,
+          message: "Partially completed. Generated #{total_tasks_generated} tasks for #{subscriptions_processed} subscriptions. #{failed_subscriptions.count} subscriptions failed.",
+          details: {
+            total_tasks: total_tasks_generated,
+            processed: subscriptions_processed,
+            failed: failed_subscriptions.count,
+            failed_details: failed_subscriptions
+          }
+        }
+      else
+        render json: {
+          success: true,
+          message: "Successfully generated #{total_tasks_generated} daily tasks for #{subscriptions_processed} active subscriptions!",
+          details: {
+            total_tasks: total_tasks_generated,
+            processed: subscriptions_processed,
+            active_subscriptions: active_subscriptions.count
+          }
+        }
+      end
+
+    rescue => e
+      render json: {
+        success: false,
+        message: "Error generating daily tasks: #{e.message}"
+      }
+    end
+  end
+
   private
 
   def set_subscription

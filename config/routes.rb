@@ -288,6 +288,7 @@ Rails.application.routes.draw do
         get :active
         get :paused
         get :expired
+        post :generate_all_daily_tasks
       end
     end
 

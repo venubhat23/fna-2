@@ -82,12 +82,17 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   def batch_inventory
     # Get all stock batches with filters
     stock_batches_query = StockBatch.includes(:product, :vendor, :vendor_purchase)
-                                   .active
                                    .order(:batch_date, :created_at)
 
     stock_batches_query = stock_batches_query.joins(:product).where('products.name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
     stock_batches_query = stock_batches_query.where(vendor_id: params[:vendor_id]) if params[:vendor_id].present?
-    stock_batches_query = stock_batches_query.where('quantity_remaining > 0') if params[:in_stock] == 'true'
+    # Apply in_stock filter only if explicitly requested
+    if params[:in_stock] == 'true'
+      stock_batches_query = stock_batches_query.where('quantity_remaining > 0')
+    elsif params[:in_stock] == 'false'
+      stock_batches_query = stock_batches_query.where('quantity_remaining <= 0')
+    end
+    # If no in_stock filter, show all batches
 
     @stock_batches = stock_batches_query.to_a
 

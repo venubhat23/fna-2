@@ -212,11 +212,14 @@
                     </thead>
                     <tbody>
                       <% stat[:batches].each_with_index do |batch, batch_index| %>
-                        <tr>
+                        <tr class="<%= batch.quantity_remaining <= 0 ? 'table-secondary bg-opacity-25' : '' %>">
                           <td>
-                            <span class="badge bg-secondary">
+                            <span class="badge <%= batch.quantity_remaining <= 0 ? 'bg-dark text-light' : 'bg-secondary' %>">
                               #<%= batch.id %>
                             </span>
+                            <% if batch.quantity_remaining <= 0 %>
+                              <small class="text-muted d-block">Exhausted</small>
+                            <% end %>
                           </td>
                           <td>
                             <div class="small">

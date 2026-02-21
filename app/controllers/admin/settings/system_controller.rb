@@ -23,6 +23,9 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
     @default_affiliate_commission = SystemSetting.default_affiliate_commission
     @default_ambassador_commission = SystemSetting.default_ambassador_commission
     @default_company_expenses = SystemSetting.default_company_expenses
+
+    # Get business settings
+    @business_setting = SystemSetting.business_settings
   end
 
   def update
@@ -84,6 +87,36 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
       end
     end
 
+    # Handle business settings update
+    if params[:business_settings_update] == "true"
+      begin
+        business_params = {
+          business_name: params[:business_name],
+          address: params[:address],
+          mobile: params[:mobile],
+          email: params[:email],
+          gstin: params[:gstin],
+          pan_number: params[:pan_number],
+          account_holder_name: params[:account_holder_name],
+          bank_name: params[:bank_name],
+          account_number: params[:account_number],
+          ifsc_code: params[:ifsc_code],
+          upi_id: params[:upi_id],
+          terms_and_conditions: params[:terms_and_conditions]
+        }
+
+        @business_setting = SystemSetting.update_business_settings(business_params)
+
+        # Generate QR code if UPI ID is present
+        generate_qr_code if @business_setting.upi_id.present?
+
+        success_messages << 'Business settings updated successfully!'
+      rescue => e
+        redirect_to admin_settings_system_path, alert: "Error updating business settings: #{e.message}"
+        return
+      end
+    end
+
     if success_messages.any?
       redirect_to admin_settings_system_path, notice: success_messages.join(' ')
     else
@@ -100,5 +133,27 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
       :default_main_agent_commission, :default_affiliate_commission,
       :default_ambassador_commission, :default_company_expenses
     )
+  end
+
+  def generate_qr_code
+    require 'rqrcode'
+
+    qr = RQRCode::QRCode.new(@business_setting.upi_id)
+
+    # Generate SVG
+    svg = qr.as_svg(
+      color: "000",
+      shape_rendering: "crispEdges",
+      module_size: 6,
+      standalone: true
+    )
+
+    # Save to storage
+    qr_code_path = Rails.root.join('public', 'qr_codes')
+    FileUtils.mkdir_p(qr_code_path) unless Dir.exist?(qr_code_path)
+
+    File.write(Rails.root.join('public', 'qr_codes', "upi_qr_#{@business_setting.id}.svg"), svg)
+
+    @business_setting.update(qr_code_path: "/qr_codes/upi_qr_#{@business_setting.id}.svg")
   end
 end

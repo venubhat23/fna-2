@@ -20,6 +20,14 @@
         </label>
       </div>
     </div>
+    <button type="button"
+            class="btn btn-success me-2"
+            id="generateDailyTasksBtn"
+            onclick="generateDailyTasks()">
+      <i class="bi bi-gear me-1" id="generateDailyTasksIcon"></i>
+      <span class="spinner-border spinner-border-sm me-1 d-none" id="generateDailyTasksSpinner"></span>
+      <span id="generateDailyTasksText">Generate Daily Tasks</span>
+    </button>
     <%= link_to new_admin_subscription_path, class: "btn btn-primary" do %>
       <i class="bi bi-plus-lg me-1"></i>
       Create New Subscription
@@ -819,6 +827,28 @@
   height: 3rem;
 }
 
+/* Generate Daily Tasks Button Loading State */
+.btn-loading {
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.btn-loading:hover {
+  transform: none !important;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.1em;
+}
+
+#generateDailyTasksBtn.btn-loading {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+}
+
 /* Task row hover */
 #tasksTableBody tr:hover {
   background-color: #f8f9fa;
@@ -1566,5 +1596,69 @@ function bulkUpdateTasks() {
     console.error('Error:', error);
     showAlert('Error updating tasks', 'error');
   });
+}
+
+// Generate Daily Tasks functionality
+function generateDailyTasks() {
+  const btn = document.getElementById('generateDailyTasksBtn');
+  const icon = document.getElementById('generateDailyTasksIcon');
+  const spinner = document.getElementById('generateDailyTasksSpinner');
+  const text = document.getElementById('generateDailyTasksText');
+
+  if (!confirm('Generate daily delivery tasks for all active subscriptions? This might take a few moments.')) {
+    return;
+  }
+
+  // Set loading state
+  setGenerateTasksLoading(true);
+
+  fetch('/admin/subscriptions/generate_all_daily_tasks', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showAlert(data.message, 'success');
+      // Optionally refresh the page to show updated statistics
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      showAlert(data.message || 'Failed to generate daily tasks', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('Error generating daily tasks. Please try again.', 'error');
+  })
+  .finally(() => {
+    setGenerateTasksLoading(false);
+  });
+}
+
+function setGenerateTasksLoading(loading) {
+  const btn = document.getElementById('generateDailyTasksBtn');
+  const icon = document.getElementById('generateDailyTasksIcon');
+  const spinner = document.getElementById('generateDailyTasksSpinner');
+  const text = document.getElementById('generateDailyTasksText');
+
+  if (loading) {
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    icon.classList.add('d-none');
+    spinner.classList.remove('d-none');
+    text.textContent = 'Generating...';
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('btn-loading');
+    icon.classList.remove('d-none');
+    spinner.classList.add('d-none');
+    text.textContent = 'Generate Daily Tasks';
+  }
 }
 </script>
