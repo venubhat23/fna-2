@@ -496,126 +496,146 @@
 }
 </style>
 
-<!-- Import from Master Subscription Modal - Fixed Structure -->
+<!-- Import from Master Subscription Modal - Completely Rebuilt -->
 <div class="modal fade" id="importSubscriptionModal" tabindex="-1" aria-labelledby="importSubscriptionModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
+      <!-- Modal Header -->
       <div class="modal-header bg-success text-white">
         <h5 class="modal-title" id="importSubscriptionModalLabel">
           <i class="bi bi-download me-2"></i>Import from Master Subscription
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body" style="display: block !important; visibility: visible !important;">
-      <div id="importModalLoading" class="text-center py-5" style="display: none;">
-        <div class="spinner-border text-success" role="status">
-          <span class="visually-hidden">Processing...</span>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <!-- Loading State (Hidden by default) -->
+        <div id="importModalLoading" class="text-center py-5 d-none">
+          <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Processing...</span>
+          </div>
+          <h5 class="mt-3 text-success">Processing Import</h5>
+          <p class="text-muted">Please wait while we process your request...</p>
         </div>
-        <p class="mt-3 text-muted">Processing import request...</p>
+
+        <!-- Main Content -->
+        <div id="importModalContent">
+          <%= form_with url: import_from_master_admin_customer_formats_path, method: :post, local: false, html: { id: "importSubscriptionForm", class: "needs-validation" }, novalidate: true do |form| %>
+
+            <!-- Month and Year Selection -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="card border-success h-100">
+                  <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-calendar-month me-2"></i>Select Month</h6>
+                  </div>
+                  <div class="card-body">
+                    <%= form.select :month,
+                        options_for_select([
+                          ['January', 1], ['February', 2], ['March', 3], ['April', 4],
+                          ['May', 5], ['June', 6], ['July', 7], ['August', 8],
+                          ['September', 9], ['October', 10], ['November', 11], ['December', 12]
+                        ], Date.current.month),
+                        { prompt: "Choose Month" },
+                        { class: "form-select form-select-lg", id: "import_month", required: true } %>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="card border-primary h-100">
+                  <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="bi bi-calendar-year me-2"></i>Select Year</h6>
+                  </div>
+                  <div class="card-body">
+                    <%= form.select :year,
+                        options_for_select((Date.current.year..(Date.current.year + 2)).map { |y| [y, y] }, Date.current.year),
+                        { prompt: "Choose Year" },
+                        { class: "form-select form-select-lg", id: "import_year", required: true } %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Process Information -->
+            <div class="card border-info mb-4">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Import Process Information</h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6 class="text-primary"><i class="bi bi-plus-circle me-1"></i>What will be created:</h6>
+                    <ul class="list-unstyled small">
+                      <li><i class="bi bi-check text-success me-2"></i>Monthly subscriptions for selected period</li>
+                      <li><i class="bi bi-check text-success me-2"></i>Daily tasks based on delivery patterns</li>
+                      <li><i class="bi bi-check text-success me-2"></i>Customer-specific delivery schedules</li>
+                    </ul>
+                  </div>
+                  <div class="col-md-6">
+                    <h6 class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Important Notes:</h6>
+                    <ul class="list-unstyled small">
+                      <li><i class="bi bi-info text-info me-2"></i>Only active customer formats will be processed</li>
+                      <li><i class="bi bi-clock text-info me-2"></i>Process runs in background (~10 minutes)</li>
+                      <li><i class="bi bi-shield-check text-info me-2"></i>Duplicates are automatically prevented</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Statistics -->
+            <div class="card border-secondary">
+              <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Current Active Formats</h6>
+              </div>
+              <div class="card-body">
+                <div class="row text-center">
+                  <div class="col-md-3">
+                    <div class="p-3">
+                      <i class="bi bi-file-text text-primary display-4"></i>
+                      <h4 class="text-primary mt-2"><%= @stats[:active] rescue 0 %></h4>
+                      <small class="text-muted">Active Formats</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="p-3">
+                      <i class="bi bi-people text-success display-4"></i>
+                      <h4 class="text-success mt-2"><%= Customer.joins(:customer_formats).where(customer_formats: { status: 'active' }).distinct.count rescue 0 %></h4>
+                      <small class="text-muted">Customers</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="p-3">
+                      <i class="bi bi-box text-warning display-4"></i>
+                      <h4 class="text-warning mt-2"><%= Product.joins(:customer_formats).where(customer_formats: { status: 'active' }).distinct.count rescue 0 %></h4>
+                      <small class="text-muted">Products</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="p-3">
+                      <i class="bi bi-diagram-3 text-info display-4"></i>
+                      <h4 class="text-info mt-2"><%= @stats[:pattern_counts].keys.count rescue 0 %></h4>
+                      <small class="text-muted">Patterns</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <% end %>
+        </div>
       </div>
 
-      <div id="importModalContent" style="display: block !important; visibility: visible !important;">
-        <%= form_with url: import_from_master_admin_customer_formats_path, method: :post, local: false, html: { id: "importSubscriptionForm" } do |form| %>
-          <div class="row mb-4">
-            <div class="col-md-6">
-              <div class="card border-success">
-                <div class="card-header bg-success text-white">
-                  <h6 class="mb-0"><i class="bi bi-calendar-month"></i> Select Month</h6>
-                </div>
-                <div class="card-body">
-                  <%= form.select :month,
-                      options_for_select([
-                        ['January', 1], ['February', 2], ['March', 3], ['April', 4],
-                        ['May', 5], ['June', 6], ['July', 7], ['August', 8],
-                        ['September', 9], ['October', 10], ['November', 11], ['December', 12]
-                      ], Date.current.month),
-                      {},
-                      { class: "form-select", id: "import_month", required: true } %>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card border-primary">
-                <div class="card-header bg-primary text-white">
-                  <h6 class="mb-0"><i class="bi bi-calendar-year"></i> Select Year</h6>
-                </div>
-                <div class="card-body">
-                  <%= form.select :year,
-                      options_for_select((Date.current.year..(Date.current.year + 2)).map { |year| [year, year] }, Date.current.year),
-                      {},
-                      { class: "form-select", id: "import_year", required: true } %>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card border-info mb-4">
-            <div class="card-header bg-info text-white">
-              <h6 class="mb-0"><i class="bi bi-info-circle"></i> Import Process Information</h6>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6">
-                  <h6 class="text-primary">What will be created:</h6>
-                  <ul class="small">
-                    <li>Monthly subscriptions for selected period</li>
-                    <li>Daily tasks based on delivery patterns</li>
-                    <li>Customer-specific delivery schedules</li>
-                  </ul>
-                </div>
-                <div class="col-md-6">
-                  <h6 class="text-warning">Important Notes:</h6>
-                  <ul class="small">
-                    <li>Only active customer formats will be processed</li>
-                    <li>Process runs in background (~10 minutes)</li>
-                    <li>Duplicates are automatically prevented</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card border-secondary">
-            <div class="card-header bg-secondary text-white">
-              <h6 class="mb-0"><i class="bi bi-list-check"></i> Current Active Formats</h6>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-3">
-                  <div class="text-center">
-                    <h4 class="text-primary"><%= @stats[:active] rescue 0 %></h4>
-                    <small class="text-muted">Active Formats</small>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="text-center">
-                    <h4 class="text-success"><%= Customer.joins(:customer_formats).where(customer_formats: { status: 'active' }).distinct.count rescue 0 %></h4>
-                    <small class="text-muted">Customers</small>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="text-center">
-                    <h4 class="text-warning"><%= Product.joins(:customer_formats).where(customer_formats: { status: 'active' }).distinct.count rescue 0 %></h4>
-                    <small class="text-muted">Products</small>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="text-center">
-                    <h4 class="text-info"><%= @stats[:pattern_counts].keys.count rescue 0 %></h4>
-                    <small class="text-muted">Patterns</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+          <i class="bi bi-x me-2"></i>Cancel
+        </button>
         <button type="button" class="btn btn-success btn-lg" id="importSubmitBtn" onclick="processImport()">
           <i class="bi bi-gear me-2" id="importBtnIcon"></i>
-          <span class="spinner-border spinner-border-sm me-2 d-none" id="importSpinner"></span>
+          <span class="spinner-border spinner-border-sm me-2 d-none" id="importSpinner" role="status"></span>
           <span id="importBtnText">Copy to This Month</span>
         </button>
       </div>
@@ -624,41 +644,40 @@
 </div>
 
 <script>
-// Enhanced Import Modal JavaScript - Matching Subscription Modal Functionality
+// Simplified Import Modal JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Bootstrap modal
   const importModal = document.getElementById('importSubscriptionModal');
   if (importModal) {
-    // Setup modal event handlers
-    setupModalHandlers();
-
     // Reset modal when closed
     importModal.addEventListener('hidden.bs.modal', function() {
       resetImportModal();
     });
 
-    // Force content visibility when modal opens
+    // Ensure content is visible when modal opens
     importModal.addEventListener('shown.bs.modal', function() {
-      forceModalContentVisibility();
+      showModalContent();
     });
+
+    console.log('✅ Import modal initialized');
   }
 });
 
-// Setup modal handlers (similar to subscription modal)
-function setupModalHandlers() {
-  const modal = document.getElementById('importSubscriptionModal');
-  if (!modal) return;
+// Simplified modal functions
+function showModalContent() {
+  const modalLoading = document.getElementById('importModalLoading');
+  const modalContent = document.getElementById('importModalContent');
 
-  // ESC key to close
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.classList.contains('show')) {
-      const modalInstance = bootstrap.Modal.getInstance(modal);
-      if (modalInstance) modalInstance.hide();
-    }
-  });
+  // Hide loading, show content
+  if (modalLoading) {
+    modalLoading.classList.add('d-none');
+  }
+  if (modalContent) {
+    modalContent.classList.remove('d-none');
+  }
+
+  console.log('✅ Modal content shown');
 }
 
-// Enhanced reset import modal function
 function resetImportModal() {
   const modalLoading = document.getElementById('importModalLoading');
   const modalContent = document.getElementById('importModalContent');
@@ -668,51 +687,25 @@ function resetImportModal() {
   const importSpinner = document.getElementById('importSpinner');
   const importBtnIcon = document.getElementById('importBtnIcon');
 
-  // Reset modal content visibility - Force display
-  if (modalLoading) {
-    modalLoading.style.display = 'none';
-    modalLoading.style.visibility = 'hidden';
-    modalLoading.innerHTML = `
-      <div class="spinner-border text-success" role="status">
-        <span class="visually-hidden">Processing...</span>
-      </div>
-      <p class="mt-3 text-muted">Processing import request...</p>
-    `;
-  }
-  if (modalContent) {
-    modalContent.style.display = 'block';
-    modalContent.style.visibility = 'visible';
-    modalContent.style.opacity = '1';
-  }
+  // Show content, hide loading
+  if (modalLoading) modalLoading.classList.add('d-none');
+  if (modalContent) modalContent.classList.remove('d-none');
 
-  // Ensure form is visible
-  const form = document.getElementById('importSubscriptionForm');
-  if (form) {
-    form.style.display = 'block';
-    form.style.visibility = 'visible';
-  }
-
-  // Ensure cards are visible
-  const cards = document.querySelectorAll('#importSubscriptionModal .card');
-  cards.forEach(card => {
-    card.style.display = 'block';
-    card.style.visibility = 'visible';
-  });
-
-  // Reset form and button state
+  // Reset form
   if (importForm) importForm.reset();
-  if (importBtn) {
-    importBtn.disabled = false;
-    importBtn.classList.remove('btn-loading');
-  }
+
+  // Reset button state
+  if (importBtn) importBtn.disabled = false;
   if (importBtnText) importBtnText.textContent = 'Copy to This Month';
   if (importSpinner) importSpinner.classList.add('d-none');
   if (importBtnIcon) importBtnIcon.classList.remove('d-none');
+
+  console.log('✅ Modal reset');
 }
 
 // Enhanced process import function with better error handling
 function processImport() {
-  console.log('processImport() called - Enhanced version');
+  console.log('🚀 Starting import process...');
 
   const importForm = document.getElementById('importSubscriptionForm');
   const importBtn = document.getElementById('importSubmitBtn');
