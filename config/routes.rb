@@ -274,6 +274,18 @@ Rails.application.routes.draw do
       end
     end
 
+    # Customer Format Management
+    resources :customer_formats do
+      member do
+        patch :toggle_status
+      end
+      collection do
+        get :search_customers
+        get :search_products
+        get :search_delivery_people
+      end
+    end
+
     # Subscription Management
     resources :subscriptions do
       member do

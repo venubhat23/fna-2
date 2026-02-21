@@ -162,13 +162,38 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
   # POST /api/v1/mobile/ecommerce/bookings
   def create_booking
     booking_params = params.require(:booking).permit(
-      :customer_name, :customer_email, :customer_phone, :delivery_address,
+      :customer_id, :customer_name, :customer_email, :customer_phone, :delivery_address,
       :payment_method, :notes, :pincode, :latitude, :longitude,
       booking_items_attributes: [:product_id, :quantity, :price]
     )
 
-    # Find customer from current user (assuming authentication provides current user)
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    # Validate required fields
+    required_fields = [:customer_id, :delivery_address, :pincode]
+    missing_fields = required_fields.select { |field| booking_params[field].blank? }
+
+    if missing_fields.any?
+      return json_response({
+        success: false,
+        message: 'Required fields are missing',
+        missing_fields: missing_fields,
+        required_fields: {
+          customer_id: 'Customer ID is required',
+          delivery_address: 'Delivery address is required',
+          pincode: 'Pincode is required'
+        }
+      }, :unprocessable_entity)
+    end
+
+    # Find customer from customer_id parameter
+    customer = Customer.find_by(id: booking_params[:customer_id])
+
+    unless customer
+      return json_response({
+        success: false,
+        message: 'Customer not found',
+        error: 'Please provide a valid customer_id'
+      }, :not_found)
+    end
 
     # Extract location data for validation
     pincode = booking_params[:pincode]
