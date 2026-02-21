@@ -63,18 +63,16 @@ class Admin::CustomersController < Admin::ApplicationController
     # Status filtering removed - status column doesn't exist in customers table
     # All customers are treated as active
 
-    # Calculate filtered stats - customer_type column doesn't exist in customers table
+    # Calculate filtered stats
     @stats = {
       total_customers: stats_scope.count,
-      active_customers: stats_scope.count, # All customers are considered active in this context
-      individual_customers: 0, # Not available without customer_type column
-      corporate_customers: 0   # Not available without customer_type column
+      active_customers: stats_scope.where(status: true).count,
+      new_this_month: stats_scope.where(created_at: Time.current.beginning_of_month..Time.current.end_of_month).count
     }
 
     @total_customers = @stats[:total_customers]
     @active_customers = @stats[:active_customers]
-    @individual_customers = @stats[:individual_customers]
-    @corporate_customers = @stats[:corporate_customers]
+    @new_this_month = @stats[:new_this_month]
 
     # Handle AJAX requests
     respond_to do |format|
@@ -439,8 +437,18 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # DELETE /admin/customers/1
   def destroy
-    if @customer.policies.exists?
-      redirect_to admin_customers_path, alert: 'Cannot delete customer with existing policies.'
+    # Check if customer has any associated records that would prevent deletion
+    has_bookings = @customer.bookings.exists?
+    has_orders = @customer.orders.exists?
+    has_subscriptions = @customer.milk_subscriptions.exists?
+
+    if has_bookings || has_orders || has_subscriptions
+      associated_items = []
+      associated_items << "bookings" if has_bookings
+      associated_items << "orders" if has_orders
+      associated_items << "subscriptions" if has_subscriptions
+
+      redirect_to admin_customers_path, alert: "Cannot delete customer with existing #{associated_items.join(', ')}."
     else
       @customer.destroy
       redirect_to admin_customers_path, notice: 'Customer was successfully deleted.'
