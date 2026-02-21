@@ -69,13 +69,40 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   end
 
   def complete_purchase
-    if @vendor_purchase.status == 'pending'
-      @vendor_purchase.update(status: 'completed')
-      redirect_to admin_vendor_purchase_path(@vendor_purchase),
-                  notice: 'Purchase marked as completed.'
-    else
-      redirect_to admin_vendor_purchase_path(@vendor_purchase),
-                  alert: 'Purchase cannot be completed.'
+    respond_to do |format|
+      format.html do
+        # GET request - show confirmation page or redirect if not valid
+        if @vendor_purchase.status != 'pending'
+          redirect_to admin_vendor_purchase_path(@vendor_purchase),
+                      alert: 'Purchase cannot be completed.'
+          return
+        end
+        # If it's a valid pending purchase, render confirmation page or redirect to show
+        redirect_to admin_vendor_purchase_path(@vendor_purchase),
+                    notice: 'Purchase ready to be completed.'
+      end
+
+      format.json do
+        # PATCH/POST request - actually complete the purchase
+        if @vendor_purchase.status == 'pending'
+          @vendor_purchase.update(status: 'completed')
+          render json: { success: true, message: 'Purchase marked as completed.' }
+        else
+          render json: { success: false, message: 'Purchase cannot be completed.' }
+        end
+      end
+    end
+
+    # Handle PATCH/POST requests for non-AJAX
+    if request.patch? || request.post?
+      if @vendor_purchase.status == 'pending'
+        @vendor_purchase.update(status: 'completed')
+        redirect_to admin_vendor_purchase_path(@vendor_purchase),
+                    notice: 'Purchase marked as completed.'
+      else
+        redirect_to admin_vendor_purchase_path(@vendor_purchase),
+                    alert: 'Purchase cannot be completed.'
+      end
     end
   end
 

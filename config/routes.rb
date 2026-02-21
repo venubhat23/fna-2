@@ -365,7 +365,9 @@ Rails.application.routes.draw do
     # Vendor Purchase management
     resources :vendor_purchases do
       member do
+        get :complete_purchase
         patch :complete_purchase
+        post :complete_purchase
       end
       collection do
         get :batch_inventory
