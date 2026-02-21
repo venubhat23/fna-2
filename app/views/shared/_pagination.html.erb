@@ -1,10 +1,3 @@
-<%#
-  Conditional Pagination Partial
-  Usage: <%= render 'shared/pagination', records: @your_records %>
-
-  This partial will only show pagination controls if the total number of records
-  exceeds the items_per_page setting from SystemSettings
-%>
 
 <% if local_assigns[:records] && should_show_pagination?(records) %>
   <div class="d-flex justify-content-between align-items-center mt-4">

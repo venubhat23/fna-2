@@ -932,7 +932,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subscription\": {\n    \"product_id\": {{product_id}},\n    \"quantity\": 2,\n    \"frequency\": \"daily\",\n    \"start_date\": \"2024-02-25\",\n    \"end_date\": \"2024-03-25\",\n    \"delivery_time\": \"morning\",\n    \"delivery_address\": \"123 Test Street, Mumbai\",\n    \"pincode\": \"400001\",\n    \"special_instructions\": \"Ring doorbell twice\"\n  }\n}"
+              "raw": "{\n  \"subscription\": {\n    \"product_id\": {{product_id}},\n    \"schedule_type\": \"subscription\",\n    \"quantity\": 2,\n    \"frequency\": \"daily\",\n    \"start_date\": \"2024-02-25\",\n    \"end_date\": \"2024-03-25\",\n    \"delivery_time\": \"morning\",\n    \"delivery_address\": \"123 Test Street, Mumbai\",\n    \"pincode\": \"400001\",\n    \"notes\": \"Ring doorbell twice\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions",

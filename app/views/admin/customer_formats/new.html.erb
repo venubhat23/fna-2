@@ -1,2 +1,317 @@
-<h1>Admin::CustomerFormats#new</h1>
-<p>Find me in app/views/admin/customer_formats/new.html.erb</p>
+<% content_for :title, "Create New Customer Format" %>
+
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-plus-circle text-primary"></i>
+      Create New Customer Format
+    </h1>
+    <%= link_to admin_customer_formats_path, class: "btn btn-secondary" do %>
+      <i class="bi bi-arrow-left"></i> Back to Customer Formats
+    <% end %>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">
+        <i class="bi bi-clipboard-data"></i> Customer Format Details
+      </h6>
+    </div>
+    <div class="card-body">
+      <%= form_with model: @customer_format, url: admin_customer_formats_path, local: true, html: { class: "needs-validation", novalidate: true } do |form| %>
+
+        <!-- Error Messages -->
+        <% if @customer_format.errors.any? %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Please fix the following errors:</strong>
+            <ul class="mb-0 mt-2">
+              <% @customer_format.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% end %>
+
+        <div class="row">
+          <!-- Step 1: Customer Selection -->
+          <div class="col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-person"></i> Step 1: Select Customer</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <%= form.label :customer_id, "Customer", class: "form-label fw-bold" %>
+                  <%= form.select :customer_id,
+                      options_for_select([['Select Customer...', '']] + @customers, @customer_format.customer_id),
+                      {},
+                      {
+                        class: "form-select select2-customer",
+                        required: true,
+                        "data-placeholder" => "Search and select customer..."
+                      } %>
+                  <div class="invalid-feedback">
+                    Please select a customer.
+                  </div>
+                </div>
+
+                <!-- Customer Info Display -->
+                <div id="customer-info" class="d-none">
+                  <div class="alert alert-info">
+                    <h6 class="mb-2"><i class="bi bi-info-circle"></i> Customer Details</h6>
+                    <div id="customer-details"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Product Selection -->
+          <div class="col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-box"></i> Step 2: Select Product & Quantity</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <%= form.label :product_id, "Product", class: "form-label fw-bold" %>
+                  <%= form.select :product_id,
+                      options_for_select([['Select Product...', '']] + @products, @customer_format.product_id),
+                      {},
+                      {
+                        class: "form-select select2-product",
+                        required: true,
+                        "data-placeholder" => "Search and select product..."
+                      } %>
+                  <div class="invalid-feedback">
+                    Please select a product.
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <%= form.label :quantity, "Quantity", class: "form-label fw-bold" %>
+                  <%= form.number_field :quantity,
+                      class: "form-control",
+                      value: @customer_format.quantity || 1,
+                      step: 0.1,
+                      min: 0.1,
+                      required: true %>
+                  <div class="invalid-feedback">Please enter a valid quantity.</div>
+                </div>
+
+                <!-- Product Info Display -->
+                <div id="product-info" class="d-none">
+                  <div class="alert alert-info">
+                    <h6 class="mb-2"><i class="bi bi-info-circle"></i> Product Details</h6>
+                    <div id="product-details"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Step 3: Pattern & Delivery Configuration -->
+          <div class="col-md-12 mb-4">
+            <div class="card">
+              <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-calendar2-week"></i> Step 3: Configure Pattern & Delivery</h6>
+              </div>
+              <div class="card-body">
+                <!-- Pattern Selection -->
+                <div class="mb-4">
+                  <%= form.label :pattern, "Delivery Pattern", class: "form-label fw-bold" %>
+                  <div class="row">
+                    <% @pattern_options.each_with_index do |(label, value), index| %>
+                      <div class="col-md-3 mb-2">
+                        <div class="form-check">
+                          <%= form.radio_button :pattern, value,
+                              checked: @customer_format.pattern == value,
+                              class: "form-check-input",
+                              id: "pattern_#{value}" %>
+                          <%= form.label :pattern, label,
+                              class: "form-check-label",
+                              for: "pattern_#{value}" %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
+                <!-- Delivery Person -->
+                <div class="row mb-4">
+                  <div class="col-md-6">
+                    <%= form.label :delivery_person_id, "Delivery Person", class: "form-label fw-bold" %>
+                    <%= form.select :delivery_person_id,
+                        options_for_select([['Select Delivery Person...', '']] + @delivery_people, @customer_format.delivery_person_id),
+                        {},
+                        {
+                          class: "form-select select2-delivery-person",
+                          "data-placeholder" => "Select delivery person...",
+                          required: true
+                        } %>
+                    <div class="invalid-feedback">Please select a delivery person.</div>
+                  </div>
+
+                  <!-- Status -->
+                  <div class="col-md-6">
+                    <%= form.label :status, "Status", class: "form-label fw-bold" %>
+                    <%= form.select :status,
+                        options_for_select(@status_options, @customer_format.status || 'active'),
+                        {},
+                        { class: "form-select" } %>
+                  </div>
+                </div>
+
+                <!-- Pattern Description -->
+                <div class="alert alert-info" id="pattern-description">
+                  <h6><i class="bi bi-info-circle"></i> Pattern Information</h6>
+                  <div id="pattern-info">
+                    <p class="mb-0">Select a delivery pattern to see information</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body text-center">
+                <%= form.submit "Create Customer Format",
+                    class: "btn btn-primary btn-lg me-3",
+                    id: "submit-btn" %>
+                <%= link_to "Cancel", admin_customer_formats_path,
+                    class: "btn btn-secondary btn-lg" %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for Dynamic Form Behavior -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Select2
+  if (typeof $ !== 'undefined' && $.fn.select2) {
+    $('.select2-customer').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select customer...',
+      allowClear: true
+    });
+
+    $('.select2-product').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select product...',
+      allowClear: true
+    });
+
+    $('.select2-delivery-person').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Select delivery person...',
+      allowClear: true
+    });
+  }
+
+  // Customer selection handler
+  const customerSelect = document.getElementById('customer_format_customer_id');
+  if (customerSelect) {
+    customerSelect.addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('customer-info').classList.remove('d-none');
+        document.getElementById('customer-details').innerHTML =
+          '<strong>Customer Selected:</strong> ' + this.options[this.selectedIndex].text;
+      } else {
+        document.getElementById('customer-info').classList.add('d-none');
+      }
+    });
+  }
+
+  // Product selection handler
+  const productSelect = document.getElementById('customer_format_product_id');
+  if (productSelect) {
+    productSelect.addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('product-info').classList.remove('d-none');
+        document.getElementById('product-details').innerHTML =
+          '<strong>Product Selected:</strong> ' + this.options[this.selectedIndex].text;
+      } else {
+        document.getElementById('product-info').classList.add('d-none');
+      }
+    });
+  }
+
+  // Pattern selection handler
+  const patternInputs = document.querySelectorAll('input[name="customer_format[pattern]"]');
+  patternInputs.forEach(input => {
+    input.addEventListener('change', function() {
+      updatePatternInfo(this.value);
+    });
+  });
+
+  function updatePatternInfo(pattern) {
+    const patternInfo = document.getElementById('pattern-info');
+    let info = '';
+
+    switch(pattern) {
+      case 'every_day':
+        info = '<strong>Every Day:</strong> Delivery will be made every day';
+        break;
+      case 'alternative_day':
+        info = '<strong>Alternative Day:</strong> Delivery will be made every alternate day';
+        break;
+      case 'weekly_once':
+        info = '<strong>Weekly Once:</strong> Delivery will be made once every week';
+        break;
+      case 'weekly_twice':
+        info = '<strong>Weekly Twice:</strong> Delivery will be made twice every week';
+        break;
+      case 'weekly_thrice':
+        info = '<strong>Weekly Thrice:</strong> Delivery will be made three times every week';
+        break;
+      case 'weekly_four':
+        info = '<strong>Weekly Four:</strong> Delivery will be made four times every week';
+        break;
+      case 'weekly_five':
+        info = '<strong>Weekly Five:</strong> Delivery will be made five times every week';
+        break;
+      case 'weekly_six':
+        info = '<strong>Weekly Six:</strong> Delivery will be made six times every week';
+        break;
+      case 'random':
+        info = '<strong>Random:</strong> Delivery will be made on random days as needed';
+        break;
+      default:
+        info = 'Select a delivery pattern to see information';
+    }
+
+    patternInfo.innerHTML = info;
+  }
+
+  // Form validation
+  const form = document.querySelector('.needs-validation');
+  if (form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    });
+  }
+
+  // Initialize pattern info if pattern is already selected
+  const selectedPattern = document.querySelector('input[name="customer_format[pattern]"]:checked');
+  if (selectedPattern) {
+    updatePatternInfo(selectedPattern.value);
+  }
+});
+</script>

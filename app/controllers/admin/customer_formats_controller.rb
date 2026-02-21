@@ -101,6 +101,19 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
     render json: { results: delivery_people }
   end
 
+  # Import page action
+  def import_page
+    # Summary statistics for the import page
+    @stats = calculate_customer_format_stats
+
+    # Get detailed format information
+    @active_formats = CustomerFormat.includes(:customer, :product, :delivery_person).where(status: 'active').limit(50)
+
+    respond_to do |format|
+      format.html
+    end
+  end
+
   # Import from Master Subscription action
   def import_from_master
     month = params[:month].to_i

@@ -486,6 +486,21 @@
     <div class="nav-section">
       <div class="nav-section-title">Subscription</div>
       <ul class="nav-menu">
+        <!-- Customer Format -->
+        <% if current_user.has_sidebar_permission?('customer_formats') %>
+        <li class="nav-item">
+          <%= link_to admin_customer_formats_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customer_formats')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-indigo">
+                <i class="bi bi-clipboard-data"></i>
+              </div>
+            </div>
+            <span class="nav-text">Customer Format</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
+
         <!-- Subscriptions -->
         <% if current_user.has_sidebar_permission?('subscriptions') %>
         <li class="nav-item">
@@ -760,6 +775,21 @@
               </div>
             </div>
             <span class="nav-text">System Settings</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
+
+        <!-- User Roles -->
+        <% if current_user.has_sidebar_permission?('user_roles') %>
+        <li class="nav-item">
+          <%= link_to "/admin/settings/user_roles", class: "nav-link-modern #{'active' if request.path.include?('/admin/settings/user_roles')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-indigo">
+                <i class="bi bi-person-badge-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">User Roles</span>
             <div class="nav-indicator"></div>
           <% end %>
         </li>

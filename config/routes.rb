@@ -283,6 +283,8 @@ Rails.application.routes.draw do
         get :search_customers
         get :search_products
         get :search_delivery_people
+        get :import_page
+        post :import_from_master
       end
     end
 
