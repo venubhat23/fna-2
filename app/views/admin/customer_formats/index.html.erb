@@ -435,25 +435,25 @@
               <div class="row">
                 <div class="col-md-3">
                   <div class="text-center">
-                    <h4 class="text-primary"><%= CustomerFormat.active.count %></h4>
+                    <h4 class="text-primary"><%= @stats[:active] rescue 0 %></h4>
                     <small class="text-muted">Active Formats</small>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="text-center">
-                    <h4 class="text-success"><%= CustomerFormat.active.joins(:customer).count %></h4>
+                    <h4 class="text-success"><%= Customer.joins(:customer_formats).where(customer_formats: { status: 'active' }).distinct.count rescue 0 %></h4>
                     <small class="text-muted">Customers</small>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="text-center">
-                    <h4 class="text-warning"><%= CustomerFormat.active.joins(:product).distinct.count %></h4>
+                    <h4 class="text-warning"><%= Product.joins(:customer_formats).where(customer_formats: { status: 'active' }).distinct.count rescue 0 %></h4>
                     <small class="text-muted">Products</small>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="text-center">
-                    <h4 class="text-info"><%= CustomerFormat.active.group(:pattern).count.keys.count %></h4>
+                    <h4 class="text-info"><%= @stats[:pattern_counts].keys.count rescue 0 %></h4>
                     <small class="text-muted">Patterns</small>
                   </div>
                 </div>
@@ -462,8 +462,8 @@
           </div>
         <% end %>
       </div>
-      </div>
-      <div class="modal-footer">
+    </div>
+    <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-success btn-lg" id="importSubmitBtn" onclick="processImport()">
           <i class="bi bi-gear me-2" id="importBtnIcon"></i>
@@ -510,6 +510,7 @@ function resetImportModal() {
 
 // Process import function
 function processImport() {
+  console.log('processImport() called');
   console.log('Processing import...');
 
   const importForm = document.getElementById('importSubscriptionForm');
@@ -520,7 +521,17 @@ function processImport() {
   const modalLoading = document.getElementById('importModalLoading');
   const modalContent = document.getElementById('importModalContent');
 
-  if (!importForm) return;
+  if (!importForm) {
+    console.error('Import form not found');
+    showAlert('danger', 'Form not found. Please refresh the page and try again.');
+    return;
+  }
+
+  if (!importForm.action) {
+    console.error('Form action not set');
+    showAlert('danger', 'Form configuration error. Please contact support.');
+    return;
+  }
 
   // Show loading state
   importBtn.disabled = true;
@@ -541,16 +552,30 @@ function processImport() {
   // Get form data
   const formData = new FormData(importForm);
 
+  // Get CSRF token safely
+  const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+  const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+
   fetch(importForm.action, {
     method: 'POST',
     body: formData,
     headers: {
       'X-Requested-With': 'XMLHttpRequest',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      'X-CSRF-Token': csrfToken
     }
   })
-  .then(response => response.json())
+  .then(response => {
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  })
   .then(data => {
+    console.log('Response data:', data);
     if (data.success) {
       // Show success in modal loading area
       modalLoading.innerHTML = `
