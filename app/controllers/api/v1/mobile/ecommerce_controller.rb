@@ -251,7 +251,6 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
         # end
 
         # Product is available
-        debugger
         available_products << {
           product_id: product.id,
           product_name: product.name,
