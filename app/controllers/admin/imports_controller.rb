@@ -183,22 +183,108 @@ class Admin::ImportsController < Admin::ApplicationController
 
   # Template download methods
   def send_customer_template
+    format = params[:format] || 'csv'
+
+    headers = [
+      # Required fields (marked with *)
+      'first_name*', 'email*', 'mobile*',
+
+      # Basic information (optional)
+      'middle_name', 'last_name', 'company_name', 'address', 'whatsapp_number',
+
+      # Personal details (optional)
+      'birth_date', 'gender', 'marital_status', 'blood_group', 'nationality',
+      'preferred_language', 'occupation', 'annual_income',
+
+      # ID documents (optional)
+      'pan_no', 'gst_no',
+
+      # Emergency contact (optional)
+      'emergency_contact_name', 'emergency_contact_number',
+
+      # Location (optional)
+      'longitude', 'latitude',
+
+      # Additional notes (optional)
+      'notes', 'status'
+    ]
+
+    sample_data = [
+      [
+        # Required fields
+        'John', 'john.doe@example.com', '9876543210',
+
+        # Basic information
+        'Kumar', 'Doe', 'ABC Private Limited', '123 Main Street, Mumbai, Maharashtra, 400001', '9876543210',
+
+        # Personal details
+        '1990-01-15', 'male', 'married', 'A+', 'Indian', 'English', 'Software Engineer', '1200000',
+
+        # ID documents
+        'ABCDE1234F', 'GSTIN1234567890',
+
+        # Emergency contact
+        'Jane Doe', '9876543211',
+
+        # Location
+        '72.8777', '19.0760',
+
+        # Additional notes
+        'VIP Customer', 'true'
+      ],
+      [
+        # Required fields
+        'Priya', 'priya.sharma@example.com', '9876543211',
+
+        # Basic information
+        '', 'Sharma', '', '456 Park Avenue, Delhi, 110001', '9876543211',
+
+        # Personal details
+        '1988-05-20', 'female', 'single', 'B+', 'Indian', 'Hindi', 'Doctor', '800000',
+
+        # ID documents
+        'FGHIJ5678K', '',
+
+        # Emergency contact
+        'Raj Sharma', '9876543212',
+
+        # Location
+        '77.2090', '28.6139',
+
+        # Additional notes
+        'Regular Customer', 'true'
+      ],
+      [
+        # Required fields
+        'Rajesh', 'rajesh.patel@example.com', '9876543212',
+
+        # Basic information
+        'Kumar', 'Patel', 'Patel Traders', '789 Business Complex, Ahmedabad, Gujarat, 380001', '9876543212',
+
+        # Personal details
+        '1985-12-10', 'male', 'married', 'O+', 'Indian', 'Gujarati', 'Business Owner', '1500000',
+
+        # ID documents
+        'KLMNO9012P', 'GSTIN9876543210',
+
+        # Emergency contact
+        'Sunita Patel', '9876543213',
+
+        # Location
+        '72.5714', '23.0225',
+
+        # Additional notes
+        'Corporate Customer', 'true'
+      ]
+    ]
+
     csv_data = CSV.generate(headers: true) do |csv|
-      csv << [
-        'first_name', 'middle_name', 'last_name', 'email', 'mobile',
-        'address', 'whatsapp_number', 'longitude', 'latitude'
-      ]
-      csv << [
-        'John', 'Kumar', 'Doe', 'john.doe@example.com', '9876543210',
-        '123 Main St, Mumbai, Maharashtra, 400001', '9876543210', '72.8777', '19.0760'
-      ]
-      csv << [
-        'Jane', '', 'Smith', 'jane.smith@example.com', '9876543211',
-        '456 Park Street, Delhi, 110001', '9876543211', '77.2090', '28.6139'
-      ]
+      csv << headers
+      sample_data.each { |row| csv << row }
     end
 
-    send_data csv_data, filename: 'customers_import_template.csv', type: 'text/csv'
+    filename = format == 'xlsx' ? 'customers_import_template.xlsx' : 'customers_import_template.csv'
+    send_data csv_data, filename: filename, type: 'text/csv'
   end
 
   def send_sub_agent_template

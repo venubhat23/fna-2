@@ -126,9 +126,9 @@
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <button type="button" class="btn btn-primary" onclick="openModal('customerImportModal')">
+          <%= link_to customers_form_admin_imports_path, class: "btn btn-primary" do %>
             <i class="fas fa-upload me-1"></i> Import Customers
-          </button>
+          <% end %>
         </div>
       </div>
     </div>
@@ -246,7 +246,6 @@
 </div>
 
 <!-- Import Modals -->
-<%= render 'customer_import_modal' %>
 <%= render 'delivery_people_import_modal' %>
 <%= render 'products_import_modal' %>
 

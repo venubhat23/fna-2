@@ -50,15 +50,6 @@
             </div>
           </div>
         </div>
-        <div class="col-md-3">
-          <%= f.label :paid_amount, "Amount Paid", class: "form-label" %>
-          <%= f.number_field :paid_amount,
-              class: "form-control",
-              placeholder: "0.00",
-              step: 0.01,
-              min: 0,
-              value: @vendor_purchase.paid_amount || 0 %>
-        </div>
       </div>
 
       <!-- Hidden field for total_amount -->
@@ -216,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const addBtn = document.getElementById('add-product-btn');
 
   let itemIndex = <%= @vendor_purchase.vendor_purchase_items.length %>;
-  let paidAmountManuallyModified = false;
 
   // Custom formatting for Select2 dropdown options
   function formatProductOption(product) {
@@ -478,12 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('total-amount').textContent = formatCurrency(total);
     document.getElementById('final-total').textContent = formatCurrency(total);
 
-    // Auto-fill Amount Paid field with total amount (only if not manually modified)
-    const paidAmountField = document.querySelector('input[name="vendor_purchase[paid_amount]"]');
-    if (paidAmountField && total > 0 && !paidAmountManuallyModified) {
-      paidAmountField.value = total.toFixed(2);
-    }
-
     // Also update total_amount hidden field if exists
     const totalAmountField = document.querySelector('input[name="vendor_purchase[total_amount]"]');
     if (totalAmountField) {
@@ -530,17 +514,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Track manual modifications to paid amount field
-  const paidAmountField = document.querySelector('input[name="vendor_purchase[paid_amount]"]');
-  if (paidAmountField) {
-    paidAmountField.addEventListener('input', function() {
-      paidAmountManuallyModified = true;
-    });
-
-    paidAmountField.addEventListener('focus', function() {
-      paidAmountManuallyModified = true;
-    });
-  }
 
   // Make calculateGrandTotal globally available
   window.calculateGrandTotal = calculateGrandTotal;
