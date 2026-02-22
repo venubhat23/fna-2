@@ -21,7 +21,9 @@ module ImportService
         validate_headers(header)
 
         (2..spreadsheet.last_row).each do |i|
-          row = Hash[[header, spreadsheet.row(i)].transpose]
+          # Clean headers by removing * suffix
+          clean_header = header.map { |h| h.to_s.gsub('*', '').strip }
+          row = Hash[[clean_header, spreadsheet.row(i)].transpose]
           process_row(row, i)
         end
 
@@ -58,8 +60,11 @@ module ImportService
     end
 
     def validate_headers(header)
+      # Clean headers (remove * suffix and normalize)
+      clean_headers = header.map(&:to_s).map { |h| h.gsub('*', '').downcase.strip }
+
       required_headers = %w[first_name email mobile]
-      missing_headers = required_headers - header.map(&:to_s).map(&:downcase)
+      missing_headers = required_headers - clean_headers
 
       if missing_headers.any?
         raise "Missing required headers: #{missing_headers.join(', ')}"
@@ -103,15 +108,45 @@ module ImportService
       password = generate_password(row['first_name'])
 
       {
+        # Required fields
         first_name: row['first_name']&.to_s&.strip,
-        middle_name: row['middle_name']&.to_s&.strip,
-        last_name: row['last_name']&.to_s&.strip,
         email: row['email']&.to_s&.downcase&.strip,
         mobile: row['mobile']&.to_s&.strip,
+
+        # Basic information
+        middle_name: row['middle_name']&.to_s&.strip,
+        last_name: row['last_name']&.to_s&.strip,
+        company_name: row['company_name']&.to_s&.strip,
         address: row['address']&.to_s&.strip,
         whatsapp_number: row['whatsapp_number']&.to_s&.strip || row['mobile']&.to_s&.strip,
+
+        # Personal details
+        birth_date: parse_date(row['birth_date']),
+        gender: row['gender']&.to_s&.strip&.downcase,
+        marital_status: row['marital_status']&.to_s&.strip&.downcase,
+        blood_group: row['blood_group']&.to_s&.strip&.upcase,
+        nationality: row['nationality']&.to_s&.strip,
+        preferred_language: row['preferred_language']&.to_s&.strip,
+        occupation: row['occupation']&.to_s&.strip,
+        annual_income: parse_number(row['annual_income']),
+
+        # ID documents
+        pan_no: row['pan_no']&.to_s&.strip&.upcase,
+        gst_no: row['gst_no']&.to_s&.strip&.upcase,
+
+        # Emergency contact
+        emergency_contact_name: row['emergency_contact_name']&.to_s&.strip,
+        emergency_contact_number: row['emergency_contact_number']&.to_s&.strip,
+
+        # Location
         longitude: parse_decimal(row['longitude']),
         latitude: parse_decimal(row['latitude']),
+
+        # Additional notes and status
+        notes: row['notes']&.to_s&.strip,
+        status: parse_boolean(row['status']),
+
+        # Password fields
         password_digest: BCrypt::Password.create(password),
         auto_generated_password: password
       }.compact
@@ -145,6 +180,40 @@ module ImportService
         clean_mobile = customer_data[:mobile].gsub(/\D/, '')
         unless clean_mobile.match?(/^[6-9]\d{9}$/)
           @errors << "Row #{row_number}: Invalid mobile number format"
+          return false
+        end
+        # Update mobile to cleaned format
+        customer_data[:mobile] = clean_mobile
+      end
+
+      # Check PAN format if provided
+      if customer_data[:pan_no].present?
+        unless customer_data[:pan_no].match?(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/)
+          @errors << "Row #{row_number}: Invalid PAN number format (should be ABCDE1234F)"
+          return false
+        end
+      end
+
+      # Check gender values if provided
+      if customer_data[:gender].present?
+        unless %w[male female other].include?(customer_data[:gender])
+          @errors << "Row #{row_number}: Gender must be 'male', 'female', or 'other'"
+          return false
+        end
+      end
+
+      # Check marital status if provided
+      if customer_data[:marital_status].present?
+        unless %w[single married divorced widowed].include?(customer_data[:marital_status])
+          @errors << "Row #{row_number}: Marital status must be 'single', 'married', 'divorced', or 'widowed'"
+          return false
+        end
+      end
+
+      # Check blood group format if provided
+      if customer_data[:blood_group].present?
+        unless %w[A+ A- B+ B- AB+ AB- O+ O-].include?(customer_data[:blood_group])
+          @errors << "Row #{row_number}: Invalid blood group format"
           return false
         end
       end
@@ -182,6 +251,19 @@ module ImportService
       BigDecimal(decimal_string.to_s)
     rescue ArgumentError
       nil
+    end
+
+    def parse_boolean(value)
+      return true if value.blank? # Default to true if not specified
+
+      case value.to_s.downcase.strip
+      when 'true', '1', 'yes', 'y', 'active'
+        true
+      when 'false', '0', 'no', 'n', 'inactive'
+        false
+      else
+        true # Default to true for unknown values
+      end
     end
 
     def generate_password(first_name)

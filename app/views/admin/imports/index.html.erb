@@ -160,9 +160,9 @@
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <button type="button" class="btn btn-purple" onclick="openModal('deliveryPeopleImportModal')">
+          <%= link_to delivery_people_form_admin_imports_path, class: "btn btn-purple" do %>
             <i class="fas fa-upload me-1"></i> Import Delivery People
-          </button>
+          <% end %>
         </div>
       </div>
     </div>
@@ -193,9 +193,9 @@
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <button type="button" class="btn btn-teal" onclick="openModal('productsImportModal')">
+          <%= link_to products_form_admin_imports_path, class: "btn btn-teal" do %>
             <i class="fas fa-upload me-1"></i> Import Products
-          </button>
+          <% end %>
         </div>
       </div>
     </div>

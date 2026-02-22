@@ -1,0 +1,400 @@
+<% content_for :page_title, "Import Delivery People" %>
+<% content_for :page_subtitle, "Bulk Delivery People Import" %>
+
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="fas fa-shipping-fast me-2"></i>
+        Import Delivery People
+      </h2>
+      <p class="text-muted mb-0">Bulk upload delivery personnel data from CSV or Excel files</p>
+    </div>
+    <div>
+      <%= link_to admin_imports_path, class: "btn btn-outline-secondary" do %>
+        <i class="fas fa-arrow-left me-1"></i>
+        Back to Imports
+      <% end %>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Upload Form -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-purple text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-cloud-upload-alt me-2"></i>
+            Upload Delivery Personnel Data
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <%= form_with url: admin_import_delivery_people_path, multipart: true, local: true, class: "needs-validation", novalidate: true do |f| %>
+            <div class="mb-4">
+              <label for="file" class="form-label fw-bold">
+                <i class="fas fa-file-csv me-2"></i>
+                Select File
+                <span class="text-danger">*</span>
+              </label>
+              <%= f.file_field :file,
+                  class: "form-control form-control-lg",
+                  accept: ".csv,.xlsx,.xls",
+                  required: true,
+                  id: "file" %>
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Supported formats: CSV, Excel (.xlsx, .xls). Maximum size: 10MB
+              </div>
+              <div class="invalid-feedback">
+                Please select a valid file to upload.
+              </div>
+            </div>
+
+            <!-- File Preview Section -->
+            <div id="file-preview" class="mb-4" style="display: none;">
+              <div class="alert alert-info">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-file-check me-2"></i>
+                  <div>
+                    <strong>File Selected:</strong> <span id="file-name"></span><br>
+                    <small>Size: <span id="file-size"></span> | Type: <span id="file-type"></span></small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Import Options -->
+            <div class="card bg-light border-0 mb-4">
+              <div class="card-body">
+                <h6 class="card-title mb-3">
+                  <i class="fas fa-cogs me-2"></i>
+                  Import Options
+                </h6>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="skip_header" name="skip_header" checked>
+                      <label class="form-check-label" for="skip_header">
+                        Skip header row
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="update_existing" name="update_existing">
+                      <label class="form-check-label" for="update_existing">
+                        Update existing personnel (match by email)
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="create_login_accounts" name="create_login_accounts" checked>
+                      <label class="form-check-label" for="create_login_accounts">
+                        Create login accounts automatically
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="send_credentials" name="send_credentials">
+                      <label class="form-check-label" for="send_credentials">
+                        Send login credentials via SMS
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="submit" class="btn btn-purple btn-lg" id="submit-btn">
+                <i class="fas fa-upload me-2"></i>
+                Import Delivery People
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Download Template Card -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-download me-2"></i>
+            Download Template
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="card-text mb-3">
+            Download the standardized template with all delivery personnel fields including personal details, vehicle info, and banking details.
+          </p>
+
+          <div class="d-grid gap-2">
+            <%= link_to download_template_admin_imports_path(template_type: 'delivery_people', format: 'csv'),
+                class: "btn btn-success",
+                target: "_blank" do %>
+              <i class="fas fa-file-csv me-2"></i>
+              Download CSV Template
+            <% end %>
+
+            <%= link_to download_template_admin_imports_path(template_type: 'delivery_people', format: 'xlsx'),
+                class: "btn btn-outline-success",
+                target: "_blank" do %>
+              <i class="fas fa-file-excel me-2"></i>
+              Download Excel Template
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import Guidelines -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Import Guidelines
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <h6 class="text-primary mb-2">Required Fields:</h6>
+            <ul class="list-unstyled small">
+              <li><i class="fas fa-check text-success me-1"></i> First Name</li>
+              <li><i class="fas fa-check text-success me-1"></i> Last Name</li>
+              <li><i class="fas fa-check text-success me-1"></i> Email (must be unique)</li>
+              <li><i class="fas fa-check text-success me-1"></i> Mobile (must be unique)</li>
+              <li><i class="fas fa-check text-success me-1"></i> Vehicle Type</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <h6 class="text-primary mb-2">Optional Fields:</h6>
+            <ul class="list-unstyled small">
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Address, City, State, Pincode</li>
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Vehicle Number, License Number</li>
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Emergency Contact Details</li>
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Joining Date, Salary</li>
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Bank Account Details</li>
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Delivery Areas</li>
+              <li><i class="fas fa-circle text-muted me-1" style="font-size: 0.4rem;"></i> Notes, Status</li>
+            </ul>
+          </div>
+
+          <div class="alert alert-warning small mb-0">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            <strong>Note:</strong> Duplicate emails or mobile numbers will be skipped during import.
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Validation -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-shield-alt me-2"></i>
+            Data Validation
+          </h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              Email format validation
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              Mobile number format (10 digits)
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              Vehicle type validation
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              Salary and date validation
+            </li>
+            <li class="mb-0">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              Duplicate detection
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Custom file input styling */
+.form-control[type="file"] {
+  border: 2px dashed #dee2e6;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control[type="file"]:hover {
+  border-color: #8965e0;
+  background-color: #e3f2fd;
+}
+
+.form-control[type="file"]:focus {
+  border-color: #8965e0;
+  background-color: #fff;
+  box-shadow: 0 0 0 0.25rem rgba(137, 101, 224, 0.25);
+}
+
+.bg-purple {
+  background-color: #8965e0 !important;
+}
+
+.btn-purple {
+  background-color: #8965e0;
+  border-color: #8965e0;
+  color: white;
+}
+
+.btn-purple:hover {
+  background-color: #7651d9;
+  border-color: #7651d9;
+  color: white;
+}
+
+/* Card animations */
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Loading state for submit button */
+.btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn.loading::after {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.5rem;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('file');
+  const filePreview = document.getElementById('file-preview');
+  const fileName = document.getElementById('file-name');
+  const fileSize = document.getElementById('file-size');
+  const fileType = document.getElementById('file-type');
+  const form = document.querySelector('form');
+  const submitBtn = document.getElementById('submit-btn');
+
+  // Handle file selection
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+
+    if (file) {
+      filePreview.style.display = 'block';
+      fileName.textContent = file.name;
+      fileSize.textContent = formatFileSize(file.size);
+      fileType.textContent = file.type || 'Unknown';
+
+      fileInput.classList.add('is-valid');
+      fileInput.classList.remove('is-invalid');
+    } else {
+      filePreview.style.display = 'none';
+      fileInput.classList.remove('is-valid');
+    }
+  });
+
+  // Form submission handling
+  form.addEventListener('submit', function(e) {
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+  });
+
+  // File size formatter
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Form validation
+  form.addEventListener('submit', function(e) {
+    if (!form.checkValidity()) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    form.classList.add('was-validated');
+  });
+
+  // Drag and drop functionality
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    fileInput.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    fileInput.addEventListener(eventName, highlight, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    fileInput.addEventListener(eventName, unhighlight, false);
+  });
+
+  function highlight(e) {
+    fileInput.style.borderColor = '#8965e0';
+    fileInput.style.backgroundColor = '#e3f2fd';
+  }
+
+  function unhighlight(e) {
+    fileInput.style.borderColor = '#dee2e6';
+    fileInput.style.backgroundColor = '#f8f9fa';
+  }
+
+  fileInput.addEventListener('drop', handleDrop, false);
+
+  function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+      fileInput.files = files;
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+});
+</script>

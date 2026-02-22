@@ -201,16 +201,16 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
     longitude = booking_params[:longitude]
 
     # Validate pincode if provided
-    if pincode.present?
-      pincode_validation = validate_pincode(pincode)
-      unless pincode_validation[:valid]
-        return json_response({
-          success: false,
-          message: 'Invalid pincode provided',
-          error_details: pincode_validation
-        }, :unprocessable_entity)
-      end
-    end
+    # if pincode.present?
+    #   pincode_validation = validate_pincode(pincode)
+    #   unless pincode_validation[:valid]
+    #     return json_response({
+    #       success: false,
+    #       message: 'Invalid pincode provided',
+    #       error_details: pincode_validation
+    #     }, :unprocessable_entity)
+    #   end
+    # end
 
     # Validate products availability and delivery
     unavailable_products = []
@@ -236,21 +236,22 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
         end
 
         # Check delivery availability if pincode provided
-        if pincode.present?
-          delivery_info = product.delivery_info_for(pincode)
-          unless delivery_info[:deliverable]
-            unavailable_products << {
-              product_id: product.id,
-              product_name: product.name,
-              requested_quantity: quantity,
-              available_stock: product.stock,
-              reason: 'Delivery not available to this pincode'
-            }
-            next
-          end
-        end
+        # if pincode.present?
+        #   delivery_info = product.delivery_info_for(pincode)
+        #   unless delivery_info[:deliverable]
+        #     unavailable_products << {
+        #       product_id: product.id,
+        #       product_name: product.name,
+        #       requested_quantity: quantity,
+        #       available_stock: product.stock,
+        #       reason: 'Delivery not available to this pincode'
+        #     }
+        #     next
+        #   end
+        # end
 
         # Product is available
+        debugger
         available_products << {
           product_id: product.id,
           product_name: product.name,
@@ -303,7 +304,6 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
           customer_updates = {}
           customer_updates[:latitude] = latitude if latitude.present?
           customer_updates[:longitude] = longitude if longitude.present?
-          customer_updates[:pincode] = pincode if pincode.present?
           customer_updates[:location_obtained_at] = Time.current
           customer.update!(customer_updates)
         end
@@ -318,7 +318,6 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
         end
 
         booking_response_data = format_booking_data(@booking).merge({
-          pincode_validation: pincode.present? ? pincode_validation : nil,
           location_saved: {
             latitude: latitude,
             longitude: longitude,
@@ -1350,7 +1349,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
 
   def validate_pincode(pincode)
     return { valid: false, error: 'Pincode is required' } if pincode.blank?
-    return { valid: false, error: 'Pincode must be 6 digits' } unless pincode.match?(/\A\d{6}\z/)
+
+    pincode_str = pincode.to_s
+    return { valid: false, error: 'Pincode must be 6 digits' } unless pincode_str.match?(/\A\d{6}\z/)
 
     begin
       require 'net/http'
