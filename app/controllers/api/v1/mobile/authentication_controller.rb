@@ -629,6 +629,17 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
       role: role,
       exp: 30.days.from_now.to_i
     }
+
+    # Add specific ID fields based on role
+    case role
+    when 'delivery_person'
+      payload[:delivery_person_id] = user.id
+    when 'customer'
+      payload[:customer_id] = user.id
+    when 'sub_agent'
+      payload[:sub_agent_id] = user.id
+    end
+
     JWT.encode(payload, Rails.application.secret_key_base)
   end
 

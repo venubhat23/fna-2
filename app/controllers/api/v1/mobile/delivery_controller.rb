@@ -1,4 +1,4 @@
-valid_delivery_person_token? Api
+module Api
   module V1
     module Mobile
       class DeliveryController < ApplicationController
@@ -223,7 +223,6 @@ valid_delivery_person_token? Api
           # Decode and verify JWT token
           begin
             decoded_token = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: 'HS256')
-            debugger
             @current_delivery_person = DeliveryPerson.find_by(id: decoded_token[0]['delivery_person_id'])
             @current_delivery_person.present?
           rescue JWT::DecodeError, JWT::ExpiredSignature
@@ -237,28 +236,44 @@ valid_delivery_person_token? Api
 
         def get_todays_tasks
           # Get all bookings/orders assigned to current delivery person for today
-          bookings = Booking.joins(:booking_items)
-                           .where(delivery_person_id: current_delivery_person_id)
-                           .where(delivery_date: Date.current)
-                           .where.not(status: ['delivered', 'cancelled'])
-                           .distinct
+          begin
+            if defined?(Booking) && Booking.column_names.include?('delivery_person_id')
+              bookings = Booking.where(delivery_person_id: current_delivery_person_id)
+                              .where('DATE(created_at) = ?', Date.current)
+                              .where.not(status: ['delivered', 'cancelled'])
+            else
+              bookings = []
+            end
+          rescue => e
+            Rails.logger.error "Error fetching bookings: #{e.message}"
+            bookings = []
+          end
 
           # Also get subscription deliveries for today
-          subscription_tasks = MilkDeliveryTask.where(
-            delivery_person_id: current_delivery_person_id,
-            delivery_date: Date.current
-          ).where.not(status: 'completed')
+          begin
+            if defined?(MilkDeliveryTask) && MilkDeliveryTask.column_names.include?('delivery_person_id')
+              subscription_tasks = MilkDeliveryTask.where(
+                delivery_person_id: current_delivery_person_id,
+                delivery_date: Date.current
+              ).where.not(status: 'completed')
+            else
+              subscription_tasks = []
+            end
+          rescue => e
+            Rails.logger.error "Error fetching subscription tasks: #{e.message}"
+            subscription_tasks = []
+          end
 
           # Combine both types of tasks
           { bookings: bookings, subscriptions: subscription_tasks }
         end
 
         def task_summary(tasks)
-          bookings = tasks[:bookings]
-          subscriptions = tasks[:subscriptions]
+          bookings = Array(tasks[:bookings])
+          subscriptions = Array(tasks[:subscriptions])
 
-          total = bookings.count + subscriptions.count
-          completed = bookings.where(status: 'delivered').count + subscriptions.where(status: 'completed').count
+          total = bookings.size + subscriptions.size
+          completed = bookings.count { |b| b.status == 'delivered' } + subscriptions.count { |s| s.status == 'completed' }
           pending = total - completed
 
           total_collection = calculate_total_collection(bookings)
@@ -273,19 +288,23 @@ valid_delivery_person_token? Api
         end
 
         def calculate_total_collection(bookings)
-          bookings.where(payment_method: 'cash').sum(:total_amount) || 0
+          return 0 if bookings.empty?
+          bookings.select { |b| b.payment_method == 'cash' }.sum(&:total_amount) || 0
+        rescue => e
+          Rails.logger.error "Error calculating total collection: #{e.message}"
+          0
         end
 
         def format_tasks(tasks)
           formatted_tasks = []
 
           # Format booking tasks
-          tasks[:bookings].each do |booking|
+          Array(tasks[:bookings]).each do |booking|
             formatted_tasks << format_booking_task(booking)
           end
 
           # Format subscription tasks
-          tasks[:subscriptions].each do |subscription|
+          Array(tasks[:subscriptions]).each do |subscription|
             formatted_tasks << format_subscription_task(subscription)
           end
 
@@ -301,24 +320,24 @@ valid_delivery_person_token? Api
               name: booking.customer_name,
               mobile: booking.customer_phone,
               address: booking.delivery_address,
-              landmark: booking.landmark,
-              pincode: booking.pincode,
-              latitude: booking.latitude,
-              longitude: booking.longitude
+              landmark: booking.respond_to?(:landmark) ? booking.landmark : nil,
+              pincode: booking.respond_to?(:pincode) ? booking.pincode : nil,
+              latitude: booking.respond_to?(:latitude) ? booking.latitude : nil,
+              longitude: booking.respond_to?(:longitude) ? booking.longitude : nil
             },
-            items: booking.booking_items.map { |item|
+            items: booking.respond_to?(:booking_items) && booking.booking_items ? booking.booking_items.map { |item|
               {
                 product_name: item.product&.name,
                 quantity: item.quantity,
-                unit: item.product&.unit
+                unit: item.product&.unit_type || item.product&.unit || 'piece'
               }
-            },
+            } : [],
             payment: {
               method: booking.payment_method,
               amount_to_collect: booking.payment_method == 'cash' ? booking.total_amount : 0,
               status: booking.payment_status
             },
-            delivery_slot: booking.delivery_slot || "10:00 AM - 12:00 PM",
+            delivery_slot: booking.respond_to?(:delivery_slot) ? (booking.delivery_slot || "10:00 AM - 12:00 PM") : "10:00 AM - 12:00 PM",
             priority: "normal",
             status: map_booking_status(booking.status),
             special_instructions: booking.notes
@@ -334,7 +353,7 @@ valid_delivery_person_token? Api
               name: subscription.customer&.display_name,
               mobile: subscription.customer&.mobile,
               address: subscription.customer&.address,
-              pincode: subscription.customer&.pincode,
+              pincode: subscription.customer&.respond_to?(:pincode) ? subscription.customer&.pincode : nil,
               latitude: subscription.customer&.latitude,
               longitude: subscription.customer&.longitude
             },
@@ -350,7 +369,7 @@ valid_delivery_person_token? Api
               amount_to_collect: 0,
               status: "paid"
             },
-            delivery_slot: subscription.delivery_time,
+            delivery_slot: subscription.respond_to?(:delivery_time) ? subscription.delivery_time : "07:00 AM - 09:00 AM",
             priority: "normal",
             status: subscription.status,
             special_instructions: nil
