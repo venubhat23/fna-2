@@ -2,6 +2,7 @@ class DeliveryPerson < ApplicationRecord
   has_one_attached :profile_picture
   has_one_attached :license_document
   has_one_attached :vehicle_document
+  has_many :bookings, dependent: :nullify
 
   # Password authentication
   has_secure_password

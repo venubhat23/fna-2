@@ -573,6 +573,10 @@ class Admin::BookingsController < Admin::ApplicationController
       transition_data[:tracking_number] = params[:tracking_number]
       transition_data[:shipping_charges] = params[:shipping_charges]
       transition_data[:expected_delivery_date] = params[:expected_delivery_date]
+    when 'out_for_delivery'
+      transition_data[:delivery_person_id] = params[:delivery_person_id]
+      transition_data[:delivery_person] = params[:delivery_person]
+      transition_data[:delivery_contact] = params[:delivery_contact]
     when 'delivered'
       transition_data[:delivery_person] = params[:delivery_person]
       transition_data[:delivery_time] = params[:delivery_time]
@@ -621,6 +625,7 @@ class Admin::BookingsController < Admin::ApplicationController
     when 'out_for_delivery'
       @booking.delivery_person = transition_data[:delivery_person] if transition_data[:delivery_person].present?
       @booking.delivery_contact = transition_data[:delivery_contact] if transition_data[:delivery_contact].present?
+      @booking.delivery_person_id = transition_data[:delivery_person_id] if transition_data[:delivery_person_id].present?
     end
 
     # Update stage history - parse existing JSON and add new entry
@@ -762,9 +767,18 @@ class Admin::BookingsController < Admin::ApplicationController
   end
 
   def process_out_for_delivery_transition
+    # Validation for required fields
+    unless params[:delivery_person_id].present?
+      respond_to do |format|
+        format.html { redirect_to manage_stage_admin_booking_path(@booking), alert: 'Please select a delivery person for out for delivery' }
+        format.json { render json: { success: false, error: 'Please select a delivery person for out for delivery' } }
+      end
+      return
+    end
+
     respond_to do |format|
-      format.html { redirect_to admin_bookings_path, notice: 'Booking marked as out for delivery!' }
-      format.json { render json: { success: true, message: 'Booking marked as out for delivery!', status: @booking.status } }
+      format.html { redirect_to admin_bookings_path, notice: 'Booking marked as out for delivery with delivery person assigned!' }
+      format.json { render json: { success: true, message: 'Booking marked as out for delivery with delivery person assigned!', status: @booking.status } }
     end
   rescue => e
     respond_to do |format|

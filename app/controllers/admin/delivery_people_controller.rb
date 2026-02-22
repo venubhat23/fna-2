@@ -57,10 +57,45 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
   def create
     @delivery_person = DeliveryPerson.new(delivery_person_params)
 
-    if @delivery_person.save
-      redirect_to admin_delivery_person_path(@delivery_person),
-                  notice: 'Delivery person was successfully created.'
-    else
+    begin
+      ActiveRecord::Base.transaction do
+        # Save delivery person first
+        @delivery_person.save!
+
+        # Create associated User record for authentication
+        user = User.new(
+          first_name: @delivery_person.first_name,
+          last_name: @delivery_person.last_name,
+          email: @delivery_person.email,
+          mobile: @delivery_person.mobile,
+          user_type: 'delivery_person',
+          address: @delivery_person.address,
+          city: @delivery_person.city,
+          state: @delivery_person.state,
+          pincode: @delivery_person.pincode,
+          status: @delivery_person.status
+        )
+
+        # Use the same password from delivery person
+        user.password = delivery_person_params[:password]
+        user.password_confirmation = delivery_person_params[:password_confirmation] || delivery_person_params[:password]
+
+        user.save!
+
+        redirect_to admin_delivery_person_path(@delivery_person),
+                    notice: 'Delivery person and user account were successfully created.'
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      # Handle validation errors from either model
+      if e.record.is_a?(DeliveryPerson)
+        render :new, status: :unprocessable_entity
+      else
+        # User model validation failed
+        @delivery_person.errors.add(:base, "User account creation failed: #{e.record.errors.full_messages.join(', ')}")
+        render :new, status: :unprocessable_entity
+      end
+    rescue => e
+      @delivery_person.errors.add(:base, "Creation failed: #{e.message}")
       render :new, status: :unprocessable_entity
     end
   end
@@ -69,31 +104,94 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
   end
 
   def update
-    if @delivery_person.update(delivery_person_params)
-      redirect_to admin_delivery_person_path(@delivery_person),
-                  notice: 'Delivery person was successfully updated.'
-    else
+    begin
+      ActiveRecord::Base.transaction do
+        # Update delivery person
+        @delivery_person.update!(delivery_person_params.except(:password, :password_confirmation))
+
+        # Find and update associated User record
+        user = User.find_by(email: @delivery_person.email, user_type: 'delivery_person')
+        if user
+          user.update!(
+            first_name: @delivery_person.first_name,
+            last_name: @delivery_person.last_name,
+            email: @delivery_person.email,
+            mobile: @delivery_person.mobile,
+            address: @delivery_person.address,
+            city: @delivery_person.city,
+            state: @delivery_person.state,
+            pincode: @delivery_person.pincode,
+            status: @delivery_person.status
+          )
+
+          # Update password if provided
+          if delivery_person_params[:password].present?
+            user.password = delivery_person_params[:password]
+            user.password_confirmation = delivery_person_params[:password_confirmation] || delivery_person_params[:password]
+            user.save!
+          end
+        end
+
+        redirect_to admin_delivery_person_path(@delivery_person),
+                    notice: 'Delivery person and user account were successfully updated.'
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      if e.record.is_a?(DeliveryPerson)
+        render :edit, status: :unprocessable_entity
+      else
+        @delivery_person.errors.add(:base, "User account update failed: #{e.record.errors.full_messages.join(', ')}")
+        render :edit, status: :unprocessable_entity
+      end
+    rescue => e
+      @delivery_person.errors.add(:base, "Update failed: #{e.message}")
       render :edit, status: :unprocessable_entity
     end
   end
 
   def destroy
-    @delivery_person.destroy
-    redirect_to admin_delivery_people_path,
-                notice: 'Delivery person was successfully deleted.'
+    begin
+      ActiveRecord::Base.transaction do
+        # Find and delete associated User record
+        user = User.find_by(email: @delivery_person.email, user_type: 'delivery_person')
+        user&.destroy
+
+        # Delete delivery person
+        @delivery_person.destroy
+
+        redirect_to admin_delivery_people_path,
+                    notice: 'Delivery person and user account were successfully deleted.'
+      end
+    rescue => e
+      redirect_to admin_delivery_people_path,
+                  alert: "Failed to delete delivery person: #{e.message}"
+    end
   end
 
   def toggle_status
-    @delivery_person.update(status: !@delivery_person.status)
+    begin
+      ActiveRecord::Base.transaction do
+        new_status = !@delivery_person.status
+        @delivery_person.update!(status: new_status)
 
-    respond_to do |format|
-      format.html { redirect_to admin_delivery_people_path }
-      format.json {
-        render json: {
-          status: @delivery_person.status,
-          message: "Delivery person #{@delivery_person.status ? 'activated' : 'deactivated'} successfully"
-        }
-      }
+        # Update associated User record status
+        user = User.find_by(email: @delivery_person.email, user_type: 'delivery_person')
+        user&.update!(status: new_status)
+
+        respond_to do |format|
+          format.html { redirect_to admin_delivery_people_path }
+          format.json {
+            render json: {
+              status: @delivery_person.status,
+              message: "Delivery person #{@delivery_person.status ? 'activated' : 'deactivated'} successfully"
+            }
+          }
+        end
+      end
+    rescue => e
+      respond_to do |format|
+        format.html { redirect_to admin_delivery_people_path, alert: "Failed to update status: #{e.message}" }
+        format.json { render json: { error: "Failed to update status: #{e.message}" }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -105,19 +203,34 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
 
     delivery_people = DeliveryPerson.where(id: delivery_person_ids)
 
-    case action
-    when 'activate'
-      delivery_people.update_all(status: true)
-      redirect_to admin_delivery_people_path, notice: "#{delivery_people.count} delivery people activated successfully."
-    when 'deactivate'
-      delivery_people.update_all(status: false)
-      redirect_to admin_delivery_people_path, notice: "#{delivery_people.count} delivery people deactivated successfully."
-    when 'delete'
-      count = delivery_people.count
-      delivery_people.destroy_all
-      redirect_to admin_delivery_people_path, notice: "#{count} delivery people deleted successfully."
-    else
-      redirect_to admin_delivery_people_path, alert: 'Invalid action selected.'
+    begin
+      ActiveRecord::Base.transaction do
+        case action
+        when 'activate'
+          delivery_people.update_all(status: true)
+          # Update associated User records
+          emails = delivery_people.pluck(:email)
+          User.where(email: emails, user_type: 'delivery_person').update_all(status: true)
+          redirect_to admin_delivery_people_path, notice: "#{delivery_people.count} delivery people activated successfully."
+        when 'deactivate'
+          delivery_people.update_all(status: false)
+          # Update associated User records
+          emails = delivery_people.pluck(:email)
+          User.where(email: emails, user_type: 'delivery_person').update_all(status: false)
+          redirect_to admin_delivery_people_path, notice: "#{delivery_people.count} delivery people deactivated successfully."
+        when 'delete'
+          count = delivery_people.count
+          # Delete associated User records
+          emails = delivery_people.pluck(:email)
+          User.where(email: emails, user_type: 'delivery_person').destroy_all
+          delivery_people.destroy_all
+          redirect_to admin_delivery_people_path, notice: "#{count} delivery people deleted successfully."
+        else
+          redirect_to admin_delivery_people_path, alert: 'Invalid action selected.'
+        end
+      end
+    rescue => e
+      redirect_to admin_delivery_people_path, alert: "Bulk action failed: #{e.message}"
     end
   end
 

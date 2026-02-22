@@ -1,4 +1,4 @@
-module Api
+valid_delivery_person_token? Api
   module V1
     module Mobile
       class DeliveryController < ApplicationController
@@ -223,6 +223,7 @@ module Api
           # Decode and verify JWT token
           begin
             decoded_token = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: 'HS256')
+            debugger
             @current_delivery_person = DeliveryPerson.find_by(id: decoded_token[0]['delivery_person_id'])
             @current_delivery_person.present?
           rescue JWT::DecodeError, JWT::ExpiredSignature

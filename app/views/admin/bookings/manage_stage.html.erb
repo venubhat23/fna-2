@@ -261,12 +261,35 @@
           <h6 class="mb-3 text-muted">Delivery Assignment</h6>
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Delivery Person</label>
-              <input type="text" class="form-control" name="delivery_person" placeholder="Delivery executive name">
+              <label class="form-label">Delivery Person <span class="text-danger">*</span></label>
+              <select class="form-select" name="delivery_person_id" id="delivery_person_select" onchange="updateDeliveryPersonInfo()">
+                <option value="">Select Delivery Person</option>
+                <% DeliveryPerson.active.order(:first_name, :last_name).each do |dp| %>
+                  <option value="<%= dp.id %>"
+                          data-name="<%= dp.full_name %>"
+                          data-mobile="<%= dp.mobile %>"
+                          data-vehicle="<%= dp.vehicle_info %>"
+                          data-areas="<%= dp.delivery_areas %>">
+                    <%= dp.full_name %> - <%= dp.vehicle_info %>
+                  </option>
+                <% end %>
+              </select>
             </div>
             <div class="col-md-6">
               <label class="form-label">Contact Number</label>
-              <input type="text" class="form-control" name="delivery_contact" placeholder="Mobile number">
+              <input type="text" class="form-control" name="delivery_contact" id="delivery_contact" placeholder="Mobile number" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Delivery Executive Name</label>
+              <input type="text" class="form-control" name="delivery_person" id="delivery_person_name" placeholder="Delivery executive name" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Vehicle Information</label>
+              <input type="text" class="form-control" id="vehicle_info" placeholder="Vehicle details" readonly>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Delivery Areas</label>
+              <input type="text" class="form-control" id="delivery_areas" placeholder="Areas covered by delivery person" readonly>
             </div>
             <div class="col-12">
               <label class="form-label">Delivery Notes</label>
@@ -673,6 +696,17 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    if (selectedStage === 'out_for_delivery') {
+      const deliveryPersonSelect = document.querySelector('select[name="delivery_person_id"]');
+
+      if (!deliveryPersonSelect || !deliveryPersonSelect.value) {
+        e.preventDefault();
+        alert('Please select a delivery person for out for delivery.');
+        console.log('Out for delivery validation failed');
+        return false;
+      }
+    }
+
     if (selectedStage === 'cancelled') {
       const cancellationReason = document.querySelector('select[name="cancellation_reason"]');
 
@@ -742,11 +776,13 @@ function showStageFields(stage) {
   const returnReasonField = document.getElementById('return_reason_field');
   const courierServiceField = document.getElementById('courier_service_field');
   const trackingNumberField = document.getElementById('tracking_number_field');
+  const deliveryPersonField = document.getElementById('delivery_person_select');
 
   if (cancellationReasonField) cancellationReasonField.removeAttribute('required');
   if (returnReasonField) returnReasonField.removeAttribute('required');
   if (courierServiceField) courierServiceField.removeAttribute('required');
   if (trackingNumberField) trackingNumberField.removeAttribute('required');
+  if (deliveryPersonField) deliveryPersonField.removeAttribute('required');
 
   // Show the container if stage is selected
   const container = document.getElementById('stageSpecificFields');
@@ -775,6 +811,36 @@ function showStageFields(stage) {
       if (courierServiceField) courierServiceField.setAttribute('required', 'required');
       if (trackingNumberField) trackingNumberField.setAttribute('required', 'required');
     }
+
+    if (stage === 'out_for_delivery') {
+      if (deliveryPersonField) deliveryPersonField.setAttribute('required', 'required');
+    }
+  }
+}
+
+// Delivery person selection handler
+function updateDeliveryPersonInfo() {
+  const select = document.getElementById('delivery_person_select');
+  const selectedOption = select.options[select.selectedIndex];
+
+  if (selectedOption && selectedOption.value) {
+    // Update delivery person name
+    document.getElementById('delivery_person_name').value = selectedOption.dataset.name || '';
+
+    // Update contact number
+    document.getElementById('delivery_contact').value = selectedOption.dataset.mobile || '';
+
+    // Update vehicle information
+    document.getElementById('vehicle_info').value = selectedOption.dataset.vehicle || '';
+
+    // Update delivery areas
+    document.getElementById('delivery_areas').value = selectedOption.dataset.areas || '';
+  } else {
+    // Clear all fields if no selection
+    document.getElementById('delivery_person_name').value = '';
+    document.getElementById('delivery_contact').value = '';
+    document.getElementById('vehicle_info').value = '';
+    document.getElementById('delivery_areas').value = '';
   }
 }
 
