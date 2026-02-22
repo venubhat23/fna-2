@@ -65,6 +65,7 @@ class Admin::ProductsController < Admin::ApplicationController
 
   def edit
     @categories = Category.active.ordered
+    @existing_rule = @product.delivery_rules.first
   end
 
   def update

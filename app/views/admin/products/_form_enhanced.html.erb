@@ -767,7 +767,7 @@
         </div>
 
         <!-- Hidden Fields for Delivery Rules -->
-        <% existing_rule = product.delivery_rules.first %>
+        <% existing_rule = @existing_rule || product.delivery_rules.first %>
         <% if existing_rule %>
           <input type="hidden" name="product[delivery_rules_attributes][0][id]" value="<%= existing_rule.id %>">
           <input type="hidden" name="product[delivery_rules_attributes][0][rule_type]" id="delivery-rule-type" value="<%= existing_rule.rule_type || 'everywhere' %>">
