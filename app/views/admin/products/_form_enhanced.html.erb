@@ -596,9 +596,31 @@
             Available Stock <span class="required-mark">*</span>
           <% end %>
           <%= form.number_field :stock, class: "form-control",
-              min: 0, required: true, placeholder: "0" %>
+              min: 0, required: true, placeholder: "0", id: "product_stock" %>
           <div class="help-text">Current available quantity</div>
         </div>
+
+        <!-- Stock Update Vendor Purchase Linking (shown only when editing) -->
+        <% if product.persisted? %>
+          <div class="form-group" id="vendor-purchase-section" style="display: none;">
+            <%= label_tag :vendor_purchase_id, "Link to Vendor Purchase (Optional)", class: "form-label" %>
+            <%= select_tag :vendor_purchase_id,
+                options_from_collection_for_select(
+                  VendorPurchase.includes(:vendor).recent.limit(20),
+                  :id,
+                  lambda { |vp| "#{vp.vendor.name} - #{vp.purchase_number} (#{vp.purchase_date})" }
+                ),
+                {
+                  include_blank: "Create new stock batch without purchase link",
+                  class: "form-control",
+                  id: "vendor_purchase_select"
+                } %>
+            <div class="help-text">
+              <i class="bi bi-info-circle"></i>
+              Link stock changes to a specific vendor purchase for better tracking
+            </div>
+          </div>
+        <% end %>
 
         <div class="form-group">
           <%= form.label :weight, "Weight/Quantity", class: "form-label" %>
@@ -745,8 +767,19 @@
         </div>
 
         <!-- Hidden Fields for Delivery Rules -->
-        <input type="hidden" name="product[delivery_rules_attributes][0][rule_type]" id="delivery-rule-type" value="everywhere">
-        <input type="hidden" name="product[delivery_rules_attributes][0][delivery_charge]" value="0">
+        <% existing_rule = product.delivery_rules.first %>
+        <% if existing_rule %>
+          <input type="hidden" name="product[delivery_rules_attributes][0][id]" value="<%= existing_rule.id %>">
+          <input type="hidden" name="product[delivery_rules_attributes][0][rule_type]" id="delivery-rule-type" value="<%= existing_rule.rule_type || 'everywhere' %>">
+          <input type="hidden" name="product[delivery_rules_attributes][0][delivery_charge]" value="<%= existing_rule.delivery_charge || 0 %>">
+          <input type="hidden" name="product[delivery_rules_attributes][0][delivery_days]" value="<%= existing_rule.delivery_days || 7 %>">
+          <input type="hidden" name="product[delivery_rules_attributes][0][location_data]" id="existing-location-data" value="<%= existing_rule.location_data || '[]' %>">
+        <% else %>
+          <input type="hidden" name="product[delivery_rules_attributes][0][rule_type]" id="delivery-rule-type" value="everywhere">
+          <input type="hidden" name="product[delivery_rules_attributes][0][delivery_charge]" value="0">
+          <input type="hidden" name="product[delivery_rules_attributes][0][delivery_days]" value="7">
+          <input type="hidden" name="product[delivery_rules_attributes][0][location_data]" id="existing-location-data" value="[]">
+        <% end %>
       </div>
     </div>
 
@@ -1338,6 +1371,99 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+  // Stock Update Vendor Purchase Linking
+  <% if product.persisted? %>
+    document.addEventListener('DOMContentLoaded', function() {
+      const stockField = document.getElementById('product_stock');
+      const vendorPurchaseSection = document.getElementById('vendor-purchase-section');
+      let originalStock = parseInt(stockField.value) || 0;
+
+      stockField.addEventListener('input', function() {
+        const currentStock = parseInt(this.value) || 0;
+
+        // Show vendor purchase section only if stock has changed
+        if (currentStock !== originalStock) {
+          vendorPurchaseSection.style.display = 'block';
+        } else {
+          vendorPurchaseSection.style.display = 'none';
+        }
+      });
+
+      // Update original stock when page loads
+      stockField.addEventListener('focus', function() {
+        originalStock = parseInt(this.value) || 0;
+      });
+    });
+  <% end %>
+
+  // Initialize form fields for existing delivery rules when editing
+  <% if existing_rule %>
+    document.addEventListener('DOMContentLoaded', function() {
+      const deliveryType = document.getElementById('delivery-type');
+      const existingRuleType = '<%= existing_rule.rule_type %>';
+      const existingLocationData = '<%= existing_rule.location_data || "[]" %>';
+
+      // Set the delivery type dropdown
+      deliveryType.value = existingRuleType;
+
+      // Show the appropriate section and populate data
+      const statesSelection = document.getElementById('states-selection');
+      const citiesSelection = document.getElementById('cities-selection');
+      const pincodesSelection = document.getElementById('pincodes-selection');
+
+      // Hide all sections first
+      statesSelection.style.display = 'none';
+      citiesSelection.style.display = 'none';
+      pincodesSelection.style.display = 'none';
+
+      try {
+        const locationData = JSON.parse(existingLocationData);
+
+        switch(existingRuleType) {
+          case 'state':
+            statesSelection.style.display = 'block';
+            if (locationData.length > 0) {
+              const statesSelect = document.getElementById('delivery-states');
+              locationData.forEach(function(state) {
+                const option = statesSelect.querySelector('option[value="' + state + '"]');
+                if (option) option.selected = true;
+              });
+              // Trigger Select2 update if using Select2
+              if (typeof $ !== 'undefined' && $('#delivery-states').hasClass('select2-states')) {
+                $('#delivery-states').trigger('change');
+              }
+            }
+            break;
+          case 'city':
+            citiesSelection.style.display = 'block';
+            if (locationData.length > 0) {
+              const citiesSelect = document.getElementById('delivery-cities');
+              locationData.forEach(function(city) {
+                const option = citiesSelect.querySelector('option[value="' + city + '"]');
+                if (option) option.selected = true;
+              });
+              // Trigger Select2 update if using Select2
+              if (typeof $ !== 'undefined' && $('#delivery-cities').hasClass('select2-cities')) {
+                $('#delivery-cities').trigger('change');
+              }
+            }
+            break;
+          case 'pincode':
+            pincodesSelection.style.display = 'block';
+            if (locationData.length > 0) {
+              const pincodesTextarea = document.getElementById('delivery-pincodes');
+              if (pincodesTextarea) {
+                pincodesTextarea.value = locationData.join(', ');
+              }
+            }
+            break;
+        }
+      } catch (e) {
+        console.warn('Error parsing existing location data:', e);
+      }
+    });
+  <% end %>
 
 // SEO Section Toggle Function
 function toggleSeoSection() {

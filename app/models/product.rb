@@ -776,6 +776,9 @@ class Product < ApplicationRecord
   def deliverable_to?(pincode)
     return false if delivery_rules.empty?
 
+    # Validate pincode format first
+    return false unless valid_pincode_format?(pincode)
+
     # Check if there's an 'everywhere' rule
     return true if delivery_rules.everywhere.exists?
 
@@ -856,6 +859,12 @@ class Product < ApplicationRecord
   end
 
   private
+
+  # Validate pincode format - must be exactly 6 digits
+  def valid_pincode_format?(pincode)
+    return false if pincode.blank?
+    pincode.to_s.strip.match?(/\A\d{6}\z/)
+  end
 
   def generate_sku
     # Generate SKU based on category and random number

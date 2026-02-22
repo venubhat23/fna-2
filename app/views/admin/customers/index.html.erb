@@ -1,3 +1,6 @@
+<!-- SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
@@ -54,6 +57,21 @@
           </div>
           <div class="text-info">
             <i class="bi bi-person-plus fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">With Orders</h6>
+            <h4 class="mb-0"><%= @customers_with_orders || 0 %></h4>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-cart-check fs-2"></i>
           </div>
         </div>
       </div>
@@ -138,36 +156,22 @@
                   <%= customer.created_at.strftime("%b %d, %Y") if customer.created_at %>
                 </td>
                 <td class="align-middle">
-                  <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                      <i class="bi bi-three-dots"></i>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_customer_path(customer),
+                        class: "btn btn-sm btn-outline-info",
+                        title: "View Details" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    <%= link_to edit_admin_customer_path(customer),
+                        class: "btn btn-sm btn-outline-primary",
+                        title: "Edit Customer" do %>
+                      <i class="bi bi-pencil"></i>
+                    <% end %>
+                    <button class="btn btn-sm btn-outline-danger"
+                            title="Delete Customer"
+                            onclick="confirmDelete('<%= customer.display_name %>', '<%= admin_customer_path(customer) %>')">
+                      <i class="bi bi-trash"></i>
                     </button>
-                    <ul class="dropdown-menu">
-                      <li>
-                        <%= link_to admin_customer_path(customer), class: "dropdown-item" do %>
-                          <i class="bi bi-eye me-2"></i>
-                          View Details
-                        <% end %>
-                      </li>
-                      <li>
-                        <%= link_to edit_admin_customer_path(customer), class: "dropdown-item" do %>
-                          <i class="bi bi-pencil me-2"></i>
-                          Edit Customer
-                        <% end %>
-                      </li>
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <%= link_to admin_customer_path(customer),
-                            class: "dropdown-item text-danger",
-                            data: {
-                              "turbo-method": "delete",
-                              "turbo-confirm": "Are you sure you want to delete #{customer.display_name}? This action cannot be undone."
-                            } do %>
-                          <i class="bi bi-trash me-2"></i>
-                          Delete Customer
-                        <% end %>
-                      </li>
-                    </ul>
                   </div>
                 </td>
               </tr>
@@ -197,6 +201,47 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Show flash messages with SweetAlert2
+  <% if notice %>
+    <% if notice.include?('deleted') %>
+      Swal.fire({
+        title: 'Customer Deleted Successfully!',
+        html: '<%= notice.html_safe %>',
+        icon: 'success',
+        confirmButtonText: '<i class="bi bi-check-circle me-2"></i>Got it!',
+        confirmButtonColor: '#198754',
+        customClass: {
+          confirmButton: 'btn btn-success px-4'
+        },
+        buttonsStyling: false,
+        timer: 8000,
+        timerProgressBar: true
+      });
+    <% else %>
+      Swal.fire({
+        title: 'Success!',
+        text: '<%= notice %>',
+        icon: 'success',
+        confirmButtonText: 'Got it!',
+        confirmButtonColor: '#198754'
+      });
+    <% end %>
+  <% end %>
+
+  <% if alert %>
+    Swal.fire({
+      title: 'Error!',
+      html: '<%= alert.html_safe %>',
+      icon: 'error',
+      confirmButtonText: '<i class="bi bi-x-circle me-2"></i>Understood',
+      confirmButtonColor: '#dc3545',
+      customClass: {
+        confirmButton: 'btn btn-danger px-4'
+      },
+      buttonsStyling: false
+    });
+  <% end %>
+
   // Search functionality
   const searchInput = document.getElementById('searchInput');
   const tableRows = document.querySelectorAll('tbody tr');
@@ -220,6 +265,82 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
 });
+
+// Beautiful confirmation dialog for customer deletion
+function confirmDelete(customerName, deleteUrl) {
+  Swal.fire({
+    title: '⚠️ Delete Customer?',
+    html: `
+      <div class="text-start">
+        <p class="mb-2"><strong>Customer:</strong> ${customerName}</p>
+        <div class="alert alert-warning small">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>This will permanently delete:</strong>
+          <ul class="mb-0 mt-2">
+            <li>Customer profile and personal information</li>
+            <li>All associated orders and bookings</li>
+            <li>Subscriptions and delivery records</li>
+            <li>User account and login credentials</li>
+            <li>All notifications and addresses</li>
+          </ul>
+        </div>
+        <div class="alert alert-danger small mb-0">
+          <i class="bi bi-shield-exclamation me-2"></i>
+          <strong>Warning:</strong> This action cannot be undone once confirmed!
+        </div>
+      </div>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '<i class="bi bi-trash me-2"></i>Yes, Delete Permanently',
+    cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancel',
+    focusCancel: true,
+    customClass: {
+      confirmButton: 'btn btn-danger px-4 me-3',
+      cancelButton: 'btn btn-secondary px-4'
+    },
+    buttonsStyling: false
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Show loading state
+      Swal.fire({
+        title: 'Deleting Customer...',
+        html: `<div class="d-flex align-items-center justify-content-center">
+                 <div class="spinner-border text-danger me-3" role="status">
+                   <span class="visually-hidden">Loading...</span>
+                 </div>
+                 <span>Please wait while we delete <strong>${customerName}</strong> and all associated records...</span>
+               </div>`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false
+      });
+
+      // Create and submit form for DELETE request
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = deleteUrl;
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'authenticity_token';
+      csrfInput.value = csrfToken;
+
+      const methodInput = document.createElement('input');
+      methodInput.type = 'hidden';
+      methodInput.name = '_method';
+      methodInput.value = 'delete';
+
+      form.appendChild(csrfInput);
+      form.appendChild(methodInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  });
+}
 </script>
 
 <style>

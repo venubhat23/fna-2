@@ -67,12 +67,14 @@ class Admin::CustomersController < Admin::ApplicationController
     @stats = {
       total_customers: stats_scope.count,
       active_customers: stats_scope.where(status: true).count,
-      new_this_month: stats_scope.where(created_at: Time.current.beginning_of_month..Time.current.end_of_month).count
+      new_this_month: stats_scope.where(created_at: Time.current.beginning_of_month..Time.current.end_of_month).count,
+      customers_with_orders: stats_scope.joins(:orders).distinct.count
     }
 
     @total_customers = @stats[:total_customers]
     @active_customers = @stats[:active_customers]
     @new_this_month = @stats[:new_this_month]
+    @customers_with_orders = @stats[:customers_with_orders]
 
     # Handle AJAX requests
     respond_to do |format|
@@ -437,21 +439,183 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # DELETE /admin/customers/1
   def destroy
-    # Check if customer has any associated records that would prevent deletion
-    has_bookings = @customer.bookings.exists?
-    has_orders = @customer.orders.exists?
-    has_subscriptions = @customer.milk_subscriptions.exists?
+    customer_name = @customer.display_name
 
-    if has_bookings || has_orders || has_subscriptions
-      associated_items = []
-      associated_items << "bookings" if has_bookings
-      associated_items << "orders" if has_orders
-      associated_items << "subscriptions" if has_subscriptions
+    begin
+      ActiveRecord::Base.transaction do
+        # Delete associated records in proper order to avoid foreign key constraints
+        deleted_items = []
 
-      redirect_to admin_customers_path, alert: "Cannot delete customer with existing #{associated_items.join(', ')}."
-    else
-      @customer.destroy
-      redirect_to admin_customers_path, notice: 'Customer was successfully deleted.'
+        # 1. Delete milk delivery tasks (child of milk_subscriptions)
+        if ActiveRecord::Base.connection.table_exists?('milk_delivery_tasks')
+          tasks_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM milk_delivery_tasks WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if tasks_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM milk_delivery_tasks WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{tasks_count} delivery task(s)"
+          end
+        end
+
+        # 2. Delete booking schedules (referenced by bookings and has customer_id)
+        if ActiveRecord::Base.connection.table_exists?('booking_schedules')
+          schedules_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM booking_schedules WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if schedules_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM booking_schedules WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{schedules_count} booking schedule(s)"
+          end
+        end
+
+        # 3. Delete booking invoices
+        if ActiveRecord::Base.connection.table_exists?('booking_invoices')
+          booking_invoices_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM booking_invoices WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if booking_invoices_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM booking_invoices WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{booking_invoices_count} booking invoice(s)"
+          end
+        end
+
+        # 4. Delete bookings
+        if ActiveRecord::Base.connection.table_exists?('bookings')
+          bookings_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM bookings WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if bookings_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM bookings WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{bookings_count} booking(s)"
+          end
+        end
+
+        # 5. Delete orders
+        if ActiveRecord::Base.connection.table_exists?('orders')
+          orders_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM orders WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if orders_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM orders WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{orders_count} order(s)"
+          end
+        end
+
+        # 6. Delete subscription templates
+        if ActiveRecord::Base.connection.table_exists?('subscription_templates')
+          templates_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM subscription_templates WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if templates_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM subscription_templates WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{templates_count} subscription template(s)"
+          end
+        end
+
+        # 7. Delete customer formats
+        if ActiveRecord::Base.connection.table_exists?('customer_formats')
+          formats_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM customer_formats WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if formats_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM customer_formats WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{formats_count} customer format(s)"
+          end
+        end
+
+        # 8. Delete milk subscriptions
+        if ActiveRecord::Base.connection.table_exists?('milk_subscriptions')
+          subscriptions_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM milk_subscriptions WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if subscriptions_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM milk_subscriptions WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{subscriptions_count} subscription(s)"
+          end
+        end
+
+        # 9. Delete product reviews
+        if ActiveRecord::Base.connection.table_exists?('product_reviews')
+          reviews_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM product_reviews WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if reviews_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM product_reviews WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{reviews_count} product review(s)"
+          end
+        end
+
+        # 10. Delete invoices
+        if ActiveRecord::Base.connection.table_exists?('invoices')
+          invoices_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM invoices WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if invoices_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM invoices WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{invoices_count} invoice(s)"
+          end
+        end
+
+        # 11. Delete customer addresses
+        if ActiveRecord::Base.connection.table_exists?('customer_addresses')
+          addresses_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM customer_addresses WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if addresses_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM customer_addresses WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{addresses_count} address(es)"
+          end
+        end
+
+        # 12. Delete notifications
+        if ActiveRecord::Base.connection.table_exists?('notifications')
+          notifications_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM notifications WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if notifications_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM notifications WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{notifications_count} notification(s)"
+          end
+        end
+
+        # 13. Delete device tokens
+        if ActiveRecord::Base.connection.table_exists?('device_tokens')
+          device_tokens_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM device_tokens WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if device_tokens_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM device_tokens WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{device_tokens_count} device token(s)"
+          end
+        end
+
+        # 14. Delete wishlists
+        if ActiveRecord::Base.connection.table_exists?('wishlists')
+          wishlists_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM wishlists WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if wishlists_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM wishlists WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{wishlists_count} wishlist item(s)"
+          end
+        end
+
+        # 15. Delete carts if exists
+        if ActiveRecord::Base.connection.table_exists?('carts')
+          carts_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM carts WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if carts_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM carts WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{carts_count} cart(s)"
+          end
+        end
+
+        # 16. Delete associated User account if exists
+        if @customer.email.present?
+          user = User.find_by(email: @customer.email, user_type: 'customer')
+          if user
+            ActiveRecord::Base.connection.execute("DELETE FROM users WHERE id = #{user.id}")
+            deleted_items << "user account"
+          end
+        end
+
+        # 17. Delete Active Storage attachments if any
+        if @customer.profile_image_attachment.present?
+          @customer.profile_image_attachment.purge
+          deleted_items << "profile images"
+        end
+
+        # 18. Finally hard delete the customer using raw SQL to bypass all callbacks and associations
+        ActiveRecord::Base.connection.execute("DELETE FROM customers WHERE id = #{@customer.id}")
+
+        success_message = "✅ Customer '#{customer_name}' has been permanently deleted!"
+        if deleted_items.any?
+          success_message += " Also removed: #{deleted_items.join(', ')}."
+        end
+        success_message += " This action cannot be undone."
+
+        respond_to do |format|
+          format.html { redirect_to admin_customers_path, notice: success_message }
+          format.json { render json: { success: true, message: success_message } }
+        end
+      end
+    rescue => e
+      error_message = "❌ Failed to delete customer '#{customer_name}': #{e.message}"
+      respond_to do |format|
+        format.html { redirect_to admin_customers_path, alert: error_message }
+        format.json { render json: { success: false, message: error_message } }
+      end
     end
   end
 
@@ -477,7 +641,7 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # GET /admin/customers/export
   def export
-    @customers = Customer.includes(:policies)
+    @customers = Customer.all
 
     # Apply same filters as index
     if params[:search].present?

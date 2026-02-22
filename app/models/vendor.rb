@@ -35,16 +35,16 @@ class Vendor < ApplicationRecord
   def payment_type_badge_class
     case payment_type
     when 'Cash'
-      'badge-success'
+      'bg-success text-white'
     when 'Credit'
-      'badge-warning'
+      'bg-warning text-dark'
     else
-      'badge-secondary'
+      'bg-secondary text-white'
     end
   end
 
   def status_badge_class
-    status ? 'badge-success' : 'badge-danger'
+    status ? 'bg-success text-white' : 'bg-danger text-white'
   end
 
   def status_text

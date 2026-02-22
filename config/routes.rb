@@ -133,12 +133,10 @@ Rails.application.routes.draw do
         get :flow_timeline
       end
       collection do
-        get :policies_by_type
         get :commission_receipts
         post :auto_distribute
         get :reports
         get :summary
-        get 'policies/:policy_id/actions', action: :policy_actions, as: :policy_actions
       end
     end
 
@@ -384,12 +382,6 @@ Rails.application.routes.draw do
       end
     end
 
-    # Insurance management
-    resources :policies do
-      member do
-        get :download_pdf
-      end
-    end
 
     # Life Insurance
     resources :life_insurances, path: 'insurance/life' do
@@ -719,7 +711,6 @@ Rails.application.routes.draw do
         get 'customer/portfolio', to: 'customer#portfolio'
         get 'customer/upcoming_installments', to: 'customer#upcoming_installments'
         get 'customer/upcoming_renewals', to: 'customer#upcoming_renewals'
-        post 'customer/add_policy', to: 'customer#add_policy'
 
         # Settings Module APIs
         get 'settings/profile', to: 'settings#profile'
@@ -735,11 +726,6 @@ Rails.application.routes.draw do
         get 'agent/dashboard', to: 'agent#dashboard'
         get 'agent/customers', to: 'agent#customers'
         post 'agent/customers', to: 'agent#add_customer'
-        get 'agent/policies', to: 'agent#policies'
-        post 'agent/policies/health', to: 'agent#add_health_policy'
-        post 'agent/policies/life', to: 'agent#add_life_policy'
-        post 'agent/policies/motor', to: 'agent#add_motor_policy'
-        post 'agent/policies/other', to: 'agent#add_other_policy'
         get 'agent/form_data', to: 'agent#form_data'
         get 'agent/insurance_companies', to: 'agent#insurance_companies'
 
@@ -750,6 +736,12 @@ Rails.application.routes.draw do
         # Commission Distribution APIs
         get 'agent/commission_distribution', to: 'agent#commission_distribution'
         get 'agent/commission_summary', to: 'agent#commission_summary'
+
+        # Banner APIs
+        get 'banners', to: 'banners#index'
+        get 'banners/locations', to: 'banners#locations'
+        get 'banners/:id', to: 'banners#show'
+        post 'banners/:id/track_click', to: 'banners#track_click'
       end
 
       # Sub Agent APIs

@@ -74,7 +74,13 @@ class Admin::ProductsController < Admin::ApplicationController
     # Process delivery rule location data before updating
     process_params_delivery_rule_data
 
+    # Store vendor purchase ID for stock batch linking before updating
+    vendor_purchase_id = params[:vendor_purchase_id].presence
+
     if @product.update(product_params)
+      # Link stock changes to vendor purchase if provided
+      handle_stock_vendor_purchase_linking(vendor_purchase_id) if vendor_purchase_id && @product.saved_change_to_stock?
+
       # Handle main image reordering after update
       handle_main_image_setting if params[:main_image_id].present?
 
@@ -169,6 +175,31 @@ class Admin::ProductsController < Admin::ApplicationController
   end
 
   private
+
+  def handle_stock_vendor_purchase_linking(vendor_purchase_id)
+    return unless vendor_purchase_id
+
+    begin
+      vendor_purchase = VendorPurchase.find(vendor_purchase_id)
+
+      # Find the most recent stock batch for this product
+      latest_batch = @product.stock_batches.by_fifo.last
+
+      # Update the stock batch to link to the vendor purchase
+      if latest_batch && latest_batch.vendor_purchase_id.nil?
+        latest_batch.update!(
+          vendor_purchase: vendor_purchase,
+          vendor: vendor_purchase.vendor
+        )
+
+        Rails.logger.info "Linked stock batch #{latest_batch.id} to vendor purchase #{vendor_purchase.purchase_number}"
+      end
+    rescue ActiveRecord::RecordNotFound
+      Rails.logger.warn "Vendor purchase #{vendor_purchase_id} not found for stock linking"
+    rescue => e
+      Rails.logger.error "Failed to link stock to vendor purchase: #{e.message}"
+    end
+  end
 
   def process_params_delivery_rule_data
     return unless params[:product] && params[:product][:delivery_rules_attributes]

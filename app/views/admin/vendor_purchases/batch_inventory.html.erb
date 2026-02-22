@@ -224,7 +224,7 @@
                           <td>
                             <div class="small">
                               <div><%= batch.batch_date&.strftime("%d %b %Y") %></div>
-                              <div class="text-muted"><%= time_ago_in_words(batch.created_at) %> ago</div>
+                              <div class="text-muted"><%= time_ago_in_words(batch.batch_date) %> ago</div>
                             </div>
                           </td>
                           <td>

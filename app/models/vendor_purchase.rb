@@ -43,22 +43,26 @@ class VendorPurchase < ApplicationRecord
   def payment_status_badge_class
     case payment_status
     when 'paid'
-      'badge-success'
+      'bg-success text-white border-0'
     when 'partial'
-      'badge-warning'
+      'bg-warning text-dark border-0'
     when 'unpaid'
-      'badge-danger'
+      'bg-danger text-white border-0'
+    else
+      'bg-secondary text-white border-0'
     end
   end
 
   def status_badge_class
     case status
     when 'completed'
-      'badge-success'
+      'bg-success text-white border-0'
     when 'pending'
-      'badge-warning'
+      'bg-warning text-dark border-0'
     when 'cancelled'
-      'badge-danger'
+      'bg-danger text-white border-0'
+    else
+      'bg-secondary text-white border-0'
     end
   end
 
