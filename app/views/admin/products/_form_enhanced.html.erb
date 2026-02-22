@@ -1398,11 +1398,11 @@ document.addEventListener('DOMContentLoaded', function() {
   <% end %>
 
   // Initialize form fields for existing delivery rules when editing
-  <% if existing_rule %>
+  <% if @existing_rule %>
     document.addEventListener('DOMContentLoaded', function() {
       const deliveryType = document.getElementById('delivery-type');
-      const existingRuleType = '<%= existing_rule.rule_type %>';
-      const existingLocationData = '<%= existing_rule.location_data || "[]" %>';
+      const existingRuleType = '<%= @existing_rule.rule_type %>';
+      const existingLocationData = '<%= @existing_rule.location_data || "[]" %>';
 
       // Set the delivery type dropdown
       deliveryType.value = existingRuleType;
