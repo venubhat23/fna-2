@@ -29,6 +29,15 @@ Rails.application.routes.draw do
   get 'adhika/privacy-policy', to: 'public_pages#adhika_privacy_policy'
   get 'adhika/account-deletion-policy', to: 'public_pages#adhika_account_deletion_policy'
 
+  # Public invoices list (no authentication required)
+  get '/invoices_public', to: 'public_invoices#index', as: 'public_invoices'
+  patch '/invoices_public/:id/complete', to: 'public_invoices#complete', as: 'public_invoice_complete'
+  delete '/invoices_public/:id', to: 'public_invoices#destroy', as: 'public_invoice_delete'
+
+  # Public invoice view (no authentication required)
+  get '/invoice/:token', to: 'booking_invoices#public_view', as: 'public_invoice'
+  get '/invoice/:token/download', to: 'booking_invoices#public_download_pdf', as: 'public_invoice_download', defaults: { format: :pdf }
+
   # Dashboard
   get 'dashboard', to: 'dashboard#index'
   get 'dashboard/beautiful', to: 'dashboard#beautiful'

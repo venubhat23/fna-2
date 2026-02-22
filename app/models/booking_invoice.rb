@@ -26,6 +26,7 @@ class BookingInvoice < ApplicationRecord
   # Callbacks
   before_validation :generate_invoice_number, on: :create
   before_validation :set_defaults, on: :create
+  before_validation :generate_share_token, on: :create
 
   # Scopes
   scope :recent, -> { order(created_at: :desc) }
@@ -120,5 +121,18 @@ class BookingInvoice < ApplicationRecord
 
   def customer_phone
     customer&.mobile || booking&.customer_phone
+  end
+
+  def generate_share_token
+    return if share_token.present?
+
+    loop do
+      token = SecureRandom.urlsafe_base64(32)
+      break self.share_token = token unless BookingInvoice.exists?(share_token: token)
+    end
+  end
+
+  def formatted_number
+    invoice_number
   end
 end
