@@ -836,8 +836,23 @@ Rails.application.routes.draw do
     root 'dashboard#index'
     get '/dashboard', to: 'dashboard#index'
 
-    # Bookings management
-    resources :bookings, only: [:index, :show, :update]
+    # Referral management
+    resources :referrals do
+      collection do
+        get :stats
+      end
+      member do
+        patch :mark_registered
+        patch :mark_converted
+      end
+    end
+
+    # Quick refer action
+    get '/refer', to: 'referrals#new'
+    post '/refer', to: 'referrals#create'
+
+    # Referral history
+    get '/referral_history', to: 'referrals#index'
   end
 
   # Customer Web Application routes

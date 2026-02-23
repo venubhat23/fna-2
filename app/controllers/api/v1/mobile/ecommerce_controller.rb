@@ -303,6 +303,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         @booking.booking_date = Time.current
         @booking.status = 'ordered_and_delivery_pending'
 
+
         Rails.logger.info "Booking created, valid? #{@booking.valid?}"
         unless @booking.valid?
           Rails.logger.error "Booking validation errors: #{@booking.errors.full_messages}"
@@ -365,14 +366,16 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/bookings
   def bookings
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
-
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
+    # Mobile API is only for customers
+    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+
     @bookings = customer.bookings.recent.includes(:booking_items => :product)
+    user_type = 'customer'
 
     # Filter by status if provided
     @bookings = @bookings.where(status: params[:status]) if params[:status].present?
@@ -386,6 +389,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       success: true,
       data: {
         bookings: bookings_data,
+        user_type: user_type,
         pagination: {
           current_page: page,
           per_page: per_page,
@@ -1325,6 +1329,17 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       created_at: booking.created_at,
       updated_at: booking.updated_at
     }
+
+    # Add franchise details for customer view (if booking has franchise)
+    if booking.franchise
+      base_data[:franchise] = {
+        id: booking.franchise.id,
+        name: booking.franchise.name,
+        contact_person: booking.franchise.contact_person_name,
+        mobile: booking.franchise.mobile,
+        city: booking.franchise.city
+      }
+    end
 
     unless basic
       base_data[:items] = booking.booking_items.map do |item|

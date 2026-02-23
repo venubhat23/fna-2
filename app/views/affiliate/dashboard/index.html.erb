@@ -1,19 +1,12 @@
-<% content_for :page_title, "Affiliate Dashboard" %>
+<% content_for :page_title, "Dashboard" %>
 
 <!-- Welcome Section -->
 <div class="row mb-4">
   <div class="col-12">
-    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-      <div class="card-body text-white p-4">
-        <div class="row align-items-center">
-          <div class="col-md-8">
-            <h2 class="fw-bold mb-2">Welcome back, <%= @affiliate.display_name %>!</h2>
-            <p class="mb-0 opacity-90">Track your referrals and manage affiliate business</p>
-          </div>
-          <div class="col-md-4 text-end">
-            <i class="fas fa-handshake opacity-75" style="font-size: 4rem;"></i>
-          </div>
-        </div>
+    <div class="card border-0 shadow-sm bg-primary text-white">
+      <div class="card-body">
+        <h2 class="h4 mb-1">Welcome back, <%= current_affiliate.display_name %>!</h2>
+        <p class="mb-0 opacity-75">Here's an overview of your referral activities</p>
       </div>
     </div>
   </div>
@@ -21,199 +14,129 @@
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
-  <div class="col-md-3 col-sm-6 mb-3">
+  <div class="col-xl-3 col-md-6 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between">
           <div>
-            <h6 class="text-muted fw-semibold mb-1">Total Bookings</h6>
-            <h3 class="fw-bold text-primary mb-0"><%= @total_bookings %></h3>
+            <h6 class="text-muted mb-2">Total Referrals</h6>
+            <h3 class="mb-0 text-primary"><%= @stats[:total_referrals] %></h3>
           </div>
-          <div class="text-primary opacity-75">
-            <i class="fas fa-shopping-cart fa-2x"></i>
+          <div class="bg-primary bg-opacity-10 rounded p-3">
+            <i class="fas fa-users text-primary fs-4"></i>
           </div>
         </div>
-        <small class="text-muted">Referred customers</small>
       </div>
     </div>
   </div>
 
-  <div class="col-md-3 col-sm-6 mb-3">
+  <div class="col-xl-3 col-md-6 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between">
           <div>
-            <h6 class="text-muted fw-semibold mb-1">Pending Orders</h6>
-            <h3 class="fw-bold text-warning mb-0"><%= @pending_bookings %></h3>
+            <h6 class="text-muted mb-2">Pending</h6>
+            <h3 class="mb-0 text-warning"><%= @stats[:pending_referrals] %></h3>
           </div>
-          <div class="text-warning opacity-75">
-            <i class="fas fa-clock fa-2x"></i>
+          <div class="bg-warning bg-opacity-10 rounded p-3">
+            <i class="fas fa-clock text-warning fs-4"></i>
           </div>
         </div>
-        <small class="text-muted">Awaiting processing</small>
       </div>
     </div>
   </div>
 
-  <div class="col-md-3 col-sm-6 mb-3">
+  <div class="col-xl-3 col-md-6 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between">
           <div>
-            <h6 class="text-muted fw-semibold mb-1">Completed</h6>
-            <h3 class="fw-bold text-success mb-0"><%= @completed_bookings %></h3>
+            <h6 class="text-muted mb-2">Registered</h6>
+            <h3 class="mb-0 text-info"><%= @stats[:registered_referrals] %></h3>
           </div>
-          <div class="text-success opacity-75">
-            <i class="fas fa-check-circle fa-2x"></i>
+          <div class="bg-info bg-opacity-10 rounded p-3">
+            <i class="fas fa-user-check text-info fs-4"></i>
           </div>
         </div>
-        <small class="text-muted">Successfully delivered</small>
       </div>
     </div>
   </div>
 
-  <div class="col-md-3 col-sm-6 mb-3">
+  <div class="col-xl-3 col-md-6 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between">
           <div>
-            <h6 class="text-muted fw-semibold mb-1">Commission</h6>
-            <h3 class="fw-bold text-info mb-0">₹<%= number_with_delimiter(@total_commission&.to_f || 0, delimiter: ',') %></h3>
+            <h6 class="text-muted mb-2">Converted</h6>
+            <h3 class="mb-0 text-success"><%= @stats[:converted_referrals] %></h3>
           </div>
-          <div class="text-info opacity-75">
-            <i class="fas fa-percent fa-2x"></i>
+          <div class="bg-success bg-opacity-10 rounded p-3">
+            <i class="fas fa-trophy text-success fs-4"></i>
           </div>
         </div>
-        <small class="text-muted">Total earned</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Conversion Rate -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title">Conversion Rate</h5>
+        <h2 class="text-primary mb-0">
+          <%= number_with_precision(@stats[:conversion_rate], precision: 1) %>%
+        </h2>
+        <small class="text-muted">of your referrals have converted</small>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Charts and Recent Activity -->
-<div class="row mb-4">
-  <!-- Revenue Chart -->
-  <div class="col-lg-8 mb-4">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white border-0 pb-0">
-        <h5 class="fw-bold text-dark mb-0">
-          <i class="fas fa-chart-line text-primary me-2"></i>
-          Monthly Revenue Trend
-        </h5>
-      </div>
-      <div class="card-body">
-        <canvas id="revenueChart" height="100"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Booking Status Distribution -->
-  <div class="col-lg-4 mb-4">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white border-0 pb-0">
-        <h5 class="fw-bold text-dark mb-0">
-          <i class="fas fa-pie-chart text-success me-2"></i>
-          Order Status
-        </h5>
-      </div>
-      <div class="card-body">
-        <canvas id="statusChart" height="200"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Commission Info -->
-<% if @pending_commission&.to_f > 0 %>
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="alert alert-info border-0 shadow-sm">
-      <div class="d-flex align-items-center">
-        <i class="fas fa-info-circle fa-2x text-info me-3"></i>
-        <div>
-          <h6 class="fw-bold mb-1">Pending Commission</h6>
-          <p class="mb-0">You have ₹<%= number_with_delimiter(@pending_commission&.to_f, delimiter: ',') %> in pending commission payments.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<% end %>
-
-<!-- Recent Bookings -->
 <div class="row">
-  <div class="col-12">
+  <!-- Monthly Referrals Chart -->
+  <div class="col-lg-8 mb-4">
     <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white border-0 pb-0">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="fw-bold text-dark mb-0">
-            <i class="fas fa-history text-info me-2"></i>
-            Recent Bookings
-          </h5>
-          <%= link_to "View All", affiliate_bookings_path, class: "btn btn-outline-primary btn-sm" %>
-        </div>
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Referral Activity (Last 6 Months)</h5>
       </div>
       <div class="card-body">
-        <% if @recent_bookings.any? %>
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Booking ID</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @recent_bookings.each do |booking| %>
-                  <tr>
-                    <td>
-                      <span class="fw-semibold text-primary">#<%= booking.booking_number %></span>
-                    </td>
-                    <td>
-                      <div>
-                        <div class="fw-semibold"><%= booking.customer&.display_name %></div>
-                        <small class="text-muted"><%= booking.customer&.email %></small>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="fw-semibold">₹<%= number_with_delimiter(booking.total_amount&.to_f || 0, delimiter: ',') %></span>
-                    </td>
-                    <td>
-                      <% case booking.status %>
-                      <% when 'pending' %>
-                        <span class="badge bg-warning">Pending</span>
-                      <% when 'processing' %>
-                        <span class="badge bg-info">Processing</span>
-                      <% when 'shipped' %>
-                        <span class="badge bg-primary">Shipped</span>
-                      <% when 'delivered' %>
-                        <span class="badge bg-success">Delivered</span>
-                      <% when 'cancelled' %>
-                        <span class="badge bg-danger">Cancelled</span>
-                      <% else %>
-                        <span class="badge bg-secondary"><%= booking.status&.humanize %></span>
-                      <% end %>
-                    </td>
-                    <td>
-                      <small class="text-muted"><%= booking.created_at&.strftime("%d %b, %Y") %></small>
-                    </td>
-                    <td>
-                      <%= link_to "View", affiliate_booking_path(booking), class: "btn btn-outline-primary btn-sm" %>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
+        <canvas id="monthlyReferralsChart" style="height: 300px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Referrals -->
+  <div class="col-lg-4 mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Recent Referrals</h5>
+      </div>
+      <div class="card-body">
+        <% if @recent_referrals.any? %>
+          <% @recent_referrals.each do |referral| %>
+            <div class="d-flex align-items-center mb-3">
+              <div class="bg-light rounded-circle p-2 me-3">
+                <i class="fas fa-user text-muted"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h6 class="mb-1"><%= referral.referred_name %></h6>
+                <small class="text-muted">
+                  <%= referral.created_at.strftime('%b %d, %Y') %>
+                </small>
+              </div>
+              <span class="badge bg-<%= referral.status_badge_class %>">
+                <%= referral.status_display %>
+              </span>
+            </div>
+          <% end %>
         <% else %>
           <div class="text-center py-4">
-            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No recent bookings</h5>
-            <p class="text-muted">Your referred customer bookings will appear here</p>
+            <i class="fas fa-users text-muted fs-1 mb-3"></i>
+            <p class="text-muted mb-0">No referrals yet</p>
+            <small>Start referring people to build your network!</small>
           </div>
         <% end %>
       </div>
@@ -221,21 +144,56 @@
   </div>
 </div>
 
-<!-- Charts JavaScript -->
+<!-- Quick Actions -->
+<div class="row">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Quick Actions</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <%= link_to affiliate_refer_path, class: "btn btn-primary btn-lg w-100" do %>
+              <i class="fas fa-user-plus me-2"></i>
+              Add New Referral
+            <% end %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= link_to affiliate_referral_history_path, class: "btn btn-outline-primary btn-lg w-100" do %>
+              <i class="fas fa-history me-2"></i>
+              View All Referrals
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Revenue Chart
-  const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-  new Chart(revenueCtx, {
+  const ctx = document.getElementById('monthlyReferralsChart').getContext('2d');
+
+  const chartData = <%= raw @monthly_referrals.to_json %>;
+
+  new Chart(ctx, {
     type: 'line',
     data: {
-      labels: <%= raw @monthly_revenue.map { |data| data[:month] }.to_json %>,
+      labels: chartData.map(d => d.month),
       datasets: [{
-        label: 'Revenue (₹)',
-        data: <%= raw @monthly_revenue.map { |data| data[:revenue] }.to_json %>,
-        borderColor: '#667eea',
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-        borderWidth: 3,
+        label: 'Total Referrals',
+        data: chartData.map(d => d.total),
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        fill: true,
+        tension: 0.4
+      }, {
+        label: 'Converted',
+        data: chartData.map(d => d.converted),
+        borderColor: '#198754',
+        backgroundColor: 'rgba(25, 135, 84, 0.1)',
         fill: true,
         tension: 0.4
       }]
@@ -243,52 +201,17 @@ document.addEventListener('DOMContentLoaded', function() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
-      },
       scales: {
         y: {
           beginAtZero: true,
           ticks: {
-            callback: function(value) {
-              return '₹' + value.toLocaleString();
-            }
+            stepSize: 1
           }
         }
-      }
-    }
-  });
-
-  // Status Chart
-  const statusCtx = document.getElementById('statusChart').getContext('2d');
-  const statusData = <%= raw @booking_statuses.to_json %>;
-  const statusLabels = Object.keys(statusData);
-  const statusValues = Object.values(statusData);
-
-  new Chart(statusCtx, {
-    type: 'doughnut',
-    data: {
-      labels: statusLabels.map(status => status.charAt(0).toUpperCase() + status.slice(1)),
-      datasets: [{
-        data: statusValues,
-        backgroundColor: [
-          '#ffc107',
-          '#17a2b8',
-          '#007bff',
-          '#28a745',
-          '#dc3545'
-        ],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      },
       plugins: {
         legend: {
-          position: 'bottom'
+          position: 'top'
         }
       }
     }

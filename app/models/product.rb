@@ -733,7 +733,12 @@ class Product < ApplicationRecord
 
   def main_image
     if image_url.present?
-      { type: 'cloudinary', url: cloudinary_image_url }
+      cloudinary_url = cloudinary_image_url
+      if cloudinary_url.present?
+        { type: 'cloudinary', url: cloudinary_url }
+      else
+        { type: 'cloudinary_fallback', url: image_url }
+      end
     elsif image.attached?
       { type: 'active_storage', attachment: image }
     else
@@ -743,7 +748,8 @@ class Product < ApplicationRecord
 
   def main_image_url(transformation = {})
     if image_url.present?
-      cloudinary_image_url(transformation)
+      cloudinary_url = cloudinary_image_url(transformation)
+      cloudinary_url.present? ? cloudinary_url : image_url
     elsif image.attached?
       Rails.application.routes.url_helpers.rails_blob_url(image, only_path: true)
     else

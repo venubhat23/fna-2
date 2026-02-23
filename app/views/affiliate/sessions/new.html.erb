@@ -16,7 +16,7 @@
             </div>
 
             <!-- Login Form -->
-            <%= form_with(model: @affiliate, url: affiliate_login_path, local: true, class: "needs-validation", novalidate: true) do |form| %>
+            <%= form_with url: affiliate_login_path, method: :post, local: true, class: "needs-validation", novalidate: true do |form| %>
               <div class="mb-3">
                 <%= form.label :email, "Email Address", class: "form-label fw-semibold" %>
                 <div class="input-group">
@@ -36,15 +36,6 @@
                   </span>
                   <%= form.password_field :password, class: "form-control form-control-lg",
                       placeholder: "Enter your password", required: true %>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me">
-                  <label class="form-check-label text-muted" for="remember_me">
-                    Remember me on this device
-                  </label>
                 </div>
               </div>
 

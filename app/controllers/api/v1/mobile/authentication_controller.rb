@@ -269,62 +269,6 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
       return
     end
 
-    # Check Franchise login
-    franchise = Franchise.find_by(email: login_field)
-    unless franchise
-      formatted_mobile = format_mobile_number(login_field)
-      if formatted_mobile
-        franchise = Franchise.find_by(mobile: formatted_mobile) ||
-                   Franchise.find_by(mobile: "+91#{formatted_mobile}") ||
-                   Franchise.find_by(mobile: "+91 #{formatted_mobile}") ||
-                   Franchise.find_by(mobile: "#{formatted_mobile[0..4]} #{formatted_mobile[5..9]}") ||
-                   Franchise.find_by(mobile: "+91 #{formatted_mobile[0..4]} #{formatted_mobile[5..9]}")
-      else
-        franchise = Franchise.find_by(mobile: login_field)
-      end
-    end
-
-    if franchise && franchise.authenticate(password) && franchise.status && franchise.user.present?
-      token = generate_token(franchise.user, 'franchise')
-
-      # Get franchise statistics
-      franchise_stats = get_franchise_statistics(franchise)
-
-      json_response({
-        success: true,
-        data: {
-          token: token,
-          username: franchise.display_name,
-          role: 'franchise',
-          user_id: franchise.user.id,
-          franchise_id: franchise.id,
-          email: franchise.email,
-          mobile: franchise.mobile,
-          profile: {
-            name: franchise.name,
-            contact_person_name: franchise.contact_person_name,
-            business_type: franchise.business_type,
-            address: franchise.address,
-            city: franchise.city,
-            state: franchise.state,
-            pincode: franchise.pincode,
-            territory: franchise.territory,
-            commission_percentage: franchise.commission_percentage,
-            franchise_fee: franchise.franchise_fee
-          },
-          dashboard_stats: {
-            total_bookings: franchise_stats[:total_bookings],
-            completed_bookings: franchise_stats[:completed_bookings],
-            pending_bookings: franchise_stats[:pending_bookings],
-            total_revenue: franchise_stats[:total_revenue],
-            commission_earned: franchise_stats[:commission_earned],
-            bookings_this_month: franchise_stats[:bookings_this_month],
-            customers_served: franchise_stats[:customers_served]
-          }
-        }
-      })
-      return
-    end
 
     json_response({
       success: false,
@@ -1423,4 +1367,5 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
       }
     end
   end
+
 end

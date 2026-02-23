@@ -38,7 +38,7 @@
 
               <!-- Quantity Controls -->
               <div class="col-md-3 col-6">
-                <%= form_with url: customer_cart_update_item_path, method: :patch, local: true, class: "d-flex align-items-center" do |f| %>
+                <%= form_with url: update_item_customer_cart_path, method: :patch, local: true, class: "d-flex align-items-center" do |f| %>
                   <%= f.hidden_field :product_id, value: item['product_id'] %>
                   <div class="input-group input-group-sm" style="width: 120px;">
                     <button type="button" class="btn btn-outline-secondary" onclick="decreaseCartQuantity(<%= item['product_id'] %>)">
@@ -61,7 +61,7 @@
               <!-- Item Total & Remove -->
               <div class="col-md-2 col-6 text-md-end">
                 <p class="fw-bold mb-2">₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></p>
-                <%= link_to customer_cart_remove_item_path,
+                <%= link_to remove_item_customer_cart_path,
                            method: :delete,
                            data: {
                              confirm: 'Remove this item from cart?',
@@ -76,7 +76,7 @@
 
           <!-- Clear Cart -->
           <div class="text-end mt-3">
-            <%= link_to customer_cart_clear_path,
+            <%= link_to clear_customer_cart_path,
                        method: :delete,
                        data: { confirm: 'Are you sure you want to clear your cart?' },
                        class: "btn btn-outline-secondary" do %>
@@ -138,7 +138,7 @@
 
           <!-- Checkout Button -->
           <div class="d-grid gap-2">
-            <%= link_to customer_checkout_index_path, class: "btn btn-primary btn-lg" do %>
+            <%= link_to customer_checkout_path, class: "btn btn-primary btn-lg" do %>
               <i class="bi bi-credit-card me-2"></i>Proceed to Checkout
             <% end %>
           </div>
@@ -204,7 +204,7 @@ function updateCartQuantity(productId) {
   // Create a form and submit it
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = '<%= customer_cart_update_item_path %>';
+  form.action = '<%= update_item_customer_cart_path %>';
 
   // Add CSRF token
   const csrfToken = document.querySelector('meta[name="csrf-token"]').content;

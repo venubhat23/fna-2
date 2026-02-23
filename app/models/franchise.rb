@@ -3,6 +3,7 @@ class Franchise < ApplicationRecord
 
   # Associations
   belongs_to :user, optional: true
+  has_many :bookings, dependent: :nullify
 
   # Password support
   has_secure_password validations: false
@@ -129,7 +130,6 @@ class Franchise < ApplicationRecord
       password_confirmation: generated_password,
       mobile: mobile,
       user_type: 'franchise',
-      role: 'franchise',
       role_id: franchise_role&.id,
       status: true,
       company_name: name,

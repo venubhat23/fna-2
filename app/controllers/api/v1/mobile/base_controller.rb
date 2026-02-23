@@ -51,15 +51,6 @@ class Api::V1::Mobile::BaseController < ApplicationController
         @current_user = User.find(user_id)
       when 'sub_agent'
         @current_user = SubAgent.find(user_id)
-      when 'franchise'
-        @current_user = User.find(user_id)
-        # Verify this is actually a franchise user
-        if @current_user.user_type != 'franchise'
-          return render json: {
-            success: false,
-            message: 'Invalid franchise account'
-          }, status: :unauthorized
-        end
       else
         return render json: {
           success: false,
@@ -103,9 +94,6 @@ class Api::V1::Mobile::BaseController < ApplicationController
     current_user if current_user.is_a?(SubAgent)
   end
 
-  def current_franchise
-    current_user if current_user.is_a?(User) && current_user.user_type == 'franchise'
-  end
 
   # Helper method to handle errors
   def render_error(message, status = :bad_request, errors = nil)

@@ -31,15 +31,21 @@
 
         <ul class="nav nav-pills flex-column">
           <li class="nav-item">
-            <%= link_to affiliate_dashboard_path, class: "nav-link #{'active' if current_page?(affiliate_dashboard_path)}" do %>
+            <%= link_to affiliate_root_path, class: "nav-link #{'active' if current_page?(affiliate_root_path) || controller_name == 'dashboard'}" do %>
               <i class="fas fa-tachometer-alt me-2"></i>
               Dashboard
             <% end %>
           </li>
           <li class="nav-item">
-            <%= link_to affiliate_bookings_path, class: "nav-link #{'active' if current_page?(affiliate_bookings_path) || request.path.include?('bookings')}" do %>
-              <i class="fas fa-shopping-cart me-2"></i>
-              Bookings
+            <%= link_to affiliate_refer_path, class: "nav-link #{'active' if current_page?(affiliate_refer_path)}" do %>
+              <i class="fas fa-user-plus me-2"></i>
+              Refer
+            <% end %>
+          </li>
+          <li class="nav-item">
+            <%= link_to affiliate_referral_history_path, class: "nav-link #{'active' if current_page?(affiliate_referral_history_path) || (controller_name == 'referrals' && action_name == 'index')}" do %>
+              <i class="fas fa-history me-2"></i>
+              Referral History
             <% end %>
           </li>
         </ul>

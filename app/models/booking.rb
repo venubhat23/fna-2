@@ -4,6 +4,7 @@ class Booking < ApplicationRecord
   belongs_to :booking_schedule, optional: true # For subscription bookings
   belongs_to :store, optional: true
   belongs_to :delivery_person, optional: true
+  belongs_to :franchise, optional: true
   has_many :booking_items, dependent: :destroy
   # has_one :order, dependent: :nullify  # Temporarily disabled until booking_id column is added to orders table
   has_many :booking_invoices, dependent: :destroy

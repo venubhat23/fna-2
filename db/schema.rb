@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_23_112829) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_23_140939) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -204,11 +204,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_23_112829) do
     t.boolean "is_subscription"
     t.decimal "final_amount_after_discount"
     t.bigint "delivery_person_id"
+    t.bigint "franchise_id"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
     t.index ["delivery_person_id"], name: "index_bookings_on_delivery_person_id"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
     t.index ["expected_delivery_date"], name: "index_bookings_on_expected_delivery_date"
+    t.index ["franchise_id"], name: "index_bookings_on_franchise_id"
     t.index ["stage_updated_at"], name: "index_bookings_on_stage_updated_at"
     t.index ["stage_updated_by"], name: "index_bookings_on_stage_updated_by"
     t.index ["store_id"], name: "index_bookings_on_store_id"
@@ -451,22 +453,4 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_23_112829) do
     t.index ["invoice_id"], name: "index_invoice_items_on_invoice_id"
     t.index ["milk_delivery_task_id"], name: "index_invoice_items_on_milk_delivery_task_id"
     t.index ["product_id"], name: "index_invoice_items_on_product_id"
-  end
-
-  create_table "invoices", force: :cascade do |t|
-    t.string "invoice_number"
-    t.string "payout_type"
-    t.integer "payout_id"
-    t.decimal "total_amount"
-    t.string "status"
-    t.date "invoice_date"
-    t.date "due_date"
-    t.datetime "paid_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "customer_id"
-    t.integer "payment_status"
-    t.string "share_token"
-    t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
-    t.index ["share_token"], name: "index_invoices_on_share_token", unique: true
   end

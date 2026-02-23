@@ -3,6 +3,9 @@ class Customer::BaseController < ApplicationController
   skip_before_action :authenticate_user!
   skip_load_and_authorize_resource
 
+  # Skip CSRF protection for testing (you might want to enable this in production)
+  skip_before_action :verify_authenticity_token
+
   before_action :authenticate_customer!
   before_action :ensure_customer_role
   layout 'customer'

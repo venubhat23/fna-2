@@ -1,0 +1,17 @@
+development:
+  cloud_name: "dfbg5qy10"
+  api_key: "514942996649779"
+  api_secret: "spvCKAjnscmgGXwOZar_JwNt29Y"
+  secure: true
+
+production:
+  cloud_name: "dfbg5qy10"
+  api_key: "514942996649779"
+  api_secret: "spvCKAjnscmgGXwOZar_JwNt29Y"
+  secure: true
+
+test:
+  cloud_name: "dfbg5qy10"
+  api_key: "514942996649779"
+  api_secret: "spvCKAjnscmgGXwOZar_JwNt29Y"
+  secure: true

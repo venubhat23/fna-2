@@ -1,0 +1,385 @@
+<style>
+.customer-sidebar {
+  position: fixed !important;
+  top: 70px !important;
+  left: 0 !important;
+  width: 260px !important;
+  height: calc(100vh - 70px) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
+  border-right: 2px solid #e2e8f0 !important;
+  z-index: 1040 !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  backdrop-filter: blur(10px) !important;
+  transform: translateX(0) !important;
+  transition: transform 0.3s ease !important;
+}
+
+@media (max-width: 991.98px) {
+  .customer-sidebar {
+    transform: translateX(-100%) !important;
+  }
+
+  .customer-sidebar.sidebar-open {
+    transform: translateX(0) !important;
+  }
+}
+
+.customer-nav-link {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 20px !important;
+  margin: 6px 12px !important;
+  border-radius: 16px !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+.customer-nav-link::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 4px !important;
+  height: 100% !important;
+  background: linear-gradient(to bottom, #10b981, #34d399) !important;
+  transform: scaleY(0) !important;
+  transition: transform 0.3s ease !important;
+}
+
+.customer-nav-link:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%) !important;
+  color: #1e293b !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.15) !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.customer-nav-link:hover::before {
+  transform: scaleY(1) !important;
+}
+
+.customer-nav-link:hover .nav-text {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.customer-nav-link.active {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+}
+
+.customer-nav-link.active::before {
+  transform: scaleY(1) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.customer-nav-link.active .nav-text {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.customer-nav-link.active .icon-bg {
+  background: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-text {
+  color: #64748b !important;
+  font-weight: 500 !important;
+  margin-left: 12px !important;
+  font-size: 14px !important;
+  display: inline-block !important;
+  transition: all 0.3s ease !important;
+}
+
+.customer-nav-section-title {
+  color: #10b981 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding: 20px 24px 8px 24px !important;
+  margin-bottom: 8px !important;
+  position: relative !important;
+}
+
+.customer-nav-section-title::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 24px !important;
+  width: 60px !important;
+  height: 3px !important;
+  background: linear-gradient(to right, #10b981, #34d399) !important;
+  border-radius: 2px !important;
+}
+
+.icon-bg {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+}
+
+.icon-bg::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 1px !important;
+  border-radius: 9px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.customer-nav-link:hover .icon-bg {
+  transform: scale(1.1) rotate(2deg) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.customer-nav-link:hover .icon-bg::after {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.customer-nav-link.active .icon-bg {
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.customer-nav-link.active .icon-bg::after {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Customer specific gradient colors */
+.gradient-green {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4) !important;
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
+}
+
+.gradient-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%) !important;
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
+}
+
+.gradient-pink {
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4) !important;
+}
+
+.gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4) !important;
+}
+
+.gradient-red {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+.sidebar-nav {
+  padding: 1rem 0 !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.nav-section {
+  margin-bottom: 1.5rem !important;
+}
+
+.nav-menu {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.nav-item {
+  margin-bottom: 4px !important;
+}
+
+.customer-user-profile {
+  display: flex !important;
+  align-items: center !important;
+  padding: 1.5rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.customer-avatar-circle {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  margin-right: 12px !important;
+  font-weight: 600 !important;
+}
+
+.customer-name {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
+.customer-role-badge {
+  background: linear-gradient(135deg, #10b981, #34d399) !important;
+  color: #ffffff !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+  margin-top: 2px !important;
+}
+
+.customer-sidebar-footer {
+  margin-top: auto !important;
+  padding: 1rem !important;
+  border-top: 1px solid #e2e8f0 !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.customer-sidebar-footer::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 20% !important;
+  width: 60% !important;
+  height: 2px !important;
+  background: linear-gradient(to right, transparent, #10b981, #34d399, transparent) !important;
+}
+
+.customer-logout-btn {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 16px !important;
+  border-radius: 12px !important;
+  color: #ef4444 !important;
+  text-decoration: none !important;
+  width: 100% !important;
+  transition: all 0.3s ease !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.customer-logout-btn:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(248, 113, 113, 0.15)) !important;
+  color: #ffffff !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3) !important;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+}
+
+.customer-logout-btn .nav-text {
+  margin-left: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Badge for orders/notifications */
+.nav-badge {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+  color: white !important;
+  border-radius: 10px !important;
+  padding: 2px 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  margin-left: auto !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+}
+</style>
+
+<div class="customer-sidebar" id="customerSidebar">
+  <% if current_customer %>
+  <!-- User Profile Section -->
+  <div class="customer-user-profile">
+    <div class="customer-avatar-circle">
+      <%= current_customer.first_name.first.upcase %>
+    </div>
+    <div>
+      <p class="customer-name"><%= current_customer.display_name %></p>
+      <span class="customer-role-badge">Customer</span>
+    </div>
+  </div>
+  <% end %>
+
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav">
+    <!-- Main Menu Section -->
+    <div class="nav-section">
+      <div class="customer-nav-section-title">Main Menu</div>
+      <ul class="nav-menu">
+        <!-- Dashboard -->
+        <li class="nav-item">
+          <%= link_to customer_root_path, class: "customer-nav-link #{'active' if current_page?(customer_root_path) || current_page?(customer_dashboard_path)}" do %>
+            <div class="icon-bg gradient-green">
+              <i class="fas fa-home"></i>
+            </div>
+            <span class="nav-text">Dashboard</span>
+          <% end %>
+        </li>
+
+        <!-- My Bookings -->
+        <li class="nav-item">
+          <%= link_to customer_orders_path, class: "customer-nav-link #{'active' if current_page?(customer_orders_path) || request.path.include?('/customer/orders') || request.path.include?('/customer/cart') || request.path.include?('/customer/checkout') || request.path.include?('/customer/products') || request.path.include?('/customer/categories')}" do %>
+            <div class="icon-bg gradient-cyan">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <span class="nav-text">My Bookings</span>
+          <% end %>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <% if current_customer %>
+  <!-- Logout Section -->
+  <div class="customer-sidebar-footer">
+    <%= link_to customer_logout_path, method: :delete, class: "customer-logout-btn" do %>
+      <div class="icon-bg gradient-red">
+        <i class="fas fa-sign-out-alt"></i>
+      </div>
+      <span class="nav-text">Logout</span>
+    <% end %>
+  </div>
+  <% end %>
+</div>

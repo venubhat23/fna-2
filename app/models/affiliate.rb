@@ -1,5 +1,6 @@
 class Affiliate < ApplicationRecord
   has_one :user, as: :authenticatable, dependent: :destroy
+  has_many :referrals, dependent: :destroy
 
   validates :first_name, presence: true
   validates :last_name, presence: true
@@ -27,6 +28,27 @@ class Affiliate < ApplicationRecord
 
   def status_text
     status? ? 'Active' : 'Inactive'
+  end
+
+  # Referral statistics
+  def total_referrals
+    referrals.count
+  end
+
+  def pending_referrals
+    referrals.pending.count
+  end
+
+  def registered_referrals
+    referrals.registered.count
+  end
+
+  def converted_referrals
+    referrals.converted.count
+  end
+
+  def conversion_rate
+    Referral.conversion_rate(id)
   end
 
   private

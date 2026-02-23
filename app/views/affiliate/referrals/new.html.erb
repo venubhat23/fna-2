@@ -1,0 +1,175 @@
+<% content_for :page_title, "Add New Referral" %>
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Add New Referral</h2>
+    <p class="text-muted mb-0">Refer someone new to expand your network</p>
+  </div>
+  <div>
+    <%= link_to affiliate_referral_history_path, class: "btn btn-outline-secondary" do %>
+      <i class="fas fa-arrow-left me-1"></i>
+      Back to History
+    <% end %>
+  </div>
+</div>
+
+<!-- Referral Form -->
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">
+          <i class="fas fa-user-plus text-primary me-2"></i>
+          Referral Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@current_affiliate, @referral], url: affiliate_referrals_path, local: true, class: "row g-3" do |form| %>
+          <!-- Display errors -->
+          <% if @referral.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6 class="alert-heading">Please correct the following errors:</h6>
+                <ul class="mb-0">
+                  <% @referral.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Referred Person Name -->
+          <div class="col-md-12">
+            <%= form.label :referred_name, class: "form-label" do %>
+              <i class="fas fa-user me-1"></i>
+              Full Name *
+            <% end %>
+            <%= form.text_field :referred_name, class: "form-control", placeholder: "Enter full name", required: true %>
+            <div class="form-text">Enter the complete name of the person you're referring</div>
+          </div>
+
+          <!-- Mobile Number -->
+          <div class="col-md-6">
+            <%= form.label :referred_mobile, class: "form-label" do %>
+              <i class="fas fa-phone me-1"></i>
+              Mobile Number *
+            <% end %>
+            <%= form.telephone_field :referred_mobile, class: "form-control", placeholder: "Enter mobile number", required: true %>
+            <div class="form-text">10-digit mobile number</div>
+          </div>
+
+          <!-- Email Address -->
+          <div class="col-md-6">
+            <%= form.label :referred_email, class: "form-label" do %>
+              <i class="fas fa-envelope me-1"></i>
+              Email Address *
+            <% end %>
+            <%= form.email_field :referred_email, class: "form-control", placeholder: "Enter email address", required: true %>
+            <div class="form-text">Valid email address</div>
+          </div>
+
+          <!-- Notes (Optional) -->
+          <div class="col-12">
+            <%= form.label :notes, class: "form-label" do %>
+              <i class="fas fa-sticky-note me-1"></i>
+              Additional Notes
+            <% end %>
+            <%= form.text_area :notes, rows: 3, class: "form-control", placeholder: "Any additional information about this referral (optional)" %>
+            <div class="form-text">Optional notes about the referral or person</div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="col-12">
+            <hr class="my-4">
+            <div class="d-flex justify-content-end gap-2">
+              <%= link_to "Cancel", affiliate_referral_history_path, class: "btn btn-outline-secondary" %>
+              <%= form.submit "Add Referral", class: "btn btn-primary", data: {
+                confirm: "Are you sure you want to add this referral? Make sure all information is correct."
+              } %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Referral Guidelines -->
+<div class="row justify-content-center mt-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-light border-0">
+        <h6 class="mb-0 text-primary">
+          <i class="fas fa-lightbulb me-2"></i>
+          Referral Guidelines
+        </h6>
+      </div>
+      <div class="card-body">
+        <ul class="mb-0">
+          <li><strong>Valid Information:</strong> Ensure all contact details are accurate and up-to-date</li>
+          <li><strong>Genuine Interest:</strong> Refer people who might genuinely be interested in our services</li>
+          <li><strong>Follow-up:</strong> You may follow up with your referrals to guide them through the process</li>
+          <li><strong>Commission:</strong> You'll earn commission when referred customers complete transactions</li>
+          <li><strong>Privacy:</strong> Respect the privacy of people you refer and get their consent before referring</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form Validation Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  const mobileField = document.querySelector('#referral_referred_mobile');
+
+  // Mobile number validation
+  mobileField.addEventListener('input', function() {
+    let value = this.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length > 10) {
+      value = value.slice(0, 10);
+    }
+    this.value = value;
+
+    // Validation feedback
+    if (value.length === 10) {
+      this.classList.remove('is-invalid');
+      this.classList.add('is-valid');
+    } else if (value.length > 0) {
+      this.classList.remove('is-valid');
+      this.classList.add('is-invalid');
+    } else {
+      this.classList.remove('is-valid', 'is-invalid');
+    }
+  });
+
+  // Form submission validation
+  form.addEventListener('submit', function(e) {
+    let isValid = true;
+    const requiredFields = form.querySelectorAll('[required]');
+
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        field.classList.add('is-invalid');
+        isValid = false;
+      } else {
+        field.classList.remove('is-invalid');
+      }
+    });
+
+    // Mobile number specific validation
+    const mobile = mobileField.value;
+    if (mobile.length !== 10) {
+      mobileField.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    if (!isValid) {
+      e.preventDefault();
+      alert('Please fill in all required fields correctly.');
+    }
+  });
+});
+</script>

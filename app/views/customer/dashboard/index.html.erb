@@ -1,68 +1,145 @@
-<% content_for :title, 'Home' %>
+<% content_for :title, 'Dashboard' %>
 
-<!-- Hero Banner Section -->
-<div class="hero-section py-5 mb-5">
-  <div class="container">
-    <% if @banners.any? %>
-      <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-indicators">
-          <% @banners.each_with_index do |banner, index| %>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<%= index %>"
-                    class="<%= 'active' if index == 0 %>" aria-current="true"></button>
-          <% end %>
-        </div>
-        <div class="carousel-inner">
-          <% @banners.each_with_index do |banner, index| %>
-            <div class="carousel-item <%= 'active' if index == 0 %>">
-              <div class="row align-items-center">
-                <div class="col-md-6">
-                  <h1 class="display-4 fw-bold mb-4"><%= banner.title %></h1>
-                  <p class="lead mb-4"><%= banner.description %></p>
-                  <% if banner.redirect_link.present? %>
-                    <%= link_to "Shop Now", banner.redirect_link, class: "btn btn-light btn-lg me-3" %>
-                  <% else %>
-                    <%= link_to "Shop Now", customer_products_path, class: "btn btn-light btn-lg me-3" %>
-                  <% end %>
-                  <%= link_to "Learn More", "#features", class: "btn btn-outline-light btn-lg" %>
-                </div>
-                <div class="col-md-6">
-                  <% if banner.has_image? %>
-                    <%= image_tag banner.main_image_url, class: "img-fluid rounded", alt: banner.title %>
-                  <% else %>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 300px;">
-                      <i class="bi bi-image display-1 text-muted"></i>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-          <% end %>
-        </div>
-        <% if @banners.count > 1 %>
-          <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
-          </button>
-          <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
-          </button>
-        <% end %>
+<% if current_customer %>
+<!-- Welcome Banner Section -->
+<div class="welcome-banner mb-4">
+  <div class="welcome-content">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h1 class="welcome-title">Welcome back, <%= current_customer.first_name %>! 👋</h1>
+        <p class="welcome-subtitle">Browse products, add to cart, and manage your bookings all in one place!</p>
       </div>
-    <% else %>
-      <!-- Default hero section -->
-      <div class="row align-items-center">
-        <div class="col-md-6">
-          <h1 class="display-4 fw-bold mb-4">Welcome to Dhanvantri Naturals</h1>
-          <p class="lead mb-4">Fresh milk, organic groceries, and natural products delivered right to your doorstep. Experience the convenience of healthy living with our premium quality products.</p>
-          <%= link_to "Shop Now", customer_products_path, class: "btn btn-light btn-lg me-3" %>
-          <%= link_to "Learn More", "#features", class: "btn btn-outline-light btn-lg" %>
-        </div>
-        <div class="col-md-6 text-center">
-          <i class="bi bi-basket display-1 text-white"></i>
+      <div class="col-md-4 text-end">
+        <div class="weather-widget">
+          <i class="fas fa-sun weather-icon"></i>
+          <span class="weather-text">Perfect day for fresh deliveries!</span>
         </div>
       </div>
-    <% end %>
+    </div>
   </div>
 </div>
+
+<!-- Quick Action Cards -->
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <div class="stat-card stat-cart">
+      <div class="stat-icon">
+        <i class="fas fa-shopping-cart"></i>
+      </div>
+      <div class="stat-info">
+        <h3><%= cart_count %></h3>
+        <p>Items in Cart</p>
+      </div>
+      <div class="stat-trend">
+        <%= link_to customer_cart_path, class: "btn btn-sm btn-primary" do %>
+          View Cart <i class="fas fa-arrow-right"></i>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="stat-card stat-orders">
+      <div class="stat-icon">
+        <i class="fas fa-shopping-bag"></i>
+      </div>
+      <div class="stat-info">
+        <h3><%= @recent_orders.count %></h3>
+        <p>Recent Bookings</p>
+      </div>
+      <div class="stat-trend">
+        <%= link_to customer_orders_path, class: "btn btn-sm btn-primary" do %>
+          View Bookings <i class="fas fa-arrow-right"></i>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="stat-card stat-subscriptions">
+      <div class="stat-icon">
+        <i class="fas fa-box"></i>
+      </div>
+      <div class="stat-info">
+        <h3>Shop</h3>
+        <p>Browse Products</p>
+      </div>
+      <div class="stat-trend">
+        <%= link_to customer_products_path, class: "btn btn-sm btn-primary" do %>
+          Explore <i class="fas fa-arrow-right"></i>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hero Banner Section -->
+<% if @banners&.any? %>
+<div class="hero-carousel-section mb-5">
+  <div class="container">
+    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-indicators">
+        <% @banners.each_with_index do |banner, index| %>
+          <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<%= index %>"
+                  class="<%= 'active' if index == 0 %>" aria-current="true"></button>
+        <% end %>
+      </div>
+      <div class="carousel-inner">
+        <% @banners.each_with_index do |banner, index| %>
+          <div class="carousel-item <%= 'active' if index == 0 %>">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <h1 class="display-4 fw-bold mb-4"><%= banner.title %></h1>
+                <p class="lead mb-4"><%= banner.description %></p>
+                <% if banner.redirect_link.present? %>
+                  <%= link_to "Shop Now", banner.redirect_link, class: "btn btn-light btn-lg me-3" %>
+                <% else %>
+                  <%= link_to "Shop Now", customer_products_path, class: "btn btn-light btn-lg me-3" %>
+                <% end %>
+                <%= link_to "Learn More", "#features", class: "btn btn-outline-light btn-lg" %>
+              </div>
+              <div class="col-md-6">
+                <% if banner.has_image? %>
+                  <%= image_tag banner.main_image_url, class: "img-fluid rounded", alt: banner.title %>
+                <% else %>
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 300px;">
+                    <i class="bi bi-image display-1 text-muted"></i>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <% if @banners.count > 1 %>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon"></span>
+        </button>
+      <% end %>
+    </div>
+  </div>
+</div>
+<% else %>
+<!-- Default hero section -->
+<div class="hero-carousel-section mb-5">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Dhanvantri Naturals</h1>
+        <p class="lead mb-4">Fresh milk, organic groceries, and natural products delivered right to your doorstep. Experience the convenience of healthy living with our premium quality products.</p>
+        <%= link_to "Shop Now", customer_products_path, class: "btn btn-light btn-lg me-3" %>
+        <%= link_to "Learn More", "#features", class: "btn btn-outline-light btn-lg" %>
+      </div>
+      <div class="col-md-6 text-center">
+        <i class="bi bi-basket display-1 text-white"></i>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>
 
 <div class="container">
   <!-- Features Section -->
@@ -200,12 +277,12 @@
     </section>
   <% end %>
 
-  <!-- Recent Orders Section -->
+  <!-- Recent Bookings Section -->
   <% if @recent_orders.any? %>
     <section class="mb-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Your Recent Orders</h2>
-        <%= link_to "View All Orders", customer_orders_path, class: "btn btn-outline-primary" %>
+        <h2>Your Recent Bookings</h2>
+        <%= link_to "View All Bookings", customer_orders_path, class: "btn btn-outline-primary" %>
       </div>
       <div class="row">
         <% @recent_orders.each do |order| %>
@@ -222,7 +299,7 @@
                 <%= order.order_date.strftime('%B %d, %Y') %>
               </p>
               <p class="fw-bold mb-2">₹<%= order.total_amount %></p>
-              <%= link_to "View Details", customer_order_path(order), class: "btn btn-outline-primary btn-sm" %>
+              <%= link_to "View Booking", customer_order_path(order), class: "btn btn-outline-primary btn-sm" %>
             </div>
           </div>
         <% end %>
@@ -272,3 +349,47 @@
     </div>
   </section>
 </div>
+
+<% else %>
+<!-- Not Logged In Section -->
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 text-center">
+      <div class="hero-section py-5 mb-5">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Dhanvantri Naturals</h1>
+        <p class="lead mb-4">Fresh milk, organic groceries, and natural products delivered right to your doorstep. Experience the convenience of healthy living with our premium quality products.</p>
+        <%= link_to "Login", customer_login_path, class: "btn btn-light btn-lg me-3" %>
+        <%= link_to "Register", customer_register_path, class: "btn btn-outline-light btn-lg" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <section id="features" class="mb-5">
+    <h2 class="text-center mb-5">Why Choose Dhanvantri Naturals?</h2>
+    <div class="row">
+      <div class="col-md-4 text-center mb-4">
+        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+          <i class="bi bi-truck display-6 text-success"></i>
+        </div>
+        <h4>Free Delivery</h4>
+        <p class="text-muted">Free delivery on orders above ₹500. Fast and reliable service to your doorstep.</p>
+      </div>
+      <div class="col-md-4 text-center mb-4">
+        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+          <i class="bi bi-shield-check display-6 text-success"></i>
+        </div>
+        <h4>Quality Assured</h4>
+        <p class="text-muted">100% fresh and organic products. Quality guaranteed or money back.</p>
+      </div>
+      <div class="col-md-4 text-center mb-4">
+        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+          <i class="bi bi-arrow-repeat display-6 text-success"></i>
+        </div>
+        <h4>Subscription Plans</h4>
+        <p class="text-muted">Daily, weekly, or monthly subscriptions for your regular needs.</p>
+      </div>
+    </div>
+  </section>
+</div>
+<% end %>
