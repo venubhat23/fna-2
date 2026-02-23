@@ -1,5 +1,5 @@
-class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
-  before_action :authorize_request, except: [:products]
+class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
+  before_action :authenticate_customer!, except: [:products]
   before_action :set_category, only: [:category_details, :category_products]
   before_action :set_product, only: [:product_details, :check_delivery]
 
@@ -18,11 +18,11 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
       }
     end
 
-    json_response({
+    render json: {
       success: true,
       data: categories_data,
       message: 'Categories retrieved successfully'
-    })
+    }
   end
 
   # GET /api/v1/mobile/ecommerce/categories/:id
@@ -172,7 +172,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
     missing_fields = required_fields.select { |field| booking_params[field].blank? }
 
     if missing_fields.any?
-      return json_response({
+      return render json: {
         success: false,
         message: 'Required fields are missing',
         missing_fields: missing_fields,
@@ -181,18 +181,18 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
           delivery_address: 'Delivery address is required',
           pincode: 'Pincode is required'
         }
-      }, :unprocessable_entity)
+      }, status: :unprocessable_entity
     end
 
     # Find customer from customer_id parameter
     customer = Customer.find_by(id: booking_params[:customer_id])
 
     unless customer
-      return json_response({
+      return render json: {
         success: false,
         message: 'Customer not found',
         error: 'Please provide a valid customer_id'
-      }, :not_found)
+      }, status: :not_found
     end
 
     # Extract location data for validation
@@ -273,7 +273,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
 
     # If any products are unavailable, return error with details
     if unavailable_products.any?
-      return json_response({
+      return render json: {
         success: false,
         message: 'Some products are not available for booking',
         data: {
@@ -286,17 +286,27 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
             longitude: longitude
           }
         }
-      }, :unprocessable_entity)
+      }, status: :unprocessable_entity
     end
 
     # All products are available, proceed with booking creation in transaction
     begin
+      Rails.logger.info "Creating booking with params: #{booking_params.except(:booking_items_attributes)}"
+      Rails.logger.info "Booking items: #{booking_params[:booking_items_attributes]}"
+      Rails.logger.info "Customer: #{customer&.display_name} (ID: #{customer&.id})"
+      Rails.logger.info "Current user: #{@current_user&.id}"
+
       ActiveRecord::Base.transaction do
         @booking = Booking.new(booking_params.except(:pincode, :latitude, :longitude))
         @booking.customer = customer
-        @booking.user = @current_user
+        @booking.user = nil # Mobile bookings don't have associated admin users
         @booking.booking_date = Time.current
         @booking.status = 'ordered_and_delivery_pending'
+
+        Rails.logger.info "Booking created, valid? #{@booking.valid?}"
+        unless @booking.valid?
+          Rails.logger.error "Booking validation errors: #{@booking.errors.full_messages}"
+        end
 
         # Save location data to customer if provided
         if customer && (latitude.present? || longitude.present? || pincode.present?)
@@ -326,27 +336,30 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
           stock_updated: true
         })
 
-        json_response({
+        render json: {
           success: true,
           data: booking_response_data,
           message: 'Booking created successfully with product availability verified'
-        }, :created)
+        }, status: :created
       end
 
     rescue ActiveRecord::RecordInvalid => e
-      json_response({
+      Rails.logger.error "Booking validation failed: #{e.record.errors.full_messages}"
+      Rails.logger.error "Booking attributes: #{e.record.attributes}"
+      render json: {
         success: false,
         message: 'Booking creation failed',
         errors: e.record.errors.full_messages,
+        booking_attributes: e.record.attributes,
         available_products: available_products
-      }, :unprocessable_entity)
+      }, status: :unprocessable_entity
     rescue => e
-      json_response({
+      render json: {
         success: false,
         message: 'Booking creation failed due to system error',
         error: e.message,
         available_products: available_products
-      }, :internal_server_error)
+      }, status: :internal_server_error
     end
   end
 
@@ -832,11 +845,11 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
 
   # POST /api/v1/mobile/ecommerce/subscriptions
   def create_subscription
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     subscription_params = params.require(:subscription).permit(
-      :product_id, :schedule_type, :frequency, :start_date, :end_date,
+      :product_id, :frequency, :start_date, :end_date,
       :quantity, :delivery_time, :delivery_address, :pincode,
       :latitude, :longitude, :notes
     )
@@ -844,42 +857,54 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
     # Validate pincode first
     pincode_validation = validate_pincode(subscription_params[:pincode])
     unless pincode_validation[:valid]
-      return json_response({
+      return render json: {
         success: false,
         message: 'Invalid pincode or delivery not available',
         error_details: pincode_validation
-      }, :unprocessable_entity)
+      }, status: :unprocessable_entity
     end
 
-    @subscription = customer.booking_schedules.new(subscription_params)
-    @subscription.status = 'active'
-    @subscription.total_bookings_generated = 0
+    # Map mobile API params to MilkSubscription params
+    milk_subscription_params = {
+      customer_id: customer.id,
+      product_id: subscription_params[:product_id],
+      quantity: subscription_params[:quantity] || 1,
+      unit: 'ltr', # Default unit for milk subscriptions
+      start_date: subscription_params[:start_date],
+      end_date: subscription_params[:end_date],
+      delivery_time: subscription_params[:delivery_time] || 'morning',
+      delivery_pattern: map_frequency_to_pattern(subscription_params[:frequency]),
+      is_active: true,
+      status: 'active'
+    }
+
+    @subscription = MilkSubscription.new(milk_subscription_params)
 
     if @subscription.save
-      json_response({
+      render json: {
         success: true,
-        data: format_subscription_data(@subscription),
+        data: format_milk_subscription_data(@subscription),
         message: 'Subscription created successfully'
-      }, :created)
+      }, status: :created
     else
-      json_response({
+      render json: {
         success: false,
         message: 'Subscription creation failed',
         errors: @subscription.errors.full_messages
-      }, :unprocessable_entity)
+      }, status: :unprocessable_entity
     end
   end
 
   # GET /api/v1/mobile/ecommerce/subscriptions
   def subscriptions
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
-    @subscriptions = customer.booking_schedules.includes(:product)
+    @subscriptions = MilkSubscription.where(customer: customer).includes(:product, :milk_delivery_tasks)
 
     # Filter by status if provided
     @subscriptions = @subscriptions.where(status: params[:status]) if params[:status].present?
@@ -887,9 +912,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
     total_count = @subscriptions.count
     @subscriptions = @subscriptions.offset((page - 1) * per_page).limit(per_page)
 
-    subscriptions_data = @subscriptions.map { |subscription| format_subscription_data(subscription) }
+    subscriptions_data = @subscriptions.map { |subscription| format_milk_subscription_data(subscription) }
 
-    json_response({
+    render json: {
       success: true,
       data: {
         subscriptions: subscriptions_data,
@@ -903,7 +928,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
         }
       },
       message: 'Subscriptions retrieved successfully'
-    })
+    }
   end
 
   # GET /api/v1/mobile/ecommerce/subscriptions/:id
@@ -1383,5 +1408,44 @@ class Api::V1::Mobile::EcommerceController < Api::V1::BaseController
     rescue => e
       { valid: false, error: 'Unable to validate pincode at this time', details: e.message }
     end
+  end
+
+  def map_frequency_to_pattern(frequency)
+    case frequency&.downcase
+    when 'daily'
+      'daily'
+    when 'weekly', 'alternate'
+      'alternate'
+    when 'specific', 'custom'
+      'specific_dates'
+    else
+      'daily'
+    end
+  end
+
+  def format_milk_subscription_data(subscription)
+    {
+      id: subscription.id,
+      customer: {
+        id: subscription.customer.id,
+        name: subscription.customer.display_name,
+        email: subscription.customer.email,
+        mobile: subscription.customer.mobile
+      },
+      product: {
+        id: subscription.product.id,
+        name: subscription.product.name,
+        price: subscription.product.selling_price
+      },
+      quantity: subscription.quantity,
+      unit: subscription.unit,
+      start_date: subscription.start_date,
+      end_date: subscription.end_date,
+      delivery_time: subscription.delivery_time,
+      delivery_pattern: subscription.delivery_pattern,
+      status: subscription.status,
+      is_active: subscription.is_active,
+      created_at: subscription.created_at
+    }
   end
 end

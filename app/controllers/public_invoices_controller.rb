@@ -2,6 +2,8 @@
 class PublicInvoicesController < ApplicationController
   # Skip authentication for all actions in this controller
   skip_before_action :authenticate_user!
+  # Skip CanCan load_and_authorize_resource since this controller doesn't follow standard resource naming
+  skip_load_and_authorize_resource
   layout false
 
   def index

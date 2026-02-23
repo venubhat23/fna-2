@@ -39,7 +39,8 @@ class Booking < ApplicationRecord
     card: 1,
     upi: 2,
     bank_transfer: 3,
-    online: 4
+    online: 4,
+    cod: 5
   }, prefix: true
 
   # Validations

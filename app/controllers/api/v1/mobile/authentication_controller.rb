@@ -357,7 +357,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
 
   def register_customer
     customer_params = params.permit(:first_name, :last_name, :middle_name, :email, :mobile, :password, :password_confirmation,
-                                   :user_type, :role, :address, :city, :state, :pincode, :whatsapp_number, :latitude, :longitude)
+                                   :user_type, :role, :address, :city, :state, :pincode, :whatsapp_number, :latitude, :longitude, :is_registered_by_mobile)
 
     # Validate required fields
     if customer_params[:first_name].blank? || customer_params[:last_name].blank? ||
@@ -450,6 +450,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
           whatsapp_number: customer_params[:whatsapp_number],
           latitude: customer_params[:latitude],
           longitude: customer_params[:longitude],
+          is_registered_by_mobile: true, # Always set to true for mobile registrations
           status: true
         )
         customer.save!(validate: false)  # Skip validations to avoid password requirements
