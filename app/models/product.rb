@@ -620,15 +620,26 @@ class Product < ApplicationRecord
   def cloudinary_image_url(transformation = {})
     return nil unless image_url.present?
 
-    default_transformations = {
-      width: 800,
-      height: 600,
-      crop: :fill,
-      quality: :auto,
-      fetch_format: :auto
-    }
+    begin
+      # Check if Cloudinary is properly configured
+      unless Cloudinary.config.cloud_name.present?
+        Rails.logger.warn "Cloudinary not properly configured. Returning original image URL."
+        return image_url
+      end
 
-    Cloudinary::Utils.cloudinary_url(image_url, default_transformations.merge(transformation))
+      default_transformations = {
+        width: 800,
+        height: 600,
+        crop: :fill,
+        quality: :auto,
+        fetch_format: :auto
+      }
+
+      Cloudinary::Utils.cloudinary_url(image_url, default_transformations.merge(transformation))
+    rescue => e
+      Rails.logger.error "Error generating Cloudinary URL: #{e.message}"
+      image_url # Fallback to original URL
+    end
   end
 
   def cloudinary_thumbnail_url(size = 300)
