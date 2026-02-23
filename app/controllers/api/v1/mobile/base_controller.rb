@@ -51,6 +51,15 @@ class Api::V1::Mobile::BaseController < ApplicationController
         @current_user = User.find(user_id)
       when 'sub_agent'
         @current_user = SubAgent.find(user_id)
+      when 'franchise'
+        @current_user = User.find(user_id)
+        # Verify this is actually a franchise user
+        if @current_user.user_type != 'franchise'
+          return render json: {
+            success: false,
+            message: 'Invalid franchise account'
+          }, status: :unauthorized
+        end
       else
         return render json: {
           success: false,
@@ -94,6 +103,10 @@ class Api::V1::Mobile::BaseController < ApplicationController
     current_user if current_user.is_a?(SubAgent)
   end
 
+  def current_franchise
+    current_user if current_user.is_a?(User) && current_user.user_type == 'franchise'
+  end
+
   # Helper method to handle errors
   def render_error(message, status = :bad_request, errors = nil)
     response = {
@@ -112,5 +125,10 @@ class Api::V1::Mobile::BaseController < ApplicationController
     response[:data] = data if data.present?
 
     render json: response
+  end
+
+  # Helper method for consistent JSON responses (used by EcommerceController)
+  def json_response(data, status = :ok)
+    render json: data, status: status
   end
 end

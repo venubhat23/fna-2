@@ -41,6 +41,10 @@ class Product < ApplicationRecord
   has_many :sale_items, dependent: :destroy
   has_many :stock_movements, dependent: :destroy
 
+  # Cloudinary image uploads - store URLs in database
+  # image_url and additional_images_urls columns will be added via migration
+
+  # Keep Active Storage for backward compatibility if needed
   has_one_attached :image
   has_many_attached :additional_images
 
@@ -612,21 +616,157 @@ class Product < ApplicationRecord
   alias_method :has_ratings?, :has_reviews?
   alias_method :rating_summary_text, :review_summary_text
 
-  # Helper method to get all images (main + additional) for views
+  # Cloudinary helper methods
+  def cloudinary_image_url(transformation = {})
+    return nil unless image_url.present?
+
+    default_transformations = {
+      width: 800,
+      height: 600,
+      crop: :fill,
+      quality: :auto,
+      fetch_format: :auto
+    }
+
+    Cloudinary::Utils.cloudinary_url(image_url, default_transformations.merge(transformation))
+  end
+
+  def cloudinary_thumbnail_url(size = 300)
+    cloudinary_image_url(width: size, height: size, crop: :fill)
+  end
+
+  def cloudinary_small_thumbnail_url(size = 150)
+    cloudinary_image_url(width: size, height: size, crop: :fill)
+  end
+
+  def additional_cloudinary_images
+    return [] unless additional_images_urls.present?
+
+    begin
+      urls = JSON.parse(additional_images_urls)
+      urls.is_a?(Array) ? urls : []
+    rescue JSON::ParserError
+      []
+    end
+  end
+
+  def cloudinary_additional_image_url(index, transformation = {})
+    urls = additional_cloudinary_images
+    return nil unless urls[index].present?
+
+    default_transformations = {
+      width: 800,
+      height: 600,
+      crop: :fill,
+      quality: :auto,
+      fetch_format: :auto
+    }
+
+    Cloudinary::Utils.cloudinary_url(urls[index], default_transformations.merge(transformation))
+  end
+
+  # Helper method to get all images (Cloudinary + Active Storage) for views
   def images
     all_images = []
+
+    # Add Cloudinary main image
+    if image_url.present?
+      all_images << cloudinary_image_url
+    end
+
+    # Add Cloudinary additional images
+    additional_cloudinary_images.each do |cloudinary_url|
+      all_images << Cloudinary::Utils.cloudinary_url(cloudinary_url,
+        width: 800, height: 600, crop: :fill, quality: :auto, fetch_format: :auto
+      )
+    end
+
+    # Add Active Storage images for backward compatibility
     all_images << image if image.attached?
     all_images.concat(additional_images.to_a) if additional_images.attached?
+
     all_images
   end
 
-  # Check if any images are attached
+  # Helper method with metadata for admin views
+  def images_with_metadata
+    all_images = []
+
+    # Add Cloudinary main image
+    if image_url.present?
+      all_images << { type: 'cloudinary', url: cloudinary_image_url, source: 'Cloudinary' }
+    end
+
+    # Add Cloudinary additional images
+    additional_cloudinary_images.each do |cloudinary_url|
+      all_images << {
+        type: 'cloudinary',
+        url: Cloudinary::Utils.cloudinary_url(cloudinary_url,
+          width: 800, height: 600, crop: :fill, quality: :auto, fetch_format: :auto
+        ),
+        source: 'Cloudinary'
+      }
+    end
+
+    # Add Active Storage images for backward compatibility
+    all_images << { type: 'active_storage', attachment: image, source: 'Local Storage' } if image.attached?
+    all_images.concat(additional_images.map { |img| { type: 'active_storage', attachment: img, source: 'Local Storage' } }) if additional_images.attached?
+
+    all_images
+  end
+
+  # Check if any images are available (Cloudinary or Active Storage)
   def images_attached?
-    image.attached? || additional_images.attached?
+    image_url.present? || additional_images_urls.present? || image.attached? || additional_images.attached?
   end
 
   def main_image
-    image.attached? ? image : nil
+    if image_url.present?
+      { type: 'cloudinary', url: cloudinary_image_url }
+    elsif image.attached?
+      { type: 'active_storage', attachment: image }
+    else
+      nil
+    end
+  end
+
+  def main_image_url(transformation = {})
+    if image_url.present?
+      cloudinary_image_url(transformation)
+    elsif image.attached?
+      Rails.application.routes.url_helpers.rails_blob_url(image, only_path: true)
+    else
+      nil
+    end
+  end
+
+  # Upload to Cloudinary method
+  def upload_to_cloudinary(file, folder = 'products')
+    return nil unless file
+
+    begin
+      result = Cloudinary::Uploader.upload(
+        file.tempfile || file,
+        folder: folder,
+        public_id: "#{folder}/#{id}-#{SecureRandom.hex(8)}",
+        overwrite: true,
+        resource_type: :auto,
+        transformation: [
+          { width: 1200, height: 1200, crop: :limit, quality: :auto, fetch_format: :auto }
+        ]
+      )
+
+      result['public_id']
+    rescue => e
+      Rails.logger.error "Cloudinary upload failed: #{e.message}"
+      nil
+    end
+  end
+
+  def add_additional_cloudinary_image(cloudinary_public_id)
+    current_urls = additional_cloudinary_images
+    current_urls << cloudinary_public_id
+    self.additional_images_urls = current_urls.to_json
   end
 
   def formatted_price

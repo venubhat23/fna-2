@@ -46,6 +46,7 @@ class Franchise < ApplicationRecord
 
   # Set default values
   after_initialize :set_defaults
+  after_create :create_franchise_user
 
   def set_defaults
     self.status = true if status.nil?
@@ -105,5 +106,47 @@ class Franchise < ApplicationRecord
     self.email = nil if email.blank?
     self.pan_no = nil if pan_no.blank?
     self.gst_no = nil if gst_no.blank?
+  end
+
+  def create_franchise_user
+    return if user.present? # Skip if user is already associated
+
+    # Generate password if not present
+    generated_password = password.present? ? password : self.class.generate_random_password
+
+    # Store the password in auto_generated_password field
+    update_column(:auto_generated_password, generated_password)
+
+    # Find franchise role
+    franchise_role = Role.find_by(name: 'franchise')
+
+    # Create user account for franchise
+    franchise_user = User.new(
+      first_name: contact_person_name.presence || name.split(' ').first || 'Franchise',
+      last_name: contact_person_name.presence ? name.split(' ').last : name.split(' ').last || 'Partner',
+      email: email,
+      password: generated_password,
+      password_confirmation: generated_password,
+      mobile: mobile,
+      user_type: 'franchise',
+      role: 'franchise',
+      role_id: franchise_role&.id,
+      status: true,
+      company_name: name,
+      address: address,
+      city: city,
+      state: state,
+      pincode: pincode
+    )
+
+    if franchise_user.save(validate: false)
+      # Associate the user with this franchise
+      update_column(:user_id, franchise_user.id)
+      Rails.logger.info "✅ Created user account for franchise: #{email}"
+    else
+      Rails.logger.error "❌ Failed to create user for franchise #{name}: #{franchise_user.errors.full_messages}"
+    end
+  rescue => e
+    Rails.logger.error "❌ Error creating franchise user: #{e.message}"
   end
 end

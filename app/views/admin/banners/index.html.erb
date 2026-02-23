@@ -152,8 +152,8 @@ function applyFilters() {
             <% @banners.each do |banner| %>
               <tr>
                 <td>
-                  <% if banner.banner_image.attached? %>
-                    <%= image_tag banner.banner_image, class: "rounded", style: "width: 60px; height: 40px; object-fit: cover;" %>
+                  <% if banner.has_image? %>
+                    <%= image_tag banner.main_image_url, class: "rounded", style: "width: 60px; height: 40px; object-fit: cover;" %>
                   <% else %>
                     <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 40px;">
                       <i class="bi bi-image text-muted"></i>

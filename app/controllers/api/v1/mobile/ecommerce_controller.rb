@@ -1,5 +1,5 @@
 class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
-  before_action :authenticate_customer!, except: [:products]
+  before_action :authenticate_customer!, except: [:products, :banners]
   before_action :set_category, only: [:category_details, :category_products]
   before_action :set_product, only: [:product_details, :check_delivery]
 
@@ -933,96 +933,145 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/subscriptions/:id
   def subscription_details
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    @subscription = customer.booking_schedules.includes(:product, :bookings).find(params[:id])
+    @subscription = MilkSubscription.where(customer: customer).includes(:product, :milk_delivery_tasks).find(params[:id])
 
-    # Get recent bookings from this subscription
-    recent_bookings = @subscription.bookings.recent.limit(10)
+    # Get recent delivery tasks from this subscription
+    recent_tasks = @subscription.milk_delivery_tasks.order(delivery_date: :desc).limit(10)
 
-    subscription_data = format_subscription_data(@subscription, include_bookings: true)
-    subscription_data[:recent_bookings] = recent_bookings.map { |booking| format_booking_data(booking, basic: true) }
+    subscription_data = format_milk_subscription_data(@subscription)
+    subscription_data[:recent_delivery_tasks] = recent_tasks.map do |task|
+      {
+        id: task.id,
+        delivery_date: task.delivery_date,
+        quantity: task.quantity,
+        status: task.status,
+        completed_at: task.completed_at,
+        delivery_person: task.delivery_person ? {
+          id: task.delivery_person.id,
+          name: "#{task.delivery_person.first_name} #{task.delivery_person.last_name}".strip
+        } : nil
+      }
+    end
 
-    json_response({
+    render json: {
       success: true,
       data: subscription_data,
       message: 'Subscription details retrieved successfully'
-    })
+    }
   rescue ActiveRecord::RecordNotFound
-    json_response({ success: false, message: 'Subscription not found' }, :not_found)
+    render json: { success: false, message: 'Subscription not found' }, status: :not_found
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/pause
   def pause_subscription
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    @subscription = customer.booking_schedules.find(params[:id])
+    @subscription = MilkSubscription.where(customer: customer).find(params[:id])
 
-    if @subscription.active?
-      @subscription.pause!
-      json_response({
+    if @subscription.status == 'active'
+      @subscription.update!(status: 'paused')
+      render json: {
         success: true,
-        data: format_subscription_data(@subscription),
+        data: format_milk_subscription_data(@subscription),
         message: 'Subscription paused successfully'
-      })
+      }
     else
-      json_response({
+      render json: {
         success: false,
-        message: 'Cannot pause subscription. Current status: ' + @subscription.status
-      }, :unprocessable_entity)
+        message: "Cannot pause subscription. Current status: #{@subscription.status}"
+      }, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotFound
-    json_response({ success: false, message: 'Subscription not found' }, :not_found)
+    render json: { success: false, message: 'Subscription not found' }, status: :not_found
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/resume
   def resume_subscription
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    @subscription = customer.booking_schedules.find(params[:id])
+    @subscription = MilkSubscription.where(customer: customer).find(params[:id])
 
-    if @subscription.paused?
-      @subscription.resume!
-      json_response({
+    if @subscription.status == 'paused'
+      @subscription.update!(status: 'active')
+      render json: {
         success: true,
-        data: format_subscription_data(@subscription),
+        data: format_milk_subscription_data(@subscription),
         message: 'Subscription resumed successfully'
-      })
+      }
     else
-      json_response({
+      render json: {
         success: false,
-        message: 'Cannot resume subscription. Current status: ' + @subscription.status
-      }, :unprocessable_entity)
+        message: "Cannot resume subscription. Current status: #{@subscription.status}"
+      }, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotFound
-    json_response({ success: false, message: 'Subscription not found' }, :not_found)
+    render json: { success: false, message: 'Subscription not found' }, status: :not_found
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/cancel
   def cancel_subscription
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
-    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    @subscription = customer.booking_schedules.find(params[:id])
+    @subscription = MilkSubscription.where(customer: customer).find(params[:id])
 
-    unless @subscription.cancelled?
-      @subscription.cancel!
-      json_response({
+    unless @subscription.status == 'cancelled'
+      @subscription.update!(status: 'cancelled')
+      render json: {
         success: true,
-        data: format_subscription_data(@subscription),
+        data: format_milk_subscription_data(@subscription),
         message: 'Subscription cancelled successfully'
-      })
+      }
     else
-      json_response({
+      render json: {
         success: false,
         message: 'Subscription is already cancelled'
-      }, :unprocessable_entity)
+      }, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotFound
-    json_response({ success: false, message: 'Subscription not found' }, :not_found)
+    render json: { success: false, message: 'Subscription not found' }, status: :not_found
+  end
+
+  # GET /api/v1/mobile/ecommerce/banners
+  def banners
+    location = params[:location] || 'home'
+
+    @banners = Banner.active
+                    .current
+                    .by_location(location)
+                    .ordered
+
+    banners_data = @banners.map do |banner|
+      {
+        id: banner.id,
+        title: banner.title,
+        description: banner.description,
+        image_url: banner.main_image_url,
+        thumbnail_url: banner.cloudinary_thumbnail_url,
+        redirect_link: banner.redirect_link,
+        display_location: banner.display_location,
+        display_order: banner.display_order,
+        display_start_date: banner.display_start_date,
+        display_end_date: banner.display_end_date,
+        is_active: banner.active?,
+        has_image: banner.has_image?
+      }
+    end
+
+    render json: {
+      success: true,
+      data: {
+        banners: banners_data,
+        total_count: banners_data.length,
+        location: location
+      },
+      message: 'Banners retrieved successfully'
+    }
   end
 
   # GET /api/v1/mobile/ecommerce/delivery/check-pincode/:pincode

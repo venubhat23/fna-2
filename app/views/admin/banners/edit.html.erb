@@ -17,13 +17,28 @@
 </div>
 
 <!-- Current Banner Preview -->
-<% if @banner.banner_image.attached? %>
+<% if @banner.has_image? %>
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-header bg-transparent border-0">
     <h6 class="mb-0">Current Banner Preview</h6>
   </div>
   <div class="card-body text-center">
-    <%= image_tag @banner.banner_image, class: "img-fluid rounded", style: "max-height: 200px;" %>
+    <%= image_tag @banner.main_image_url, class: "img-fluid rounded", style: "max-height: 200px;" %>
+    <% if @banner.image_url.present? %>
+      <div class="mt-2">
+        <small class="badge bg-info">
+          <i class="bi bi-cloud me-1"></i>
+          Cloudinary CDN
+        </small>
+      </div>
+    <% elsif @banner.banner_image.attached? %>
+      <div class="mt-2">
+        <small class="badge bg-secondary">
+          <i class="bi bi-hdd me-1"></i>
+          Local Storage
+        </small>
+      </div>
+    <% end %>
   </div>
 </div>
 <% end %>
@@ -72,10 +87,70 @@
 
       <!-- Banner Image -->
       <div class="col-md-6">
-        <%= form.label :banner_image, "Banner Image", class: "form-label" %>
+        <%= form.label :banner_image, "Banner Image (Local Upload)", class: "form-label" %>
         <%= form.file_field :banner_image, class: "form-control", accept: "image/*" %>
         <div class="form-text">
           Upload new image to replace current one (JPG, PNG, or WEBP). Leave blank to keep current image.
+        </div>
+      </div>
+
+      <!-- Cloudinary Image Upload -->
+      <div class="col-md-6">
+        <%= form.label :image_url, "Banner Image (Cloudinary)", class: "form-label" %>
+        <%= form.hidden_field :image_url %>
+
+        <div class="cloudinary-upload-section">
+          <div class="upload-area border-dashed p-4 text-center rounded mb-3"
+               style="border: 2px dashed #ddd; background: #f9f9f9; cursor: pointer;">
+            <div class="upload-placeholder">
+              <i class="bi bi-cloud-upload fs-1 text-muted mb-2"></i>
+              <p class="mb-2">Click to select image or drag & drop</p>
+              <p class="text-muted small mb-0">Supports JPG, PNG, WEBP (Max 10MB)</p>
+            </div>
+          </div>
+
+          <input type="file" id="cloudinary-file-input" accept="image/*" style="display: none;">
+
+          <div class="upload-guidelines">
+            <div class="alert alert-info py-2">
+              <small>
+                <strong>Cloudinary Guidelines:</strong><br>
+                • Recommended size: 1200×600 pixels<br>
+                • Maximum file size: 10MB<br>
+                • Automatically optimized for web delivery<br>
+                • Global CDN for fast loading
+              </small>
+            </div>
+          </div>
+
+          <div class="image-preview" style="<%= @banner.image_url.present? ? '' : 'display: none;' %>">
+            <div class="position-relative">
+              <img id="preview-image" src="<%= @banner.cloudinary_image_url if @banner.image_url.present? %>" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 200px;">
+              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" id="remove-image">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            <div class="mt-2">
+              <small class="text-success">
+                <i class="bi bi-check-circle"></i>
+                Image uploaded successfully to Cloudinary
+              </small>
+            </div>
+          </div>
+
+          <div class="upload-progress" style="display: none;">
+            <div class="progress mb-2">
+              <div class="progress-bar progress-bar-striped progress-bar-animated"
+                   role="progressbar" style="width: 0%"></div>
+            </div>
+            <small class="text-muted">Uploading to Cloudinary...</small>
+          </div>
+
+          <div class="upload-error" style="display: none;">
+            <div class="alert alert-danger py-2">
+              <small><span class="error-message"></span></small>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -148,3 +223,162 @@
     <% end %>
   </div>
 </div>
+
+<!-- Cloudinary Upload JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const uploadArea = document.querySelector('.upload-area');
+  const fileInput = document.getElementById('cloudinary-file-input');
+  const imagePreview = document.querySelector('.image-preview');
+  const uploadProgress = document.querySelector('.upload-progress');
+  const uploadError = document.querySelector('.upload-error');
+  const uploadPlaceholder = document.querySelector('.upload-placeholder');
+  const uploadGuidelines = document.querySelector('.upload-guidelines');
+  const previewImage = document.getElementById('preview-image');
+  const removeButton = document.getElementById('remove-image');
+  const imageUrlField = document.getElementById('<%= dom_id(@banner, :image_url) %>');
+
+  // Handle initial state - if there's already a Cloudinary image, hide the upload area
+  if (imageUrlField.value) {
+    uploadPlaceholder.style.display = 'none';
+    uploadGuidelines.style.display = 'none';
+  }
+
+  // Click to upload
+  uploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // File selection
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  });
+
+  // Drag and drop
+  uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#0d6efd';
+    uploadArea.style.backgroundColor = '#f0f8ff';
+  });
+
+  uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#ddd';
+    uploadArea.style.backgroundColor = '#f9f9f9';
+  });
+
+  uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#ddd';
+    uploadArea.style.backgroundColor = '#f9f9f9';
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  });
+
+  // Remove image
+  removeButton.addEventListener('click', function() {
+    resetUploadArea();
+    imageUrlField.value = '';
+  });
+
+  function handleFileUpload(file) {
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      showError('Please select a valid image file (JPG, PNG, WEBP)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      showError('File size must be less than 10MB');
+      return;
+    }
+
+    // Show progress
+    showProgress();
+
+    // Create FormData
+    const formData = new FormData();
+    formData.append('image', file);
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // Upload to Cloudinary
+    fetch('<%= upload_cloudinary_image_admin_banners_path %>', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': csrfToken,
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      hideProgress();
+
+      if (data.success) {
+        showPreview(data.url, data.public_id);
+        imageUrlField.value = data.public_id;
+      } else {
+        showError(data.error || 'Upload failed');
+      }
+    })
+    .catch(error => {
+      hideProgress();
+      showError('Network error. Please try again.');
+      console.error('Upload error:', error);
+    });
+  }
+
+  function showProgress() {
+    hideError();
+    uploadPlaceholder.style.display = 'none';
+    uploadGuidelines.style.display = 'none';
+    uploadProgress.style.display = 'block';
+
+    // Animate progress bar
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+    progressBar.style.width = '100%';
+  }
+
+  function hideProgress() {
+    uploadProgress.style.display = 'none';
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+    progressBar.style.width = '0%';
+  }
+
+  function showPreview(imageUrl, publicId) {
+    uploadPlaceholder.style.display = 'none';
+    uploadGuidelines.style.display = 'none';
+    imagePreview.style.display = 'block';
+    previewImage.src = imageUrl;
+  }
+
+  function showError(message) {
+    hideProgress();
+    const errorMessage = uploadError.querySelector('.error-message');
+    errorMessage.textContent = message;
+    uploadError.style.display = 'block';
+  }
+
+  function hideError() {
+    uploadError.style.display = 'none';
+  }
+
+  function resetUploadArea() {
+    imagePreview.style.display = 'none';
+    uploadProgress.style.display = 'none';
+    uploadError.style.display = 'none';
+    uploadPlaceholder.style.display = 'block';
+    uploadGuidelines.style.display = 'block';
+    previewImage.src = '';
+    fileInput.value = '';
+  }
+});
+</script>

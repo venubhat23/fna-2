@@ -39,6 +39,9 @@ gem "bootstrap", "~> 5.3"
 # File uploading (using Active Storage - built into Rails)
 gem "mini_magick"
 
+# Cloudinary for file uploads
+gem "cloudinary"
+
 # Charts and data visualization
 gem "chartkick"
 gem "groupdate"

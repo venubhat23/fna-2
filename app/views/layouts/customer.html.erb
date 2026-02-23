@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dhanvantri Naturals - <%= content_for?(:title) ? yield(:title) : 'Customer Portal' %></title>
+
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_importmap_tags %>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+    .navbar-brand {
+      font-weight: bold;
+      color: #28a745 !important;
+    }
+    .hero-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .category-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .category-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .product-card {
+      transition: transform 0.2s ease;
+      border: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    .cart-badge {
+      background-color: #dc3545;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      position: absolute;
+      top: -5px;
+      right: -5px;
+    }
+    .btn-primary {
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+    .btn-primary:hover {
+      background-color: #218838;
+      border-color: #1e7e34;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+      <%= link_to customer_root_path, class: "navbar-brand d-flex align-items-center" do %>
+        <i class="bi bi-leaf me-2"></i>
+        Dhanvantri Naturals
+      <% end %>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <%= link_to "Home", customer_root_path, class: "nav-link #{'active' if current_page?(customer_root_path)}" %>
+          </li>
+          <li class="nav-item">
+            <%= link_to "Products", customer_products_path, class: "nav-link #{'active' if current_page?(customer_products_path)}" %>
+          </li>
+          <li class="nav-item">
+            <%= link_to "Categories", customer_categories_path, class: "nav-link #{'active' if current_page?(customer_categories_path)}" %>
+          </li>
+          <li class="nav-item">
+            <%= link_to "My Orders", customer_orders_path, class: "nav-link #{'active' if current_page?(customer_orders_path)}" %>
+          </li>
+          <li class="nav-item">
+            <%= link_to "Subscriptions", customer_subscriptions_path, class: "nav-link #{'active' if current_page?(customer_subscriptions_path)}" %>
+          </li>
+        </ul>
+
+        <!-- Search -->
+        <div class="d-flex me-3">
+          <%= form_with url: customer_products_search_path, method: :get, local: true, class: "d-flex" do |f| %>
+            <%= f.text_field :q, placeholder: "Search products...", class: "form-control me-2", style: "width: 200px;" %>
+            <%= f.submit "Search", class: "btn btn-outline-secondary" %>
+          <% end %>
+        </div>
+
+        <!-- Cart & User -->
+        <div class="d-flex align-items-center">
+          <!-- Cart -->
+          <%= link_to customer_cart_path, class: "btn btn-outline-primary me-3 position-relative" do %>
+            <i class="bi bi-cart3"></i>
+            <span class="cart-badge" id="cart-count">
+              <%= cart_count %>
+            </span>
+          <% end %>
+
+          <!-- User Menu -->
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="bi bi-person"></i> <%= current_customer.first_name %>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><%= link_to "My Profile", customer_profile_path, class: "dropdown-item" %></li>
+              <li><%= link_to "My Orders", customer_orders_path, class: "dropdown-item" %></li>
+              <li><%= link_to "My Addresses", customer_addresses_path, class: "dropdown-item" %></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><%= link_to "Logout", customer_logout_path, method: :delete, class: "dropdown-item" %></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  <% if notice %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= notice %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% end %>
+
+  <% if alert %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= alert %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% end %>
+
+  <!-- Main Content -->
+  <main>
+    <%= yield %>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-light mt-5">
+    <div class="container py-5">
+      <div class="row">
+        <div class="col-md-4">
+          <h5>About Dhanvantri Naturals</h5>
+          <p>Your trusted partner for fresh milk, groceries, and natural products delivered right to your doorstep.</p>
+        </div>
+        <div class="col-md-4">
+          <h5>Quick Links</h5>
+          <ul class="list-unstyled">
+            <li><%= link_to "Products", customer_products_path, class: "text-light text-decoration-none" %></li>
+            <li><%= link_to "Categories", customer_categories_path, class: "text-light text-decoration-none" %></li>
+            <li><%= link_to "My Orders", customer_orders_path, class: "text-light text-decoration-none" %></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5>Contact Us</h5>
+          <p>
+            <i class="bi bi-telephone"></i> +91 9876543210<br>
+            <i class="bi bi-envelope"></i> support@dhanvantrinaturals.com<br>
+            <i class="bi bi-geo-alt"></i> Mumbai, India
+          </p>
+        </div>
+      </div>
+      <hr>
+      <div class="text-center">
+        <p>&copy; 2024 Dhanvantri Naturals. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

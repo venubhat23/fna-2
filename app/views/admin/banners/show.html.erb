@@ -65,9 +65,24 @@
         <h5 class="mb-0">Banner Preview</h5>
       </div>
       <div class="card-body">
-        <% if @banner.banner_image.attached? %>
+        <% if @banner.has_image? %>
           <div class="text-center mb-4">
-            <%= image_tag @banner.banner_image, class: "img-fluid rounded shadow-sm", style: "max-width: 100%; max-height: 400px;" %>
+            <%= image_tag @banner.main_image_url, class: "img-fluid rounded shadow-sm", style: "max-width: 100%; max-height: 400px;" %>
+            <% if @banner.image_url.present? %>
+              <div class="mt-2">
+                <small class="badge bg-info">
+                  <i class="bi bi-cloud me-1"></i>
+                  Cloudinary CDN
+                </small>
+              </div>
+            <% elsif @banner.banner_image.attached? %>
+              <div class="mt-2">
+                <small class="badge bg-secondary">
+                  <i class="bi bi-hdd me-1"></i>
+                  Local Storage
+                </small>
+              </div>
+            <% end %>
           </div>
         <% else %>
           <div class="text-center py-5 bg-light rounded">
@@ -172,19 +187,36 @@
           </div>
 
           <!-- Image Details -->
-          <% if @banner.banner_image.attached? %>
+          <% if @banner.has_image? %>
             <div class="col-12">
               <label class="form-label text-muted mb-1">Image Details</label>
               <div>
-                <small class="d-block">
-                  <strong>Filename:</strong> <%= @banner.banner_image.filename %>
-                </small>
-                <small class="d-block">
-                  <strong>Size:</strong> <%= number_to_human_size(@banner.banner_image.byte_size) %>
-                </small>
-                <small class="d-block">
-                  <strong>Type:</strong> <%= @banner.banner_image.content_type %>
-                </small>
+                <% if @banner.image_url.present? %>
+                  <small class="d-block">
+                    <strong>Storage:</strong>
+                    <span class="badge bg-info">Cloudinary CDN</span>
+                  </small>
+                  <small class="d-block">
+                    <strong>Public ID:</strong> <%= @banner.image_url %>
+                  </small>
+                  <small class="d-block">
+                    <strong>Optimizations:</strong> Auto quality, format optimization
+                  </small>
+                <% elsif @banner.banner_image.attached? %>
+                  <small class="d-block">
+                    <strong>Storage:</strong>
+                    <span class="badge bg-secondary">Local Storage</span>
+                  </small>
+                  <small class="d-block">
+                    <strong>Filename:</strong> <%= @banner.banner_image.filename %>
+                  </small>
+                  <small class="d-block">
+                    <strong>Size:</strong> <%= number_to_human_size(@banner.banner_image.byte_size) %>
+                  </small>
+                  <small class="d-block">
+                    <strong>Type:</strong> <%= @banner.banner_image.content_type %>
+                  </small>
+                <% end %>
               </div>
             </div>
           <% end %>
@@ -203,10 +235,18 @@
             <i class="bi bi-pencil me-2"></i>Edit Banner
           <% end %>
 
-          <% if @banner.banner_image.attached? %>
-            <%= link_to rails_blob_path(@banner.banner_image, disposition: "attachment"),
-                class: "btn btn-outline-secondary btn-sm" do %>
-              <i class="bi bi-download me-2"></i>Download Image
+          <% if @banner.has_image? %>
+            <% if @banner.image_url.present? %>
+              <%= link_to @banner.cloudinary_image_url,
+                  target: "_blank",
+                  class: "btn btn-outline-secondary btn-sm" do %>
+                <i class="bi bi-box-arrow-up-right me-2"></i>View Original Image
+              <% end %>
+            <% elsif @banner.banner_image.attached? %>
+              <%= link_to rails_blob_path(@banner.banner_image, disposition: "attachment"),
+                  class: "btn btn-outline-secondary btn-sm" do %>
+                <i class="bi bi-download me-2"></i>Download Image
+              <% end %>
             <% end %>
           <% end %>
 

@@ -80,6 +80,56 @@ class Admin::BannersController < Admin::ApplicationController
     redirect_to admin_banners_path, notice: "Banner was successfully #{status_text}."
   end
 
+  # POST /admin/banners/upload_cloudinary_image
+  def upload_cloudinary_image
+    Rails.logger.info "=== BANNER CLOUDINARY UPLOAD START ==="
+    Rails.logger.info "Params received: #{params.inspect}"
+    Rails.logger.info "Image param present: #{params[:image].present?}"
+    Rails.logger.info "Image param class: #{params[:image].class}" if params[:image].present?
+
+    respond_to do |format|
+      if params[:image].present?
+        begin
+          Rails.logger.info "Starting Cloudinary upload..."
+
+          result = Cloudinary::Uploader.upload(
+            params[:image].tempfile,
+            folder: 'banners',
+            public_id: "banner-temp-#{SecureRandom.hex(8)}",
+            overwrite: true,
+            resource_type: :auto,
+            transformation: [
+              { width: 1200, height: 600, crop: :limit, quality: :auto, fetch_format: :auto }
+            ]
+          )
+
+          Rails.logger.info "Cloudinary upload successful: #{result.inspect}"
+
+          format.json {
+            render json: {
+              success: true,
+              public_id: result['public_id'],
+              url: result['secure_url'],
+              thumbnail_url: Cloudinary::Utils.cloudinary_url(result['public_id'], width: 300, height: 150, crop: :fill)
+            }
+          }
+        rescue => e
+          Rails.logger.error "Cloudinary upload error: #{e.message}"
+          Rails.logger.error "Error backtrace: #{e.backtrace.first(5).join('\n')}"
+
+          format.json {
+            render json: { success: false, error: "Upload failed: #{e.message}" }, status: :unprocessable_entity
+          }
+        end
+      else
+        Rails.logger.error "No image file provided"
+        format.json {
+          render json: { success: false, error: "No image file provided" }, status: :bad_request
+        }
+      end
+    end
+  end
+
   private
 
   def set_banner
@@ -89,7 +139,7 @@ class Admin::BannersController < Admin::ApplicationController
   def banner_params
     params.require(:banner).permit(
       :title, :description, :redirect_link, :display_start_date, :display_end_date,
-      :display_location, :status, :display_order, :banner_image
+      :display_location, :status, :display_order, :banner_image, :image_url
     )
   end
 end

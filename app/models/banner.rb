@@ -45,6 +45,68 @@ class Banner < ApplicationRecord
     display_location.humanize
   end
 
+  # Cloudinary helper methods
+  def cloudinary_image_url(transformation = {})
+    return nil unless image_url.present?
+
+    default_transformations = {
+      width: 800,
+      height: 400,
+      crop: :fill,
+      quality: :auto,
+      fetch_format: :auto
+    }
+
+    Cloudinary::Utils.cloudinary_url(image_url, default_transformations.merge(transformation))
+  end
+
+  def cloudinary_thumbnail_url(width = 300, height = 150)
+    return nil unless image_url.present?
+
+    Cloudinary::Utils.cloudinary_url(image_url, {
+      width: width,
+      height: height,
+      crop: :fill,
+      quality: :auto,
+      fetch_format: :auto
+    })
+  end
+
+  def main_image_url
+    if image_url.present?
+      cloudinary_image_url
+    elsif banner_image.attached?
+      Rails.application.routes.url_helpers.rails_blob_url(banner_image, only_path: true)
+    else
+      nil
+    end
+  end
+
+  def has_image?
+    image_url.present? || banner_image.attached?
+  end
+
+  def upload_to_cloudinary(file)
+    begin
+      result = Cloudinary::Uploader.upload(
+        file,
+        folder: 'banners',
+        public_id: "banner-#{id}-#{SecureRandom.hex(8)}",
+        overwrite: true,
+        resource_type: :auto,
+        transformation: [
+          { width: 1200, height: 600, crop: :limit, quality: :auto, fetch_format: :auto }
+        ]
+      )
+
+      update(image_url: result['public_id'])
+      result
+    rescue => e
+      Rails.logger.error "Cloudinary upload failed for Banner #{id}: #{e.message}"
+      false
+    end
+  end
+
   private
 
   def end_date_after_start_date

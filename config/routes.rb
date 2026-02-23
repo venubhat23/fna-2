@@ -345,6 +345,9 @@ Rails.application.routes.draw do
       member do
         patch :toggle_status
       end
+      collection do
+        post :upload_cloudinary_image
+      end
     end
 
     # Client Request management
@@ -577,6 +580,7 @@ Rails.application.routes.draw do
         post :bulk_action
         get :categories_for_select
         get :products_chart
+        post :upload_cloudinary_image
       end
     end
 
@@ -681,6 +685,7 @@ Rails.application.routes.draw do
         get 'ecommerce/search', to: 'ecommerce#search'
         post 'ecommerce/products/:id/check_delivery', to: 'ecommerce#check_delivery'
         get 'ecommerce/filters', to: 'ecommerce#filters'
+        get 'ecommerce/banners', to: 'ecommerce#banners'
 
         # Booking APIs
         post 'ecommerce/bookings', to: 'ecommerce#create_booking'
@@ -833,6 +838,90 @@ Rails.application.routes.draw do
 
     # Bookings management
     resources :bookings, only: [:index, :show, :update]
+  end
+
+  # Customer Web Application routes
+  namespace :customer do
+    # Authentication routes
+    get '/login', to: 'sessions#new'
+    post '/login', to: 'sessions#create'
+    delete '/logout', to: 'sessions#destroy'
+    get '/register', to: 'registrations#new'
+    post '/register', to: 'registrations#create'
+    get '/forgot_password', to: 'passwords#new'
+    post '/forgot_password', to: 'passwords#create'
+    get '/reset_password', to: 'passwords#edit'
+    patch '/reset_password', to: 'passwords#update'
+
+    # Dashboard and main functionality
+    root 'dashboard#index'
+    get '/dashboard', to: 'dashboard#index'
+
+    # Product catalog
+    resources :products, only: [:index, :show] do
+      collection do
+        get :search
+        get :category
+      end
+    end
+
+    # Categories
+    resources :categories, only: [:index, :show]
+
+    # Shopping cart
+    resource :cart, only: [:show, :create, :update, :destroy] do
+      collection do
+        post :add_item
+        patch :update_item
+        delete :remove_item
+        delete :clear
+      end
+    end
+
+    # Checkout
+    resources :checkout, only: [:show, :create] do
+      collection do
+        get :address
+        post :address
+        get :payment
+        post :payment
+        get :confirmation
+      end
+    end
+
+    # Customer addresses
+    resources :addresses
+
+    # Orders
+    resources :orders, only: [:index, :show] do
+      member do
+        get :track
+        get :invoice
+      end
+    end
+
+    # Subscriptions
+    resources :subscriptions do
+      member do
+        patch :pause
+        patch :resume
+        patch :cancel
+      end
+    end
+
+    # Profile management
+    resource :profile, only: [:show, :edit, :update] do
+      member do
+        get :change_password
+        patch :update_password
+      end
+    end
+
+    # Wishlist
+    resources :wishlists, only: [:index, :create, :destroy]
+
+    # Notifications
+    resources :notifications, only: [:index, :show, :update]
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

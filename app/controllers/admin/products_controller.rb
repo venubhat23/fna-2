@@ -56,6 +56,8 @@ class Admin::ProductsController < Admin::ApplicationController
     @product = Product.new(product_params)
 
     if @product.save
+      # Handle Cloudinary uploads
+      handle_cloudinary_uploads if params[:product][:cloudinary_images].present?
       redirect_to admin_product_path(@product), notice: 'Product was successfully created.'
     else
       @categories = Category.active.ordered
@@ -79,6 +81,9 @@ class Admin::ProductsController < Admin::ApplicationController
     vendor_purchase_id = params[:vendor_purchase_id].presence
 
     if @product.update(product_params)
+      # Handle Cloudinary uploads
+      handle_cloudinary_uploads if params[:product][:cloudinary_images].present?
+
       # Link stock changes to vendor purchase if provided
       handle_stock_vendor_purchase_linking(vendor_purchase_id) if vendor_purchase_id && @product.saved_change_to_stock?
 
@@ -173,6 +178,62 @@ class Admin::ProductsController < Admin::ApplicationController
     @market_stats = calculate_market_stats
 
     render layout: 'application'
+  end
+
+  # Cloudinary upload action - MUST be public
+  def upload_cloudinary_image
+    respond_to do |format|
+      if params[:image].present?
+        begin
+          Rails.logger.info "🔄 Starting Cloudinary upload for file: #{params[:image].original_filename}"
+          Rails.logger.info "📁 File size: #{params[:image].size} bytes"
+          Rails.logger.info "🎯 Content type: #{params[:image].content_type}"
+
+          # Upload to Cloudinary
+          result = Cloudinary::Uploader.upload(
+            params[:image].tempfile,
+            folder: 'products',
+            public_id: "product-temp-#{SecureRandom.hex(8)}",
+            overwrite: true,
+            resource_type: :auto,
+            transformation: [
+              { width: 1200, height: 1200, crop: :limit, quality: :auto, fetch_format: :auto }
+            ]
+          )
+
+          Rails.logger.info "✅ Cloudinary upload successful: #{result['public_id']}"
+
+          format.json {
+            render json: {
+              success: true,
+              public_id: result['public_id'],
+              url: result['secure_url'],
+              thumbnail_url: Cloudinary::Utils.cloudinary_url(result['public_id'], width: 300, height: 300, crop: :fill)
+            }
+          }
+        rescue => e
+          Rails.logger.error "❌ Cloudinary upload failed: #{e.message}"
+          Rails.logger.error "📋 Error class: #{e.class.name}"
+          Rails.logger.error "🔍 Backtrace: #{e.backtrace.first(3).join(' | ')}"
+
+          format.json {
+            render json: {
+              success: false,
+              error: "Upload failed: #{e.message}",
+              error_class: e.class.name
+            }, status: :unprocessable_entity
+          }
+        end
+      else
+        Rails.logger.warn "⚠️ No image provided in upload request"
+        format.json {
+          render json: {
+            success: false,
+            error: "No image provided"
+          }, status: :bad_request
+        }
+      end
+    end
   end
 
   private
@@ -402,13 +463,58 @@ class Admin::ProductsController < Admin::ApplicationController
       :is_occasional_product, :occasional_start_date, :occasional_end_date, :occasional_description, :occasional_auto_hide,
       :occasional_schedule_type, :occasional_recurring_from_day, :occasional_recurring_from_time,
       :occasional_recurring_to_day, :occasional_recurring_to_time,
+      :image_url, :additional_images_urls,
       :image,
       additional_images: [],
       remove_images: [],
+      cloudinary_images: [],
       delivery_rules_attributes: [
         :id, :rule_type, :location_data, :is_excluded, :delivery_days, :delivery_charge, :_destroy,
         :location_data_pincodes, { location_data_states: [] }, { location_data_cities: [] }
       ]
     )
+  end
+
+  private
+
+  def handle_cloudinary_uploads
+    return unless params[:product][:cloudinary_images].is_a?(Array)
+
+    uploaded_images = []
+
+    params[:product][:cloudinary_images].each_with_index do |image_file, index|
+      next unless image_file.respond_to?(:tempfile) || image_file.respond_to?(:read)
+
+      begin
+        result = Cloudinary::Uploader.upload(
+          image_file.tempfile || image_file,
+          folder: 'products',
+          public_id: "product-#{@product.id}-#{index}-#{SecureRandom.hex(4)}",
+          overwrite: true,
+          resource_type: :auto,
+          transformation: [
+            { width: 1200, height: 1200, crop: :limit, quality: :auto, fetch_format: :auto }
+          ]
+        )
+
+        uploaded_images << result['public_id']
+
+        # Set first image as main image
+        if index == 0 && @product.image_url.blank?
+          @product.update_column(:image_url, result['public_id'])
+        end
+      rescue => e
+        Rails.logger.error "Cloudinary upload failed: #{e.message}"
+      end
+    end
+
+    # Add additional images to existing array
+    if uploaded_images.any?
+      if uploaded_images.length > 1
+        additional_images = uploaded_images[1..-1] # Skip first image (main)
+        current_additional = @product.additional_cloudinary_images
+        @product.update_column(:additional_images_urls, (current_additional + additional_images).to_json)
+      end
+    end
   end
 end

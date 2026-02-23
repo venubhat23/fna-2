@@ -30,7 +30,13 @@
                     <div class="swiper-wrapper">
                       <% @product.images.each do |image| %>
                         <div class="swiper-slide">
-                          <%= image_tag image, class: "img-fluid d-block", style: "height: 300px; width: 100%; object-fit: cover;" %>
+                          <% if image.is_a?(String) %>
+                            <!-- Cloudinary URL -->
+                            <img src="<%= image %>" alt="<%= @product.name %>" class="img-fluid d-block" style="height: 300px; width: 100%; object-fit: cover;">
+                          <% else %>
+                            <!-- Active Storage attachment -->
+                            <%= image_tag image, class: "img-fluid d-block", style: "height: 300px; width: 100%; object-fit: cover;" %>
+                          <% end %>
                         </div>
                       <% end %>
                     </div>
@@ -46,7 +52,13 @@
                       <div class="swiper-wrapper">
                         <% @product.images.each do |image| %>
                           <div class="swiper-slide">
-                            <%= image_tag image, class: "img-fluid d-block rounded", style: "height: 60px; width: 100%; object-fit: cover; cursor: pointer;" %>
+                            <% if image.is_a?(String) %>
+                              <!-- Cloudinary URL -->
+                              <img src="<%= image %>" alt="<%= @product.name %>" class="img-fluid d-block rounded" style="height: 60px; width: 100%; object-fit: cover; cursor: pointer;">
+                            <% else %>
+                              <!-- Active Storage attachment -->
+                              <%= image_tag image, class: "img-fluid d-block rounded", style: "height: 60px; width: 100%; object-fit: cover; cursor: pointer;" %>
+                            <% end %>
                           </div>
                         <% end %>
                       </div>

@@ -137,12 +137,35 @@ document.addEventListener('DOMContentLoaded', function() {
               <tr>
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
-                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
-                      <i class="bi bi-box-seam text-primary"></i>
+                    <div class="position-relative me-3">
+                      <% if product.main_image_url.present? %>
+                        <img src="<%= product.main_image_url(width: 60, height: 60) %>"
+                             alt="<%= product.name %>"
+                             class="rounded-circle object-fit-cover"
+                             style="width: 40px; height: 40px;">
+                      <% elsif product.image.attached? %>
+                        <%= image_tag product.image,
+                            alt: product.name,
+                            class: "rounded-circle object-fit-cover",
+                            style: "width: 40px; height: 40px;" %>
+                      <% else %>
+                        <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                          <i class="bi bi-box-seam text-primary"></i>
+                        </div>
+                      <% end %>
                     </div>
                     <div>
                       <h6 class="mb-0"><%= product.name %></h6>
                       <small class="text-muted">SKU: <%= product.sku || 'N/A' %></small>
+                      <% if product.image_url.present? %>
+                        <small class="text-success d-block">
+                          <i class="bi bi-cloud-check me-1"></i>Cloudinary
+                        </small>
+                      <% elsif product.image.attached? %>
+                        <small class="text-info d-block">
+                          <i class="bi bi-server me-1"></i>Local
+                        </small>
+                      <% end %>
                     </div>
                   </div>
                 </td>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_23_004840) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_23_112829) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -85,6 +85,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_23_004840) do
     t.string "image"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "image_url"
     t.index ["display_location"], name: "index_banners_on_display_location"
     t.index ["display_order"], name: "index_banners_on_display_order"
     t.index ["status"], name: "index_banners_on_status"
@@ -439,14 +440,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_23_004840) do
 
   create_table "invoice_items", force: :cascade do |t|
     t.bigint "invoice_id", null: false
-    t.bigint "milk_delivery_task_id", null: false
+    t.bigint "milk_delivery_task_id"
     t.text "description"
     t.decimal "quantity"
     t.decimal "unit_price"
     t.decimal "total_amount"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "product_id", null: false
+    t.bigint "product_id"
     t.index ["invoice_id"], name: "index_invoice_items_on_invoice_id"
     t.index ["milk_delivery_task_id"], name: "index_invoice_items_on_milk_delivery_task_id"
     t.index ["product_id"], name: "index_invoice_items_on_product_id"

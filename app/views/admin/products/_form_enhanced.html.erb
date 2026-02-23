@@ -6,6 +6,111 @@
   max-width: none;
 }
 
+/* Cloudinary Upload Styles */
+.upload-area-enhanced {
+  border: 2px dashed #e9ecef;
+  border-radius: 12px;
+  padding: 2rem;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.upload-area-enhanced:hover {
+  border-color: #667eea;
+  background: #f1f3ff;
+}
+
+.upload-container {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.upload-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.5rem;
+}
+
+.upload-subtitle {
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.upload-btn {
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.upload-guidelines {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.guideline-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #495057;
+}
+
+.guideline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.guideline-list li {
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #6c757d;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.guideline-list li::before {
+  content: '•';
+  color: #667eea;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.cloudinary-preview {
+  min-height: 60px;
+}
+
+.cloudinary-image-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.cloudinary-image-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
 .form-section {
   padding: 2rem;
   border-bottom: 1px solid #e9ecef;
@@ -474,6 +579,70 @@
       <div class="form-group">
         <%= form.label :description, "Description", class: "form-label" %>
         <%= form.text_area :description, class: "form-control", rows: 4, placeholder: "Enter product description" %>
+      </div>
+    </div>
+
+    <!-- Product Images Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="bi bi-images"></i>
+        Product Images
+      </h3>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Upload Product Images</label>
+          <div class="upload-area-enhanced">
+            <div class="upload-container">
+              <div class="upload-icon">
+                <i class="bi bi-cloud-arrow-up"></i>
+              </div>
+              <div class="upload-content">
+                <h6 class="upload-title">Cloudinary Upload (Recommended)</h6>
+                <p class="upload-subtitle">Fast, reliable cloud storage with automatic optimization</p>
+                <input type="file" id="cloudinaryImageInput" class="d-none" multiple accept="image/*">
+                <button type="button" class="btn btn-primary upload-btn" onclick="document.getElementById('cloudinaryImageInput').click()">
+                  <i class="bi bi-upload me-2"></i>Choose Images
+                </button>
+              </div>
+            </div>
+
+            <div class="upload-guidelines">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="guideline-title">
+                    <i class="bi bi-lightbulb text-warning me-1"></i>
+                    Image Guidelines
+                  </h6>
+                  <ul class="guideline-list">
+                    <li>Use high-quality images (minimum 800x600px)</li>
+                    <li>Supported formats: JPG, PNG, WebP</li>
+                    <li>Maximum file size: 10MB per image</li>
+                    <li>First image becomes the main product image</li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="guideline-title">
+                    <i class="bi bi-camera text-primary me-1"></i>
+                    Best Practices
+                  </h6>
+                  <ul class="guideline-list">
+                    <li>Show product from multiple angles</li>
+                    <li>Use good lighting and clear backgrounds</li>
+                    <li>Include close-up details if relevant</li>
+                    <li>Keep consistent style across images</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cloudinary-preview mt-4" id="cloudinaryPreview"></div>
+
+          <!-- Hidden fields for Cloudinary URLs -->
+          <%= form.hidden_field :image_url %>
+          <%= form.hidden_field :additional_images_urls %>
+        </div>
       </div>
     </div>
 
@@ -1478,4 +1647,167 @@ function toggleSeoSection() {
     seoToggleIcon.classList.add('rotated');
   }
 }
+
+// Cloudinary Upload Management
+document.addEventListener('DOMContentLoaded', function() {
+  const cloudinaryInput = document.getElementById('cloudinaryImageInput');
+  const cloudinaryPreview = document.getElementById('cloudinaryPreview');
+  const imageUrlField = document.getElementById('product_image_url');
+  const additionalImagesUrlsField = document.getElementById('product_additional_images_urls');
+
+  let cloudinaryImages = [];
+  let isUploading = false;
+
+  if (cloudinaryInput) {
+    cloudinaryInput.addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        handleCloudinaryUploads(files);
+      }
+    });
+  }
+
+  async function handleCloudinaryUploads(files) {
+    if (isUploading) return;
+
+    isUploading = true;
+    const uploadButton = document.querySelector('.upload-btn');
+    const originalButtonText = uploadButton.innerHTML;
+
+    uploadButton.disabled = true;
+    uploadButton.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Uploading...';
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        await uploadSingleImageToCloudinary(file, i);
+      }
+
+      showNotification('Images uploaded successfully to Cloudinary!', 'success');
+      updateCloudinaryFields();
+    } catch (error) {
+      console.error('Upload error:', error);
+      showNotification('Upload failed: ' + error.message, 'error');
+    } finally {
+      isUploading = false;
+      uploadButton.disabled = false;
+      uploadButton.innerHTML = originalButtonText;
+    }
+  }
+
+  async function uploadSingleImageToCloudinary(file, index) {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      fetch('/admin/products/upload_cloudinary_image', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          cloudinaryImages.push({
+            public_id: data.public_id,
+            url: data.url,
+            thumbnail_url: data.thumbnail_url,
+            filename: file.name,
+            size: file.size
+          });
+
+          displayCloudinaryPreview(data, file);
+          resolve(data);
+        } else {
+          reject(new Error(data.error));
+        }
+      })
+      .catch(error => {
+        reject(error);
+      });
+    });
+  }
+
+  function displayCloudinaryPreview(imageData, file) {
+    const previewHtml = `
+      <div class="cloudinary-image-item d-flex align-items-center mb-3 p-3 border rounded" data-public-id="${imageData.public_id}">
+        <img src="${imageData.thumbnail_url}" alt="Preview" class="me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
+        <div class="flex-grow-1">
+          <h6 class="mb-1">${file.name}</h6>
+          <small class="text-muted">${formatFileSize(file.size)} • Cloudinary</small>
+          <br>
+          <small class="text-success">
+            <i class="bi bi-check-circle me-1"></i>Uploaded successfully
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-cloudinary-image" data-public-id="${imageData.public_id}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    `;
+
+    cloudinaryPreview.insertAdjacentHTML('beforeend', previewHtml);
+
+    // Add remove functionality
+    const removeButton = cloudinaryPreview.querySelector(`[data-public-id="${imageData.public_id}"] .remove-cloudinary-image`);
+    removeButton.addEventListener('click', function() {
+      removeCloudinaryImage(imageData.public_id);
+    });
+  }
+
+  function removeCloudinaryImage(publicId) {
+    cloudinaryImages = cloudinaryImages.filter(img => img.public_id !== publicId);
+    const imageItem = cloudinaryPreview.querySelector(`[data-public-id="${publicId}"]`);
+    if (imageItem) {
+      imageItem.remove();
+    }
+    updateCloudinaryFields();
+  }
+
+  function updateCloudinaryFields() {
+    if (cloudinaryImages.length > 0) {
+      // Set main image (first image)
+      if (imageUrlField) imageUrlField.value = cloudinaryImages[0].public_id;
+
+      // Set additional images (rest of the images)
+      if (cloudinaryImages.length > 1 && additionalImagesUrlsField) {
+        const additionalImages = cloudinaryImages.slice(1).map(img => img.public_id);
+        additionalImagesUrlsField.value = JSON.stringify(additionalImages);
+      } else if (additionalImagesUrlsField) {
+        additionalImagesUrlsField.value = '';
+      }
+    } else {
+      if (imageUrlField) imageUrlField.value = '';
+      if (additionalImagesUrlsField) additionalImagesUrlsField.value = '';
+    }
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showNotification(message, type = 'info') {
+    // Simple notification system
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x`;
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+
+    setTimeout(() => {
+      if (alert.parentNode) {
+        alert.parentNode.removeChild(alert);
+      }
+    }, 5000);
+  }
+});
 </script>

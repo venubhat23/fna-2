@@ -1,0 +1,241 @@
+<% content_for :title, 'Shopping Cart' %>
+
+<div class="container py-4">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="mb-4">
+        <i class="bi bi-cart3 me-2"></i>Your Shopping Cart
+        <% if @cart_count > 0 %>
+          <span class="badge bg-primary ms-2"><%= @cart_count %> items</span>
+        <% end %>
+      </h1>
+    </div>
+  </div>
+
+  <% if @cart_items.any? %>
+    <div class="row">
+      <!-- Cart Items -->
+      <div class="col-lg-8">
+        <div class="bg-white rounded shadow-sm p-4 mb-4">
+          <% @cart_items.each do |item| %>
+            <div class="row align-items-center py-3 border-bottom">
+              <!-- Product Image -->
+              <div class="col-md-2 col-3">
+                <% if item['image_url'].present? %>
+                  <%= image_tag item['image_url'], class: "img-fluid rounded", style: "height: 80px; object-fit: cover;" %>
+                <% else %>
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px;">
+                    <i class="bi bi-image text-muted"></i>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Product Details -->
+              <div class="col-md-4 col-9">
+                <h6 class="fw-semibold mb-1"><%= item['product_name'] %></h6>
+                <p class="text-success fw-bold mb-0">₹<%= item['price'] %></p>
+              </div>
+
+              <!-- Quantity Controls -->
+              <div class="col-md-3 col-6">
+                <%= form_with url: customer_cart_update_item_path, method: :patch, local: true, class: "d-flex align-items-center" do |f| %>
+                  <%= f.hidden_field :product_id, value: item['product_id'] %>
+                  <div class="input-group input-group-sm" style="width: 120px;">
+                    <button type="button" class="btn btn-outline-secondary" onclick="decreaseCartQuantity(<%= item['product_id'] %>)">
+                      <i class="bi bi-dash"></i>
+                    </button>
+                    <%= f.number_field :quantity,
+                                      value: item['quantity'],
+                                      min: 1,
+                                      max: 10,
+                                      class: "form-control text-center",
+                                      id: "cart_quantity_#{item['product_id']}",
+                                      onchange: "updateCartQuantity(#{item['product_id']})" %>
+                    <button type="button" class="btn btn-outline-secondary" onclick="increaseCartQuantity(<%= item['product_id'] %>)">
+                      <i class="bi bi-plus"></i>
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Item Total & Remove -->
+              <div class="col-md-2 col-6 text-md-end">
+                <p class="fw-bold mb-2">₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></p>
+                <%= link_to customer_cart_remove_item_path,
+                           method: :delete,
+                           data: {
+                             confirm: 'Remove this item from cart?',
+                             params: { product_id: item['product_id'] }
+                           },
+                           class: "btn btn-outline-danger btn-sm" do %>
+                  <i class="bi bi-trash"></i>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Clear Cart -->
+          <div class="text-end mt-3">
+            <%= link_to customer_cart_clear_path,
+                       method: :delete,
+                       data: { confirm: 'Are you sure you want to clear your cart?' },
+                       class: "btn btn-outline-secondary" do %>
+              <i class="bi bi-trash me-1"></i>Clear Cart
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <div class="bg-white rounded shadow-sm p-4 position-sticky" style="top: 20px;">
+          <h5 class="mb-4">Order Summary</h5>
+
+          <!-- Items Summary -->
+          <div class="mb-3">
+            <% @cart_items.each do |item| %>
+              <div class="d-flex justify-content-between small text-muted mb-1">
+                <span><%= item['product_name'] %> × <%= item['quantity'] %></span>
+                <span>₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></span>
+              </div>
+            <% end %>
+          </div>
+
+          <hr>
+
+          <!-- Pricing -->
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal (<%= @cart_count %> items)</span>
+            <span>₹<%= @cart_total %></span>
+          </div>
+
+          <div class="d-flex justify-content-between mb-2">
+            <span>Shipping</span>
+            <span class="text-success">
+              <% if @cart_total >= 500 %>
+                Free
+              <% else %>
+                ₹50
+              <% end %>
+            </span>
+          </div>
+
+          <% if @cart_total < 500 %>
+            <div class="alert alert-info small">
+              <i class="bi bi-info-circle me-1"></i>
+              Add ₹<%= (500 - @cart_total).round(2) %> more for free shipping!
+            </div>
+          <% end %>
+
+          <hr>
+
+          <div class="d-flex justify-content-between fw-bold fs-5 mb-4">
+            <span>Total</span>
+            <span class="text-success">
+              ₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %>
+            </span>
+          </div>
+
+          <!-- Checkout Button -->
+          <div class="d-grid gap-2">
+            <%= link_to customer_checkout_index_path, class: "btn btn-primary btn-lg" do %>
+              <i class="bi bi-credit-card me-2"></i>Proceed to Checkout
+            <% end %>
+          </div>
+
+          <!-- Continue Shopping -->
+          <div class="text-center mt-3">
+            <%= link_to customer_products_path, class: "btn btn-outline-secondary" do %>
+              <i class="bi bi-arrow-left me-1"></i>Continue Shopping
+            <% end %>
+          </div>
+
+          <!-- Secure Checkout Info -->
+          <div class="text-center mt-4">
+            <small class="text-muted">
+              <i class="bi bi-shield-check text-success me-1"></i>
+              Secure Checkout
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <% else %>
+    <!-- Empty Cart -->
+    <div class="row">
+      <div class="col-12">
+        <div class="text-center py-5">
+          <i class="bi bi-cart-x display-1 text-muted mb-4"></i>
+          <h3>Your cart is empty</h3>
+          <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
+          <%= link_to customer_products_path, class: "btn btn-primary btn-lg" do %>
+            <i class="bi bi-arrow-left me-2"></i>Start Shopping
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+function decreaseCartQuantity(productId) {
+  const input = document.getElementById(`cart_quantity_${productId}`);
+  const currentValue = parseInt(input.value);
+  if (currentValue > 1) {
+    input.value = currentValue - 1;
+    updateCartQuantity(productId);
+  }
+}
+
+function increaseCartQuantity(productId) {
+  const input = document.getElementById(`cart_quantity_${productId}`);
+  const currentValue = parseInt(input.value);
+  if (currentValue < 10) {
+    input.value = currentValue + 1;
+    updateCartQuantity(productId);
+  }
+}
+
+function updateCartQuantity(productId) {
+  const input = document.getElementById(`cart_quantity_${productId}`);
+  const quantity = input.value;
+
+  // Create a form and submit it
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '<%= customer_cart_update_item_path %>';
+
+  // Add CSRF token
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'authenticity_token';
+  csrfInput.value = csrfToken;
+  form.appendChild(csrfInput);
+
+  // Add method patch
+  const methodInput = document.createElement('input');
+  methodInput.type = 'hidden';
+  methodInput.name = '_method';
+  methodInput.value = 'patch';
+  form.appendChild(methodInput);
+
+  // Add product_id
+  const productInput = document.createElement('input');
+  productInput.type = 'hidden';
+  productInput.name = 'product_id';
+  productInput.value = productId;
+  form.appendChild(productInput);
+
+  // Add quantity
+  const quantityInput = document.createElement('input');
+  quantityInput.type = 'hidden';
+  quantityInput.name = 'quantity';
+  quantityInput.value = quantity;
+  form.appendChild(quantityInput);
+
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>

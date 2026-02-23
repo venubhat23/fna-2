@@ -1,0 +1,306 @@
+<% content_for :title, @product.name %>
+
+<div class="container py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><%= link_to "Home", customer_root_path %></li>
+      <li class="breadcrumb-item"><%= link_to "Products", customer_products_path %></li>
+      <li class="breadcrumb-item"><%= link_to @product.category.name, customer_category_path(@product.category) %></li>
+      <li class="breadcrumb-item active"><%= @product.name %></li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <!-- Product Images -->
+    <div class="col-md-6 mb-4">
+      <div class="position-sticky" style="top: 20px;">
+        <% if @product.images.any? %>
+          <div id="productImageCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+            <div class="carousel-inner rounded">
+              <% @product.images.each_with_index do |image, index| %>
+                <div class="carousel-item <%= 'active' if index == 0 %>">
+                  <% if image.is_a?(String) %>
+                    <%= image_tag image, class: "d-block w-100", style: "height: 400px; object-fit: cover;", alt: @product.name %>
+                  <% else %>
+                    <%= image_tag url_for(image), class: "d-block w-100", style: "height: 400px; object-fit: cover;", alt: @product.name %>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+            <% if @product.images.count > 1 %>
+              <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+              </button>
+            <% end %>
+          </div>
+
+          <!-- Thumbnail Images -->
+          <% if @product.images.count > 1 %>
+            <div class="d-flex gap-2 overflow-auto">
+              <% @product.images.each_with_index do |image, index| %>
+                <button type="button" class="btn p-1 border <%= 'border-primary' if index == 0 %>"
+                        data-bs-target="#productImageCarousel" data-bs-slide-to="<%= index %>">
+                  <% if image.is_a?(String) %>
+                    <%= image_tag image, style: "width: 60px; height: 60px; object-fit: cover;", alt: @product.name, class: "rounded" %>
+                  <% else %>
+                    <%= image_tag url_for(image), style: "width: 60px; height: 60px; object-fit: cover;", alt: @product.name, class: "rounded" %>
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+            <i class="bi bi-image display-1 text-muted"></i>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Product Details -->
+    <div class="col-md-6">
+      <!-- Product Name & Category -->
+      <div class="mb-3">
+        <span class="badge <%= @product.product_type_badge_class %> mb-2">
+          <i class="<%= @product.product_type_icon %> me-1"></i>
+          <%= @product.product_type %>
+        </span>
+        <h1 class="h2 fw-bold"><%= @product.name %></h1>
+        <p class="text-muted">SKU: <%= @product.sku %></p>
+      </div>
+
+      <!-- Reviews -->
+      <% if @product.has_reviews? %>
+        <div class="mb-3">
+          <div class="d-flex align-items-center">
+            <span class="text-warning me-2">
+              <% @product.average_rating.floor.times do %>
+                <i class="bi bi-star-fill"></i>
+              <% end %>
+              <% (5 - @product.average_rating.floor).times do %>
+                <i class="bi bi-star"></i>
+              <% end %>
+            </span>
+            <span class="fw-semibold me-2"><%= @product.average_rating %></span>
+            <span class="text-muted">(<%= pluralize(@product.total_reviews, 'review') %>)</span>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Price -->
+      <div class="mb-4">
+        <div class="d-flex align-items-baseline">
+          <span class="display-6 fw-bold text-success me-3">₹<%= @product.selling_price %></span>
+          <% if @product.discounted? %>
+            <span class="h4 text-muted text-decoration-line-through me-2">₹<%= @product.price %></span>
+            <span class="badge bg-danger fs-6">
+              <%= @product.discount_percentage.round %>% OFF
+            </span>
+          <% end %>
+        </div>
+        <% if @product.discounted? %>
+          <p class="text-success mb-0">You save ₹<%= @product.savings_amount %></p>
+        <% end %>
+      </div>
+
+      <!-- Stock Status -->
+      <div class="mb-4">
+        <% if @product.in_stock? %>
+          <div class="alert alert-success d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <div>
+              <strong>In Stock</strong>
+              <small class="d-block">Only <%= @product.available_quantity %> units left!</small>
+            </div>
+          </div>
+        <% else %>
+          <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i>
+            <strong>Out of Stock</strong>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Subscription Badge -->
+      <% if @product.subscription_enabled? %>
+        <div class="mb-3">
+          <span class="badge <%= @product.subscription_badge_class %>">
+            <i class="<%= @product.subscription_icon %> me-1"></i>
+            <%= @product.subscription_status_text %>
+          </span>
+        </div>
+      <% end %>
+
+      <!-- Add to Cart -->
+      <% if @product.in_stock? %>
+        <div class="mb-4">
+          <%= form_with url: customer_cart_add_item_path, method: :post, local: true do |f| %>
+            <%= f.hidden_field :product_id, value: @product.id %>
+
+            <div class="row g-3 align-items-end">
+              <div class="col-md-6">
+                <%= f.label :quantity, "Quantity", class: "form-label" %>
+                <div class="input-group">
+                  <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity()">
+                    <i class="bi bi-dash"></i>
+                  </button>
+                  <%= f.number_field :quantity,
+                                    value: 1,
+                                    min: 1,
+                                    max: [@product.available_quantity, 10].min,
+                                    class: "form-control text-center",
+                                    id: "quantity" %>
+                  <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity()">
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <%= f.submit "Add to Cart", class: "btn btn-primary btn-lg w-100" %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Subscription Option -->
+          <% if @product.subscription_enabled? %>
+            <div class="mt-3">
+              <%= link_to customer_subscriptions_path(product_id: @product.id), class: "btn btn-outline-success w-100" do %>
+                <i class="bi bi-arrow-repeat me-2"></i>Subscribe for Regular Delivery
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Product Description -->
+      <div class="mb-4">
+        <h4>Description</h4>
+        <% if @product.description.present? %>
+          <p><%= simple_format(@product.description) %></p>
+        <% else %>
+          <p class="text-muted">No description available for this product.</p>
+        <% end %>
+      </div>
+
+      <!-- Product Details -->
+      <div class="mb-4">
+        <h4>Product Details</h4>
+        <table class="table table-sm">
+          <tr>
+            <td><strong>Unit Type:</strong></td>
+            <td><%= @product.unit_display %></td>
+          </tr>
+          <% if @product.weight.present? %>
+            <tr>
+              <td><strong>Weight:</strong></td>
+              <td><%= @product.weight %> kg</td>
+            </tr>
+          <% end %>
+          <% if @product.gst_enabled? %>
+            <tr>
+              <td><strong>GST:</strong></td>
+              <td><%= @product.display_gst_info %></td>
+            </tr>
+          <% end %>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews Section -->
+  <% if @reviews.any? %>
+    <div class="row mt-5">
+      <div class="col-12">
+        <h3>Customer Reviews</h3>
+        <div class="row">
+          <% @reviews.each do |review| %>
+            <div class="col-md-6 mb-3">
+              <div class="bg-white rounded shadow-sm p-3">
+                <div class="d-flex align-items-center mb-2">
+                  <span class="text-warning me-2">
+                    <% review.rating.times do %>
+                      <i class="bi bi-star-fill"></i>
+                    <% end %>
+                    <% (5 - review.rating).times do %>
+                      <i class="bi bi-star"></i>
+                    <% end %>
+                  </span>
+                  <strong><%= review.reviewer_name %></strong>
+                  <small class="text-muted ms-auto">
+                    <%= review.created_at.strftime('%B %d, %Y') %>
+                  </small>
+                </div>
+                <p class="mb-0"><%= review.comment %></p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Related Products -->
+  <% if @related_products.any? %>
+    <div class="row mt-5">
+      <div class="col-12">
+        <h3>Related Products</h3>
+        <div class="row">
+          <% @related_products.each do |product| %>
+            <div class="col-lg-3 col-md-6 mb-4">
+              <div class="product-card bg-white rounded shadow-sm h-100">
+                <%= link_to customer_product_path(product) do %>
+                  <% if product.main_image_url %>
+                    <%= image_tag product.main_image_url, class: "card-img-top", style: "height: 200px; object-fit: cover;", alt: product.name %>
+                  <% else %>
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                      <i class="bi bi-image display-4 text-muted"></i>
+                    </div>
+                  <% end %>
+                <% end %>
+
+                <div class="card-body">
+                  <h6 class="card-title">
+                    <%= link_to product.name, customer_product_path(product), class: "text-decoration-none text-dark" %>
+                  </h6>
+                  <p class="fw-bold text-success">₹<%= product.selling_price %></p>
+
+                  <% if product.in_stock? %>
+                    <%= form_with url: customer_cart_add_item_path, method: :post, local: true do |f| %>
+                      <%= f.hidden_field :product_id, value: product.id %>
+                      <%= f.hidden_field :quantity, value: 1 %>
+                      <%= f.submit "Add to Cart", class: "btn btn-primary btn-sm w-100" %>
+                    <% end %>
+                  <% else %>
+                    <button class="btn btn-secondary btn-sm w-100" disabled>Out of Stock</button>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+function decreaseQuantity() {
+  const input = document.getElementById('quantity');
+  const currentValue = parseInt(input.value);
+  if (currentValue > parseInt(input.min)) {
+    input.value = currentValue - 1;
+  }
+}
+
+function increaseQuantity() {
+  const input = document.getElementById('quantity');
+  const currentValue = parseInt(input.value);
+  if (currentValue < parseInt(input.max)) {
+    input.value = currentValue + 1;
+  }
+}
+</script>

@@ -1,0 +1,182 @@
+<% content_for :title, 'Checkout' %>
+
+<div class="container py-4">
+  <h1 class="mb-4">
+    <i class="bi bi-credit-card me-2"></i>Checkout
+  </h1>
+
+  <!-- Checkout Steps -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-center">
+        <div class="d-flex align-items-center">
+          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-cart-check"></i>
+          </div>
+          <div class="bg-primary" style="width: 50px; height: 2px;"></div>
+          <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-geo-alt"></i>
+          </div>
+          <div class="bg-secondary" style="width: 50px; height: 2px;"></div>
+          <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-credit-card"></i>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-center mt-2">
+        <div class="d-flex" style="width: 300px;">
+          <small class="text-primary fw-semibold" style="width: 100px;">Cart Review</small>
+          <small class="text-muted" style="width: 100px; text-align: center;">Address</small>
+          <small class="text-muted" style="width: 100px; text-align: right;">Payment</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Order Summary -->
+    <div class="col-lg-8">
+      <div class="bg-white rounded shadow-sm p-4 mb-4">
+        <h4 class="mb-4">Order Summary</h4>
+
+        <% @cart_items.each do |item| %>
+          <div class="row align-items-center py-3 border-bottom">
+            <div class="col-md-2">
+              <% if item['image_url'].present? %>
+                <%= image_tag item['image_url'], class: "img-fluid rounded", style: "height: 60px; object-fit: cover;" %>
+              <% else %>
+                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 60px;">
+                  <i class="bi bi-image text-muted"></i>
+                </div>
+              <% end %>
+            </div>
+            <div class="col-md-6">
+              <h6 class="fw-semibold mb-1"><%= item['product_name'] %></h6>
+              <p class="text-muted small mb-0">Quantity: <%= item['quantity'] %></p>
+            </div>
+            <div class="col-md-2">
+              <p class="fw-semibold mb-0">₹<%= item['price'] %></p>
+            </div>
+            <div class="col-md-2 text-end">
+              <p class="fw-bold mb-0">₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Delivery Address -->
+      <div class="bg-white rounded shadow-sm p-4">
+        <h4 class="mb-4">Delivery Address</h4>
+
+        <% if @addresses.any? %>
+          <div class="row">
+            <% @addresses.each do |address| %>
+              <div class="col-md-6 mb-3">
+                <div class="border rounded p-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="selected_address_id" value="<%= address.id %>" id="address_<%= address.id %>" <%= 'checked' if address.is_default? %>>
+                    <label class="form-check-label w-100" for="address_<%= address.id %>">
+                      <strong><%= address.name %></strong>
+                      <span class="badge bg-secondary ms-2"><%= address.address_type.humanize %></span>
+                      <br>
+                      <small class="text-muted">
+                        <%= address.address %><br>
+                        <% if address.landmark.present? %>
+                          <%= address.landmark %><br>
+                        <% end %>
+                        <%= address.city %>, <%= address.state %> - <%= address.pincode %><br>
+                        <i class="bi bi-phone"></i> <%= address.mobile %>
+                      </small>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="text-center mt-3">
+            <%= link_to customer_checkout_address_path, class: "btn btn-outline-primary" do %>
+              <i class="bi bi-plus me-1"></i>Add New Address
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-4">
+            <i class="bi bi-geo-alt display-4 text-muted mb-3"></i>
+            <h5>No delivery address found</h5>
+            <p class="text-muted">Please add a delivery address to continue</p>
+            <%= link_to customer_checkout_address_path, class: "btn btn-primary" do %>
+              <i class="bi bi-plus me-2"></i>Add Delivery Address
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Order Summary Sidebar -->
+    <div class="col-lg-4">
+      <div class="bg-white rounded shadow-sm p-4 position-sticky" style="top: 20px;">
+        <h5 class="mb-4">Order Total</h5>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span>Subtotal</span>
+          <span>₹<%= @cart_total %></span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span>Shipping</span>
+          <span>
+            <% if @cart_total >= 500 %>
+              <span class="text-success">Free</span>
+            <% else %>
+              ₹50
+            <% end %>
+          </span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span>Tax</span>
+          <span>₹0</span>
+        </div>
+
+        <hr>
+
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-4">
+          <span>Total</span>
+          <span class="text-success">₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %></span>
+        </div>
+
+        <% if @addresses.any? %>
+          <div class="d-grid">
+            <%= link_to customer_checkout_payment_path, class: "btn btn-primary btn-lg", onclick: "setSelectedAddress()" do %>
+              Continue to Payment
+              <i class="bi bi-arrow-right ms-2"></i>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="text-center mt-3">
+          <%= link_to customer_cart_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-arrow-left me-1"></i>Back to Cart
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setSelectedAddress() {
+  const selectedAddress = document.querySelector('input[name="selected_address_id"]:checked');
+  if (selectedAddress) {
+    sessionStorage.setItem('selected_address_id', selectedAddress.value);
+  }
+}
+
+// Auto-select default address if any
+document.addEventListener('DOMContentLoaded', function() {
+  const defaultAddress = document.querySelector('input[name="selected_address_id"][checked]');
+  if (defaultAddress) {
+    sessionStorage.setItem('selected_address_id', defaultAddress.value);
+  }
+});
+</script>
