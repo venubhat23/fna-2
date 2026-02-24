@@ -73,7 +73,7 @@ module ImportService
       end
 
       # Find or create category
-      category = find_or_create_category(row['category_name'])
+      category = find_or_create_category_from_row(row)
 
       # Prepare product parameters
       product_params = {
@@ -91,7 +91,8 @@ module ImportService
         gst_percentage: parse_decimal(row['gst_percentage']),
         buying_price: parse_decimal(row['buying_price']),
         product_type: parse_product_type(row['product_type']),
-        is_subscription_enabled: parse_boolean(row['is_subscription_enabled'])
+        is_subscription_enabled: parse_boolean(row['is_subscription_enabled']),
+        unit_type: parse_unit_type(row['unit_type'])
       }
 
       # Calculate GST amounts if GST is enabled
@@ -123,6 +124,21 @@ module ImportService
       product = Product.create!(product_params)
 
       @imported_count += 1
+    end
+
+    def find_or_create_category_from_row(row)
+      # Try category_id first, then category_name
+      if row['category_id'].present?
+        begin
+          category_id = Integer(row['category_id'])
+          return Category.find(category_id)
+        rescue ArgumentError, ActiveRecord::RecordNotFound
+          # Fall through to category_name method
+        end
+      end
+
+      category_name = row['category_name']
+      find_or_create_category(category_name)
     end
 
     def find_or_create_category(category_name)
@@ -185,6 +201,19 @@ module ImportService
     def parse_product_type(type_string)
       return 'one_time' if type_string.blank?
       ['subscription'].include?(type_string.to_s.downcase) ? 'subscription' : 'one_time'
+    end
+
+    def parse_unit_type(unit_string)
+      return 'Piece' if unit_string.blank?
+
+      # Valid unit types from Product model
+      valid_units = ['Kg', 'Bottle', 'Box', 'Liter', 'Piece', 'Gram']
+
+      # Try to find exact match (case insensitive)
+      unit = unit_string.to_s.strip
+      matched_unit = valid_units.find { |valid_unit| valid_unit.downcase == unit.downcase }
+
+      matched_unit || 'Piece' # Default to 'Piece' if not found
     end
   end
 end

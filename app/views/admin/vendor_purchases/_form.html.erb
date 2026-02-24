@@ -52,8 +52,8 @@
         </div>
       </div>
 
-      <!-- Hidden field for total_amount -->
-      <%= f.hidden_field :total_amount, value: @vendor_purchase.total_amount || 0 %>
+      <!-- Hidden field for paid_amount (defaults to 0 for new records) -->
+      <%= f.hidden_field :paid_amount, value: @vendor_purchase.paid_amount || 0 %>
     </div>
   </div>
 
@@ -468,11 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('total-amount').textContent = formatCurrency(total);
     document.getElementById('final-total').textContent = formatCurrency(total);
 
-    // Also update total_amount hidden field if exists
-    const totalAmountField = document.querySelector('input[name="vendor_purchase[total_amount]"]');
-    if (totalAmountField) {
-      totalAmountField.value = total.toFixed(2);
-    }
+    // Note: total_amount is calculated automatically by the model from line items
 
     // Enable/disable submit button
     const submitBtn = document.getElementById('submit-btn');

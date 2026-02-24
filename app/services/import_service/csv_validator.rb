@@ -88,8 +88,8 @@ module ImportService
         return { success: false, error: 'CSV file must have headers' }
       end
 
-      # Clean headers (remove whitespace, convert to lowercase)
-      actual_headers = headers.map(&:to_s).map(&:strip).map(&:downcase)
+      # Clean headers (remove whitespace, asterisks, convert to lowercase)
+      actual_headers = headers.map(&:to_s).map(&:strip).map { |h| h.gsub(/\*/, '') }.map(&:downcase)
       expected_headers_clean = expected_headers.map(&:downcase)
 
       # Check for required headers
@@ -261,10 +261,7 @@ module ImportService
          'emergency_contact_name', 'emergency_contact_mobile', 'joining_date', 'salary',
          'bank_name', 'account_no', 'ifsc_code', 'account_holder_name', 'delivery_areas']
       when 'products'
-        ['name', 'description', 'category_name', 'price', 'discount_price', 'stock',
-         'status', 'sku', 'weight', 'dimensions', 'gst_enabled', 'gst_percentage',
-         'buying_price', 'product_type', 'is_subscription_enabled', 'unit_type', 'tags',
-         'meta_title', 'meta_description', 'minimum_stock_alert']
+        ['name', 'price', 'stock']  # Only the truly required fields
       else
         []
       end

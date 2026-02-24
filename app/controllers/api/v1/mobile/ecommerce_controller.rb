@@ -298,6 +298,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       Rails.logger.info "Current user: #{@current_user&.id}"
 
       ActiveRecord::Base.transaction do
+        debugger
         @booking = Booking.new(booking_params.except(:pincode, :latitude, :longitude))
 
         # Ensure customer association is properly set
@@ -325,12 +326,14 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         @booking.save!
 
         # Update product stock
+        debugger
         @booking.booking_items.each do |item|
+          debugger
           product = item.product
           new_stock = product.stock - item.quantity
           product.update!(stock: new_stock)
         end
-
+      debugger
         booking_response_data = format_booking_data(@booking).merge({
           location_saved: {
             latitude: latitude,
@@ -1197,7 +1200,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         pincode: pincode,
         delivery_date: delivery_date,
         pincode_valid: true,
-        location_info: pincode_validation,
+        location_info: pincode_validation || { pincode: pincode, valid: true },
         overall_delivery_available: all_deliverable,
         products: products_results,
         unavailable_products: unavailable_products,
