@@ -1308,6 +1308,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         id: product.category_id,
         name: product.category&.name
       },
+      image: product.images_attached? ? url_for(product.images.first) : nil,
       images: product.images_attached? ? product.images.map { |img| url_for(img) } : [],
       rating: {
         average: product.average_rating.to_f,
