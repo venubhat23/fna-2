@@ -298,13 +298,16 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
       ActiveRecord::Base.transaction do
         @booking = Booking.new(booking_params.except(:pincode, :latitude, :longitude))
+
+        # Ensure customer association is properly set
+        @booking.customer_id = customer.id
         @booking.customer = customer
         @booking.user = nil # Mobile bookings don't have associated admin users
         @booking.booking_date = Time.current
         @booking.status = 'ordered_and_delivery_pending'
 
-
-        Rails.logger.info "Booking created, valid? #{@booking.valid?}"
+        Rails.logger.info "Booking created with customer_id: #{@booking.customer_id}"
+        Rails.logger.info "Booking valid? #{@booking.valid?}"
         unless @booking.valid?
           Rails.logger.error "Booking validation errors: #{@booking.errors.full_messages}"
         end

@@ -62,21 +62,6 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">With Orders</h6>
-            <h4 class="mb-0"><%= @customers_with_orders || 0 %></h4>
-          </div>
-          <div class="text-warning">
-            <i class="bi bi-cart-check fs-2"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Customers Table -->
@@ -100,7 +85,6 @@
             <tr>
               <th class="border-0 fw-semibold">Customer</th>
               <th class="border-0 fw-semibold">Contact Info</th>
-              <th class="border-0 fw-semibold">Type</th>
               <th class="border-0 fw-semibold">Status</th>
               <th class="border-0 fw-semibold">Joined</th>
               <th class="border-0 fw-semibold">Actions</th>
@@ -135,9 +119,6 @@
                       </div>
                     <% end %>
                   </div>
-                </td>
-                <td class="align-middle">
-                  <span class="badge bg-secondary-subtle text-secondary">Individual</span>
                 </td>
                 <td class="align-middle">
                   <% if customer.respond_to?(:status) && customer.status %>
@@ -252,11 +233,9 @@ document.addEventListener('DOMContentLoaded', function() {
     tableRows.forEach(row => {
       const customerName = row.cells[0]?.textContent.toLowerCase() || '';
       const contactInfo = row.cells[1]?.textContent.toLowerCase() || '';
-      const customerType = row.cells[2]?.textContent.toLowerCase() || '';
 
       if (customerName.includes(searchTerm) ||
-          contactInfo.includes(searchTerm) ||
-          customerType.includes(searchTerm)) {
+          contactInfo.includes(searchTerm)) {
         row.style.display = '';
       } else {
         row.style.display = 'none';

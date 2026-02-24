@@ -158,18 +158,20 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
     # Check DeliveryPerson login
     delivery_person = DeliveryPerson.find_by(email: login_field)
     unless delivery_person
-      formatted_mobile = format_mobile_number(login_field)
-      if formatted_mobile
-        delivery_person = DeliveryPerson.find_by(mobile: formatted_mobile) ||
-                         DeliveryPerson.find_by(mobile: "+91#{formatted_mobile}") ||
-                         DeliveryPerson.find_by(mobile: "+91 #{formatted_mobile}") ||
-                         DeliveryPerson.find_by(mobile: "#{formatted_mobile[0..4]} #{formatted_mobile[5..9]}") ||
-                         DeliveryPerson.find_by(mobile: "+91 #{formatted_mobile[0..4]} #{formatted_mobile[5..9]}")
-      else
-        delivery_person = DeliveryPerson.find_by(mobile: login_field)
+      # First try direct mobile search (for 12-digit numbers like 919190939300)
+      delivery_person = DeliveryPerson.find_by(mobile: login_field)
+
+      unless delivery_person
+        formatted_mobile = format_mobile_number(login_field)
+        if formatted_mobile
+          delivery_person = DeliveryPerson.find_by(mobile: formatted_mobile) ||
+                           DeliveryPerson.find_by(mobile: "+91#{formatted_mobile}") ||
+                           DeliveryPerson.find_by(mobile: "+91 #{formatted_mobile}") ||
+                           DeliveryPerson.find_by(mobile: "#{formatted_mobile[0..4]} #{formatted_mobile[5..9]}") ||
+                           DeliveryPerson.find_by(mobile: "+91 #{formatted_mobile[0..4]} #{formatted_mobile[5..9]}")
+        end
       end
     end
-    debugger
     if delivery_person && delivery_person.authenticate(password) && delivery_person.status
       token = generate_token(delivery_person, 'delivery_person')
 
@@ -838,54 +840,33 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
   end
 
   def get_customer_portfolio_stats(customer)
-    # Get actual policy counts from database
+    # This is an ecommerce application, so return ecommerce-related stats
     begin
-      health_count = HealthInsurance.where(customer_id: customer.id).count
-      life_count = LifeInsurance.where(customer_id: customer.id).count
-      motor_count = MotorInsurance.where(customer_id: customer.id).count
-      # Other insurance is linked through policy table
-      other_count = begin
-        OtherInsurance.joins(:policy).where(policies: { customer_id: customer.id }).count
-      rescue => e
-        Rails.logger.warn "Error counting other insurance: #{e.message}"
-        0
-      end
-
-      total_policies = health_count + life_count + motor_count + other_count
-
-      # Calculate upcoming installments within next 2 months
-      upcoming_installments = count_upcoming_installments(customer)
-
-      # Calculate renewal policies within next 2 months
-      renewal_policies = count_upcoming_renewals(customer)
+      total_orders = customer.orders.count
+      total_bookings = customer.bookings.count
+      total_spent = customer.orders.where.not(status: ['cancelled', 'returned']).sum(:total_amount)
 
       {
-        total_policies: total_policies,
-        upcoming_installments: upcoming_installments,
-        renewal_policies: renewal_policies,
-        total_coverage: 500000.0,
-        total_premium_paid: 25000.0,
-        policy_breakdown: {
-          health_policies: health_count,
-          life_policies: life_count,
-          motor_policies: motor_count,
-          other_policies: other_count
+        total_orders: total_orders,
+        total_bookings: total_bookings,
+        total_spent: total_spent.to_f,
+        member_since: customer.created_at,
+        recent_activity: {
+          last_order_date: customer.orders.maximum(:created_at),
+          last_booking_date: customer.bookings.maximum(:created_at)
         }
       }
     rescue => e
-      Rails.logger.error "Portfolio calculation error: #{e.message}"
-      # Return basic mock data if there's any error
+      Rails.logger.error "Customer stats calculation error: #{e.message}"
+      # Return basic data if there's any error
       {
-        total_policies: 0,
-        upcoming_installments: 0,
-        renewal_policies: 0,
-        total_coverage: 0.0,
-        total_premium_paid: 0.0,
-        policy_breakdown: {
-          health_policies: 0,
-          life_policies: 0,
-          motor_policies: 0,
-          other_policies: 0
+        total_orders: 0,
+        total_bookings: 0,
+        total_spent: 0.0,
+        member_since: customer.created_at,
+        recent_activity: {
+          last_order_date: nil,
+          last_booking_date: nil
         }
       }
     end
@@ -1227,87 +1208,25 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
   end
 
   def count_upcoming_installments(customer)
-    count = 0
-
-    # Health insurance installments within 2 months
-    health_policies = HealthInsurance.where(customer_id: customer.id)
-    health_policies.each do |policy|
-      next unless policy.policy_end_date.present? && policy.policy_start_date.present?
-      next unless policy.total_premium.present? && policy.total_premium > 0
-      next if ['single', 'one time', 'lump sum'].include?(policy.payment_mode&.downcase)
-
-      autopay_start = policy.respond_to?(:installment_autopay_start_date) && policy.installment_autopay_start_date.present? ?
-                      policy.installment_autopay_start_date : policy.policy_start_date
-
-      if autopay_start.present? && policy.payment_mode.present?
-        next_installment = calculate_next_installment_date(autopay_start, policy.payment_mode)
-        # Find next future installment
-        safety_counter = 0
-        while next_installment && next_installment < Date.current && safety_counter < 10
-          next_installment = calculate_next_installment_date(next_installment, policy.payment_mode)
-          safety_counter += 1
-        end
-
-        if next_installment && next_installment <= 60.days.from_now
-          count += 1
-        end
-      end
+    # For ecommerce, count upcoming subscription deliveries
+    begin
+      customer.milk_subscriptions.where(status: 'active')
+                                  .where('start_date <= ? AND (end_date IS NULL OR end_date >= ?)',
+                                         Date.current, Date.current).count
+    rescue
+      0
     end
-
-    # Life insurance installments within 2 months
-    life_policies = LifeInsurance.where(customer_id: customer.id)
-    life_policies.each do |policy|
-      next unless policy.policy_end_date.present? && policy.policy_start_date.present?
-      next unless policy.total_premium.present? && policy.total_premium > 0
-      next if ['single', 'one time', 'lump sum'].include?(policy.payment_mode&.downcase)
-
-      autopay_start = policy.respond_to?(:installment_autopay_start_date) && policy.installment_autopay_start_date.present? ?
-                      policy.installment_autopay_start_date : policy.policy_start_date
-
-      if autopay_start.present? && policy.payment_mode.present?
-        next_installment = calculate_next_installment_date(autopay_start, policy.payment_mode)
-        # Find next future installment
-        safety_counter = 0
-        while next_installment && next_installment < Date.current && safety_counter < 10
-          next_installment = calculate_next_installment_date(next_installment, policy.payment_mode)
-          safety_counter += 1
-        end
-
-        if next_installment && next_installment <= 60.days.from_now
-          count += 1
-        end
-      end
-    end
-
-    count
   end
 
   def count_upcoming_renewals(customer)
-    count = 0
-
-    # Health insurance renewals within 2 months
-    health_policies = HealthInsurance.where(customer_id: customer.id)
-                                    .where('policy_end_date BETWEEN ? AND ?', Date.current, 2.months.from_now)
-                                    .where.not(policy_end_date: nil)
-    count += health_policies.count
-
-    # Life insurance renewals within 2 months
-    life_policies = LifeInsurance.where(customer_id: customer.id)
-                                .where('policy_end_date BETWEEN ? AND ?', Date.current, 2.months.from_now)
-                                .where.not(policy_end_date: nil)
-    count += life_policies.count
-
-    # Motor insurance renewals within 2 months
+    # For ecommerce, count subscriptions ending soon (requiring renewal)
     begin
-      motor_policies = MotorInsurance.where(customer_id: customer.id)
-                                    .where('policy_end_date BETWEEN ? AND ?', Date.current, 2.months.from_now)
-                                    .where.not(policy_end_date: nil)
-      count += motor_policies.count
+      customer.milk_subscriptions.where(status: 'active')
+                                  .where('end_date BETWEEN ? AND ?', Date.current, 2.months.from_now)
+                                  .where.not(end_date: nil).count
     rescue
-      # Skip motor if table doesn't exist
+      0
     end
-
-    count
   end
 
   def get_delivery_person_statistics(delivery_person)

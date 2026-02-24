@@ -249,13 +249,13 @@ module Api
             bookings = []
           end
 
-          # Also get subscription deliveries for today
+          # Also get subscription deliveries for today (including completed ones)
           begin
             if defined?(MilkDeliveryTask) && MilkDeliveryTask.column_names.include?('delivery_person_id')
               subscription_tasks = MilkDeliveryTask.where(
                 delivery_person_id: current_delivery_person_id,
                 delivery_date: Date.current
-              ).where.not(status: 'completed')
+              )
             else
               subscription_tasks = []
             end
@@ -425,7 +425,7 @@ module Api
           if task.is_a?(Booking)
             task.update(status: 'out_for_delivery')
           else
-            task.update(status: 'in_progress')
+            task.update(status: 'assigned')
           end
         end
 
@@ -468,11 +468,14 @@ module Api
           # Get next pending task for the delivery person
           next_task = Booking.where(
             delivery_person_id: current_delivery_person_id,
-            delivery_date: Date.current,
             status: ['ordered_and_delivery_pending', 'confirmed']
-          ).first
+          ).where('DATE(created_at) = ?', Date.current).first
 
-          next_task&.id
+          next_task&.id || MilkDeliveryTask.where(
+            delivery_person_id: current_delivery_person_id,
+            delivery_date: Date.current,
+            status: 'pending'
+          ).first&.id
         end
 
         def update_delivery_location(latitude, longitude)

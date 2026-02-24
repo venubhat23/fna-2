@@ -300,6 +300,23 @@ class Booking < ApplicationRecord
     end
   end
 
+  def payment_method_display
+    # Get the raw value from database
+    raw_value = read_attribute('payment_method')
+    return 'Unknown' if raw_value.blank?
+
+    # Handle both string keys and numeric values since there's a mismatch
+    case raw_value.to_s
+    when 'cash', '0' then 'Cash'
+    when 'card', '1' then 'Card'
+    when 'upi', '2' then 'UPI'
+    when 'bank_transfer', '3' then 'Bank Transfer'
+    when 'online', '4' then 'Online'
+    when 'cod', '5' then 'COD'
+    else raw_value.to_s.humanize
+    end
+  end
+
   # Method to provide booking_items_count functionality
   def booking_items_count
     booking_items.size
