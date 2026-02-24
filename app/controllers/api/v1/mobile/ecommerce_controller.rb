@@ -1,5 +1,5 @@
 class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
-  before_action :authenticate_customer!, except: [:products, :banners]
+  before_action :authenticate_customer!, except: [:products, :banners, :featured_products]
   before_action :set_category, only: [:category_details, :category_products]
   before_action :set_product, only: [:product_details, :check_delivery]
 
@@ -471,17 +471,31 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
     profile_data = {
       id: customer.id,
-      customer_type: customer.customer_type,
+      customer_type: "individual", # Default customer type since column doesn't exist
       first_name: customer.first_name,
       last_name: customer.last_name,
+      middle_name: customer.middle_name,
       full_name: customer.display_name,
       email: customer.email,
       mobile: customer.mobile,
       whatsapp_number: customer.whatsapp_number,
       address: customer.address,
-      city: customer.city,
-      state: customer.state,
-      pincode: customer.pincode,
+      gender: customer.gender,
+      marital_status: customer.marital_status,
+      birth_date: customer.birth_date,
+      pan_no: customer.pan_no,
+      gst_no: customer.gst_no,
+      company_name: customer.company_name,
+      occupation: customer.occupation,
+      annual_income: customer.annual_income,
+      nationality: customer.nationality,
+      blood_group: customer.blood_group,
+      emergency_contact_name: customer.emergency_contact_name,
+      emergency_contact_number: customer.emergency_contact_number,
+      preferred_language: customer.preferred_language,
+      longitude: customer.longitude,
+      latitude: customer.latitude,
+      notes: customer.notes,
       status: customer.status,
       statistics: {
         total_orders: total_orders,
@@ -504,13 +518,42 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # PUT /api/v1/mobile/ecommerce/profile
   def update_profile
+    Rails.logger.info "=== UPDATE PROFILE START ==="
+    Rails.logger.info "Current user: #{@current_user.inspect}"
+    Rails.logger.info "Params received: #{params.except(:controller, :action).inspect}"
+
     customer = Customer.find_by(email: @current_user&.email) if @current_user
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
-    profile_params = params.require(:customer).permit(
-      :first_name, :last_name, :mobile, :whatsapp_number,
-      :address, :city, :state, :pincode
-    )
+    Rails.logger.info "Customer found: #{customer.email}"
+
+    # Handle both 'customer' and 'ecommerce' parameter formats for flexibility
+    profile_params = if params[:customer].present?
+      params.require(:customer).permit(
+        :first_name, :last_name, :middle_name, :mobile, :whatsapp_number,
+        :address, :gender, :marital_status, :birth_date, :pan_no, :gst_no,
+        :company_name, :occupation, :annual_income, :nationality, :blood_group,
+        :emergency_contact_name, :emergency_contact_number, :preferred_language,
+        :longitude, :latitude, :notes
+      )
+    elsif params[:ecommerce].present?
+      params.require(:ecommerce).permit(
+        :first_name, :last_name, :middle_name, :mobile, :whatsapp_number,
+        :address, :gender, :marital_status, :birth_date, :pan_no, :gst_no,
+        :company_name, :occupation, :annual_income, :nationality, :blood_group,
+        :emergency_contact_name, :emergency_contact_number, :preferred_language,
+        :longitude, :latitude, :notes
+      )
+    else
+      # Handle direct parameters (backwards compatibility)
+      params.permit(
+        :first_name, :last_name, :middle_name, :mobile, :whatsapp_number,
+        :address, :gender, :marital_status, :birth_date, :pan_no, :gst_no,
+        :company_name, :occupation, :annual_income, :nationality, :blood_group,
+        :emergency_contact_name, :emergency_contact_number, :preferred_language,
+        :longitude, :latitude, :notes
+      )
+    end
 
     if customer.update(profile_params)
       json_response({
@@ -519,14 +562,29 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
           id: customer.id,
           first_name: customer.first_name,
           last_name: customer.last_name,
+          middle_name: customer.middle_name,
           full_name: customer.display_name,
           email: customer.email,
           mobile: customer.mobile,
           whatsapp_number: customer.whatsapp_number,
           address: customer.address,
-          city: customer.city,
-          state: customer.state,
-          pincode: customer.pincode
+          gender: customer.gender,
+          marital_status: customer.marital_status,
+          birth_date: customer.birth_date,
+          pan_no: customer.pan_no,
+          gst_no: customer.gst_no,
+          company_name: customer.company_name,
+          occupation: customer.occupation,
+          annual_income: customer.annual_income,
+          nationality: customer.nationality,
+          blood_group: customer.blood_group,
+          emergency_contact_name: customer.emergency_contact_name,
+          emergency_contact_number: customer.emergency_contact_number,
+          preferred_language: customer.preferred_language,
+          longitude: customer.longitude,
+          latitude: customer.latitude,
+          notes: customer.notes,
+          status: customer.status
         },
         message: 'Profile updated successfully'
       })
@@ -648,89 +706,41 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/featured_products
   def featured_products
-    page = params[:page]&.to_i || 1
-    per_page = params[:per_page]&.to_i || 20
-    per_page = [per_page, 50].min
+    # Get top 5 most recent products that came to market (based on created_at)
+    limit = params[:limit]&.to_i || 5
+    limit = [limit, 10].min # Maximum 10 products
 
     begin
-      # Get featured products (you may need to add a featured flag to products)
       @products = Product.active.in_stock
+                          .order(created_at: :desc)
+                          .limit(limit)
 
-      # If there's no featured flag, get high-rated or recent products
-      @products = @products.joins(:product_reviews)
-                          .group('products.id')
-                          .having('AVG(product_reviews.rating) >= ?', 4.0)
-                          .order('AVG(product_reviews.rating) DESC')
-
-      # Since we're using GROUP BY, count returns a Hash
-      # We need to get the actual count of unique products
-      total_count = @products.count
-      if total_count.is_a?(Hash)
-        total_count = total_count.keys.count
-      end
-
-      @products = @products.offset((page - 1) * per_page).limit(per_page)
       products_data = @products.map { |product| format_product_data(product) }
 
       json_response({
         success: true,
         data: {
           products: products_data,
-          pagination: {
-            current_page: page,
-            per_page: per_page,
-            total_count: total_count,
-            total_pages: (total_count.to_f / per_page).ceil,
-            has_next_page: page < (total_count.to_f / per_page).ceil,
-            has_prev_page: page > 1
-          }
+          total_count: products_data.length,
+          limit: limit,
+          message_info: "Showing #{products_data.length} most recent products that came to market"
         },
-        message: 'Featured products retrieved successfully'
+        message: "Top #{products_data.length} recent products retrieved successfully"
       })
     rescue => e
       Rails.logger.error "Featured Products API Error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
 
-      # Fallback to recent products if featured products query fails
-      begin
-        @products = Product.active.in_stock.recent.limit(per_page)
-        products_data = @products.map { |product| format_product_data(product) }
-        total_count = Product.active.in_stock.count
-
-        json_response({
-          success: true,
-          data: {
-            products: products_data,
-            pagination: {
-              current_page: page,
-              per_page: per_page,
-              total_count: [total_count, per_page].min,
-              total_pages: 1,
-              has_next_page: false,
-              has_prev_page: false
-            }
-          },
-          message: 'Recent products retrieved successfully (fallback)'
-        })
-      rescue => fallback_error
-        Rails.logger.error "Featured Products Fallback Error: #{fallback_error.message}"
-
-        json_response({
-          success: false,
-          message: 'Unable to retrieve featured products',
-          data: {
-            products: [],
-            pagination: {
-              current_page: page,
-              per_page: per_page,
-              total_count: 0,
-              total_pages: 0,
-              has_next_page: false,
-              has_prev_page: false
-            }
-          }
-        }, :internal_server_error)
-      end
+      json_response({
+        success: false,
+        message: 'Unable to retrieve featured products',
+        error: e.message,
+        data: {
+          products: [],
+          total_count: 0,
+          limit: limit
+        }
+      }, :internal_server_error)
     end
   end
 
@@ -1238,7 +1248,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     }
 
     update_params[:address] = address if address.present?
-    update_params[:pincode] = pincode if pincode.present?
+    # Note: Customer model doesn't have pincode column, so we don't store it
 
     if customer.update(update_params)
       json_response({
@@ -1248,7 +1258,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
           latitude: customer.latitude.to_f,
           longitude: customer.longitude.to_f,
           address: customer.address,
-          pincode: customer.pincode,
+          pincode: pincode, # Return the provided pincode parameter
           location_saved_at: customer.location_obtained_at
         },
         message: 'Location saved successfully'
