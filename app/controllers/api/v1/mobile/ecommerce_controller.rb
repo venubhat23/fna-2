@@ -279,7 +279,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         data: {
           unavailable_products: unavailable_products,
           available_products: available_products,
-          pincode_info: pincode.present? ? pincode_validation : nil,
+          # pincode_info: pincode.present? ? pincode_validation : nil,
+          pincode_info: nil,
           location_info: {
             pincode: pincode,
             latitude: latitude,
