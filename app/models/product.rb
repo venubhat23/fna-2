@@ -18,7 +18,8 @@ class Product < ApplicationRecord
     ['Bottle', 'Bottle'],
     ['Box', 'Box'],
     ['Liter', 'Liter'],
-    ['Piece', 'Piece']
+    ['Piece', 'Piece'],
+    ['Gram', 'Gram']
   ].freeze
 
   belongs_to :category
