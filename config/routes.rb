@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  # Vendor invoice public view
+  get '/vendor_invoice/:token', to: 'vendor_invoices#public_view', as: 'vendor_invoice_public'
   # Product Reviews
   resources :products, only: [:show] do
     resources :product_reviews, only: [:create, :update, :destroy] do
@@ -207,6 +209,7 @@ Rails.application.routes.draw do
       collection do
         post :generate_invoice
         post :generate_bulk_invoices
+        post :bulk_mark_as_paid
         get :customers
         get :delivery_persons
         get :customers_by_delivery_person
@@ -385,9 +388,12 @@ Rails.application.routes.draw do
         get :complete_purchase
         patch :complete_purchase
         post :complete_purchase
+        post :generate_invoice
+        patch :mark_as_paid
       end
       collection do
         get :batch_inventory
+        post :bulk_mark_as_paid
       end
     end
 
@@ -816,6 +822,9 @@ Rails.application.routes.draw do
         end
       end
     end
+
+    # Business Settings
+    resource :business_settings, only: [:show, :edit, :update]
 
   end
 

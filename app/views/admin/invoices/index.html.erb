@@ -139,6 +139,17 @@
         </small>
       </div>
       <div class="d-flex align-items-center gap-2">
+        <!-- Bulk Actions -->
+        <div id="bulkActions" style="display: none;" class="me-3">
+          <button id="bulkMarkPaidBtn" class="btn btn-success btn-sm" onclick="markSelectedAsPaid()">
+            <i class="bi bi-check-circle me-1"></i>
+            Mark as Paid (<span id="selectedCount">0</span>)
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+            <i class="bi bi-x me-1"></i>
+            Clear
+          </button>
+        </div>
         <small class="text-muted">
           Total: <%= number_with_delimiter(@stats[:total_invoices]) %> invoices
         </small>
@@ -151,6 +162,12 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
+              <th class="border-0 fw-semibold" style="width: 50px;">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                  <label class="form-check-label" for="selectAll"></label>
+                </div>
+              </th>
               <th class="border-0 fw-semibold">Invoice #</th>
               <th class="border-0 fw-semibold">Customer</th>
               <th class="border-0 fw-semibold">Amount</th>
@@ -162,6 +179,18 @@
           <tbody>
             <% @invoices.each do |invoice| %>
               <tr>
+                <td>
+                  <% unless invoice.payment_status == 'fully_paid' %>
+                    <div class="form-check">
+                      <input class="form-check-input invoice-checkbox" type="checkbox"
+                             value="<%= invoice.id %>"
+                             id="invoice_<%= invoice.id %>"
+                             onchange="updateBulkActions()"
+                             data-invoice-id="<%= invoice.id %>">
+                      <label class="form-check-label" for="invoice_<%= invoice.id %>"></label>
+                    </div>
+                  <% end %>
+                </td>
                 <td class="fw-medium text-primary">
                   <%= link_to invoice.invoice_number, admin_invoice_path(invoice),
                              class: "text-decoration-none fw-medium" %>
@@ -201,49 +230,46 @@
                   </div>
                 </td>
                 <td>
-                  <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                           data-bs-toggle="dropdown">
-                      Actions
-                    </button>
-                    <ul class="dropdown-menu">
-                      <li>
-                        <%= link_to admin_invoice_path(invoice), class: "dropdown-item" do %>
-                          <i class="bi bi-eye me-2"></i>View Invoice
-                        <% end %>
-                      </li>
-                      <li>
-                        <%= link_to edit_admin_invoice_path(invoice), class: "dropdown-item" do %>
-                          <i class="bi bi-pencil-square me-2"></i>Edit Invoice
-                        <% end %>
-                      </li>
-                      <li><hr class="dropdown-divider"></li>
-                      <% unless invoice.payment_status == 'fully_paid' %>
-                        <li>
-                          <%= link_to mark_as_paid_admin_invoice_path(invoice), method: :patch,
-                                     class: "dropdown-item",
-                                     data: { confirm: "Mark this invoice as paid?" } do %>
-                            <i class="bi bi-check-circle me-2"></i>Mark as Paid
-                          <% end %>
-                        </li>
+                  <div class="d-flex gap-1">
+                    <%= link_to admin_invoice_path(invoice), class: "btn btn-sm btn-outline-primary",
+                               title: "View Invoice", data: { bs_toggle: "tooltip" } do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    <%= link_to edit_admin_invoice_path(invoice), class: "btn btn-sm btn-outline-warning",
+                               title: "Edit Invoice", data: { bs_toggle: "tooltip" } do %>
+                      <i class="bi bi-pencil-square"></i>
+                    <% end %>
+                    <% unless invoice.payment_status == 'fully_paid' %>
+                      <%= button_to mark_as_paid_admin_invoice_path(invoice),
+                                    method: :patch,
+                                    class: "btn btn-sm btn-outline-success",
+                                    title: "Mark as Paid",
+                                    form: { style: "display: inline;" },
+                                    data: {
+                                      bs_toggle: "tooltip",
+                                      confirm: "Mark this invoice as paid?"
+                                    } do %>
+                        <i class="bi bi-check-circle"></i>
                       <% end %>
-                      <% if respond_to?(:download_pdf_admin_invoice_path) %>
-                        <li>
-                          <%= link_to download_pdf_admin_invoice_path(invoice),
-                                     class: "dropdown-item", target: "_blank" do %>
-                            <i class="bi bi-download me-2"></i>Download PDF
-                          <% end %>
-                        </li>
+                    <% end %>
+                    <% if respond_to?(:download_pdf_admin_invoice_path) %>
+                      <%= link_to download_pdf_admin_invoice_path(invoice),
+                                 class: "btn btn-sm btn-outline-info", target: "_blank",
+                                 title: "Download PDF", data: { bs_toggle: "tooltip" } do %>
+                        <i class="bi bi-download"></i>
                       <% end %>
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <%= link_to admin_invoice_path(invoice), method: :delete,
-                                   class: "dropdown-item text-danger",
-                                   data: { confirm: "Are you sure you want to delete this invoice? This action cannot be undone." } do %>
-                          <i class="bi bi-trash me-2"></i>Delete Invoice
-                        <% end %>
-                      </li>
-                    </ul>
+                    <% end %>
+                    <%= button_to admin_invoice_path(invoice),
+                                  method: :delete,
+                                  class: "btn btn-sm btn-outline-danger",
+                                  title: "Delete Invoice",
+                                  form: { style: "display: inline;" },
+                                  data: {
+                                    bs_toggle: "tooltip",
+                                    confirm: "Are you sure you want to delete this invoice? This action cannot be undone."
+                                  } do %>
+                      <i class="bi bi-trash"></i>
+                    <% end %>
                   </div>
                 </td>
               </tr>
@@ -935,6 +961,11 @@ document.addEventListener('keydown', function(e) {
 
 // Enhanced search functionality
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Bootstrap tooltips for action buttons
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
   const searchForm = document.querySelector('.search-form');
   const searchInput = document.getElementById('searchInput');
   let searchTimeout;
@@ -1071,6 +1102,132 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.setAttribute('title', 'Tip: Press Ctrl+K to quickly focus search');
   }
 });
+
+// Bulk Actions for Invoice Payment
+function toggleSelectAll() {
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+
+  invoiceCheckboxes.forEach(checkbox => {
+    checkbox.checked = selectAllCheckbox.checked;
+  });
+
+  updateBulkActions();
+}
+
+function updateBulkActions() {
+  const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
+  const bulkActions = document.getElementById('bulkActions');
+  const selectedCount = document.getElementById('selectedCount');
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const totalCheckboxes = document.querySelectorAll('.invoice-checkbox');
+
+  // Update count and show/hide bulk actions
+  if (selectedCheckboxes.length > 0) {
+    bulkActions.style.display = 'block';
+    selectedCount.textContent = selectedCheckboxes.length;
+  } else {
+    bulkActions.style.display = 'none';
+  }
+
+  // Update select all checkbox state
+  if (selectedCheckboxes.length === totalCheckboxes.length && totalCheckboxes.length > 0) {
+    selectAllCheckbox.checked = true;
+    selectAllCheckbox.indeterminate = false;
+  } else if (selectedCheckboxes.length > 0) {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = true;
+  } else {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  }
+}
+
+function clearSelection() {
+  const checkboxes = document.querySelectorAll('.invoice-checkbox');
+  const selectAllCheckbox = document.getElementById('selectAll');
+
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  selectAllCheckbox.checked = false;
+  selectAllCheckbox.indeterminate = false;
+
+  updateBulkActions();
+}
+
+function markSelectedAsPaid() {
+  const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
+  const invoiceIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+  if (invoiceIds.length === 0) {
+    alert('Please select at least one invoice to mark as paid.');
+    return;
+  }
+
+  const confirmMessage = `Are you sure you want to mark ${invoiceIds.length} invoice(s) as paid?`;
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  // Disable the button and show loading
+  const bulkMarkPaidBtn = document.getElementById('bulkMarkPaidBtn');
+  const originalText = bulkMarkPaidBtn.innerHTML;
+  bulkMarkPaidBtn.disabled = true;
+  bulkMarkPaidBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Processing...';
+
+  // Send AJAX request
+  fetch('/admin/invoices/bulk_mark_as_paid', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    },
+    body: JSON.stringify({
+      invoice_ids: invoiceIds
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Show success message
+      const successMessage = `Successfully marked ${data.updated_count} invoice(s) as paid!`;
+
+      // Create a temporary success alert
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+      alert.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+      alert.innerHTML = `
+        <i class="bi bi-check-circle me-2"></i>${successMessage}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      document.body.appendChild(alert);
+
+      // Remove alert after 5 seconds
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.parentNode.removeChild(alert);
+        }
+      }, 5000);
+
+      // Reload the page to reflect changes
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
+    } else {
+      alert('Error: ' + (data.error || 'Failed to mark invoices as paid'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while marking invoices as paid. Please try again.');
+  })
+  .finally(() => {
+    // Re-enable button
+    bulkMarkPaidBtn.disabled = false;
+    bulkMarkPaidBtn.innerHTML = originalText;
+  });
+}
 </script>
 
 <style>
@@ -1214,5 +1371,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Action buttons styling */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 0.375rem;
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-sm i {
+  font-size: 0.9rem;
+}
+
+.d-flex.gap-1 {
+  gap: 0.25rem !important;
 }
 </style>

@@ -1,0 +1,144 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Business Settings</h2>
+    <p class="text-muted mb-0">Manage your business information and bank details</p>
+  </div>
+  <div>
+    <%= link_to edit_admin_business_settings_path, class: "btn btn-primary" do %>
+      <i class="bi bi-pencil-square me-1"></i>
+      Edit Settings
+    <% end %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8 col-md-12">
+    <!-- Business Information -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-building me-2"></i>
+          Business Information
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Business Name</label>
+            <div class="form-control-plaintext"><%= @business_settings.business_name || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Mobile</label>
+            <div class="form-control-plaintext"><%= @business_settings.mobile || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Email</label>
+            <div class="form-control-plaintext"><%= @business_settings.email || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">GSTIN</label>
+            <div class="form-control-plaintext"><%= @business_settings.gstin || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">PAN Number</label>
+            <div class="form-control-plaintext"><%= @business_settings.pan_number || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">UPI ID</label>
+            <div class="form-control-plaintext"><%= @business_settings.upi_id || 'Not set' %></div>
+          </div>
+          <div class="col-12 mb-3">
+            <label class="form-label text-muted">Address</label>
+            <div class="form-control-plaintext"><%= @business_settings.address || 'Not set' %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-bank me-2"></i>
+          Bank Details
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Account Holder Name</label>
+            <div class="form-control-plaintext"><%= @business_settings.account_holder_name || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Bank Name</label>
+            <div class="form-control-plaintext"><%= @business_settings.bank_name || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">Account Number</label>
+            <div class="form-control-plaintext"><%= @business_settings.account_number || 'Not set' %></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-muted">IFSC Code</label>
+            <div class="form-control-plaintext"><%= @business_settings.ifsc_code || 'Not set' %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-file-text me-2"></i>
+          Terms and Conditions
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="form-control-plaintext" style="white-space: pre-line; min-height: 100px;">
+          <%= @business_settings.terms_and_conditions || 'Not set' %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4 col-md-12">
+    <!-- Preview Card -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-eye me-2"></i>
+          Invoice Preview
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          These settings will appear on all invoices generated from your system.
+        </div>
+
+        <!-- Preview of how it appears on invoice -->
+        <div class="border rounded p-3 bg-light">
+          <h6 class="text-primary">Bank Details</h6>
+          <div class="small">
+            <div class="d-flex justify-content-between mb-1">
+              <span>Name:</span>
+              <span><%= @business_settings.account_holder_name || 'Company Name' %></span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Bank:</span>
+              <span><%= @business_settings.bank_name || 'Bank Name' %></span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Account:</span>
+              <span><%= @business_settings.account_number || 'Account Number' %></span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>IFSC:</span>
+              <span><%= @business_settings.ifsc_code || 'IFSC CODE' %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

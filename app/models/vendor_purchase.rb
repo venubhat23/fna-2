@@ -4,6 +4,7 @@ class VendorPurchase < ApplicationRecord
   has_many :products, through: :vendor_purchase_items
   has_many :stock_batches, dependent: :destroy
   has_many :vendor_payments, dependent: :destroy
+  has_one :vendor_invoice, dependent: :destroy
 
   validates :purchase_date, presence: true
   validates :paid_amount, numericality: { greater_than_or_equal_to: 0 }

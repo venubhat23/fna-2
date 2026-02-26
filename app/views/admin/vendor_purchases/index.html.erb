@@ -77,6 +77,27 @@
     </div>
   </div>
 
+  <!-- Bulk Actions -->
+  <div class="card mb-3" id="bulk-actions" style="display: none;">
+    <div class="card-body py-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span id="selected-count">0</span> purchases selected
+        </div>
+        <div>
+          <button type="button" class="btn btn-success btn-sm" onclick="bulkMarkAsPaid()">
+            <i class="bi bi-check-circle me-1"></i>
+            Mark as Paid
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+            <i class="bi bi-x me-1"></i>
+            Clear Selection
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Vendor Purchases Table -->
   <div class="card">
     <div class="card-body">
@@ -85,6 +106,9 @@
           <table class="table table-hover">
             <thead class="table-dark">
               <tr>
+                <th width="40">
+                  <input type="checkbox" id="select-all" class="form-check-input" title="Select All">
+                </th>
                 <th>Purchase #</th>
                 <th>Vendor</th>
                 <th>Purchase Date</th>
@@ -92,7 +116,6 @@
                 <th>Total Amount</th>
                 <th>Paid Amount</th>
                 <th>Outstanding</th>
-                <th>Payment Status</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -100,6 +123,11 @@
             <tbody>
               <% @vendor_purchases.each do |purchase| %>
                 <tr>
+                  <td>
+                    <% if purchase.payment_status != 'paid' %>
+                      <input type="checkbox" class="form-check-input purchase-checkbox" value="<%= purchase.id %>" data-purchase-id="<%= purchase.id %>">
+                    <% end %>
+                  </td>
                   <td>
                     <div class="fw-bold"><%= purchase.purchase_number %></div>
                     <div class="small text-muted">ID: <%= purchase.id %></div>
@@ -130,16 +158,16 @@
                     </div>
                   </td>
                   <td class="text-center">
-                    <span class="badge <%= purchase.payment_status_badge_class %> px-3 py-2">
-                      <i class="bi bi-wallet2 me-1"></i>
-                      <%= purchase.payment_status.titleize %>
-                    </span>
-                  </td>
-                  <td class="text-center">
-                    <span class="badge <%= purchase.status_badge_class %> px-3 py-2">
-                      <i class="bi bi-circle-fill me-1" style="font-size: 0.6rem;"></i>
-                      <%= purchase.status.titleize %>
-                    </span>
+                    <div class="d-flex flex-column gap-1">
+                      <span class="badge <%= purchase.status_badge_class %> px-2 py-1">
+                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                        <%= purchase.status.titleize %>
+                      </span>
+                      <span class="badge <%= purchase.payment_status_badge_class %> px-2 py-1">
+                        <i class="bi bi-wallet2 me-1" style="font-size: 0.7rem;"></i>
+                        <%= purchase.payment_status.titleize %>
+                      </span>
+                    </div>
                   </td>
                   <td>
                     <div class="btn-group btn-group-sm" role="group">
@@ -160,6 +188,16 @@
                       <% if purchase.can_be_edited? %>
                         <%= link_to edit_admin_vendor_purchase_path(purchase), class: "btn btn-outline-warning btn-sm", title: "Edit" do %>
                           <i class="bi bi-pencil"></i>
+                        <% end %>
+                      <% end %>
+
+                      <% if purchase.payment_status != 'paid' %>
+                        <%= link_to mark_as_paid_admin_vendor_purchase_path(purchase),
+                            method: :patch,
+                            confirm: "Mark this purchase as fully paid?",
+                            class: "btn btn-outline-success btn-sm",
+                            title: "Mark as Paid" do %>
+                          <i class="bi bi-check2-circle"></i>
                         <% end %>
                       <% end %>
 
@@ -318,5 +356,120 @@ function showNotification(message, type = 'info') {
       notification.parentNode.removeChild(notification);
     }
   }, 5000);
+}
+
+// Bulk selection functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAllCheckbox = document.getElementById('select-all');
+  const purchaseCheckboxes = document.querySelectorAll('.purchase-checkbox');
+  const bulkActionsCard = document.getElementById('bulk-actions');
+  const selectedCountSpan = document.getElementById('selected-count');
+
+  // Select/Deselect all functionality
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      purchaseCheckboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+      });
+      updateBulkActionsVisibility();
+    });
+  }
+
+  // Individual checkbox change
+  purchaseCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      updateSelectAllState();
+      updateBulkActionsVisibility();
+    });
+  });
+
+  function updateSelectAllState() {
+    const checkedBoxes = document.querySelectorAll('.purchase-checkbox:checked');
+    const totalBoxes = purchaseCheckboxes.length;
+
+    if (selectAllCheckbox) {
+      if (checkedBoxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+      } else if (checkedBoxes.length === totalBoxes) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+      } else {
+        selectAllCheckbox.indeterminate = true;
+        selectAllCheckbox.checked = false;
+      }
+    }
+  }
+
+  function updateBulkActionsVisibility() {
+    const checkedBoxes = document.querySelectorAll('.purchase-checkbox:checked');
+
+    if (checkedBoxes.length > 0) {
+      bulkActionsCard.style.display = 'block';
+      selectedCountSpan.textContent = checkedBoxes.length;
+    } else {
+      bulkActionsCard.style.display = 'none';
+    }
+  }
+});
+
+function bulkMarkAsPaid() {
+  const selectedPurchases = Array.from(document.querySelectorAll('.purchase-checkbox:checked')).map(cb => cb.value);
+
+  if (selectedPurchases.length === 0) {
+    showNotification('Please select purchases to mark as paid', 'error');
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to mark ${selectedPurchases.length} purchase(s) as paid?`)) {
+    return;
+  }
+
+  // Disable button and show loading
+  const button = event.target;
+  const originalContent = button.innerHTML;
+  button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+  button.disabled = true;
+
+  fetch('/admin/vendor_purchases/bulk_mark_as_paid', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    },
+    body: JSON.stringify({
+      purchase_ids: selectedPurchases
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification(data.message || `Successfully marked ${data.updated_count} purchases as paid`, 'success');
+      // Reload the page to show updated statuses
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      showNotification('Error: ' + (data.error || 'Unknown error occurred'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('Error marking purchases as paid. Please try again.', 'error');
+  })
+  .finally(() => {
+    // Restore button state
+    button.innerHTML = originalContent;
+    button.disabled = false;
+  });
+}
+
+function clearSelection() {
+  document.querySelectorAll('.purchase-checkbox:checked').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  document.getElementById('select-all').checked = false;
+  document.getElementById('select-all').indeterminate = false;
+  document.getElementById('bulk-actions').style.display = 'none';
 }
 </script>

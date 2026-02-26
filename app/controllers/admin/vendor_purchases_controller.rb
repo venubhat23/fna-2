@@ -1,6 +1,6 @@
 class Admin::VendorPurchasesController < Admin::ApplicationController
   before_action :authenticate_user!
-  before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase]
+  before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid]
   before_action :set_vendors_and_products, only: [:new, :edit, :create, :update]
   layout 'application'
 
@@ -89,6 +89,117 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
         format.html { redirect_to admin_vendor_purchase_path(@vendor_purchase), alert: 'Failed to complete purchase.' }
         format.json { render json: { success: false, message: 'Failed to complete purchase.' } }
       end
+    end
+  end
+
+  def mark_as_paid
+    # Check if purchase can be marked as paid
+    if @vendor_purchase.payment_status == 'paid'
+      respond_to do |format|
+        format.html { redirect_to admin_vendor_purchases_path, alert: 'Purchase is already fully paid.' }
+        format.json { render json: { success: false, message: 'Purchase is already fully paid.' } }
+      end
+      return
+    end
+
+    # Mark as paid by setting paid_amount to total_amount
+    if @vendor_purchase.update(paid_amount: @vendor_purchase.total_amount)
+      respond_to do |format|
+        format.html { redirect_to admin_vendor_purchases_path, notice: 'Purchase marked as fully paid successfully.' }
+        format.json { render json: { success: true, message: 'Purchase marked as fully paid successfully.' } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to admin_vendor_purchases_path, alert: 'Failed to mark purchase as paid.' }
+        format.json { render json: { success: false, message: 'Failed to mark purchase as paid.' } }
+      end
+    end
+  end
+
+  def bulk_mark_as_paid
+    purchase_ids = params[:purchase_ids]
+
+    if purchase_ids.blank? || !purchase_ids.is_a?(Array)
+      render json: { success: false, error: 'No purchase IDs provided' }, status: :bad_request
+      return
+    end
+
+    # Find purchases that are not already paid
+    purchases_to_update = VendorPurchase.where(id: purchase_ids)
+                                       .where.not(payment_status: 'paid')
+
+    if purchases_to_update.empty?
+      render json: { success: false, error: 'No unpaid purchases found to update' }, status: :bad_request
+      return
+    end
+
+    updated_count = 0
+
+    VendorPurchase.transaction do
+      purchases_to_update.find_each do |purchase|
+        if purchase.update(paid_amount: purchase.total_amount)
+          updated_count += 1
+        end
+      end
+    end
+
+    render json: {
+      success: true,
+      updated_count: updated_count,
+      message: "Successfully marked #{updated_count} purchase(s) as paid"
+    }
+  rescue => e
+    Rails.logger.error "Bulk mark as paid error: #{e.message}"
+    render json: {
+      success: false,
+      error: "Error marking purchases as paid: #{e.message}"
+    }, status: :internal_server_error
+  end
+
+  def generate_invoice
+    # Check if invoice already exists
+    vendor_invoice = @vendor_purchase.vendor_invoice
+
+    if vendor_invoice.nil?
+      # Create new invoice
+      vendor_invoice = @vendor_purchase.create_vendor_invoice!(
+        status: :sent,
+        notes: "Invoice generated for vendor purchase ##{@vendor_purchase.purchase_number}"
+      )
+    end
+
+    # Generate the public URL
+    invoice_url = vendor_invoice.public_url
+
+    respond_to do |format|
+      format.json {
+        render json: {
+          success: true,
+          message: 'Invoice generated successfully',
+          invoice_url: invoice_url,
+          invoice_number: vendor_invoice.invoice_number,
+          purchase_number: @vendor_purchase.purchase_number,
+          vendor_name: vendor_invoice.vendor_name
+        }
+      }
+      format.html {
+        redirect_to invoice_url
+      }
+    end
+  rescue => e
+    Rails.logger.error "Error generating vendor invoice: #{e.message}"
+
+    respond_to do |format|
+      format.json {
+        render json: {
+          success: false,
+          error: e.message
+        }
+      }
+      format.html {
+        redirect_to admin_vendor_purchase_path(@vendor_purchase),
+                    alert: "Error generating invoice: #{e.message}"
+      }
     end
   end
 

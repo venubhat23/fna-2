@@ -1,2 +1,258 @@
-<h1>Admin::VendorPurchases#edit</h1>
-<p>Find me in app/views/admin/vendor_purchases/edit.html.erb</p>
+<% content_for :title, "Edit Vendor Purchase ##{@vendor_purchase.id}" %>
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Edit Vendor Purchase</h2>
+    <p class="text-muted mb-0">
+      Update purchase details for <%= @vendor_purchase.vendor.name if @vendor_purchase.vendor %>
+      <% if @vendor_purchase.purchase_number.present? %>
+        • Purchase #<%= @vendor_purchase.purchase_number %>
+      <% end %>
+    </p>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <!-- Purchase Status Badge -->
+    <% if @vendor_purchase.status %>
+      <span class="badge <%= case @vendor_purchase.status
+                             when 'pending' then 'bg-warning'
+                             when 'completed' then 'bg-success'
+                             when 'cancelled' then 'bg-danger'
+                             else 'bg-secondary'
+                             end %> px-3 py-2">
+        <%= @vendor_purchase.status.humanize %>
+      </span>
+    <% end %>
+
+    <!-- Action Buttons -->
+    <%= link_to admin_vendor_purchase_path(@vendor_purchase), class: "btn btn-outline-info" do %>
+      <i class="bi bi-eye me-1"></i>
+      View Purchase
+    <% end %>
+    <%= link_to admin_vendor_purchases_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back to Purchases
+    <% end %>
+  </div>
+</div>
+
+<!-- Edit Restrictions Alert -->
+<% unless @vendor_purchase.can_be_edited? %>
+  <div class="alert alert-warning d-flex align-items-center mb-4">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <div>
+      <strong>Edit Restrictions:</strong>
+      This purchase cannot be fully edited because it has been completed or cancelled.
+      You can only modify the notes field.
+    </div>
+  </div>
+<% end %>
+
+<!-- Purchase Form Card -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Purchase Details</h5>
+      <div class="d-flex align-items-center gap-3">
+        <small class="text-muted">
+          Created: <%= @vendor_purchase.created_at.strftime('%d %b %Y at %I:%M %p') %>
+        </small>
+        <% if @vendor_purchase.updated_at != @vendor_purchase.created_at %>
+          <small class="text-muted">
+            Last updated: <%= @vendor_purchase.updated_at.strftime('%d %b %Y at %I:%M %p') %>
+          </small>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-4">
+    <%= render 'form' %>
+  </div>
+</div>
+
+<!-- Additional Information for Completed Purchases -->
+<% if @vendor_purchase.status == 'completed' %>
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-transparent border-0">
+      <h5 class="mb-0">Stock & Invoice Information</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">Stock Batches</h6>
+          <% if @vendor_purchase.stock_batches.any? %>
+            <p class="mb-2">
+              <i class="bi bi-check-circle-fill text-success me-2"></i>
+              <%= @vendor_purchase.stock_batches.count %> stock batches created
+            </p>
+            <%= link_to admin_vendor_purchase_batch_inventory_path,
+                       class: "btn btn-sm btn-outline-primary" do %>
+              <i class="bi bi-boxes me-1"></i>
+              View Stock Batches
+            <% end %>
+          <% else %>
+            <p class="text-muted">
+              <i class="bi bi-exclamation-circle me-2"></i>
+              No stock batches found
+            </p>
+          <% end %>
+        </div>
+
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">Vendor Invoice</h6>
+          <% if @vendor_purchase.vendor_invoice %>
+            <p class="mb-2">
+              <i class="bi bi-file-earmark-text-fill text-info me-2"></i>
+              Invoice #<%= @vendor_purchase.vendor_invoice.invoice_number %>
+            </p>
+            <%= link_to @vendor_purchase.vendor_invoice.public_url,
+                       target: "_blank",
+                       class: "btn btn-sm btn-outline-info" do %>
+              <i class="bi bi-eye me-1"></i>
+              View Invoice
+            <% end %>
+          <% else %>
+            <p class="text-muted mb-2">
+              <i class="bi bi-exclamation-circle me-2"></i>
+              No invoice generated yet
+            </p>
+            <%= button_to generate_invoice_admin_vendor_purchase_path(@vendor_purchase),
+                         method: :patch,
+                         class: "btn btn-sm btn-outline-success",
+                         form: { style: "display: inline;" },
+                         data: { confirm: "Generate invoice for this purchase?" } do %>
+              <i class="bi bi-file-earmark-plus me-1"></i>
+              Generate Invoice
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Quick Actions for Pending Purchases -->
+<% if @vendor_purchase.status == 'pending' %>
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-transparent border-0">
+      <h5 class="mb-0">Quick Actions</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="text-success mb-2">Complete Purchase</h6>
+          <p class="small text-muted mb-3">Mark this purchase as completed and create stock batches</p>
+          <%= button_to complete_purchase_admin_vendor_purchase_path(@vendor_purchase),
+                       method: :patch,
+                       class: "btn btn-success",
+                       form: { style: "display: inline;" },
+                       data: { confirm: "Mark this purchase as completed? This will create stock batches." } do %>
+            <i class="bi bi-check-circle me-1"></i>
+            Complete Purchase
+          <% end %>
+        </div>
+
+        <div class="col-md-6">
+          <h6 class="text-danger mb-2">Cancel Purchase</h6>
+          <p class="small text-muted mb-3">Cancel and delete this purchase (cannot be undone)</p>
+          <%= button_to admin_vendor_purchase_path(@vendor_purchase),
+                       method: :delete,
+                       class: "btn btn-outline-danger",
+                       form: { style: "display: inline;" },
+                       data: { confirm: "Are you sure? This will permanently delete this purchase and cannot be undone." } do %>
+            <i class="bi bi-trash me-1"></i>
+            Cancel & Delete
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<style>
+/* Aligned with existing vendor purchase form styling */
+.card {
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.card-header {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+}
+
+.alert {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Status-specific styling */
+.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.bg-success {
+  background-color: #198754 !important;
+  color: #fff !important;
+}
+
+.bg-danger {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+.bg-secondary {
+  background-color: #6c757d !important;
+  color: #fff !important;
+}
+
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem !important;
+  }
+
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+}
+</style>

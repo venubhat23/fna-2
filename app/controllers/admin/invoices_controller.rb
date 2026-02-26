@@ -75,9 +75,52 @@ class Admin::InvoicesController < Admin::ApplicationController
       paid_at: Time.current
     )
 
-    redirect_to admin_invoice_path(@invoice), notice: 'Invoice marked as paid successfully.'
+    redirect_to admin_invoices_path, notice: 'Invoice marked as paid successfully.'
   rescue => e
-    redirect_to admin_invoice_path(@invoice), alert: "Error marking invoice as paid: #{e.message}"
+    redirect_to admin_invoices_path, alert: "Error marking invoice as paid: #{e.message}"
+  end
+
+  def bulk_mark_as_paid
+    invoice_ids = params[:invoice_ids]
+
+    if invoice_ids.blank? || !invoice_ids.is_a?(Array)
+      render json: { success: false, error: 'No invoice IDs provided' }, status: :bad_request
+      return
+    end
+
+    # Find invoices that are not already paid
+    invoices_to_update = Invoice.where(id: invoice_ids)
+                               .where.not(payment_status: 'fully_paid')
+
+    if invoices_to_update.empty?
+      render json: { success: false, error: 'No unpaid invoices found to update' }, status: :bad_request
+      return
+    end
+
+    updated_count = 0
+
+    Invoice.transaction do
+      invoices_to_update.find_each do |invoice|
+        invoice.update!(
+          payment_status: :fully_paid,
+          status: :paid,
+          paid_at: Time.current
+        )
+        updated_count += 1
+      end
+    end
+
+    render json: {
+      success: true,
+      updated_count: updated_count,
+      message: "Successfully marked #{updated_count} invoice(s) as paid"
+    }
+  rescue => e
+    Rails.logger.error "Bulk mark as paid error: #{e.message}"
+    render json: {
+      success: false,
+      error: "Error marking invoices as paid: #{e.message}"
+    }, status: :internal_server_error
   end
 
   def customers
@@ -98,12 +141,31 @@ class Admin::InvoicesController < Admin::ApplicationController
     delivery_person_id = params[:delivery_person_id]
     if delivery_person_id.present?
       # Find customers who have bookings with this delivery person
-      customer_ids = Booking.where(delivery_person_id: delivery_person_id)
-                           .distinct
-                           .pluck(:customer_id)
-                           .compact
+      booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id)
+                                   .distinct
+                                   .pluck(:customer_id)
+                                   .compact
 
-      @customers = Customer.where(id: customer_ids)
+      # Find customers who have subscriptions with this delivery person
+      subscription_customer_ids = []
+      if defined?(MilkSubscription)
+        subscription_customer_ids += MilkSubscription.where(delivery_person_id: delivery_person_id)
+                                                    .distinct
+                                                    .pluck(:customer_id)
+                                                    .compact
+      end
+
+      if defined?(SubscriptionTemplate)
+        subscription_customer_ids += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
+                                                         .distinct
+                                                         .pluck(:customer_id)
+                                                         .compact
+      end
+
+      # Combine all customer IDs from bookings and subscriptions
+      all_customer_ids = (booking_customer_ids + subscription_customer_ids).uniq
+
+      @customers = Customer.where(id: all_customer_ids)
                           .order(:first_name, :last_name)
                           .select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
                           .map { |c| {
@@ -134,12 +196,31 @@ class Admin::InvoicesController < Admin::ApplicationController
                                          .pluck(:customer_id)
                                          .compact
 
+      # Get customers who have subscriptions with the selected delivery person
+      customer_ids_from_subscriptions = []
+      if defined?(MilkSubscription)
+        customer_ids_from_subscriptions += MilkSubscription.where(delivery_person_id: delivery_person_id)
+                                                          .distinct
+                                                          .pluck(:customer_id)
+                                                          .compact
+      end
+
+      if defined?(SubscriptionTemplate)
+        customer_ids_from_subscriptions += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
+                                                               .distinct
+                                                               .pluck(:customer_id)
+                                                               .compact
+      end
+
+      # Combine all customer IDs from bookings and subscriptions
+      all_customer_ids_from_delivery_person = (customer_ids_from_bookings + customer_ids_from_subscriptions).uniq
+
       # If specific customers were also selected, use the intersection
       if customer_ids.present?
-        final_customer_ids = customer_ids_from_bookings & customer_ids.map(&:to_i)
+        final_customer_ids = all_customer_ids_from_delivery_person & customer_ids.map(&:to_i)
         customers = Customer.where(id: final_customer_ids)
       else
-        customers = Customer.where(id: customer_ids_from_bookings)
+        customers = Customer.where(id: all_customer_ids_from_delivery_person)
       end
     else
       customers = Customer.where(id: customer_ids)

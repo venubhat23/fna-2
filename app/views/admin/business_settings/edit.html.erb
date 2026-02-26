@@ -1,0 +1,172 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Edit Business Settings</h2>
+    <p class="text-muted mb-0">Update your business information and bank details</p>
+  </div>
+  <div>
+    <%= link_to admin_business_settings_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i>
+      Back
+    <% end %>
+  </div>
+</div>
+
+<%= form_with model: @business_settings, url: admin_business_settings_path, method: :patch,
+              local: true, data: { turbo: false }, html: { class: "row" } do |form| %>
+
+  <div class="col-lg-8 col-md-12">
+    <!-- Business Information -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-building me-2"></i>
+          Business Information
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <%= form.label :business_name, class: "form-label" %>
+            <%= form.text_field :business_name, value: @business_settings.business_name,
+                               class: "form-control", placeholder: "Enter business name" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :mobile, class: "form-label" %>
+            <%= form.text_field :mobile, value: @business_settings.mobile,
+                               class: "form-control", placeholder: "Enter mobile number" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :email, class: "form-label" %>
+            <%= form.email_field :email, value: @business_settings.email,
+                                class: "form-control", placeholder: "Enter email address" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :gstin, "GSTIN", class: "form-label" %>
+            <%= form.text_field :gstin, value: @business_settings.gstin,
+                               class: "form-control", placeholder: "Enter GSTIN" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :pan_number, "PAN Number", class: "form-label" %>
+            <%= form.text_field :pan_number, value: @business_settings.pan_number,
+                               class: "form-control", placeholder: "Enter PAN number" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :upi_id, "UPI ID", class: "form-label" %>
+            <%= form.text_field :upi_id, value: @business_settings.upi_id,
+                               class: "form-control", placeholder: "example@upi" %>
+          </div>
+          <div class="col-12 mb-3">
+            <%= form.label :address, class: "form-label" %>
+            <%= form.text_area :address, value: @business_settings.address,
+                              class: "form-control", rows: 3, placeholder: "Enter business address" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-bank me-2"></i>
+          Bank Details
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <%= form.label :account_holder_name, class: "form-label" %>
+            <%= form.text_field :account_holder_name, value: @business_settings.account_holder_name,
+                               class: "form-control", placeholder: "Enter account holder name" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :bank_name, class: "form-label" %>
+            <%= form.text_field :bank_name, value: @business_settings.bank_name,
+                               class: "form-control", placeholder: "Enter bank name" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :account_number, class: "form-label" %>
+            <%= form.text_field :account_number, value: @business_settings.account_number,
+                               class: "form-control", placeholder: "Enter account number" %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= form.label :ifsc_code, "IFSC Code", class: "form-label" %>
+            <%= form.text_field :ifsc_code, value: @business_settings.ifsc_code,
+                               class: "form-control", placeholder: "Enter IFSC code" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-file-text me-2"></i>
+          Terms and Conditions
+        </h6>
+      </div>
+      <div class="card-body">
+        <%= form.label :terms_and_conditions, class: "form-label" %>
+        <%= form.text_area :terms_and_conditions, value: @business_settings.terms_and_conditions,
+                          class: "form-control", rows: 6,
+                          placeholder: "Enter terms and conditions that will appear on invoices" %>
+        <div class="form-text">
+          These terms will appear on all generated invoices. You can use multiple lines.
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-end gap-2">
+          <%= link_to "Cancel", admin_business_settings_path, class: "btn btn-secondary" %>
+          <%= form.submit "Save Settings", class: "btn btn-primary" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4 col-md-12">
+    <!-- Help Card -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 text-dark">
+          <i class="bi bi-question-circle me-2"></i>
+          Help & Tips
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <i class="bi bi-lightbulb me-2"></i>
+          <strong>Tips:</strong>
+        </div>
+
+        <ul class="list-unstyled">
+          <li class="mb-3">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <strong>Business Name:</strong> This will appear as your company name on invoices
+          </li>
+          <li class="mb-3">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <strong>Bank Details:</strong> These will be displayed in the bank details section of all invoices
+          </li>
+          <li class="mb-3">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <strong>UPI ID:</strong> Will generate a QR code for payments
+          </li>
+          <li class="mb-3">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <strong>Terms:</strong> Add your payment terms, return policy, etc.
+          </li>
+        </ul>
+
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Note:</strong> Changes will apply to all new invoices generated after saving.
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

@@ -784,19 +784,20 @@
     <div class="bill-ship-section">
       <div class="bill-box">
         <div class="section-title">BILL TO</div>
-        <div class="client-name"><%= @customer&.display_name || @customer&.first_name || 'Customer Name' %></div>
+        <div class="client-name"><%= @invoice.customer_name %></div>
         <div class="client-detail"><%= @customer&.address || 'Address' %></div>
-        <% phone = @customer&.mobile %>
+        <% phone = @invoice.customer_phone || @customer&.mobile %>
         <% if phone.present? %>
           <div class="client-detail">Mobile: <%= phone %></div>
         <% end %>
-        <% if @customer&.email.present? %>
-          <div class="client-detail">Email: <%= @customer.email %></div>
+        <% email = @invoice.customer_email || @customer&.email %>
+        <% if email.present? %>
+          <div class="client-detail">Email: <%= email %></div>
         <% end %>
       </div>
       <div class="ship-box">
         <div class="section-title">SHIP TO</div>
-        <div class="client-name"><%= @customer&.display_name || @customer&.first_name || 'Customer Name' %></div>
+        <div class="client-name"><%= @invoice.customer_name %></div>
         <div class="client-detail"><%= @customer&.address || 'Address' %></div>
       </div>
     </div>
@@ -885,19 +886,19 @@
         <div class="bank-info">
           <div class="bank-row">
             <span class="bank-label">Name:</span>
-            <span><%= @business_settings&.account_holder_name || @business_settings&.business_name || 'Company Name' %></span>
+            <span><%= @business_settings&.account_holder_name.present? ? @business_settings.account_holder_name : (@business_settings&.business_name || 'Company Name') %></span>
           </div>
           <div class="bank-row">
             <span class="bank-label">IFSC Code:</span>
-            <span><%= @business_settings&.ifsc_code || 'IFSC CODE' %></span>
+            <span><%= @business_settings&.ifsc_code.present? ? @business_settings.ifsc_code : 'IFSC CODE' %></span>
           </div>
           <div class="bank-row">
             <span class="bank-label">Account No:</span>
-            <span><%= @business_settings&.account_number || 'Account Number' %></span>
+            <span><%= @business_settings&.account_number.present? ? @business_settings.account_number : 'Account Number' %></span>
           </div>
           <div class="bank-row">
             <span class="bank-label">Bank:</span>
-            <span><%= @business_settings&.bank_name || 'Bank Name' %></span>
+            <span><%= @business_settings&.bank_name.present? ? @business_settings.bank_name : 'Bank Name' %></span>
           </div>
         </div>
 
@@ -1018,6 +1019,7 @@
             <li>Payment is due within 30 days of invoice date.</li>
             <li>Late payments may incur additional charges.</li>
             <li>Please retain this invoice for your records.</li>
+            <li>Invoice generated for booking #<%= @booking&.booking_number || @invoice.invoice_number %></li>
           </ol>
         <% end %>
       </div>
