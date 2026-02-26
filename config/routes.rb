@@ -34,6 +34,9 @@ Rails.application.routes.draw do
   patch '/invoices_public/:id/complete', to: 'public_invoices#complete', as: 'public_invoice_complete'
   delete '/invoices_public/:id', to: 'public_invoices#destroy', as: 'public_invoice_delete'
 
+  # Test route for booking invoices controller
+  get '/test_invoice', to: 'booking_invoices#test'
+
   # Public invoice view (no authentication required)
   get '/invoice/:token', to: 'booking_invoices#public_view', as: 'public_invoice'
   get '/invoice/:token/download', to: 'booking_invoices#public_download_pdf', as: 'public_invoice_download', defaults: { format: :pdf }
@@ -46,6 +49,7 @@ Rails.application.routes.draw do
   get 'dashboard/modern', to: 'dashboard#modern'
   get 'dashboard/dummy', to: 'dashboard#dummy'
   get 'dashboard/stats', to: 'dashboard#stats'
+
 
   # API routes
   namespace :api do
@@ -204,6 +208,8 @@ Rails.application.routes.draw do
         post :generate_invoice
         post :generate_bulk_invoices
         get :customers
+        get :delivery_persons
+        get :customers_by_delivery_person
         post :generate
       end
     end
@@ -270,6 +276,7 @@ Rails.application.routes.draw do
         get :policy_chart
         get :trace_commission
         get :product_selection
+        post :generate_password
       end
       resources :family_members
     end
@@ -544,6 +551,7 @@ Rails.application.routes.draw do
         get :motor_insurances_form
         get :delivery_people_form
         get :products_form
+        get :customer_subscriptions_form
         get :download_template
         post :validate_csv
       end
@@ -557,6 +565,7 @@ Rails.application.routes.draw do
     post 'import/motor_insurances', to: 'imports#motor_insurances'
     post 'import/delivery_people', to: 'imports#delivery_people'
     post 'import/products', to: 'imports#products'
+    post 'import/customer_subscriptions', to: 'imports#customer_subscriptions'
     post 'import/agencies', to: 'imports#agencies'
 
     # E-commerce Management
@@ -937,6 +946,17 @@ Rails.application.routes.draw do
 
     # Notifications
     resources :notifications, only: [:index, :show, :update]
+
+    # Shop functionality
+    get 'shop', to: 'shop#index'
+    get 'shop/category/:id', to: 'shop#category', as: :shop_category
+    get 'shop/product/:id', to: 'shop#product', as: :shop_product
+
+    # Offers
+    get 'offers', to: 'offers#index'
+
+    # Support
+    get 'support', to: 'support#index'
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

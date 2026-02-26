@@ -119,6 +119,8 @@ module ImportService
         validate_delivery_person_row(row, row_number)
       when 'products'
         validate_product_row(row, row_number)
+      when 'customer_subscriptions'
+        validate_customer_subscription_row(row, row_number)
       end
     end
 
@@ -130,9 +132,8 @@ module ImportService
         errors_for_row << "First name is required"
       end
 
-      if row['email'].blank?
-        errors_for_row << "Email is required"
-      elsif !valid_email?(row['email'])
+      # Email validation - now optional
+      if row['email'].present? && !valid_email?(row['email'])
         errors_for_row << "Invalid email format"
       end
 
@@ -250,11 +251,63 @@ module ImportService
       end
     end
 
+    def validate_customer_subscription_row(row, row_number)
+      errors_for_row = []
+
+      # Customer required fields
+      ['first_name', 'mobile'].each do |field|
+        field_value = row["#{field}*"] || row[field]
+        if field_value.blank?
+          errors_for_row << "#{field} is required"
+        end
+      end
+
+      # Email validation
+      email = row['email*'] || row['email']
+      if email.present? && !valid_email?(email)
+        errors_for_row << "Invalid email format"
+      end
+
+      # Mobile validation
+      mobile = row['mobile*'] || row['mobile']
+      if mobile.present? && !valid_mobile?(mobile)
+        errors_for_row << "Invalid mobile number format"
+      end
+
+      # Subscription required fields
+      ['product_id', 'quantity', 'unit', 'start_date', 'end_date'].each do |field|
+        field_value = row["#{field}*"] || row[field]
+        if field_value.blank?
+          errors_for_row << "#{field} is required"
+        end
+      end
+
+      # Quantity validation
+      quantity = row['quantity*'] || row['quantity']
+      if quantity.present? && !valid_decimal?(quantity)
+        errors_for_row << "Invalid quantity format"
+      end
+
+      # Date validation
+      start_date = row['start_date*'] || row['start_date']
+      if start_date.present? && !valid_date?(start_date)
+        errors_for_row << "Invalid start_date format (use YYYY-MM-DD)"
+      end
+
+      end_date = row['end_date*'] || row['end_date']
+      if end_date.present? && !valid_date?(end_date)
+        errors_for_row << "Invalid end_date format (use YYYY-MM-DD)"
+      end
+
+      if errors_for_row.any?
+        @errors << "Row #{row_number}: #{errors_for_row.join(', ')}"
+      end
+    end
+
     def get_expected_headers
       case @import_type
       when 'customers'
-        ['first_name', 'middle_name', 'last_name', 'email', 'mobile',
-         'address', 'whatsapp_number', 'longitude', 'latitude']
+        ['first_name', 'last_name', 'mobile']  # Only truly required fields
       when 'delivery_people'
         ['first_name', 'last_name', 'email', 'mobile', 'vehicle_type', 'vehicle_number',
          'license_number', 'address', 'city', 'state', 'pincode',
@@ -262,6 +315,8 @@ module ImportService
          'bank_name', 'account_no', 'ifsc_code', 'account_holder_name', 'delivery_areas']
       when 'products'
         ['name', 'price', 'stock']  # Only the truly required fields
+      when 'customer_subscriptions'
+        ['first_name', 'mobile', 'product_id', 'quantity', 'unit', 'start_date', 'end_date']  # Required fields for subscription import
       else
         []
       end

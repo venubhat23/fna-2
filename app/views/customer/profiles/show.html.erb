@@ -1,0 +1,487 @@
+<% content_for :title, "My Profile - Dhanvantri Naturals" %>
+
+<style>
+:root {
+  --primary-purple: #8B5DFF;
+  --purple-light: #A983FF;
+  --purple-dark: #7048E8;
+  --purple-gradient: linear-gradient(135deg, #8B5DFF 0%, #A983FF 100%);
+}
+
+.profile-page {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  min-height: 100vh;
+}
+
+.page-header {
+  background: var(--purple-gradient);
+  color: white;
+  padding: 2rem 0;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.profile-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.profile-header {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  padding: 2rem;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--purple-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: white;
+  font-size: 3rem;
+  border: 4px solid white;
+  box-shadow: 0 8px 25px rgba(139, 93, 255, 0.3);
+}
+
+.profile-name {
+  color: var(--purple-dark);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.profile-info {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.quick-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  color: var(--primary-purple);
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: block;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.info-section {
+  padding: 2rem;
+}
+
+.section-title {
+  color: var(--purple-dark);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.section-title i {
+  margin-right: 0.75rem;
+  width: 24px;
+  text-align: center;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-item {
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.info-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(139, 93, 255, 0.1);
+}
+
+.info-label {
+  color: #666;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.info-value {
+  color: var(--purple-dark);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.info-value.empty {
+  color: #999;
+  font-style: italic;
+}
+
+.edit-profile-btn {
+  background: var(--purple-gradient);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.edit-profile-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 93, 255, 0.3);
+  color: white;
+  text-decoration: none;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.action-btn {
+  background: white;
+  border: 2px solid var(--primary-purple);
+  color: var(--primary-purple);
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.action-btn:hover {
+  background: var(--primary-purple);
+  color: white;
+  text-decoration: none;
+}
+
+.action-btn i {
+  margin-right: 0.5rem;
+}
+
+.tabs-nav {
+  display: flex;
+  background: #f8f9ff;
+  border-radius: 10px;
+  padding: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #666;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--purple-gradient);
+  color: white;
+  box-shadow: 0 2px 10px rgba(139, 93, 255, 0.3);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+</style>
+
+<div class="profile-page">
+  <!-- Page Header -->
+  <div class="page-header text-center">
+    <div class="container">
+      <h1 class="page-title">
+        <i class="fas fa-user-circle me-3"></i>
+        My Profile
+      </h1>
+      <p class="mb-0 opacity-75">Manage your personal information and preferences</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Profile Header Card -->
+    <div class="profile-card">
+      <div class="profile-header">
+        <div class="profile-avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <h2 class="profile-name"><%= @customer.display_name %></h2>
+        <div class="profile-info">
+          <p class="mb-1">
+            <i class="fas fa-envelope me-2"></i>
+            <%= @customer.email %>
+          </p>
+          <p class="mb-0">
+            <i class="fas fa-phone me-2"></i>
+            <%= @customer.mobile.present? ? @customer.mobile : 'Not provided' %>
+          </p>
+        </div>
+
+        <div class="action-buttons">
+          <%= link_to edit_customer_profile_path, class: "edit-profile-btn" do %>
+            <i class="fas fa-edit me-2"></i>Edit Profile
+          <% end %>
+          <%= link_to customer_orders_path, class: "action-btn" do %>
+            <i class="fas fa-shopping-bag me-2"></i>My Orders
+          <% end %>
+          <%= link_to customer_addresses_path, class: "action-btn" do %>
+            <i class="fas fa-map-marker-alt me-2"></i>Addresses
+          <% end %>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="stat-item">
+            <span class="stat-number">0</span>
+            <span class="stat-label">Total Orders</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">0</span>
+            <span class="stat-label">Active Subscriptions</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">₹0</span>
+            <span class="stat-label">Total Spent</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabbed Information -->
+    <div class="profile-card">
+      <div class="info-section">
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="showTab('personal')">
+            <i class="fas fa-user me-2"></i>Personal Info
+          </button>
+          <button class="tab-btn" onclick="showTab('contact')">
+            <i class="fas fa-address-card me-2"></i>Contact Details
+          </button>
+          <button class="tab-btn" onclick="showTab('additional')">
+            <i class="fas fa-info-circle me-2"></i>Additional Info
+          </button>
+        </div>
+
+        <!-- Personal Information Tab -->
+        <div id="personal" class="tab-content active">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i>
+            Personal Information
+          </h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">First Name</div>
+              <div class="info-value"><%= @customer.first_name.present? ? @customer.first_name : 'Not provided' %></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Middle Name</div>
+              <div class="info-value <%= 'empty' unless @customer.middle_name.present? %>">
+                <%= @customer.middle_name.present? ? @customer.middle_name : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Last Name</div>
+              <div class="info-value"><%= @customer.last_name.present? ? @customer.last_name : 'Not provided' %></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Birth Date</div>
+              <div class="info-value <%= 'empty' unless @customer.birth_date.present? %>">
+                <%= @customer.birth_date.present? ? @customer.birth_date.strftime("%B %d, %Y") : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Gender</div>
+              <div class="info-value <%= 'empty' unless @customer.gender.present? %>">
+                <%= @customer.gender.present? ? @customer.gender.humanize : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Marital Status</div>
+              <div class="info-value <%= 'empty' unless @customer.marital_status.present? %>">
+                <%= @customer.marital_status.present? ? @customer.marital_status.humanize : 'Not provided' %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Details Tab -->
+        <div id="contact" class="tab-content">
+          <h3 class="section-title">
+            <i class="fas fa-address-card"></i>
+            Contact Details
+          </h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Email Address</div>
+              <div class="info-value"><%= @customer.email %></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Mobile Number</div>
+              <div class="info-value"><%= @customer.mobile.present? ? @customer.mobile : 'Not provided' %></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">WhatsApp Number</div>
+              <div class="info-value <%= 'empty' unless @customer.whatsapp_number.present? %>">
+                <%= @customer.whatsapp_number.present? ? @customer.whatsapp_number : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Address</div>
+              <div class="info-value <%= 'empty' unless @customer.address.present? %>">
+                <%= @customer.address.present? ? @customer.address : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">City</div>
+              <div class="info-value <%= 'empty' unless @customer.city.present? %>">
+                <%= @customer.city.present? ? @customer.city : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">State</div>
+              <div class="info-value <%= 'empty' unless @customer.state.present? %>">
+                <%= @customer.state.present? ? @customer.state : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">PIN Code</div>
+              <div class="info-value <%= 'empty' unless @customer.pincode.present? %>">
+                <%= @customer.pincode.present? ? @customer.pincode : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Country</div>
+              <div class="info-value <%= 'empty' unless @customer.country.present? %>">
+                <%= @customer.country.present? ? @customer.country : 'India' %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Information Tab -->
+        <div id="additional" class="tab-content">
+          <h3 class="section-title">
+            <i class="fas fa-info-circle"></i>
+            Additional Information
+          </h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Company Name</div>
+              <div class="info-value <%= 'empty' unless @customer.company_name.present? %>">
+                <%= @customer.company_name.present? ? @customer.company_name : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Business/Job</div>
+              <div class="info-value <%= 'empty' unless @customer.business_job.present? %>">
+                <%= @customer.business_job.present? ? @customer.business_job : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Annual Income</div>
+              <div class="info-value <%= 'empty' unless @customer.annual_income.present? %>">
+                <%= @customer.annual_income.present? ? "₹#{@customer.annual_income}" : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">PAN Number</div>
+              <div class="info-value <%= 'empty' unless @customer.pan_no.present? %>">
+                <%= @customer.pan_no.present? ? @customer.pan_no : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Aadhar Number</div>
+              <div class="info-value <%= 'empty' unless @customer.aadhar_no.present? %>">
+                <%= @customer.aadhar_no.present? ? @customer.aadhar_no.gsub(/\d(?=\d{4})/, 'X') : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">GST Number</div>
+              <div class="info-value <%= 'empty' unless @customer.gst_no.present? %>">
+                <%= @customer.gst_no.present? ? @customer.gst_no : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Emergency Contact</div>
+              <div class="info-value <%= 'empty' unless @customer.emergency_contact_name.present? %>">
+                <%= @customer.emergency_contact_name.present? ? @customer.emergency_contact_name : 'Not provided' %>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Emergency Mobile</div>
+              <div class="info-value <%= 'empty' unless @customer.emergency_contact_mobile.present? %>">
+                <%= @customer.emergency_contact_mobile.present? ? @customer.emergency_contact_mobile : 'Not provided' %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(tabName) {
+  // Hide all tab contents
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabContents.forEach(content => content.classList.remove('active'));
+
+  // Remove active class from all tab buttons
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach(btn => btn.classList.remove('active'));
+
+  // Show selected tab content
+  document.getElementById(tabName).classList.add('active');
+
+  // Add active class to clicked button
+  event.target.classList.add('active');
+}
+</script>

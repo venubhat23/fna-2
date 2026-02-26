@@ -209,9 +209,15 @@
                     <ul class="dropdown-menu">
                       <li>
                         <%= link_to admin_invoice_path(invoice), class: "dropdown-item" do %>
-                          <i class="bi bi-eye me-2"></i>View Details
+                          <i class="bi bi-eye me-2"></i>View Invoice
                         <% end %>
                       </li>
+                      <li>
+                        <%= link_to edit_admin_invoice_path(invoice), class: "dropdown-item" do %>
+                          <i class="bi bi-pencil-square me-2"></i>Edit Invoice
+                        <% end %>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
                       <% unless invoice.payment_status == 'fully_paid' %>
                         <li>
                           <%= link_to mark_as_paid_admin_invoice_path(invoice), method: :patch,
@@ -229,6 +235,14 @@
                           <% end %>
                         </li>
                       <% end %>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <%= link_to admin_invoice_path(invoice), method: :delete,
+                                   class: "dropdown-item text-danger",
+                                   data: { confirm: "Are you sure you want to delete this invoice? This action cannot be undone." } do %>
+                          <i class="bi bi-trash me-2"></i>Delete Invoice
+                        <% end %>
+                      </li>
                     </ul>
                   </div>
                 </td>
@@ -339,6 +353,25 @@
                 Specific Customers
               </label>
             </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="customer_selection" id="delivery_person_customers" value="delivery_person">
+              <label class="form-check-label" for="delivery_person_customers">
+                Customers by Delivery Person
+              </label>
+            </div>
+          </div>
+
+          <!-- Delivery Person Selection -->
+          <div id="delivery_person_section" class="mb-4" style="display: none;">
+            <label class="form-label">Select Delivery Person</label>
+            <select class="form-select" id="delivery_person_select" name="delivery_person_id">
+              <option value="">Choose Delivery Person...</option>
+              <!-- Options will be populated by JavaScript -->
+            </select>
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Select a delivery person to generate invoices for their customers only.
+            </div>
           </div>
 
           <div id="customer_dropdown_section" class="mb-4" style="display: none;">
@@ -410,10 +443,10 @@
   border-radius: 15px;
   max-width: 90%;
   width: 900px;
-  margin: 0 auto;
+  margin: 50px auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   position: relative;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100vh - 100px);
   overflow-y: auto;
 }
 
@@ -531,14 +564,21 @@ function loadBulkInvoiceForm() {
 }
 
 function loadCustomersAndShowForm() {
-  fetch('/admin/invoices/customers')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
+  // Load both customers and delivery persons
+  Promise.all([
+    fetch('/admin/invoices/customers'),
+    fetch('/admin/invoices/delivery_persons')
+  ])
+    .then(responses => {
+      // Check if both requests were successful
+      responses.forEach(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+      });
+      return Promise.all(responses.map(response => response.json()));
     })
-    .then(customers => {
+    .then(([customers, deliveryPersons]) => {
       // Populate customer checkboxes
       const customerCheckboxList = document.getElementById('customers_checkbox_list');
       if (customerCheckboxList) {
@@ -570,8 +610,23 @@ function loadCustomersAndShowForm() {
         }
       }
 
-      // Store customers data globally for search functionality
+      // Populate delivery persons dropdown
+      const deliveryPersonSelect = document.getElementById('delivery_person_select');
+      if (deliveryPersonSelect) {
+        // Clear existing options except the first one
+        deliveryPersonSelect.innerHTML = '<option value="">Choose Delivery Person...</option>';
+
+        deliveryPersons.forEach(dp => {
+          const option = document.createElement('option');
+          option.value = dp.id;
+          option.textContent = dp.display_name;
+          deliveryPersonSelect.appendChild(option);
+        });
+      }
+
+      // Store data globally for search functionality
       window.allCustomers = customers;
+      window.allDeliveryPersons = deliveryPersons;
 
       // Show form content and hide loading
       const modalLoading = document.getElementById('bulkInvoiceLoading');
@@ -600,14 +655,39 @@ function initializeFormListeners() {
   // Handle customer selection radio buttons
   const customerRadios = document.querySelectorAll('input[name="customer_selection"]');
   const customerDropdownSection = document.getElementById('customer_dropdown_section');
+  const deliveryPersonSection = document.getElementById('delivery_person_section');
 
   customerRadios.forEach(radio => {
     radio.addEventListener('change', function() {
       if (customerDropdownSection) {
         customerDropdownSection.style.display = this.value === 'specific' ? 'block' : 'none';
       }
+      if (deliveryPersonSection) {
+        deliveryPersonSection.style.display = this.value === 'delivery_person' ? 'block' : 'none';
+      }
+
+      // Clear delivery person selection when switching away from delivery person mode
+      if (this.value !== 'delivery_person') {
+        const deliveryPersonSelect = document.getElementById('delivery_person_select');
+        if (deliveryPersonSelect) {
+          deliveryPersonSelect.value = '';
+        }
+      }
     });
   });
+
+  // Handle delivery person selection
+  const deliveryPersonSelect = document.getElementById('delivery_person_select');
+  if (deliveryPersonSelect) {
+    deliveryPersonSelect.addEventListener('change', function() {
+      const deliveryPersonId = this.value;
+      const deliveryPersonCustomersRadio = document.getElementById('delivery_person_customers');
+
+      if (deliveryPersonId && deliveryPersonCustomersRadio && deliveryPersonCustomersRadio.checked) {
+        loadCustomersForDeliveryPerson(deliveryPersonId);
+      }
+    });
+  }
 
   // Handle form submission
   const form = document.getElementById('generateInvoiceForm');
@@ -685,6 +765,77 @@ function updateSelectedCustomers() {
   }
 }
 
+function loadCustomersForDeliveryPerson(deliveryPersonId) {
+  const customerCheckboxList = document.getElementById('customers_checkbox_list');
+
+  if (!customerCheckboxList) return;
+
+  // Show loading
+  customerCheckboxList.innerHTML = `
+    <div class="text-center py-3">
+      <div class="spinner-border text-primary spinner-border-sm me-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      Loading customers for selected delivery person...
+    </div>
+  `;
+
+  // Fetch customers for this delivery person
+  fetch(`/admin/invoices/customers_by_delivery_person?delivery_person_id=${deliveryPersonId}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(customers => {
+      customerCheckboxList.innerHTML = '';
+
+      if (customers.length === 0) {
+        customerCheckboxList.innerHTML = `
+          <div class="text-muted text-center py-3">
+            <i class="bi bi-person-x fs-3 d-block mb-2"></i>
+            No customers found for this delivery person
+          </div>
+        `;
+      } else {
+        customers.forEach(customer => {
+          const checkboxDiv = document.createElement('div');
+          checkboxDiv.className = 'form-check customer-checkbox-item';
+          checkboxDiv.innerHTML = `
+            <input class="form-check-input customer-checkbox" type="checkbox"
+                   value="${customer.id}" id="customer_${customer.id}"
+                   onchange="updateSelectedCustomers()">
+            <label class="form-check-label" for="customer_${customer.id}">
+              <strong>${customer.display_name}</strong>
+              ${customer.email ? `<br><small class="text-muted">${customer.email}</small>` : ''}
+              ${customer.mobile ? `<br><small class="text-muted">${customer.mobile}</small>` : ''}
+            </label>
+          `;
+          customerCheckboxList.appendChild(checkboxDiv);
+        });
+      }
+
+      // Show the customer dropdown section when customers are loaded
+      const customerDropdownSection = document.getElementById('customer_dropdown_section');
+      if (customerDropdownSection && customers.length > 0) {
+        customerDropdownSection.style.display = 'block';
+      }
+
+      // Update the count
+      updateSelectedCustomers();
+    })
+    .catch(error => {
+      console.error('Error loading customers for delivery person:', error);
+      customerCheckboxList.innerHTML = `
+        <div class="text-danger text-center py-3">
+          <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+          Error loading customers. Please try again.
+        </div>
+      `;
+    });
+}
+
 function generateInvoices() {
   const form = document.getElementById('generateInvoiceForm');
   const generateBtn = document.getElementById('generateInvoiceBtn');
@@ -701,7 +852,8 @@ function generateInvoices() {
     month: formData.get('month'),
     year: formData.get('year'),
     customer_selection: formData.get('customer_selection'),
-    customer_ids: formData.getAll('customer_ids[]')
+    customer_ids: formData.getAll('customer_ids[]'),
+    delivery_person_id: formData.get('delivery_person_id')
   };
 
   // Validate form
@@ -715,6 +867,19 @@ function generateInvoices() {
     alert('Please select at least one customer');
     resetGenerateButton();
     return;
+  }
+
+  if (data.customer_selection === 'delivery_person') {
+    if (!data.delivery_person_id) {
+      alert('Please select a delivery person');
+      resetGenerateButton();
+      return;
+    }
+    if (data.customer_ids.length === 0) {
+      alert('No customers found for the selected delivery person, or no customers selected');
+      resetGenerateButton();
+      return;
+    }
   }
 
   // Send request

@@ -129,14 +129,54 @@
   </div>
 </div>
 
+<!-- Delivery People Statistics -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Active Delivery People</h6>
+            <h5 class="mb-0"><%= @stats[:total_delivery_people] %></h5>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-people fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Delivery People with Assignments</h6>
+            <h5 class="mb-0"><%= @stats[:assigned_delivery_people] %></h5>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-person-check fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Subscriptions Table -->
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-transparent border-0">
     <div class="d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Subscription List</h5>
       <div class="d-flex gap-2">
-        <!-- Status Filter -->
+        <!-- Filters -->
         <%= form_with url: admin_subscriptions_path, method: :get, local: true, class: "d-flex gap-2 align-items-center" do |form| %>
+          <!-- Hidden fields to preserve other filter values -->
+          <%= form.hidden_field :search, value: params[:search] if params[:search].present? %>
+          <%= form.hidden_field :start_date, value: params[:start_date] if params[:start_date].present? %>
+          <%= form.hidden_field :end_date, value: params[:end_date] if params[:end_date].present? %>
+
+          <!-- Status Filter -->
           <%= form.select :status,
               options_for_select([
                 ['All Status', ''],
@@ -155,6 +195,16 @@
           <!-- Customer Filter -->
           <%= form.select :customer_id,
               options_for_select([['All Customers', '']] + @customers, params[:customer_id]),
+              {},
+              {
+                class: "form-select select2",
+                style: "width: 200px;",
+                onchange: "this.form.submit();"
+              } %>
+
+          <!-- Delivery Person Filter -->
+          <%= form.select :delivery_person_id,
+              options_for_select([['Select Delivery Person', '']] + @delivery_people, params[:delivery_person_id]),
               {},
               {
                 class: "form-select select2",
@@ -188,6 +238,7 @@
               <th class="border-0 fw-semibold">Customer</th>
               <th class="border-0 fw-semibold">Product & Quantity</th>
               <th class="border-0 fw-semibold">Duration & Pattern</th>
+              <th class="border-0 fw-semibold">Delivery Person</th>
               <th class="border-0 fw-semibold">Progress</th>
               <th class="border-0 fw-semibold">Status</th>
               <th class="border-0 fw-semibold">Actions</th>
@@ -243,6 +294,27 @@
                       <%= subscription.delivery_pattern.humanize %>
                     </span>
                   </div>
+                </td>
+                <td class="align-middle">
+                  <% if subscription.delivery_person %>
+                    <div class="d-flex align-items-center">
+                      <div class="avatar-sm bg-success-subtle rounded-circle d-flex align-items-center justify-content-center me-2">
+                        <i class="bi bi-person text-success"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0"><%= "#{subscription.delivery_person.first_name} #{subscription.delivery_person.last_name}".strip %></h6>
+                        <small class="text-muted">
+                          <i class="bi bi-telephone me-1"></i>
+                          <%= subscription.delivery_person.mobile.present? ? subscription.delivery_person.mobile : 'No mobile' %>
+                        </small>
+                      </div>
+                    </div>
+                  <% else %>
+                    <span class="text-muted">
+                      <i class="bi bi-person-x me-1"></i>
+                      Not Assigned
+                    </span>
+                  <% end %>
                 </td>
                 <td class="align-middle">
                   <% summary = subscription.subscription_summary %>
@@ -481,6 +553,10 @@
 
 .bg-primary-subtle {
   background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.bg-success-subtle {
+  background-color: rgba(25, 135, 84, 0.1) !important;
 }
 
 .bg-info-subtle {
@@ -866,9 +942,17 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof $ !== 'undefined' && $.fn.select2) {
-    $('.select2').select2({
+    // Customer dropdown
+    $('select[name="customer_id"]').select2({
       theme: 'bootstrap-5',
       placeholder: 'Select customer...',
+      allowClear: true
+    });
+
+    // Delivery person dropdown
+    $('select[name="delivery_person_id"]').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Select delivery person...',
       allowClear: true
     });
   }

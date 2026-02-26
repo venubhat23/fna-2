@@ -670,7 +670,10 @@
     if @invoice_items.present?
       @invoice_items.each do |item|
         # Base amount (quantity × unit_price) - this is the amount shown in the items table
-        base_amount = (item['quantity'] || 0) * (item['price'] || 0)
+        # Convert string values to numbers for calculation
+        quantity = (item['quantity'] || 0).to_f
+        price = (item['price'] || 0).to_f
+        base_amount = quantity * price
 
         # Add to subtotal (sum of all item amounts)
         subtotal_amount += base_amount
@@ -820,7 +823,7 @@
                 <td class="text-center" data-label="QTY"><%= number_with_precision(item['quantity'] || 0, precision: 2, strip_insignificant_zeros: true) %></td>
                 <td class="text-right" data-label="RATE">₹<%= number_with_delimiter(item['price'] || 0, delimiter: ',') %></td>
                 <td class="text-right" data-label="TAX">₹0<br /><span class="tax-rate">(0%)</span></td>
-                <td class="text-right" data-label="AMOUNT">₹<%= number_with_delimiter((item['quantity'] || 0) * (item['price'] || 0), delimiter: ',') %></td>
+                <td class="text-right" data-label="AMOUNT">₹<%= number_with_delimiter((item['quantity'] || 0).to_f * (item['price'] || 0).to_f, delimiter: ',') %></td>
               </tr>
             <% end %>
           <% elsif @booking&.booking_items&.any? %>
@@ -1021,7 +1024,7 @@
       <div class="signature-box-container">
         <div class="signature-box"></div>
         <div class="signature-label">AUTHORISED SIGNATORY FOR</div>
-        <div class="signature-name"><%= @business_settings&.company_name || 'Ecommerce Store' %></div>
+        <div class="signature-name"><%= @business_settings&.business_name || 'Ecommerce Store' %></div>
       </div>
     </div>
   </div>

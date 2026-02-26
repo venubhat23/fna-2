@@ -75,13 +75,14 @@
 
           <div class="col-md-6">
             <%= form.label :email, "Email Address", class: "form-label fw-medium" %>
-            <span class="text-danger ms-1">*</span>
+            <span class="text-muted ms-1">(Optional)</span>
             <div class="input-group">
               <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-envelope text-muted"></i>
               </span>
-              <%= form.email_field :email, class: "form-control border-start-0", placeholder: "Enter email address", required: true, autocomplete: "off" %>
+              <%= form.email_field :email, class: "form-control border-start-0", placeholder: "Enter email address (optional)", autocomplete: "off" %>
             </div>
+            <div class="form-text">Email is optional but helpful for order updates and notifications</div>
           </div>
 
           <div class="col-md-6">

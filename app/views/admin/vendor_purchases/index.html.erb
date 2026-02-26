@@ -147,6 +147,16 @@
                         <i class="bi bi-eye"></i>
                       <% end %>
 
+                      <!-- Generate Invoice Button -->
+                      <button type="button" class="btn btn-outline-success btn-sm" title="Generate Invoice" onclick="generateVendorInvoice(<%= purchase.id %>)">
+                        <i class="bi bi-receipt"></i>
+                      </button>
+
+                      <!-- WhatsApp Share Button -->
+                      <button type="button" class="btn btn-outline-success btn-sm" title="Share on WhatsApp" onclick="shareVendorInvoiceOnWhatsApp(<%= purchase.id %>)">
+                        <i class="bi bi-whatsapp"></i>
+                      </button>
+
                       <% if purchase.can_be_edited? %>
                         <%= link_to edit_admin_vendor_purchase_path(purchase), class: "btn btn-outline-warning btn-sm", title: "Edit" do %>
                           <i class="bi bi-pencil"></i>
@@ -208,3 +218,105 @@
     </div>
   </div>
 </div>
+
+<script>
+function generateVendorInvoice(purchaseId) {
+  // Show loading state
+  const button = event.target.closest('button');
+  const originalContent = button.innerHTML;
+  button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+  button.disabled = true;
+
+  fetch(`/admin/vendor_purchases/${purchaseId}/generate_invoice`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Show success message
+      showNotification('Invoice generated successfully!', 'success');
+
+      // Open the public invoice in a new tab
+      if (data.invoice_url) {
+        window.open(data.invoice_url, '_blank');
+      }
+    } else {
+      showNotification('Error generating invoice: ' + (data.error || 'Unknown error'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('Error generating invoice. Please try again.', 'error');
+  })
+  .finally(() => {
+    // Restore button state
+    button.innerHTML = originalContent;
+    button.disabled = false;
+  });
+}
+
+function shareVendorInvoiceOnWhatsApp(purchaseId) {
+  // First generate/get the invoice URL
+  const button = event.target.closest('button');
+  const originalContent = button.innerHTML;
+  button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+  button.disabled = true;
+
+  fetch(`/admin/vendor_purchases/${purchaseId}/generate_invoice`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success && data.invoice_url) {
+      // Create WhatsApp message
+      const message = `Hi! Here is your invoice for purchase #${data.purchase_number}:\n${data.invoice_url}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+      // Open WhatsApp
+      window.open(whatsappUrl, '_blank');
+
+      showNotification('WhatsApp opened with invoice link!', 'success');
+    } else {
+      showNotification('Error getting invoice link: ' + (data.error || 'Unknown error'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('Error sharing invoice. Please try again.', 'error');
+  })
+  .finally(() => {
+    // Restore button state
+    button.innerHTML = originalContent;
+    button.disabled = false;
+  });
+}
+
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
+  notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  notification.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+
+  // Add to page
+  document.body.appendChild(notification);
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 5000);
+}
+</script>

@@ -47,10 +47,10 @@
             </div>
             <div class="col-md-6">
               <%= form.label :email, class: "form-label" do %>
-                Email <span class="text-danger">*</span>
+                Email <span class="text-muted">(Optional)</span>
               <% end %>
-              <%= form.email_field :email, class: "form-control", placeholder: "Enter email address", required: true %>
-              <div class="invalid-feedback">Please provide a valid email.</div>
+              <%= form.email_field :email, class: "form-control", placeholder: "Enter email address (optional)" %>
+              <div class="form-text">Email is optional but helpful for order updates and notifications</div>
             </div>
             <div class="col-md-6">
               <%= form.label :mobile, class: "form-label" do %>

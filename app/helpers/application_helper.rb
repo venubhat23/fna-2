@@ -506,6 +506,15 @@ module ApplicationHelper
     end
   end
 
+  # Customer navigation helper
+  def active_class(controller_name, action_name = nil)
+    if action_name
+      (params[:controller] == controller_name && params[:action] == action_name) ? 'active' : ''
+    else
+      params[:controller].start_with?(controller_name) ? 'active' : ''
+    end
+  end
+
   private
 
   def convert_number_to_words(number)

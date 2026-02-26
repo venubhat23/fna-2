@@ -1,7 +1,7 @@
-class BookingInvoicesController < ApplicationController
-  # Skip authentication for public actions
-  skip_before_action :authenticate_user!
+class BookingInvoicesController < ActionController::Base
+  # Public controller - no authentication required
   layout false
+  protect_from_forgery with: :exception
 
   def public_view
     @invoice = BookingInvoice.find_by!(share_token: params[:token])
@@ -15,6 +15,10 @@ class BookingInvoicesController < ApplicationController
     render template: 'booking_invoices/public_view'
   rescue ActiveRecord::RecordNotFound
     render template: 'booking_invoices/not_found'
+  end
+
+  def test
+    render plain: "BookingInvoicesController is working! Time: #{Time.current}"
   end
 
   def public_download_pdf

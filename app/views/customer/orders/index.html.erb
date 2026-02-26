@@ -1,6 +1,126 @@
-<!-- Actions Column Icons Styling -->
+<% content_for :title, "My Orders - Dhanvantri Naturals" %>
+
 <style>
-/* Actions column with icons */
+:root {
+  --primary-purple: #8B5DFF;
+  --purple-light: #A983FF;
+  --purple-dark: #7048E8;
+  --purple-gradient: linear-gradient(135deg, #8B5DFF 0%, #A983FF 100%);
+}
+
+.orders-page {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  min-height: 100vh;
+}
+
+.page-header {
+  background: var(--purple-gradient);
+  color: white;
+  padding: 2rem 0;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.stats-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(139, 93, 255, 0.15);
+}
+
+.stats-card .card-body {
+  padding: 1.5rem;
+}
+
+.stats-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stats-icon.pending { background: linear-gradient(135deg, #FFE082 0%, #FFCC02 100%); color: #F57C00; }
+.stats-icon.processing { background: linear-gradient(135deg, #81D4FA 0%, #03A9F4 100%); color: #0277BD; }
+.stats-icon.shipped { background: linear-gradient(135deg, #A5D6A7 0%, #4CAF50 100%); color: #2E7D32; }
+.stats-icon.completed { background: linear-gradient(135deg, #C8E6C9 0%, #66BB6A 100%); color: #388E3C; }
+.stats-icon.issues { background: linear-gradient(135deg, #FFCDD2 0%, #F44336 100%); color: #C62828; }
+.stats-icon.total { background: var(--purple-gradient); color: white; }
+
+.filter-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.orders-table-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.08);
+  overflow: hidden;
+}
+
+.table th {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  color: var(--purple-dark);
+  font-weight: 600;
+  border: none;
+  padding: 1rem 1.5rem;
+}
+
+.table td {
+  padding: 1.25rem 1.5rem;
+  border: none;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  transform: scale(1.01);
+}
+
+.order-number {
+  color: var(--primary-purple);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.status-badge.pending { background: linear-gradient(135deg, #FFE082 0%, #FFCC02 100%); color: #E65100; }
+.status-badge.confirmed { background: linear-gradient(135deg, #81D4FA 0%, #03A9F4 100%); color: #01579B; }
+.status-badge.processing { background: linear-gradient(135deg, #81D4FA 0%, #03A9F4 100%); color: #01579B; }
+.status-badge.shipped { background: linear-gradient(135deg, #A5D6A7 0%, #4CAF50 100%); color: #1B5E20; }
+.status-badge.completed { background: linear-gradient(135deg, #C8E6C9 0%, #66BB6A 100%); color: #2E7D32; }
+.status-badge.cancelled { background: linear-gradient(135deg, #FFCDD2 0%, #F44336 100%); color: #B71C1C; }
+
 .actions-column {
   text-align: center;
   width: 120px;
@@ -18,304 +138,367 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   border: none;
   cursor: pointer;
+  color: white;
 }
 
 .action-icon:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-/* View icon - blue */
 .action-icon.view {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: var(--purple-gradient);
 }
 .action-icon.view:hover {
-  background: #bbdefb;
-  color: #0d47a1;
+  color: white;
 }
 
-/* Invoice icon - purple */
 .action-icon.invoice {
-  background: #f3e5f5;
-  color: #7b1fa2;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
 }
 .action-icon.invoice:hover {
-  background: #e1bee7;
-  color: #4a148c;
+  color: white;
 }
 
-.action-icon i {
-  font-size: 14px;
+.btn-primary {
+  background: var(--purple-gradient);
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 93, 255, 0.3);
+}
+
+.btn-outline-secondary {
+  border: 2px solid #e0e0e0;
+  color: #666;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+  background: #f5f5f5;
+  border-color: var(--primary-purple);
+  color: var(--primary-purple);
+}
+
+.form-control, .form-select {
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 0 0.2rem rgba(139, 93, 255, 0.25);
+}
+
+.empty-state {
+  padding: 3rem 0;
+  text-align: center;
+  color: #888;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-purple);
+  opacity: 0.5;
 }
 </style>
 
-<!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h2 class="mb-1">My Orders</h2>
-    <p class="text-muted mb-0">Track and manage your orders</p>
+<div class="orders-page">
+  <!-- Page Header -->
+  <div class="page-header text-center">
+    <div class="container">
+      <h2 class="page-title">
+        <i class="fas fa-shopping-bag me-3"></i>
+        My Orders
+      </h2>
+      <p class="mb-0 opacity-75">Track and manage all your orders in one place</p>
+    </div>
   </div>
-</div>
 
-<!-- Order Statistics Cards -->
-<div class="row mb-4">
-  <div class="col-md-2">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">Pending</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.ordered_and_delivery_pending.count %></h5>
-          </div>
-          <div class="text-warning">
-            <i class="bi bi-clock fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-2">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">Processing</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: [:confirmed, :processing, :packed]).count %></h5>
-          </div>
-          <div class="text-info">
-            <i class="bi bi-gear fs-3"></i>
+  <!-- Order Statistics Cards -->
+  <div class="container">
+    <div class="row mb-4">
+      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stats-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <h6 class="text-muted mb-1 fw-normal">Pending</h6>
+                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.ordered_and_delivery_pending.count %></h4>
+              </div>
+              <div class="stats-icon pending">
+                <i class="fas fa-clock"></i>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="col-md-2">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">Shipped</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: [:shipped, :out_for_delivery]).count %></h5>
-          </div>
-          <div class="text-primary">
-            <i class="bi bi-truck fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-2">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">Completed</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: :completed).count %></h5>
-          </div>
-          <div class="text-success">
-            <i class="bi bi-check-circle fs-3"></i>
+      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stats-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <h6 class="text-muted mb-1 fw-normal">Processing</h6>
+                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: [:confirmed, :processing, :packed]).count %></h4>
+              </div>
+              <div class="stats-icon processing">
+                <i class="fas fa-cogs"></i>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="col-md-2">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">Issues</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: [:cancelled, :returned]).count %></h5>
-          </div>
-          <div class="text-danger">
-            <i class="bi bi-exclamation-triangle fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-2">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center">
-          <div class="flex-grow-1">
-            <h6 class="text-muted mb-1">Total</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.count %></h5>
-          </div>
-          <div class="text-secondary">
-            <i class="bi bi-list-ul fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- Filters and Search -->
-<div class="card mb-4">
-  <div class="card-body">
-    <%= form_with url: customer_orders_path, method: :get, local: true, class: "row g-3" do |f| %>
-      <div class="col-md-3">
-        <%= f.text_field :search,
-            placeholder: "Search orders...",
-            value: params[:search],
-            class: "form-control" %>
+      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stats-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <h6 class="text-muted mb-1 fw-normal">Shipped</h6>
+                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: [:shipped, :out_for_delivery]).count %></h4>
+              </div>
+              <div class="stats-icon shipped">
+                <i class="fas fa-truck"></i>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-2">
-        <%= f.select :status,
-            options_for_select([
-              ['All Statuses', ''],
-              ['Pending', 'ordered_and_delivery_pending'],
-              ['Confirmed', 'confirmed'],
-              ['Processing', 'processing'],
-              ['Packed', 'packed'],
-              ['Shipped', 'shipped'],
-              ['Out for Delivery', 'out_for_delivery'],
-              ['Delivered', 'delivered'],
-              ['Completed', 'completed'],
-              ['Cancelled', 'cancelled'],
-              ['Returned', 'returned']
-            ], params[:status]),
-            { include_blank: false },
-            { class: "form-select" } %>
-      </div>
-      <div class="col-md-2">
-        <%= f.date_field :date_from,
-            placeholder: "From Date",
-            value: params[:date_from],
-            class: "form-control" %>
-      </div>
-      <div class="col-md-2">
-        <%= f.date_field :date_to,
-            placeholder: "To Date",
-            value: params[:date_to],
-            class: "form-control" %>
-      </div>
-      <div class="col-md-2">
-        <%= f.submit "Filter", class: "btn btn-primary" %>
-        <%= link_to "Clear", customer_orders_path, class: "btn btn-outline-secondary" %>
-      </div>
-    <% end %>
-  </div>
-</div>
 
-<!-- Orders Table -->
-<div class="card">
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="bg-light">
-          <tr>
-            <th class="border-0 ps-3">Order #</th>
-            <th class="border-0">Date</th>
-            <th class="border-0">Status</th>
-            <th class="border-0">Items</th>
-            <th class="border-0">Total</th>
-            <th class="border-0">Franchise</th>
-            <th class="border-0 actions-column">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if @bookings.any? %>
-            <% @bookings.each do |booking| %>
+      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stats-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <h6 class="text-muted mb-1 fw-normal">Completed</h6>
+                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: :completed).count %></h4>
+              </div>
+              <div class="stats-icon completed">
+                <i class="fas fa-check-circle"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stats-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <h6 class="text-muted mb-1 fw-normal">Issues</h6>
+                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: [:cancelled, :returned]).count %></h4>
+              </div>
+              <div class="stats-icon issues">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stats-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-grow-1">
+                <h6 class="text-muted mb-1 fw-normal">Total</h6>
+                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.count %></h4>
+              </div>
+              <div class="stats-icon total">
+                <i class="fas fa-list"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="container">
+    <div class="filter-card mb-4">
+      <div class="card-body">
+        <%= form_with url: customer_orders_path, method: :get, local: true, class: "row g-3" do |f| %>
+          <div class="col-md-3">
+            <%= f.text_field :search,
+                placeholder: "Search orders...",
+                value: params[:search],
+                class: "form-control" %>
+          </div>
+          <div class="col-md-2">
+            <%= f.select :status,
+                options_for_select([
+                  ['All Statuses', ''],
+                  ['Pending', 'ordered_and_delivery_pending'],
+                  ['Confirmed', 'confirmed'],
+                  ['Processing', 'processing'],
+                  ['Packed', 'packed'],
+                  ['Shipped', 'shipped'],
+                  ['Out for Delivery', 'out_for_delivery'],
+                  ['Delivered', 'delivered'],
+                  ['Completed', 'completed'],
+                  ['Cancelled', 'cancelled'],
+                  ['Returned', 'returned']
+                ], params[:status]),
+                { include_blank: false },
+                { class: "form-select" } %>
+          </div>
+          <div class="col-md-2">
+            <%= f.date_field :date_from,
+                placeholder: "From Date",
+                value: params[:date_from],
+                class: "form-control" %>
+          </div>
+          <div class="col-md-2">
+            <%= f.date_field :date_to,
+                placeholder: "To Date",
+                value: params[:date_to],
+                class: "form-control" %>
+          </div>
+          <div class="col-md-3">
+            <%= f.submit "Filter Orders", class: "btn btn-primary me-2" %>
+            <%= link_to "Clear", customer_orders_path, class: "btn btn-outline-secondary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="container">
+    <div class="orders-table-card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
               <tr>
-                <td class="ps-3">
-                  <div class="fw-semibold text-primary"><%= booking.booking_number %></div>
-                  <small class="text-muted">
-                    <% if booking.invoice_number.present? %>
-                      Invoice: <%= booking.invoice_number %>
-                    <% else %>
-                      No invoice generated
-                    <% end %>
-                  </small>
-                </td>
-                <td>
-                  <div><%= booking.booking_date.strftime("%d %b %Y") %></div>
-                  <small class="text-muted"><%= booking.booking_date.strftime("%I:%M %p") %></small>
-                </td>
-                <td>
-                  <span class="badge <%= booking.status_color %>">
-                    <i class="<%= booking.status_icon %> me-1"></i>
-                    <%= booking.status.humanize %>
-                  </span>
-                </td>
-                <td>
-                  <div><%= booking.booking_items.count %> items</div>
-                  <small class="text-muted">
-                    <%= booking.booking_items.sum(:quantity) %> units
-                  </small>
-                </td>
-                <td>
-                  <div class="fw-semibold">₹<%= booking.total_amount.to_f %></div>
-                  <small class="text-muted">
-                    <span class="badge <%= booking.payment_status == 'paid' ? 'bg-success' : 'bg-warning' %>">
-                      <%= booking.payment_status&.humanize || 'Unpaid' %>
-                    </span>
-                  </small>
-                </td>
-                <td>
-                  <% if booking.franchise %>
-                    <div class="fw-semibold"><%= booking.franchise.name %></div>
-                    <small class="text-muted"><%= booking.franchise.city %></small>
-                  <% else %>
-                    <span class="text-muted">Direct Order</span>
-                  <% end %>
-                </td>
-                <td class="actions-column">
-                  <div class="action-icons">
-                    <%= link_to customer_order_path(booking),
-                        class: "action-icon view",
-                        title: "View Details" do %>
-                      <i class="bi bi-eye"></i>
-                    <% end %>
-
-                    <% if booking.invoice_generated? %>
-                      <%= link_to invoice_customer_order_path(booking),
-                          class: "action-icon invoice",
-                          title: "Download Invoice",
-                          target: "_blank" do %>
-                        <i class="bi bi-file-earmark-pdf"></i>
-                      <% end %>
-                    <% end %>
-                  </div>
-                </td>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Franchise</th>
+                <th class="actions-column">Actions</th>
               </tr>
-            <% end %>
-          <% else %>
-            <tr>
-              <td colspan="7" class="text-center py-5">
-                <div class="text-muted">
-                  <i class="bi bi-inbox display-1 d-block mb-3"></i>
-                  <h5>No orders found</h5>
-                  <p>You haven't placed any orders yet.</p>
-                </div>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              <% if @bookings.any? %>
+                <% @bookings.each do |booking| %>
+                  <tr>
+                    <td>
+                      <div class="order-number">#<%= booking.booking_number %></div>
+                      <small class="text-muted">
+                        <% if booking.invoice_number.present? %>
+                          Invoice: <%= booking.invoice_number %>
+                        <% else %>
+                          No invoice generated
+                        <% end %>
+                      </small>
+                    </td>
+                    <td>
+                      <div class="fw-semibold"><%= booking.booking_date.strftime("%d %b %Y") %></div>
+                      <small class="text-muted"><%= booking.booking_date.strftime("%I:%M %p") %></small>
+                    </td>
+                    <td>
+                      <span class="status-badge <%= booking.status.downcase.gsub('_', '-') %>">
+                        <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
+                        <%= booking.status.humanize %>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="fw-semibold"><%= booking.booking_items.count %> items</div>
+                      <small class="text-muted">
+                        <%= booking.booking_items.sum(:quantity) %> units
+                      </small>
+                    </td>
+                    <td>
+                      <div class="fw-bold" style="color: var(--primary-purple);">₹<%= booking.total_amount.to_f %></div>
+                      <small class="text-muted">
+                        <span class="badge <%= booking.payment_status == 'paid' ? 'bg-success' : 'bg-warning' %>">
+                          <%= booking.payment_status&.humanize || 'Unpaid' %>
+                        </span>
+                      </small>
+                    </td>
+                    <td>
+                      <% if booking.franchise %>
+                        <div class="fw-semibold"><%= booking.franchise.name %></div>
+                        <small class="text-muted"><%= booking.franchise.city %></small>
+                      <% else %>
+                        <span class="text-muted"><i class="fas fa-store me-1"></i> Direct Order</span>
+                      <% end %>
+                    </td>
+                    <td class="actions-column">
+                      <div class="action-icons">
+                        <%= link_to customer_order_path(booking),
+                            class: "action-icon view",
+                            title: "View Details" do %>
+                          <i class="fas fa-eye"></i>
+                        <% end %>
+
+                        <% if booking.invoice_generated? %>
+                          <%= link_to invoice_customer_order_path(booking),
+                              class: "action-icon invoice",
+                              title: "Download Invoice",
+                              target: "_blank" do %>
+                            <i class="fas fa-file-pdf"></i>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="7" class="text-center">
+                    <div class="empty-state">
+                      <i class="fas fa-shopping-bag"></i>
+                      <h4 class="mt-3 mb-2">No Orders Found</h4>
+                      <p class="text-muted mb-4">You haven't placed any orders yet. Start shopping to see your orders here!</p>
+                      <%= link_to customer_shop_path, class: "btn btn-primary" do %>
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Start Shopping
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <% if @bookings.respond_to?(:total_pages) && @bookings.total_pages > 1 %>
+        <div class="card-footer border-0" style="background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);">
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted fw-medium">
+              Showing <%= @bookings.offset_value + 1 %> -
+              <%= [@bookings.offset_value + @bookings.length, @bookings.total_count].min %>
+              of <%= @bookings.total_count %> orders
+            </small>
+            <%= paginate @bookings, theme: 'twitter-bootstrap-4' %>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
-
-  <!-- Pagination -->
-  <% if @bookings.respond_to?(:total_pages) && @bookings.total_pages > 1 %>
-    <div class="card-footer">
-      <div class="d-flex justify-content-between align-items-center">
-        <small class="text-muted">
-          Showing <%= @bookings.offset_value + 1 %> -
-          <%= [@bookings.offset_value + @bookings.length, @bookings.total_count].min %>
-          of <%= @bookings.total_count %> orders
-        </small>
-        <%= paginate @bookings, theme: 'twitter-bootstrap-4' %>
-      </div>
-    </div>
-  <% end %>
 </div>

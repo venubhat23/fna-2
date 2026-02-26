@@ -1042,7 +1042,7 @@ class Product < ApplicationRecord
   end
 
   def discount_price_validation
-    if discount_price.present? && discount_price >= price
+    if discount_price.present? && price.present? && discount_price >= price
       errors.add(:discount_price, 'must be less than regular price')
     end
   end

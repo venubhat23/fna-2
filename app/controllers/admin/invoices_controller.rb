@@ -31,6 +31,7 @@ class Admin::InvoicesController < Admin::ApplicationController
       base_query = base_query.where('invoice_date <= ?', Date.parse(params[:date_to]))
     end
 
+
     # Get filtered invoices with pagination
     @invoices = base_query.order(created_at: :desc)
                          .limit(params[:limit]&.to_i || 50)
@@ -38,10 +39,33 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     # Calculate summary statistics
     @stats = calculate_invoice_stats(base_query)
+
+    # Get delivery persons for filter dropdown
+    @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
   end
 
   def show
     @invoice_items = @invoice.invoice_items.includes(:milk_delivery_task)
+  end
+
+  def edit
+    @invoice_items = @invoice.invoice_items.includes(:product, :milk_delivery_task)
+  end
+
+  def update
+    if @invoice.update(invoice_params)
+      redirect_to admin_invoice_path(@invoice), notice: 'Invoice was successfully updated.'
+    else
+      @invoice_items = @invoice.invoice_items.includes(:product, :milk_delivery_task)
+      render :edit, alert: 'Failed to update invoice.'
+    end
+  end
+
+  def destroy
+    @invoice.destroy
+    redirect_to admin_invoices_path, notice: 'Invoice was successfully deleted.'
+  rescue => e
+    redirect_to admin_invoices_path, alert: "Error deleting invoice: #{e.message}"
   end
 
   def mark_as_paid
@@ -63,14 +87,60 @@ class Admin::InvoicesController < Admin::ApplicationController
     render json: @customers
   end
 
+  def delivery_persons
+    @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
+                                     .select(:id, :first_name, :last_name)
+                                     .map { |dp| { id: dp.id, display_name: dp.display_name } }
+    render json: @delivery_persons
+  end
+
+  def customers_by_delivery_person
+    delivery_person_id = params[:delivery_person_id]
+    if delivery_person_id.present?
+      # Find customers who have bookings with this delivery person
+      customer_ids = Booking.where(delivery_person_id: delivery_person_id)
+                           .distinct
+                           .pluck(:customer_id)
+                           .compact
+
+      @customers = Customer.where(id: customer_ids)
+                          .order(:first_name, :last_name)
+                          .select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
+                          .map { |c| {
+                            id: c.id,
+                            display_name: c.display_name,
+                            email: c.email,
+                            mobile: c.mobile
+                          } }
+    else
+      @customers = []
+    end
+    render json: @customers
+  end
+
   def generate
     month = params[:month].to_i
     year = params[:year].to_i
     customer_selection = params[:customer_selection]
     customer_ids = params[:customer_ids]
+    delivery_person_id = params[:delivery_person_id]
 
     if customer_selection == 'all'
       customers = Customer.all
+    elsif customer_selection == 'delivery_person' && delivery_person_id.present?
+      # Get customers who have bookings with the selected delivery person
+      customer_ids_from_bookings = Booking.where(delivery_person_id: delivery_person_id)
+                                         .distinct
+                                         .pluck(:customer_id)
+                                         .compact
+
+      # If specific customers were also selected, use the intersection
+      if customer_ids.present?
+        final_customer_ids = customer_ids_from_bookings & customer_ids.map(&:to_i)
+        customers = Customer.where(id: final_customer_ids)
+      else
+        customers = Customer.where(id: customer_ids_from_bookings)
+      end
     else
       customers = Customer.where(id: customer_ids)
     end
@@ -109,6 +179,10 @@ class Admin::InvoicesController < Admin::ApplicationController
 
   def set_invoice
     @invoice = Invoice.find(params[:id])
+  end
+
+  def invoice_params
+    params.require(:invoice).permit(:invoice_date, :due_date, :status, :payment_status, :notes, :total_amount)
   end
 
   def generate_customer_invoice(customer, month, year)

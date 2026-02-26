@@ -1,4 +1,4 @@
-class Customer::OrdersController < Customer::BaseController
+class Customer::OrdersController < Customer::ApplicationController
   before_action :set_booking, only: [:show, :invoice]
 
   def index

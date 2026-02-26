@@ -1,86 +1,346 @@
-<% content_for :title, 'Shopping Cart' %>
+<% content_for :title, "Shopping Cart - Dhanvantri Naturals" %>
 
-<div class="container py-4">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="mb-4">
-        <i class="bi bi-cart3 me-2"></i>Your Shopping Cart
-        <% if @cart_count > 0 %>
-          <span class="badge bg-primary ms-2"><%= @cart_count %> items</span>
-        <% end %>
+<style>
+:root {
+  --primary-purple: #8B5DFF;
+  --purple-light: #A983FF;
+  --purple-dark: #7048E8;
+  --purple-gradient: linear-gradient(135deg, #8B5DFF 0%, #A983FF 100%);
+}
+
+.cart-page {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  min-height: 100vh;
+}
+
+.page-header {
+  background: var(--purple-gradient);
+  color: white;
+  padding: 2rem 0;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.cart-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.1);
+  overflow: hidden;
+}
+
+.cart-item {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.cart-item:hover {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.product-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #f0f0f0;
+}
+
+.product-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--purple-dark);
+  margin-bottom: 0.5rem;
+}
+
+.product-price {
+  color: var(--primary-purple);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  background: #f8f9ff;
+  border-radius: 10px;
+  padding: 0.25rem;
+  width: fit-content;
+}
+
+.quantity-btn {
+  background: white;
+  border: 2px solid var(--primary-purple);
+  color: var(--primary-purple);
+  width: 35px;
+  height: 35px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.quantity-btn:hover {
+  background: var(--primary-purple);
+  color: white;
+  transform: scale(1.05);
+}
+
+.quantity-input {
+  border: none;
+  background: transparent;
+  text-align: center;
+  width: 50px;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: var(--purple-dark);
+}
+
+.quantity-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.item-total {
+  color: var(--primary-purple);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.remove-btn {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.remove-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+  color: white;
+}
+
+.summary-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.1);
+  position: sticky;
+  top: 2rem;
+}
+
+.summary-header {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  color: var(--purple-dark);
+  font-weight: 600;
+  padding: 1.5rem;
+  border-radius: 15px 15px 0 0;
+  margin: 0;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--purple-dark);
+}
+
+.checkout-btn {
+  background: var(--purple-gradient);
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.checkout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 93, 255, 0.3);
+  color: white;
+}
+
+.continue-shopping-btn {
+  border: 2px solid var(--primary-purple);
+  color: var(--primary-purple);
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  background: transparent;
+}
+
+.continue-shopping-btn:hover {
+  background: var(--primary-purple);
+  color: white;
+}
+
+.clear-cart-btn {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.clear-cart-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+  color: white;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.05);
+}
+
+.empty-cart i {
+  font-size: 5rem;
+  color: var(--primary-purple);
+  opacity: 0.5;
+  margin-bottom: 2rem;
+}
+
+.shipping-info {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  color: #0D47A1;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.free-shipping {
+  background: linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%);
+  color: #2E7D32;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+</style>
+
+<div class="cart-page">
+  <!-- Page Header -->
+  <div class="page-header text-center">
+    <div class="container">
+      <h1 class="page-title">
+        <i class="fas fa-shopping-cart me-3"></i>
+        Your Shopping Cart
       </h1>
+      <% if @cart_count > 0 %>
+        <p class="mb-0 opacity-75">
+          <span class="badge bg-light text-purple fw-bold fs-6 px-3 py-2" style="color: var(--primary-purple) !important;">
+            <%= @cart_count %> items in your cart
+          </span>
+        </p>
+      <% else %>
+        <p class="mb-0 opacity-75">Ready to add some amazing products?</p>
+      <% end %>
     </div>
   </div>
 
-  <% if @cart_items.any? %>
+  <div class="container">
     <div class="row">
       <!-- Cart Items -->
       <div class="col-lg-8">
-        <div class="bg-white rounded shadow-sm p-4 mb-4">
+        <div class="cart-card mb-4">
           <% @cart_items.each do |item| %>
-            <div class="row align-items-center py-3 border-bottom">
-              <!-- Product Image -->
-              <div class="col-md-2 col-3">
-                <% if item['image_url'].present? %>
-                  <%= image_tag item['image_url'], class: "img-fluid rounded", style: "height: 80px; object-fit: cover;" %>
-                <% else %>
-                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px;">
-                    <i class="bi bi-image text-muted"></i>
-                  </div>
-                <% end %>
-              </div>
+            <div class="cart-item">
+              <div class="row align-items-center">
+                <!-- Product Image -->
+                <div class="col-md-2 col-3">
+                  <% if item['image_url'].present? %>
+                    <%= image_tag item['image_url'], class: "product-image" %>
+                  <% else %>
+                    <div class="product-image bg-light d-flex align-items-center justify-content-center">
+                      <i class="fas fa-image text-muted"></i>
+                    </div>
+                  <% end %>
+                </div>
 
-              <!-- Product Details -->
-              <div class="col-md-4 col-9">
-                <h6 class="fw-semibold mb-1"><%= item['product_name'] %></h6>
-                <p class="text-success fw-bold mb-0">₹<%= item['price'] %></p>
-              </div>
+                <!-- Product Details -->
+                <div class="col-md-4 col-9">
+                  <h6 class="product-name"><%= item['product_name'] %></h6>
+                  <p class="product-price mb-0">₹<%= item['price'] %></p>
+                </div>
 
-              <!-- Quantity Controls -->
-              <div class="col-md-3 col-6">
-                <%= form_with url: update_item_customer_cart_path, method: :patch, local: true, class: "d-flex align-items-center" do |f| %>
-                  <%= f.hidden_field :product_id, value: item['product_id'] %>
-                  <div class="input-group input-group-sm" style="width: 120px;">
-                    <button type="button" class="btn btn-outline-secondary" onclick="decreaseCartQuantity(<%= item['product_id'] %>)">
-                      <i class="bi bi-dash"></i>
-                    </button>
-                    <%= f.number_field :quantity,
-                                      value: item['quantity'],
-                                      min: 1,
-                                      max: 10,
-                                      class: "form-control text-center",
-                                      id: "cart_quantity_#{item['product_id']}",
-                                      onchange: "updateCartQuantity(#{item['product_id']})" %>
-                    <button type="button" class="btn btn-outline-secondary" onclick="increaseCartQuantity(<%= item['product_id'] %>)">
-                      <i class="bi bi-plus"></i>
-                    </button>
-                  </div>
-                <% end %>
-              </div>
+                <!-- Quantity Controls -->
+                <div class="col-md-3 col-6">
+                  <%= form_with url: update_item_customer_cart_path, method: :patch, local: true, class: "d-flex align-items-center" do |f| %>
+                    <%= f.hidden_field :product_id, value: item['product_id'] %>
+                    <div class="quantity-controls">
+                      <button type="button" class="quantity-btn" onclick="decreaseCartQuantity(<%= item['product_id'] %>)">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <%= f.number_field :quantity,
+                                        value: item['quantity'],
+                                        min: 1,
+                                        max: 10,
+                                        class: "quantity-input",
+                                        id: "cart_quantity_#{item['product_id']}",
+                                        onchange: "updateCartQuantity(#{item['product_id']})" %>
+                      <button type="button" class="quantity-btn" onclick="increaseCartQuantity(<%= item['product_id'] %>)">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
 
-              <!-- Item Total & Remove -->
-              <div class="col-md-2 col-6 text-md-end">
-                <p class="fw-bold mb-2">₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></p>
-                <%= link_to remove_item_customer_cart_path,
-                           method: :delete,
-                           data: {
-                             confirm: 'Remove this item from cart?',
-                             params: { product_id: item['product_id'] }
-                           },
-                           class: "btn btn-outline-danger btn-sm" do %>
-                  <i class="bi bi-trash"></i>
-                <% end %>
+                <!-- Item Total & Remove -->
+                <div class="col-md-2 col-6 text-md-end">
+                  <p class="item-total mb-2">₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></p>
+                  <%= link_to remove_item_customer_cart_path,
+                             method: :delete,
+                             data: {
+                               confirm: 'Remove this item from cart?',
+                               params: { product_id: item['product_id'] }
+                             },
+                             class: "remove-btn" do %>
+                    <i class="fas fa-trash"></i>
+                  <% end %>
+                </div>
               </div>
             </div>
           <% end %>
 
           <!-- Clear Cart -->
-          <div class="text-end mt-3">
+          <div class="text-end p-3">
             <%= link_to clear_customer_cart_path,
                        method: :delete,
                        data: { confirm: 'Are you sure you want to clear your cart?' },
-                       class: "btn btn-outline-secondary" do %>
-              <i class="bi bi-trash me-1"></i>Clear Cart
+                       class: "clear-cart-btn" do %>
+              <i class="fas fa-trash me-2"></i>Clear Cart
             <% end %>
           </div>
         </div>
@@ -88,90 +348,98 @@
 
       <!-- Order Summary -->
       <div class="col-lg-4">
-        <div class="bg-white rounded shadow-sm p-4 position-sticky" style="top: 20px;">
-          <h5 class="mb-4">Order Summary</h5>
+        <div class="summary-card">
+          <h5 class="summary-header">
+            <i class="fas fa-receipt me-2"></i>
+            Order Summary
+          </h5>
 
-          <!-- Items Summary -->
-          <div class="mb-3">
-            <% @cart_items.each do |item| %>
-              <div class="d-flex justify-content-between small text-muted mb-1">
-                <span><%= item['product_name'] %> × <%= item['quantity'] %></span>
-                <span>₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></span>
+          <div class="p-4">
+            <!-- Items Summary -->
+            <div class="mb-4">
+              <% @cart_items.each do |item| %>
+                <div class="d-flex justify-content-between small text-muted mb-2">
+                  <span class="fw-medium"><%= item['product_name'] %> × <%= item['quantity'] %></span>
+                  <span class="fw-bold">₹<%= (item['price'].to_f * item['quantity'].to_i).round(2) %></span>
+                </div>
+              <% end %>
+            </div>
+
+            <hr style="margin: 1.5rem 0; opacity: 0.3;">
+
+            <!-- Pricing Breakdown -->
+            <div class="summary-item">
+              <span>Subtotal (<%= @cart_count %> items)</span>
+              <span class="fw-bold">₹<%= @cart_total %></span>
+            </div>
+
+            <div class="summary-item">
+              <span>Shipping</span>
+              <span>
+                <% if @cart_total >= 500 %>
+                  <span class="free-shipping">Free</span>
+                <% else %>
+                  <span class="fw-bold">₹50</span>
+                <% end %>
+              </span>
+            </div>
+
+            <% if @cart_total < 500 %>
+              <div class="shipping-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Add <strong>₹<%= (500 - @cart_total).round(2) %></strong> more for free shipping!
               </div>
             <% end %>
-          </div>
 
-          <hr>
+            <hr style="margin: 1.5rem 0; opacity: 0.3;">
 
-          <!-- Pricing -->
-          <div class="d-flex justify-content-between mb-2">
-            <span>Subtotal (<%= @cart_count %> items)</span>
-            <span>₹<%= @cart_total %></span>
-          </div>
-
-          <div class="d-flex justify-content-between mb-2">
-            <span>Shipping</span>
-            <span class="text-success">
-              <% if @cart_total >= 500 %>
-                Free
-              <% else %>
-                ₹50
-              <% end %>
-            </span>
-          </div>
-
-          <% if @cart_total < 500 %>
-            <div class="alert alert-info small">
-              <i class="bi bi-info-circle me-1"></i>
-              Add ₹<%= (500 - @cart_total).round(2) %> more for free shipping!
+            <div class="summary-item">
+              <span class="fs-5 fw-bold">Total</span>
+              <span class="fs-5 fw-bold" style="color: var(--primary-purple);">
+                ₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %>
+              </span>
             </div>
-          <% end %>
 
-          <hr>
+            <!-- Checkout Button -->
+            <div class="d-grid gap-2 mt-4">
+              <%= link_to customer_checkout_path, class: "checkout-btn" do %>
+                <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+              <% end %>
+            </div>
 
-          <div class="d-flex justify-content-between fw-bold fs-5 mb-4">
-            <span>Total</span>
-            <span class="text-success">
-              ₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %>
-            </span>
-          </div>
+            <!-- Continue Shopping -->
+            <div class="text-center mt-3">
+              <%= link_to customer_shop_path, class: "continue-shopping-btn" do %>
+                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+              <% end %>
+            </div>
 
-          <!-- Checkout Button -->
-          <div class="d-grid gap-2">
-            <%= link_to customer_checkout_path, class: "btn btn-primary btn-lg" do %>
-              <i class="bi bi-credit-card me-2"></i>Proceed to Checkout
-            <% end %>
-          </div>
-
-          <!-- Continue Shopping -->
-          <div class="text-center mt-3">
-            <%= link_to customer_products_path, class: "btn btn-outline-secondary" do %>
-              <i class="bi bi-arrow-left me-1"></i>Continue Shopping
-            <% end %>
-          </div>
-
-          <!-- Secure Checkout Info -->
-          <div class="text-center mt-4">
-            <small class="text-muted">
-              <i class="bi bi-shield-check text-success me-1"></i>
-              Secure Checkout
-            </small>
+            <!-- Secure Checkout Info -->
+            <div class="text-center mt-4">
+              <small class="text-muted d-flex align-items-center justify-content-center">
+                <i class="fas fa-shield-alt text-success me-2"></i>
+                Secure SSL Encryption
+              </small>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
   <% else %>
     <!-- Empty Cart -->
-    <div class="row">
-      <div class="col-12">
-        <div class="text-center py-5">
-          <i class="bi bi-cart-x display-1 text-muted mb-4"></i>
-          <h3>Your cart is empty</h3>
-          <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
-          <%= link_to customer_products_path, class: "btn btn-primary btn-lg" do %>
-            <i class="bi bi-arrow-left me-2"></i>Start Shopping
-          <% end %>
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="empty-cart">
+            <i class="fas fa-shopping-cart"></i>
+            <h3 class="fw-bold mb-3">Your cart is empty</h3>
+            <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.<br>Start shopping and discover our amazing products!</p>
+            <%= link_to customer_shop_path, class: "checkout-btn d-inline-flex align-items-center" do %>
+              <i class="fas fa-store me-2"></i>Start Shopping
+            <% end %>
+          </div>
         </div>
       </div>
     </div>

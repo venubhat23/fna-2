@@ -3,6 +3,7 @@ class DeliveryPerson < ApplicationRecord
   has_one_attached :license_document
   has_one_attached :vehicle_document
   has_many :bookings, dependent: :nullify
+  has_many :milk_delivery_tasks, dependent: :nullify
 
   # Password authentication
   has_secure_password

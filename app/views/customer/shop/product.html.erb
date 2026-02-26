@@ -1,0 +1,388 @@
+<% content_for :title, "#{@product.name} - Dhanvantri Naturals" %>
+
+<div class="product-detail-page">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <%= link_to customer_dashboard_path, class: "text-decoration-none" do %>
+          <i class="fas fa-home me-1"></i>Dashboard
+        <% end %>
+      </li>
+      <li class="breadcrumb-item">
+        <%= link_to "Shop", customer_shop_path, class: "text-decoration-none" %>
+      </li>
+      <% if @product.category %>
+        <li class="breadcrumb-item">
+          <%= link_to customer_shop_category_path(@product.category), class: "text-decoration-none" do %>
+            <%= @product.category.name %>
+          <% end %>
+        </li>
+      <% end %>
+      <li class="breadcrumb-item active"><%= @product.name %></li>
+    </ol>
+  </nav>
+
+  <div class="row g-5">
+    <!-- Product Images -->
+    <div class="col-lg-6">
+      <div class="product-images">
+        <div class="main-image mb-3">
+          <% if @product.image.present? %>
+            <%= image_tag @product.image, class: "img-fluid rounded", alt: @product.name, id: "mainProductImage" %>
+          <% elsif @product.image_url.present? %>
+            <img src="<%= @product.image_url %>" class="img-fluid rounded" alt="<%= @product.name %>" id="mainProductImage">
+          <% else %>
+            <div class="product-image-placeholder d-flex align-items-center justify-content-center rounded">
+              <i class="fas fa-image fa-5x text-muted"></i>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Additional Images (if any) -->
+        <% if @product.additional_images_urls.present? %>
+          <div class="image-thumbnails">
+            <div class="row g-2">
+              <% JSON.parse(@product.additional_images_urls).each_with_index do |image_url, index| %>
+                <div class="col-3">
+                  <img src="<%= image_url %>" class="img-fluid rounded thumbnail-image"
+                       alt="<%= @product.name %> - Image <%= index + 1 %>"
+                       onclick="changeMainImage('<%= image_url %>')">
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Product Details -->
+    <div class="col-lg-6">
+      <div class="product-info">
+        <!-- Product Category -->
+        <% if @product.category %>
+          <div class="product-category mb-2">
+            <span class="badge bg-primary"><%= @product.category.name %></span>
+          </div>
+        <% end %>
+
+        <!-- Product Name -->
+        <h1 class="product-title mb-3"><%= @product.name %></h1>
+
+        <!-- Product Rating -->
+        <div class="product-rating mb-3">
+          <div class="d-flex align-items-center">
+            <div class="stars me-2">
+              <% 5.times do |i| %>
+                <i class="fas fa-star text-warning"></i>
+              <% end %>
+            </div>
+            <span class="text-muted">(<%= @product.total_reviews %> reviews)</span>
+          </div>
+        </div>
+
+        <!-- Product Pricing -->
+        <div class="product-pricing mb-4">
+          <% if @product.discount_price.present? && @product.discount_price > 0 %>
+            <div class="pricing-info">
+              <span class="current-price fs-3 fw-bold text-success">₹<%= number_with_delimiter(@product.discount_price.to_i) %></span>
+              <span class="original-price fs-5 text-muted text-decoration-line-through ms-2">₹<%= number_with_delimiter(@product.price.to_i) %></span>
+              <span class="discount-badge ms-2">
+                <span class="badge bg-danger"><%= number_to_percentage((((@product.price - @product.discount_price) / @product.price) * 100), precision: 0) %> OFF</span>
+              </span>
+            </div>
+          <% else %>
+            <span class="current-price fs-3 fw-bold text-success">₹<%= number_with_delimiter(@product.price.to_i) %></span>
+          <% end %>
+        </div>
+
+        <!-- Stock Status -->
+        <div class="stock-info mb-4">
+          <% if @product.total_batch_stock > 0 %>
+            <span class="badge bg-success fs-6">
+              <i class="fas fa-check-circle me-1"></i>In Stock (<%= @product.total_batch_stock %> available)
+            </span>
+          <% else %>
+            <span class="badge bg-danger fs-6">
+              <i class="fas fa-times-circle me-1"></i>Out of Stock
+            </span>
+          <% end %>
+        </div>
+
+        <!-- Product Description -->
+        <% if @product.description.present? %>
+          <div class="product-description mb-4">
+            <h5>Description</h5>
+            <p class="text-muted"><%= simple_format(@product.description) %></p>
+          </div>
+        <% end %>
+
+        <!-- Quantity Selector and Add to Cart -->
+        <div class="quantity-cart-section mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-auto">
+              <label for="quantity" class="form-label">Quantity</label>
+              <div class="quantity-selector">
+                <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity()">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="<%= @product.total_batch_stock %>" style="width: 80px;">
+                <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity()">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col">
+              <% if @product.total_batch_stock > 0 %>
+                <button type="button" class="btn btn-primary btn-lg w-100" onclick="addToCart(<%= @product.id %>)">
+                  <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                </button>
+              <% else %>
+                <button type="button" class="btn btn-secondary btn-lg w-100" disabled>
+                  <i class="fas fa-times me-2"></i>Out of Stock
+                </button>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Specifications -->
+        <div class="product-specs">
+          <h5>Product Details</h5>
+          <table class="table table-borderless">
+            <% if @product.sku.present? %>
+              <tr>
+                <td><strong>SKU:</strong></td>
+                <td><%= @product.sku %></td>
+              </tr>
+            <% end %>
+            <% if @product.weight.present? %>
+              <tr>
+                <td><strong>Weight:</strong></td>
+                <td><%= @product.weight %> kg</td>
+              </tr>
+            <% end %>
+            <% if @product.dimensions.present? %>
+              <tr>
+                <td><strong>Dimensions:</strong></td>
+                <td><%= @product.dimensions %></td>
+              </tr>
+            <% end %>
+            <tr>
+              <td><strong>Type:</strong></td>
+              <td><%= @product.product_type&.humanize || 'Regular' %></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Products -->
+  <% if @related_products.any? %>
+    <div class="related-products mt-5">
+      <h3 class="mb-4">Related Products</h3>
+      <div class="row g-4">
+        <% @related_products.each do |product| %>
+          <div class="col-lg-3 col-md-6">
+            <div class="product-card h-100">
+              <div class="product-image-wrapper">
+                <% if product.image.present? %>
+                  <%= image_tag product.image, class: "product-image", alt: product.name %>
+                <% elsif product.image_url.present? %>
+                  <img src="<%= product.image_url %>" class="product-image" alt="<%= product.name %>">
+                <% else %>
+                  <div class="product-image-placeholder">
+                    <i class="fas fa-image"></i>
+                  </div>
+                <% end %>
+              </div>
+              <div class="product-info p-3">
+                <h6 class="product-name">
+                  <%= link_to product.name, customer_shop_product_path(product), class: "text-decoration-none text-dark" %>
+                </h6>
+                <div class="product-pricing">
+                  <% if product.discount_price.present? && product.discount_price > 0 %>
+                    <span class="current-price fw-bold">₹<%= number_with_delimiter(product.discount_price.to_i) %></span>
+                    <span class="original-price text-muted text-decoration-line-through ms-1">₹<%= number_with_delimiter(product.price.to_i) %></span>
+                  <% else %>
+                    <span class="current-price fw-bold">₹<%= number_with_delimiter(product.price.to_i) %></span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<style>
+.product-detail-page {
+  padding: 20px 0;
+}
+
+.product-image-placeholder {
+  background-color: #f8f9fa;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #dee2e6;
+}
+
+.thumbnail-image {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.thumbnail-image:hover {
+  opacity: 1;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.quantity-selector input {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.quantity-selector button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.quantity-selector button:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.product-card {
+  border: 1px solid #e3e6f0;
+  border-radius: 8px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.product-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+
+.product-image-placeholder {
+  height: 200px;
+}
+</style>
+
+<script>
+// Change main product image
+function changeMainImage(imageSrc) {
+  document.getElementById('mainProductImage').src = imageSrc;
+}
+
+// Quantity controls
+function increaseQuantity() {
+  const input = document.getElementById('quantity');
+  const max = parseInt(input.max);
+  if (parseInt(input.value) < max) {
+    input.value = parseInt(input.value) + 1;
+  }
+}
+
+function decreaseQuantity() {
+  const input = document.getElementById('quantity');
+  if (parseInt(input.value) > 1) {
+    input.value = parseInt(input.value) - 1;
+  }
+}
+
+// Frontend-only Add to Cart functionality
+function addToCart(productId) {
+  const quantity = parseInt(document.getElementById('quantity').value);
+  const productName = '<%= @product.name %>';
+  const productPrice = <%= @product.discount_price.present? && @product.discount_price > 0 ? @product.discount_price : @product.price %>;
+  const productImage = '<%= @product.image_url || (@product.image.present? ? asset_path(@product.image) : '') %>';
+
+  // Use the global cart function
+  if (window.addToCartFromButton) {
+    // Add multiple quantities
+    for (let i = 0; i < quantity; i++) {
+      window.addToCartFromButton(productId, productName, productPrice, productImage);
+    }
+  } else {
+    // Fallback local implementation
+    let cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
+    const existingIndex = cart.findIndex(item => item.id == productId);
+
+    if (existingIndex > -1) {
+      cart[existingIndex].quantity += quantity;
+    } else {
+      cart.push({
+        id: productId,
+        name: productName,
+        price: productPrice,
+        quantity: quantity,
+        image: productImage
+      });
+    }
+
+    localStorage.setItem('customerCart', JSON.stringify(cart));
+    updateCartCounter();
+    showCartNotification('Product added to cart successfully!');
+  }
+}
+
+function showCartNotification(message) {
+  // Create or update notification element
+  let notification = document.getElementById('cart-notification');
+  if (!notification) {
+    notification = document.createElement('div');
+    notification.id = 'cart-notification';
+    notification.className = 'alert alert-success position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    document.body.appendChild(notification);
+  }
+
+  notification.innerHTML = `
+    <i class="fas fa-check-circle me-2"></i>${message}
+    <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+  `;
+
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    if (notification) {
+      notification.remove();
+    }
+  }, 3000);
+}
+
+function updateCartCounter() {
+  const cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Update cart counter in navbar if it exists
+  const cartCounter = document.querySelector('.cart-counter');
+  if (cartCounter) {
+    cartCounter.textContent = totalItems;
+    cartCounter.style.display = totalItems > 0 ? 'inline' : 'none';
+  }
+}
+
+// Initialize cart counter on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateCartCounter();
+});
+</script>

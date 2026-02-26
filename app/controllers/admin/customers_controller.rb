@@ -1,7 +1,7 @@
 class Admin::CustomersController < Admin::ApplicationController
   include LocationData
   include ConfigurablePagination
-  before_action :set_customer, only: [:show, :edit, :update, :destroy, :toggle_status, :policy_chart, :trace_commission, :product_selection]
+  before_action :set_customer, only: [:show, :edit, :update, :destroy, :toggle_status, :policy_chart, :trace_commission, :product_selection, :generate_password]
   skip_before_action :ensure_admin, only: [:search_sub_agents]
   skip_before_action :authenticate_user!, only: [:search_sub_agents]
   skip_load_and_authorize_resource only: [:search_sub_agents]
@@ -681,6 +681,83 @@ class Admin::CustomersController < Admin::ApplicationController
       { name: 'Tax Services', path: '#', icon: 'receipt', description: 'Tax planning and consultation' },
       { name: 'Travel Packages', path: '#', icon: 'airplane', description: 'Travel insurance and packages' }
     ]
+  end
+
+  # POST /admin/customers/:id/generate_password
+  def generate_password
+    begin
+      ActiveRecord::Base.transaction do
+        # Generate password
+        generated_password = "Welcome@123"
+
+        # Store password in customer record
+        @customer.update!(auto_generated_password: generated_password)
+
+        # Find or create User account
+        user = User.find_by(email: @customer.email, user_type: 'customer')
+
+        if user
+          # Update existing user password
+          user.update!(
+            password: generated_password,
+            password_confirmation: generated_password
+          )
+          message = "Password generated and updated for existing user account."
+        else
+          # Create new User account
+          if @customer.email.present?
+            User.create!(
+              first_name: @customer.first_name,
+              last_name: @customer.last_name,
+              middle_name: @customer.middle_name,
+              email: @customer.email,
+              mobile: @customer.mobile,
+              password: generated_password,
+              password_confirmation: generated_password,
+              user_type: 'customer',
+              address: @customer.address,
+              city: 'Unknown',
+              state: 'Unknown',
+              pincode: '000000',
+              country: 'India',
+              status: true,
+              is_active: true,
+              is_verified: false
+            )
+            message = "User account created with generated password."
+          else
+            message = "Cannot create user account: email is required."
+          end
+        end
+
+        respond_to do |format|
+          format.html {
+            redirect_to admin_customer_path(@customer),
+            notice: "#{message} Password: #{generated_password}"
+          }
+          format.json {
+            render json: {
+              success: true,
+              message: message,
+              password: generated_password
+            }
+          }
+        end
+      end
+    rescue => e
+      respond_to do |format|
+        format.html {
+          redirect_to admin_customer_path(@customer),
+          alert: "Failed to generate password: #{e.message}"
+        }
+        format.json {
+          render json: {
+            success: false,
+            message: "Failed to generate password: #{e.message}"
+          }
+        }
+      end
+    end
   end
 
   # API endpoint for cities

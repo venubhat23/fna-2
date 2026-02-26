@@ -1,0 +1,29 @@
+<% content_for :title, "Offers - Dhanvantri Naturals" %>
+
+<div class="offers-page">
+  <div class="page-header mb-4">
+    <h2 class="page-title">
+      <i class="fas fa-gift me-2 text-primary"></i>
+      Special Offers
+    </h2>
+    <p class="text-muted">Discover amazing deals and discounts on our products</p>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <div class="empty-state">
+            <i class="fas fa-gift display-1 text-muted mb-4"></i>
+            <h4 class="text-muted mb-3">No Offers Available</h4>
+            <p class="text-muted">Check back soon for exciting offers and discounts!</p>
+            <%= link_to customer_shop_path, class: "btn btn-primary" do %>
+              <i class="fas fa-shopping-bag me-2"></i>
+              Continue Shopping
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

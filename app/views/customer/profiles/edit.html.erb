@@ -1,0 +1,467 @@
+<% content_for :title, "Edit Profile - Dhanvantri Naturals" %>
+
+<style>
+:root {
+  --primary-purple: #8B5DFF;
+  --purple-light: #A983FF;
+  --purple-dark: #7048E8;
+  --purple-gradient: linear-gradient(135deg, #8B5DFF 0%, #A983FF 100%);
+}
+
+.edit-profile-page {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  min-height: 100vh;
+}
+
+.page-header {
+  background: var(--purple-gradient);
+  color: white;
+  padding: 2rem 0;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.form-card {
+  background: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.1);
+  overflow: hidden;
+}
+
+.form-section {
+  padding: 2rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  color: var(--purple-dark);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.section-title i {
+  margin-right: 0.75rem;
+  width: 24px;
+  text-align: center;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  color: var(--purple-dark);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-control, .form-select {
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 0 0.2rem rgba(139, 93, 255, 0.25);
+  outline: none;
+}
+
+.form-control.is-invalid {
+  border-color: #dc3545;
+}
+
+.invalid-feedback {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.btn-save {
+  background: var(--purple-gradient);
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 93, 255, 0.3);
+  color: white;
+}
+
+.btn-cancel {
+  background: white;
+  border: 2px solid #ddd;
+  color: #666;
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-cancel:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  color: #333;
+  text-decoration: none;
+}
+
+.form-actions {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.form-text {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.required {
+  color: #dc3545;
+}
+
+.avatar-section {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+}
+
+.current-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--purple-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: white;
+  font-size: 2.5rem;
+  border: 4px solid white;
+  box-shadow: 0 8px 25px rgba(139, 93, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}
+</style>
+
+<div class="edit-profile-page">
+  <!-- Page Header -->
+  <div class="page-header text-center">
+    <div class="container">
+      <h1 class="page-title">
+        <i class="fas fa-user-edit me-3"></i>
+        Edit Profile
+      </h1>
+      <p class="mb-0 opacity-75">Update your personal information and preferences</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <%= form_with model: [@customer], url: customer_profile_path, method: :patch, local: true, class: "needs-validation", novalidate: true do |f| %>
+      <div class="form-card">
+        <!-- Avatar Section -->
+        <div class="avatar-section">
+          <div class="current-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <h5 class="mb-0" style="color: var(--purple-dark);"><%= @customer.display_name %></h5>
+          <p class="text-muted small mt-1">Customer since <%= @customer.created_at.strftime("%B %Y") %></p>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i>
+            Personal Information
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <%= f.label :first_name, class: "form-label" do %>
+                First Name <span class="required">*</span>
+              <% end %>
+              <%= f.text_field :first_name, class: "form-control", required: true %>
+              <div class="invalid-feedback">Please provide your first name.</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :middle_name, class: "form-label" %>
+              <%= f.text_field :middle_name, class: "form-control" %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :last_name, class: "form-label" do %>
+                Last Name <span class="required">*</span>
+              <% end %>
+              <%= f.text_field :last_name, class: "form-control", required: true %>
+              <div class="invalid-feedback">Please provide your last name.</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :birth_date, class: "form-label" %>
+              <%= f.date_field :birth_date, class: "form-control" %>
+              <div class="form-text">This helps us provide age-appropriate recommendations</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :gender, class: "form-label" %>
+              <%= f.select :gender,
+                  options_for_select([
+                    ['Select Gender', ''],
+                    ['Male', 'male'],
+                    ['Female', 'female'],
+                    ['Other', 'other'],
+                    ['Prefer not to say', 'prefer_not_to_say']
+                  ], @customer.gender),
+                  {},
+                  { class: "form-select" } %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :marital_status, class: "form-label" %>
+              <%= f.select :marital_status,
+                  options_for_select([
+                    ['Select Marital Status', ''],
+                    ['Single', 'single'],
+                    ['Married', 'married'],
+                    ['Divorced', 'divorced'],
+                    ['Widowed', 'widowed']
+                  ], @customer.marital_status),
+                  {},
+                  { class: "form-select" } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-address-card"></i>
+            Contact Information
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <%= f.label :email, class: "form-label" do %>
+                Email Address <span class="required">*</span>
+              <% end %>
+              <%= f.email_field :email, class: "form-control", required: true %>
+              <div class="invalid-feedback">Please provide a valid email address.</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :mobile, class: "form-label" do %>
+                Mobile Number <span class="required">*</span>
+              <% end %>
+              <%= f.tel_field :mobile, class: "form-control", required: true, pattern: "[0-9]{10}" %>
+              <div class="form-text">Enter 10-digit mobile number without country code</div>
+              <div class="invalid-feedback">Please provide a valid 10-digit mobile number.</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :whatsapp_number, class: "form-label" %>
+              <%= f.tel_field :whatsapp_number, class: "form-control", pattern: "[0-9]{10}" %>
+              <div class="form-text">For order updates and notifications</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :emergency_contact_name, class: "form-label" %>
+              <%= f.text_field :emergency_contact_name, class: "form-control" %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :emergency_contact_mobile, class: "form-label" %>
+              <%= f.tel_field :emergency_contact_mobile, class: "form-control", pattern: "[0-9]{10}" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-map-marker-alt"></i>
+            Address Information
+          </h3>
+
+          <div class="form-group">
+            <%= f.label :address, class: "form-label" %>
+            <%= f.text_area :address, class: "form-control", rows: 3, placeholder: "Enter your complete address" %>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <%= f.label :city, class: "form-label" %>
+              <%= f.text_field :city, class: "form-control" %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :state, class: "form-label" %>
+              <%= f.text_field :state, class: "form-control" %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :pincode, class: "form-label" %>
+              <%= f.text_field :pincode, class: "form-control", pattern: "[0-9]{6}" %>
+              <div class="form-text">6-digit PIN code</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :country, class: "form-label" %>
+              <%= f.text_field :country, class: "form-control", value: @customer.country.present? ? @customer.country : "India" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Professional Information -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-briefcase"></i>
+            Professional Information
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <%= f.label :company_name, class: "form-label" %>
+              <%= f.text_field :company_name, class: "form-control" %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :business_job, class: "form-label" %>
+              <%= f.text_field :business_job, class: "form-control", placeholder: "e.g., Software Engineer, Business Owner" %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :annual_income, class: "form-label" %>
+              <%= f.number_field :annual_income, class: "form-control", min: 0, step: 1000, placeholder: "Annual income in INR" %>
+              <div class="form-text">This information is kept confidential</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :gst_no, class: "form-label" %>
+              <%= f.text_field :gst_no, class: "form-control", placeholder: "GST Number (if applicable)" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Information -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-id-card"></i>
+            Document Information
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <%= f.label :pan_no, class: "form-label" %>
+              <%= f.text_field :pan_no, class: "form-control", placeholder: "PAN Number", pattern: "[A-Z]{5}[0-9]{4}[A-Z]{1}" %>
+              <div class="form-text">Format: ABCDE1234F</div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :aadhar_no, class: "form-label" %>
+              <%= f.text_field :aadhar_no, class: "form-control", placeholder: "Aadhar Number", pattern: "[0-9]{12}" %>
+              <div class="form-text">12-digit Aadhar number (kept secure)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Physical Information -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-heartbeat"></i>
+            Health Information
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <%= f.label :height, class: "form-label" %>
+              <div class="input-group">
+                <%= f.number_field :height, class: "form-control", min: 0, max: 300, step: 0.1, placeholder: "Height" %>
+                <span class="input-group-text">cm</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :weight, class: "form-label" %>
+              <div class="input-group">
+                <%= f.number_field :weight, class: "form-control", min: 0, max: 500, step: 0.1, placeholder: "Weight" %>
+                <span class="input-group-text">kg</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Height and weight information helps us recommend appropriate products for your health and fitness needs.
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <%= f.submit "Save Changes", class: "btn-save" %>
+          <%= link_to "Cancel", customer_profile_path, class: "btn-cancel" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+// Bootstrap form validation
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>

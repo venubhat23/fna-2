@@ -26,6 +26,10 @@ class Admin::ImportsController < Admin::ApplicationController
     # Show products import form
   end
 
+  def customer_subscriptions_form
+    # Show customer subscriptions import form
+  end
+
   # POST /admin/import/customers
   def customers
     uploaded_file = params[:file]
@@ -118,6 +122,29 @@ class Admin::ImportsController < Admin::ApplicationController
     end
   end
 
+  # POST /admin/import/customer_subscriptions
+  def customer_subscriptions
+    uploaded_file = params[:file]
+
+    if uploaded_file.blank?
+      redirect_back fallback_location: admin_imports_path, alert: 'Please select a file to import.'
+      return
+    end
+
+    begin
+      import_result = ImportService::CustomerSubscriptionImporter.new(uploaded_file).import
+
+      if import_result[:success]
+        redirect_to admin_customers_path, notice: "Successfully imported #{import_result[:imported_count]} customer subscriptions. #{import_result[:skipped_count]} records were skipped due to validation errors."
+      else
+        redirect_back fallback_location: admin_imports_path, alert: "Import failed: #{import_result[:error]}"
+      end
+    rescue => e
+      Rails.logger.error "Customer subscription import error: #{e.message}"
+      redirect_back fallback_location: admin_imports_path, alert: 'An error occurred during import. Please check your file format and try again.'
+    end
+  end
+
   # CSV Validation endpoint
   def validate_csv
     uploaded_file = params[:file]
@@ -174,6 +201,8 @@ class Admin::ImportsController < Admin::ApplicationController
       send_delivery_person_template
     when 'products'
       send_product_template
+    when 'customer_subscriptions'
+      send_customer_subscription_template
     else
       redirect_to admin_imports_path, alert: 'Invalid template type'
     end
@@ -187,10 +216,10 @@ class Admin::ImportsController < Admin::ApplicationController
 
     headers = [
       # Required fields (marked with *)
-      'first_name*', 'email*', 'mobile*',
+      'first_name*', 'mobile*',
 
       # Basic information (optional)
-      'middle_name', 'last_name', 'company_name', 'address', 'whatsapp_number',
+      'middle_name', 'last_name', 'email', 'company_name', 'address', 'whatsapp_number',
 
       # Personal details (optional)
       'birth_date', 'gender', 'marital_status', 'blood_group', 'nationality',
@@ -212,10 +241,10 @@ class Admin::ImportsController < Admin::ApplicationController
     sample_data = [
       [
         # Required fields
-        'John', 'john.doe@example.com', '9876543210',
+        'John', '9876543210',
 
         # Basic information
-        'Kumar', 'Doe', 'ABC Private Limited', '123 Main Street, Mumbai, Maharashtra, 400001', '9876543210',
+        'Kumar', 'Doe', 'john.doe@example.com', 'ABC Private Limited', '123 Main Street, Mumbai, Maharashtra, 400001', '9876543210',
 
         # Personal details
         '1990-01-15', 'male', 'married', 'A+', 'Indian', 'English', 'Software Engineer', '1200000',
@@ -234,10 +263,10 @@ class Admin::ImportsController < Admin::ApplicationController
       ],
       [
         # Required fields
-        'Priya', 'priya.sharma@example.com', '9876543211',
+        'Priya', '9876543211',
 
         # Basic information
-        '', 'Sharma', '', '456 Park Avenue, Delhi, 110001', '9876543211',
+        '', 'Sharma', 'priya.sharma@example.com', '', '456 Park Avenue, Delhi, 110001', '9876543211',
 
         # Personal details
         '1988-05-20', 'female', 'single', 'B+', 'Indian', 'Hindi', 'Doctor', '800000',
@@ -359,13 +388,16 @@ class Admin::ImportsController < Admin::ApplicationController
       'tags', 'meta_title', 'meta_description'
     ]
 
+    # Generate unique sample data with timestamps to avoid conflicts
+    timestamp = Time.current.strftime("%Y%m%d%H%M")
+
     sample_data = [
       [
         # Required fields
-        'Fresh Milk', '60.00', '1', '100',
+        "Sample Fresh Milk #{timestamp}", '60.00', '1', '100',
 
         # Basic information
-        'Pure cow milk delivered daily', 'MILK001', 'active', '1.0', '1L bottle', 'liter',
+        'Pure cow milk delivered daily - sample product', '', 'active', '1.0', '1L bottle', 'Liter',
 
         # Pricing
         '45.00', '65.00', '60.00',
@@ -378,7 +410,7 @@ class Admin::ImportsController < Admin::ApplicationController
         '2.5', '2.5', '0.0',
 
         # Product types
-        'subscription', 'true', 'false',
+        'Grocery', 'true', 'false',
 
         # Occasional product settings
         '', '', '',
@@ -392,10 +424,10 @@ class Admin::ImportsController < Admin::ApplicationController
       ],
       [
         # Required fields
-        'Organic Vegetables Bundle', '150.00', '2', '50',
+        "Sample Vegetable Bundle #{timestamp}", '150.00', '1', '50',
 
         # Basic information
-        'Fresh organic vegetables bundle with seasonal variety', 'VEG001', 'active', '1.0', '1kg bundle', 'kilogram',
+        'Fresh organic vegetables bundle with seasonal variety - sample product', '', 'active', '1.0', '1kg bundle', 'Kg',
 
         # Pricing
         '120.00', '160.00', '150.00',
@@ -408,7 +440,7 @@ class Admin::ImportsController < Admin::ApplicationController
         '0.0', '0.0', '0.0',
 
         # Product types
-        'one_time', 'false', 'false',
+        'Grocery', 'false', 'false',
 
         # Occasional product settings
         '', '', '',
@@ -422,10 +454,10 @@ class Admin::ImportsController < Admin::ApplicationController
       ],
       [
         # Required fields
-        'Festival Special Sweets', '300.00', '3', '25',
+        "Sample Special Sweets #{timestamp}", '300.00', '1', '25',
 
         # Basic information
-        'Traditional sweets for festivals and special occasions', 'SWEET001', 'active', '0.5', '500g box', 'box',
+        'Traditional sweets for festivals and special occasions - sample product', '', 'active', '0.5', '500g box', 'Box',
 
         # Pricing
         '200.00', '350.00', '300.00',
@@ -438,10 +470,10 @@ class Admin::ImportsController < Admin::ApplicationController
         '2.5', '2.5', '0.0',
 
         # Product types
-        'occasional', 'false', 'true',
+        'Grocery', 'false', 'true',
 
         # Occasional product settings
-        '2024-10-01', '2024-11-15', 'Special festival sweets available during festive season',
+        '2025-10-01', '2025-11-15', 'Special festival sweets available during festive season',
         'true', 'date_range',
 
         # Stock management
@@ -458,6 +490,95 @@ class Admin::ImportsController < Admin::ApplicationController
     end
 
     filename = format == 'xlsx' ? 'products_import_template.xlsx' : 'products_import_template.csv'
+    send_data csv_data, filename: filename, type: 'text/csv'
+  end
+
+  def send_customer_subscription_template
+    format = params[:format] || 'csv'
+
+    headers = [
+      # Customer required fields (marked with *)
+      'first_name*', 'mobile*',
+
+      # Customer basic information (optional)
+      'middle_name', 'last_name', 'company_name', 'address', 'whatsapp_number',
+
+      # Customer personal details (optional)
+      'birth_date', 'gender', 'pan_no', 'gst_no', 'occupation', 'annual_income', 'notes', 'status',
+
+      # Subscription required fields (marked with *)
+      'product_id*', 'quantity*', 'unit*', 'start_date*', 'end_date*',
+
+      # Subscription optional fields
+      'product_name', 'delivery_person_id', 'delivery_person_name', 'delivery_time'
+    ]
+
+    # Get available products for the template
+    milk_product = Product.where("name ILIKE '%milk%'").first
+    tomato_product = Product.find_by(name: 'Organic Tomato')
+
+    # Use actual product IDs from the database
+    milk_id = milk_product&.id || 21
+    tomato_id = tomato_product&.id || 19
+    milk_name = milk_product&.name || 'Fresh Cow Milk'
+
+    sample_data = [
+      [
+        # Customer required fields
+        'Ramesh', 'ramesh.kumar@example.com', '9876543210',
+
+        # Customer basic information
+        'Kumar', 'Singh', '', '123 Milk Street, Mumbai, Maharashtra, 400001', '9876543210',
+
+        # Customer personal details
+        '1985-01-15', 'male', 'ABCDE1234F', '', 'Business Owner', '500000', 'Daily milk subscription customer', 'true',
+
+        # Subscription required fields
+        milk_id.to_s, '2', 'Liter', '2026-03-01', '2026-03-31',
+
+        # Subscription optional fields
+        milk_name, '', '', '07:00'
+      ],
+      [
+        # Customer required fields
+        'Priya', 'priya.sharma@example.com', '9876543211',
+
+        # Customer basic information
+        '', 'Sharma', '', '456 Park Avenue, Delhi, 110001', '9876543211',
+
+        # Customer personal details
+        '1988-05-20', 'female', '', '', 'Doctor', '800000', 'Morning milk delivery', 'true',
+
+        # Subscription required fields
+        milk_id.to_s, '1', 'Liter', '2026-03-01', '2026-03-31',
+
+        # Subscription optional fields
+        milk_name, '', '', '06:30'
+      ],
+      [
+        # Customer required fields
+        'Sunil', 'sunil.patel@example.com', '9876543212',
+
+        # Customer basic information
+        'Kumar', 'Patel', 'Patel Family', '789 Society, Ahmedabad, Gujarat, 380001', '9876543212',
+
+        # Customer personal details
+        '1980-12-10', 'male', 'KLMNO9012P', '', 'Engineer', '1200000', 'Family subscription', 'true',
+
+        # Subscription required fields
+        tomato_id.to_s, '3', 'Kg', '2026-03-01', '2026-04-30',
+
+        # Subscription optional fields
+        'Organic Tomato', '', '', '08:00'
+      ]
+    ]
+
+    csv_data = CSV.generate(headers: true) do |csv|
+      csv << headers
+      sample_data.each { |row| csv << row }
+    end
+
+    filename = format == 'xlsx' ? 'customer_subscriptions_import_template.xlsx' : 'customer_subscriptions_import_template.csv'
     send_data csv_data, filename: filename, type: 'text/csv'
   end
 

@@ -365,13 +365,26 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     today_deliveries = MilkDeliveryTask.for_today.count
     pending_today = MilkDeliveryTask.for_today.pending.count
 
+    # Delivery person statistics
+    total_delivery_people = DeliveryPerson.where(status: true).count
+    # Count delivery people who have tasks assigned (pending or assigned status)
+    assigned_delivery_people = MilkDeliveryTask
+      .joins(:delivery_person)
+      .where(status: ['pending', 'assigned'])
+      .where(delivery_people: { status: true })
+      .select(:delivery_person_id)
+      .distinct
+      .count
+
     {
       total: total,
       active: active,
       paused: paused,
       expired: expired,
       today_deliveries: today_deliveries,
-      pending_today: pending_today
+      pending_today: pending_today,
+      total_delivery_people: total_delivery_people,
+      assigned_delivery_people: assigned_delivery_people
     }
   end
 

@@ -358,13 +358,92 @@
           <% end %>
         </li>
 
-        <!-- My Bookings -->
+        <!-- Shop -->
         <li class="nav-item">
-          <%= link_to customer_orders_path, class: "customer-nav-link #{'active' if current_page?(customer_orders_path) || request.path.include?('/customer/orders') || request.path.include?('/customer/cart') || request.path.include?('/customer/checkout') || request.path.include?('/customer/products') || request.path.include?('/customer/categories')}" do %>
-            <div class="icon-bg gradient-cyan">
-              <i class="fas fa-clipboard-list"></i>
+          <%= link_to customer_shop_path, class: "customer-nav-link #{'active' if current_page?(customer_shop_path) || request.path.include?('/customer/shop')}" do %>
+            <div class="icon-bg gradient-blue">
+              <i class="fas fa-store"></i>
             </div>
-            <span class="nav-text">My Bookings</span>
+            <span class="nav-text">Shop</span>
+          <% end %>
+        </li>
+
+        <!-- My Orders -->
+        <li class="nav-item">
+          <%= link_to customer_orders_path, class: "customer-nav-link #{'active' if current_page?(customer_orders_path) || request.path.include?('/customer/orders')}" do %>
+            <div class="icon-bg gradient-purple">
+              <i class="fas fa-shopping-bag"></i>
+            </div>
+            <span class="nav-text">My Orders</span>
+            <% if current_customer && current_customer.orders.where(status: ['pending', 'confirmed', 'processing']).count > 0 %>
+              <span class="nav-badge"><%= current_customer.orders.where(status: ['pending', 'confirmed', 'processing']).count %></span>
+            <% end %>
+          <% end %>
+        </li>
+
+        <!-- Subscriptions -->
+        <li class="nav-item">
+          <%= link_to customer_subscriptions_path, class: "customer-nav-link #{'active' if current_page?(customer_subscriptions_path) || request.path.include?('/customer/subscriptions')}" do %>
+            <div class="icon-bg gradient-orange">
+              <i class="fas fa-sync-alt"></i>
+            </div>
+            <span class="nav-text">Subscriptions</span>
+            <% if current_customer && current_customer.milk_subscriptions.where(is_active: true).count > 0 %>
+              <span class="nav-badge"><%= current_customer.milk_subscriptions.where(is_active: true).count %></span>
+            <% end %>
+          <% end %>
+        </li>
+
+        <!-- Cart -->
+        <li class="nav-item">
+          <%= link_to customer_cart_path, class: "customer-nav-link #{'active' if current_page?(customer_cart_path) || request.path.include?('/customer/cart')}" do %>
+            <div class="icon-bg gradient-cyan">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <span class="nav-text">Cart</span>
+            <% if cart_count > 0 %>
+              <span class="nav-badge"><%= cart_count %></span>
+            <% end %>
+          <% end %>
+        </li>
+
+        <!-- Offers -->
+        <li class="nav-item">
+          <%= link_to customer_offers_path, class: "customer-nav-link #{'active' if current_page?(customer_offers_path) || request.path.include?('/customer/offers')}" do %>
+            <div class="icon-bg gradient-pink">
+              <i class="fas fa-gift"></i>
+            </div>
+            <span class="nav-text">Offers</span>
+          <% end %>
+        </li>
+
+        <!-- Refer & Earn -->
+        <li class="nav-item">
+          <%= link_to "#", class: "customer-nav-link" do %>
+            <div class="icon-bg gradient-amber">
+              <i class="fas fa-star"></i>
+            </div>
+            <span class="nav-text">Refer & Earn</span>
+          <% end %>
+        </li>
+
+        <!-- My Profile -->
+        <li class="nav-item">
+          <%= link_to customer_profile_path, class: "customer-nav-link #{'active' if current_page?(customer_profile_path) || request.path.include?('/customer/profile')}" do %>
+            <div class="icon-bg gradient-green">
+              <i class="fas fa-user"></i>
+            </div>
+            <span class="nav-text">My Profile</span>
+          <% end %>
+        </li>
+
+        <!-- Support -->
+        <li class="nav-item">
+          <%= link_to customer_support_path, class: "customer-nav-link #{'active' if current_page?(customer_support_path) || request.path.include?('/customer/support')}" do %>
+            <div class="icon-bg gradient-red">
+              <i class="fas fa-headset"></i>
+            </div>
+            <span class="nav-text">Support</span>
           <% end %>
         </li>
       </ul>

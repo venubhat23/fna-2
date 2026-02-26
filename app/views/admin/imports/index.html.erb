@@ -108,8 +108,8 @@
         <div class="d-flex align-items-center">
           <i class="fas fa-users fa-2x me-3"></i>
           <div>
-            <h5 class="mb-0">Import Customers</h5>
-            <small class="text-light">Bulk upload individual or corporate customer records</small>
+            <h5 class="mb-0 text-dark"><strong>Import Customers</strong></h5>
+            <small class="text-dark-75"><strong>Bulk upload individual or corporate customer records</strong></small>
           </div>
         </div>
       </div>
@@ -142,8 +142,8 @@
         <div class="d-flex align-items-center">
           <i class="fas fa-shipping-fast fa-2x me-3"></i>
           <div>
-            <h5 class="mb-0">Import Delivery People</h5>
-            <small class="text-light">Bulk upload delivery personnel records</small>
+            <h5 class="mb-0 text-dark"><strong>Import Delivery People</strong></h5>
+            <small class="text-dark-75"><strong>Bulk upload delivery personnel records</strong></small>
           </div>
         </div>
       </div>
@@ -175,8 +175,8 @@
         <div class="d-flex align-items-center">
           <i class="fas fa-boxes fa-2x me-3"></i>
           <div>
-            <h5 class="mb-0">Import Products</h5>
-            <small class="text-light">Bulk upload product catalog</small>
+            <h5 class="mb-0 text-dark"><strong>Import Products</strong></h5>
+            <small class="text-dark-75"><strong>Bulk upload product catalog</strong></small>
           </div>
         </div>
       </div>
@@ -195,6 +195,39 @@
 
           <%= link_to products_form_admin_imports_path, class: "btn btn-teal" do %>
             <i class="fas fa-upload me-1"></i> Import Products
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer with Subscription Import Card -->
+  <div class="col-xl-6 col-lg-6 mb-4">
+    <div class="card shadow-lg border-0 h-100 import-card">
+      <div class="card-header bg-gradient-success text-white">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-user-plus fa-2x me-3"></i>
+          <div>
+            <h5 class="mb-0 text-dark"><strong>Import Customer with Subscription</strong></h5>
+            <small class="text-dark-75"><strong>Bulk upload customers with subscription details</strong></small>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-text text-muted mb-4">
+          Import customers along with their subscription details including product, duration, delivery person assignment, and quantity.
+          Automatically creates customers, subscription records, and daily delivery tasks.
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <%= link_to download_template_admin_imports_path(template_type: 'customer_subscriptions'),
+                      class: "btn btn-outline-success btn-sm",
+                      target: "_blank" do %>
+            <i class="fas fa-download me-1"></i> Download Template
+          <% end %>
+
+          <%= link_to "/admin/imports/customer_subscriptions_form", class: "btn btn-success" do %>
+            <i class="fas fa-upload me-1"></i> Import Customer Subscriptions
           <% end %>
         </div>
       </div>
@@ -277,31 +310,91 @@
 }
 
 .bg-gradient-primary {
-  background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%);
+  background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%) !important;
+  background-color: #5e72e4 !important; /* Fallback */
 }
 
 .bg-gradient-success {
-  background: linear-gradient(87deg, #2dce89 0, #2dcecc 100%);
+  background: linear-gradient(87deg, #2dce89 0, #2dcecc 100%) !important;
+  background-color: #2dce89 !important; /* Fallback */
 }
 
 .bg-gradient-info {
-  background: linear-gradient(87deg, #11cdef 0, #1171ef 100%);
+  background: linear-gradient(87deg, #11cdef 0, #1171ef 100%) !important;
+  background-color: #11cdef !important; /* Fallback */
 }
 
 .bg-gradient-warning {
-  background: linear-gradient(87deg, #fb6340 0, #fbb140 100%);
+  background: linear-gradient(87deg, #fb6340 0, #fbb140 100%) !important;
+  background-color: #fb6340 !important; /* Fallback */
 }
 
 .bg-gradient-danger {
-  background: linear-gradient(87deg, #f5365c 0, #f56036 100%);
+  background: linear-gradient(87deg, #f5365c 0, #f56036 100%) !important;
+  background-color: #f5365c !important; /* Fallback */
 }
 
 .bg-gradient-purple {
-  background: linear-gradient(87deg, #8965e0 0, #bc65e0 100%);
+  background: linear-gradient(87deg, #8965e0 0, #bc65e0 100%) !important;
+  background-color: #8965e0 !important; /* Fallback */
 }
 
 .bg-gradient-teal {
-  background: linear-gradient(87deg, #17a2b8 0, #17b8a2 100%);
+  background: linear-gradient(87deg, #17a2b8 0, #17b8a2 100%) !important;
+  background-color: #17a2b8 !important; /* Fallback */
+}
+
+/* Text color utility classes for better visibility */
+.text-dark-75 {
+  color: rgba(33, 37, 41, 0.85) !important;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+  font-weight: 600 !important;
+}
+
+.text-dark {
+  color: #212529 !important;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.4);
+  font-weight: 700 !important;
+}
+
+/* Fallback for card headers in case gradients don't load */
+.card-header {
+  color: #212529 !important;
+}
+
+.card-header h5 {
+  color: #212529 !important;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.4);
+  font-weight: 700 !important;
+}
+
+.card-header small {
+  color: rgba(33, 37, 41, 0.85) !important;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+  font-weight: 600 !important;
+}
+
+/* Specific targeting for import cards */
+.import-card .card-header h5,
+.import-card .card-header h5 strong {
+  color: #212529 !important;
+  text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5) !important;
+  font-weight: 700 !important;
+}
+
+.import-card .card-header small,
+.import-card .card-header small strong {
+  color: rgba(33, 37, 41, 0.85) !important;
+  text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.4) !important;
+  font-weight: 600 !important;
+}
+
+/* Force text to be visible on all colored backgrounds */
+.bg-gradient-primary *,
+.bg-gradient-purple *,
+.bg-gradient-teal *,
+.bg-gradient-success * {
+  color: #212529 !important;
 }
 
 .btn-purple {
