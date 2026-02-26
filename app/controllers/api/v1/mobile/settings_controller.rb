@@ -244,7 +244,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
           agent_email: agent_info[:email],
           agent_address: agent_info[:address],
           company_info: {
-            name: "Dhanvantari Farm",
+            name: "Atma Nirbhar Farm",
             mobile: "+918431174477",
             email: "support@dhanvantarifarm.in",
             address: "123 Insurance Street, Mumbai, Maharashtra, India",
@@ -259,7 +259,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
       render json: {
         success: true,
         data: {
-          company_name: "Dhanvantari Farm",
+          company_name: "Atma Nirbhar Farm",
           support_mobile: "+918431174477",
           support_email: "support@dhanvantarifarm.in",
           support_address: "123 Insurance Street, Mumbai, Maharashtra, India",
@@ -423,7 +423,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
     else
       # Default company agent
       {
-        name: "Dhanvantari Farm Support Team",
+        name: "Atma Nirbhar Farm Support Team",
         mobile: "+918431174477",
         email: "support@dr-wise.in",
         address: "123 Insurance Street, Mumbai, Maharashtra, India"
