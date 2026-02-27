@@ -1,6 +1,7 @@
 class PendingAmount < ApplicationRecord
   belongs_to :customer
 
+  # Fixed enum syntax for Rails 8 compatibility
   enum :status, {
     pending: 0,
     resolved: 1,
