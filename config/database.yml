@@ -15,6 +15,8 @@ development:
     <<: *primary_development
   queue:
     <<: *primary_development
+  cache:
+    <<: *primary_development
 
 test:
   primary: &primary_test
@@ -23,6 +25,8 @@ test:
   cable:
     <<: *primary_test
   queue:
+    <<: *primary_test
+  cache:
     <<: *primary_test
 
 production:
@@ -37,4 +41,6 @@ production:
   cable:
     <<: *primary_production
   queue:
+    <<: *primary_production
+  cache:
     <<: *primary_production
