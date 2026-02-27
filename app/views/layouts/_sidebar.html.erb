@@ -530,6 +530,21 @@
           <% end %>
         </li>
         <% end %>
+
+        <!-- Last Month Pending Amount -->
+        <% if current_user.has_sidebar_permission?('pending_amounts') %>
+        <li class="nav-item">
+          <%= link_to admin_pending_amounts_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/pending_amounts')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-red">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Last Month Pending</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
       </ul>
     </div>
 

@@ -1,0 +1,539 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Last Month Pending Amount</h2>
+    <p class="text-muted mb-0">Track and manage customer pending amounts from previous month</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPendingAmountModal">
+      <i class="bi bi-plus-lg me-1"></i>
+      Add Pending Amount
+    </button>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-danger bg-opacity-10 rounded-circle p-3">
+              <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <div class="text-muted small">Total Pending</div>
+            <div class="fs-4 fw-bold text-dark"><%= @pending_amounts.where(status: :pending).count %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+              <i class="bi bi-currency-rupee text-warning fs-4"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <div class="text-muted small">Pending Amount</div>
+            <div class="fs-4 fw-bold text-dark">₹<%= number_with_delimiter(@pending_amounts.where(status: :pending).sum(:amount).to_i) %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-success bg-opacity-10 rounded-circle p-3">
+              <i class="bi bi-check-circle-fill text-success fs-4"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <div class="text-muted small">Resolved</div>
+            <div class="fs-4 fw-bold text-dark"><%= @pending_amounts.where(status: :resolved).count %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-info bg-opacity-10 rounded-circle p-3">
+              <i class="bi bi-list-ul text-info fs-4"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <div class="text-muted small">Total Entries</div>
+            <div class="fs-4 fw-bold text-dark"><%= @pending_amounts.count %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Search Customer</label>
+        <input type="text" class="form-control" id="customerSearch" placeholder="Search by customer name...">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="statusFilter">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="resolved">Resolved</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Month</label>
+        <input type="month" class="form-control" id="monthFilter" value="<%= 1.month.ago.strftime('%Y-%m') %>">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">&nbsp;</label>
+        <button type="button" class="btn btn-outline-primary w-100" id="applyFilters">
+          <i class="bi bi-funnel me-1"></i>
+          Filter
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pending Amounts Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Pending Amounts List</h5>
+      <div class="text-muted small">
+        Showing <%= @pending_amounts.count %> entries
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="pendingAmountsTable">
+        <thead class="table-light">
+          <tr>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Pending Date</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th width="120">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @pending_amounts.present? %>
+            <% @pending_amounts.each do |pending_amount| %>
+              <tr data-id="<%= pending_amount.id %>">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle me-3">
+                      <i class="bi bi-person-fill text-primary"></i>
+                    </div>
+                    <div>
+                      <div class="fw-medium"><%= pending_amount.customer.display_name %></div>
+                      <div class="text-muted small"><%= pending_amount.customer.mobile %></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="fw-bold text-primary fs-6"><%= pending_amount.display_amount %></span>
+                </td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<%= pending_amount.description %>">
+                    <%= pending_amount.description %>
+                  </span>
+                </td>
+                <td>
+                  <span class="text-muted"><%= pending_amount.formatted_pending_date %></span>
+                </td>
+                <td>
+                  <% case pending_amount.status %>
+                  <% when 'pending' %>
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-clock me-1"></i>Pending
+                    </span>
+                  <% when 'resolved' %>
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle me-1"></i>Resolved
+                    </span>
+                  <% when 'cancelled' %>
+                    <span class="badge bg-danger">
+                      <i class="bi bi-x-circle me-1"></i>Cancelled
+                    </span>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width: 150px;" title="<%= pending_amount.notes %>">
+                    <%= pending_amount.notes %>
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary edit-pending-amount"
+                            data-id="<%= pending_amount.id %>"
+                            data-customer-id="<%= pending_amount.customer_id %>"
+                            data-amount="<%= pending_amount.amount %>"
+                            data-description="<%= pending_amount.description %>"
+                            data-pending-date="<%= pending_amount.pending_date %>"
+                            data-status="<%= pending_amount.status %>"
+                            data-notes="<%= pending_amount.notes %>">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-pending-amount"
+                            data-id="<%= pending_amount.id %>">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                  No pending amounts found
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Pending Amount Modal -->
+<div class="modal fade" id="addPendingAmountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Pending Amount</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <%= form_with(model: @new_pending_amount, url: admin_pending_amounts_path, local: false,
+                    class: "pending-amount-form", id: "addPendingAmountForm") do |form| %>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Customer <span class="text-danger">*</span></label>
+            <%= form.select :customer_id, options_from_collection_for_select(@customers, :id, :display_name),
+                            { prompt: "Select Customer" },
+                            { class: "form-select", required: true } %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Amount <span class="text-danger">*</span></label>
+            <%= form.number_field :amount, class: "form-control", step: 0.01, min: 0, required: true, placeholder: "Enter amount" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description <span class="text-danger">*</span></label>
+            <%= form.text_area :description, class: "form-control", rows: 3, required: true, placeholder: "Describe the pending amount..." %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Pending Date <span class="text-danger">*</span></label>
+            <%= form.date_field :pending_date, class: "form-control", required: true, value: 1.month.ago.beginning_of_month %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <%= form.select :status, options_for_select([
+                              ['Pending', 'pending'],
+                              ['Resolved', 'resolved'],
+                              ['Cancelled', 'cancelled']
+                            ], 'pending'), {}, { class: "form-select" } %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <%= form.text_area :notes, class: "form-control", rows: 2, placeholder: "Additional notes..." %>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <%= form.submit "Add Pending Amount", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Pending Amount Modal -->
+<div class="modal fade" id="editPendingAmountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Pending Amount</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editPendingAmountForm" class="pending-amount-form">
+        <input type="hidden" id="edit-pending-amount-id">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Customer <span class="text-danger">*</span></label>
+            <select class="form-select" id="edit-customer-id" name="customer_id" required>
+              <% @customers.each do |customer| %>
+                <option value="<%= customer.id %>"><%= customer.display_name %></option>
+              <% end %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Amount <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="edit-amount" name="amount" step="0.01" min="0" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="edit-description" name="description" rows="3" required></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Pending Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="edit-pending-date" name="pending_date" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="edit-status" name="status">
+              <option value="pending">Pending</option>
+              <option value="resolved">Resolved</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" id="edit-notes" name="notes" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Pending Amount</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Add Pending Amount Form Submission
+  const addForm = document.getElementById('addPendingAmountForm');
+  if (addForm) {
+    addForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(addForm);
+
+      fetch('<%= admin_pending_amounts_path %>', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload(); // Reload page to show new entry
+        } else {
+          alert('Error: ' + (data.errors ? data.errors.join(', ') : data.message));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the pending amount.');
+      });
+    });
+  }
+
+  // Edit Pending Amount
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.edit-pending-amount')) {
+      const btn = e.target.closest('.edit-pending-amount');
+      document.getElementById('edit-pending-amount-id').value = btn.dataset.id;
+      document.getElementById('edit-customer-id').value = btn.dataset.customerId;
+      document.getElementById('edit-amount').value = btn.dataset.amount;
+      document.getElementById('edit-description').value = btn.dataset.description;
+      document.getElementById('edit-pending-date').value = btn.dataset.pendingDate;
+      document.getElementById('edit-status').value = btn.dataset.status;
+      document.getElementById('edit-notes').value = btn.dataset.notes;
+
+      new bootstrap.Modal(document.getElementById('editPendingAmountModal')).show();
+    }
+  });
+
+  // Edit Form Submission
+  const editForm = document.getElementById('editPendingAmountForm');
+  if (editForm) {
+    editForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('edit-pending-amount-id').value;
+      const formData = new FormData(editForm);
+
+      fetch(`/admin/pending_amounts/${id}`, {
+        method: 'PATCH',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload(); // Reload page to show updated entry
+        } else {
+          alert('Error: ' + (data.errors ? data.errors.join(', ') : data.message));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the pending amount.');
+      });
+    });
+  }
+
+  // Delete Pending Amount
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.delete-pending-amount')) {
+      const btn = e.target.closest('.delete-pending-amount');
+      const id = btn.dataset.id;
+
+      if (confirm('Are you sure you want to delete this pending amount?')) {
+        fetch(`/admin/pending_amounts/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Accept': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            location.reload(); // Reload page to remove deleted entry
+          } else {
+            alert('Error: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred while deleting the pending amount.');
+        });
+      }
+    }
+  });
+
+  // Search and Filter functionality
+  const customerSearch = document.getElementById('customerSearch');
+  const statusFilter = document.getElementById('statusFilter');
+  const monthFilter = document.getElementById('monthFilter');
+  const applyFiltersBtn = document.getElementById('applyFilters');
+
+  function filterTable() {
+    const customerQuery = customerSearch.value.toLowerCase();
+    const statusValue = statusFilter.value.toLowerCase();
+    const monthValue = monthFilter.value;
+
+    const rows = document.querySelectorAll('#pendingAmountsTable tbody tr[data-id]');
+
+    rows.forEach(row => {
+      const customerName = row.querySelector('td:first-child .fw-medium').textContent.toLowerCase();
+      const statusBadge = row.querySelector('td:nth-child(5) .badge').textContent.toLowerCase();
+      const shouldShow =
+        (!customerQuery || customerName.includes(customerQuery)) &&
+        (!statusValue || statusBadge.includes(statusValue));
+
+      row.style.display = shouldShow ? '' : 'none';
+    });
+  }
+
+  customerSearch.addEventListener('input', filterTable);
+  statusFilter.addEventListener('change', filterTable);
+  applyFiltersBtn.addEventListener('click', function() {
+    const monthValue = monthFilter.value;
+    if (monthValue) {
+      const [year, month] = monthValue.split('-');
+      window.location.search = `?month=${month}&year=${year}`;
+    } else {
+      window.location.search = '';
+    }
+  });
+});
+</script>
+
+<style>
+.avatar-sm {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card {
+  transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 25px rgba(0,0,0,0.15) !important;
+}
+
+.btn-group .btn {
+  margin: 0;
+}
+
+.modal-dialog {
+  max-width: 600px;
+}
+
+@media (max-width: 768px) {
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .btn-group .btn {
+    margin-bottom: 2px;
+  }
+}
+</style>

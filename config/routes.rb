@@ -216,6 +216,10 @@ Rails.application.routes.draw do
         post :generate
       end
     end
+
+    # Pending Amounts Management
+    resources :pending_amounts, only: [:index, :create, :update, :destroy]
+
     # Users (Admins/Agents) management
     resources :users
 

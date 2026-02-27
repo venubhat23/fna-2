@@ -21,9 +21,11 @@ class Customer < ApplicationRecord
   has_many :booking_schedules, dependent: :destroy
   has_many :invoices, dependent: :destroy
   has_many :milk_subscriptions, dependent: :destroy
+  has_many :milk_delivery_tasks, dependent: :destroy
   has_many :customer_addresses, dependent: :destroy
   has_many :wishlists, dependent: :destroy
   has_many :notifications, dependent: :destroy
+  has_many :pending_amounts, dependent: :destroy
 
   # Nested attributes - commented out as tables don't exist
   # accepts_nested_attributes_for :family_members, allow_destroy: true, reject_if: :all_blank
@@ -63,7 +65,6 @@ class Customer < ApplicationRecord
 
   # Validations
   validates :first_name, presence: true
-  validates :last_name, presence: true
   validates :email, uniqueness: { allow_blank: true }, format: { with: URI::MailTo::EMAIL_REGEXP, allow_blank: true }
   validates :mobile, presence: true, uniqueness: true
   validate :valid_mobile_format

@@ -74,7 +74,7 @@ module ImportService
       if customer.nil?
         customer = Customer.create!(
           first_name: first_name,
-          last_name: last_name,
+          last_name: last_name || '',
           mobile: customer_number.strip,
           status: true
         )

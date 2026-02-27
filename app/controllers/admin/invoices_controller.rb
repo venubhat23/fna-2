@@ -309,17 +309,27 @@ class Admin::InvoicesController < Admin::ApplicationController
                                       .where.not(id: InvoiceItem.joins(:milk_delivery_task)
                                                               .select(:milk_delivery_task_id))
 
-      # Create one invoice item per delivery task
-      completed_tasks.each do |task|
-        product = task.product
+      # Group delivery tasks by product and sum quantities
+      grouped_tasks = completed_tasks.group_by(&:product)
+
+      grouped_tasks.each do |product, tasks|
+        total_quantity = tasks.sum(&:quantity)
         unit_price = product.selling_price
+
+        # Get date range for description
+        dates = tasks.map(&:delivery_date).sort
+        date_range = if dates.size > 1
+          "#{dates.first.strftime('%Y-%m-%d')} to #{dates.last.strftime('%Y-%m-%d')}"
+        else
+          dates.first.strftime('%Y-%m-%d')
+        end
 
         invoice_items_data << {
           product: product,
-          quantity: task.quantity,
+          quantity: total_quantity,
           unit_price: unit_price,
-          description: "#{product.name} - #{task.delivery_date.strftime('%Y-%m-%d')}",
-          delivery_task: task
+          description: "#{product.name} (#{dates.size} deliveries: #{date_range})",
+          delivery_tasks: tasks  # Changed from single task to multiple tasks
         }
       end
     end
@@ -341,13 +351,21 @@ class Admin::InvoicesController < Admin::ApplicationController
     invoice_items_data.each do |item_data|
       item_total = item_data[:quantity] * item_data[:unit_price]
 
+      # For grouped delivery tasks, we'll link to the first task
+      # (we could also create a separate junction table, but this is simpler for now)
+      delivery_task = if item_data[:delivery_tasks]
+                       item_data[:delivery_tasks].first
+                     else
+                       item_data[:delivery_task]
+                     end
+
       invoice.invoice_items.build(
         description: item_data[:description],
         quantity: item_data[:quantity],
         unit_price: item_data[:unit_price],
         total_amount: item_total,
         product: item_data[:product],
-        milk_delivery_task: item_data[:delivery_task]
+        milk_delivery_task: delivery_task
       )
 
       total_amount += item_total
@@ -358,10 +376,19 @@ class Admin::InvoicesController < Admin::ApplicationController
     if invoice.save
       # Mark delivery tasks as invoiced if applicable
       if defined?(MilkDeliveryTask)
-        delivery_task_items = invoice_items_data.select { |item| item[:delivery_task] }
-        delivery_task_items.each do |item_data|
-          task = item_data[:delivery_task]
-          task.update(invoiced: true, invoiced_at: Time.current) if task
+        invoice_items_data.each do |item_data|
+          # Handle both single tasks and grouped tasks
+          tasks_to_mark = if item_data[:delivery_tasks]
+                           item_data[:delivery_tasks]
+                         elsif item_data[:delivery_task]
+                           [item_data[:delivery_task]]
+                         else
+                           []
+                         end
+
+          tasks_to_mark.each do |task|
+            task.update(invoiced: true, invoiced_at: Time.current) if task
+          end
         end
       end
 
