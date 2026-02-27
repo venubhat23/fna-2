@@ -13,12 +13,16 @@ development:
     port: <%= ENV['DB_PORT'] || 5432 %>
   cable:
     <<: *primary_development
+  queue:
+    <<: *primary_development
 
 test:
   primary: &primary_test
     <<: *default
     database: atmanirbhar_farm_test
   cable:
+    <<: *primary_test
+  queue:
     <<: *primary_test
 
 production:
@@ -31,4 +35,6 @@ production:
     password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
     port: <%= ENV['DB_PORT'] || 5432 %>
   cable:
+    <<: *primary_production
+  queue:
     <<: *primary_production
