@@ -78,7 +78,7 @@
   </div>
 </div>
 
-<!-- Tabs for Dhanvantari Farm vs Non-Dhanvantari Farm -->
+<!-- Tabs for Atma Nirbhar Farm vs Non-Atma Nirbhar Farm -->
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body p-0">
     <ul class="nav nav-tabs border-0" role="tablist">
@@ -87,7 +87,7 @@
             class: "nav-link #{'active' if @current_tab == 'dhanvantri'}",
             role: "tab" do %>
           <i class="bi bi-check-circle me-2"></i>
-          Dhanvantari Farm Policies
+          Atma Nirbhar Farm Policies
           <span class="badge bg-success ms-2"><%= @dhanvantri_count %></span>
         <% end %>
       </li>
@@ -96,7 +96,7 @@
             class: "nav-link #{'active' if @current_tab == 'non_dhanvantri'}",
             role: "tab" do %>
           <i class="bi bi-x-circle me-2"></i>
-          Non-Dhanvantari Farm Policies
+          Non-Atma Nirbhar Farm Policies
           <span class="badge bg-warning ms-2"><%= @non_dhanvantri_count %></span>
         <% end %>
       </li>
@@ -140,9 +140,9 @@
   <div class="card-header bg-transparent border-0">
     <h5 class="mb-0">
       <% if @current_tab == 'dhanvantri' %>
-        <i class="bi bi-check-circle text-success me-2"></i>Dhanvantari Farm Life Insurance Policies
+        <i class="bi bi-check-circle text-success me-2"></i>Atma Nirbhar Farm Life Insurance Policies
       <% else %>
-        <i class="bi bi-x-circle text-warning me-2"></i>Non-Dhanvantari Farm Life Insurance Policies
+        <i class="bi bi-x-circle text-warning me-2"></i>Non-Atma Nirbhar Farm Life Insurance Policies
       <% end %>
     </h5>
   </div>
@@ -279,10 +279,10 @@
       <div class="text-center py-5">
         <% if @current_tab == 'dhanvantri' %>
           <i class="bi bi-check-circle fs-1 text-success d-block mb-3"></i>
-          <h5 class="text-muted">No Dhanvantari Farm life insurance policies found</h5>
+          <h5 class="text-muted">No Atma Nirbhar Farm life insurance policies found</h5>
         <% else %>
           <i class="bi bi-x-circle fs-1 text-warning d-block mb-3"></i>
-          <h5 class="text-muted">No Non-Dhanvantari Farm life insurance policies found</h5>
+          <h5 class="text-muted">No Non-Atma Nirbhar Farm life insurance policies found</h5>
         <% end %>
         <p class="text-muted mb-3">
           <% if params[:search].present? || params[:status].present? || params[:payment_mode].present? %>
@@ -290,20 +290,20 @@
             <%= link_to "view all #{@current_tab} policies", admin_life_insurances_path(tab: @current_tab), class: "text-decoration-none" %>.
           <% else %>
             <% if @current_tab == 'dhanvantri' %>
-              Dhanvantari Farm policies are created from the admin panel.
+              Atma Nirbhar Farm policies are created from the admin panel.
             <% else %>
-              Non-Dhanvantari Farm policies are added by customers or agents.
+              Non-Atma Nirbhar Farm policies are added by customers or agents.
             <% end %>
           <% end %>
         </p>
         <% if @current_tab == 'dhanvantri' %>
           <%= link_to new_admin_life_insurance_path, class: "btn btn-primary" do %>
             <i class="bi bi-plus-lg me-1"></i>
-            Add Dhanvantari Farm Life Policy
+            Add Atma Nirbhar Farm Life Policy
           <% end %>
         <% else %>
           <div class="text-muted small">
-            Non-Dhanvantari Farm policies are typically added through customer or agent portals.
+            Non-Atma Nirbhar Farm policies are typically added through customer or agent portals.
           </div>
         <% end %>
       </div>

@@ -1,33 +1,25 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  pool: 5
-  host: dpg-d6420nvfte5s73fsn8ug-a.oregon-postgres.render.com
-  port: 5432
-  username: drwise_admin_db_user
-  password: Pp8oA9j9IXD22lbOyQQS5S6kZ4mf6SAJ
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
   <<: *default
-  database: drwise_admin_db
+  host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a.oregon-postgres.render.com' %>
+  database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
+  username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
+  password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
+  port: <%= ENV['DB_PORT'] || 5432 %>
 
 test:
   <<: *default
-  database: drwise_admin_db_test
+  database: atmanirbhar_farm_test
 
 production:
-  primary:
-    <<: *default
-    database: drwise_admin_db
-
-  cable:
-    <<: *default
-    database: drwise_admin_db
-
-  queue:
-    <<: *default
-    database: drwise_admin_db
-
-  cache:
-    <<: *default
-    database: drwise_admin_db
+  <<: *default
+  url: <%= ENV['DATABASE_URL'] %>
+  host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a' %>
+  database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
+  username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
+  password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
+  port: <%= ENV['DB_PORT'] || 5432 %>
