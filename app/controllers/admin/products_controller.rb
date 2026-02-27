@@ -54,7 +54,6 @@ class Admin::ProductsController < Admin::ApplicationController
     process_params_delivery_rule_data
 
     @product = Product.new(product_params)
-
     if @product.save
       # Handle Cloudinary uploads
       handle_cloudinary_uploads if params[:product][:cloudinary_images].present?

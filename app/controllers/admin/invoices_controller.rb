@@ -309,17 +309,17 @@ class Admin::InvoicesController < Admin::ApplicationController
                                       .where.not(id: InvoiceItem.joins(:milk_delivery_task)
                                                               .select(:milk_delivery_task_id))
 
-      # Group delivery tasks by product
-      completed_tasks.group_by(&:product).each do |product, tasks|
-        total_quantity = tasks.sum(&:quantity)
+      # Create one invoice item per delivery task
+      completed_tasks.each do |task|
+        product = task.product
         unit_price = product.selling_price
 
         invoice_items_data << {
           product: product,
-          quantity: total_quantity,
+          quantity: task.quantity,
           unit_price: unit_price,
-          description: "#{product.name} - #{tasks.count} deliveries",
-          delivery_tasks: tasks
+          description: "#{product.name} - #{task.delivery_date.strftime('%Y-%m-%d')}",
+          delivery_task: task
         }
       end
     end
@@ -347,7 +347,7 @@ class Admin::InvoicesController < Admin::ApplicationController
         unit_price: item_data[:unit_price],
         total_amount: item_total,
         product: item_data[:product],
-        milk_delivery_task: item_data[:delivery_tasks]&.first
+        milk_delivery_task: item_data[:delivery_task]
       )
 
       total_amount += item_total
@@ -358,11 +358,10 @@ class Admin::InvoicesController < Admin::ApplicationController
     if invoice.save
       # Mark delivery tasks as invoiced if applicable
       if defined?(MilkDeliveryTask)
-        delivery_task_items = invoice_items_data.select { |item| item[:delivery_tasks] }
+        delivery_task_items = invoice_items_data.select { |item| item[:delivery_task] }
         delivery_task_items.each do |item_data|
-          item_data[:delivery_tasks]&.each do |task|
-            task.update(invoiced: true, invoiced_at: Time.current)
-          end
+          task = item_data[:delivery_task]
+          task.update(invoiced: true, invoiced_at: Time.current) if task
         end
       end
 

@@ -1,0 +1,370 @@
+<% content_for :page_title, "Import Customer with Daily Tasks" %>
+<% content_for :page_subtitle, "Bulk Customer & Daily Task Import" %>
+
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="fas fa-calendar-check me-2"></i>
+        Import Customer with Daily Tasks
+      </h2>
+      <p class="text-muted mb-0">Bulk upload customer data with automatic daily task creation from CSV or Excel files</p>
+    </div>
+    <div>
+      <%= link_to admin_imports_path, class: "btn btn-outline-secondary" do %>
+        <i class="fas fa-arrow-left me-1"></i>
+        Back to Imports
+      <% end %>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Upload Form -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-cloud-upload-alt me-2"></i>
+            Upload Customer Daily Task Data
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <%= form_with url: admin_import_customer_daily_tasks_path, multipart: true, local: true, class: "needs-validation", novalidate: true do |f| %>
+            <div class="mb-4">
+              <label for="file" class="form-label fw-bold">
+                <i class="fas fa-file-csv me-2"></i>
+                Select File
+                <span class="text-danger">*</span>
+              </label>
+              <%= f.file_field :file,
+                  class: "form-control form-control-lg",
+                  accept: ".csv,.xlsx,.xls",
+                  required: true,
+                  id: "file" %>
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Supported formats: CSV, Excel (.xlsx, .xls). Maximum size: 10MB
+              </div>
+              <div class="invalid-feedback">
+                Please select a valid file to upload.
+              </div>
+            </div>
+
+            <!-- File Preview Section -->
+            <div id="file-preview" class="mb-4" style="display: none;">
+              <div class="alert alert-info">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-file-check me-2"></i>
+                  <div>
+                    <strong>File Selected:</strong> <span id="file-name"></span><br>
+                    <small>Size: <span id="file-size"></span> | Type: <span id="file-type"></span></small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Import Options -->
+            <div class="card bg-light border-0 mb-4">
+              <div class="card-body">
+                <h6 class="card-title mb-3">
+                  <i class="fas fa-cogs me-2"></i>
+                  Import Options
+                </h6>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="skip_header" name="skip_header" checked>
+                      <label class="form-check-label" for="skip_header">
+                        Skip header row
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="update_existing_customers" name="update_existing_customers">
+                      <label class="form-check-label" for="update_existing_customers">
+                        Update existing customers (match by mobile)
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="validate_dates" name="validate_dates" checked>
+                      <label class="form-check-label" for="validate_dates">
+                        Validate start_date < end_date
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="true" id="validate_references" name="validate_references" checked>
+                      <label class="form-check-label" for="validate_references">
+                        Validate delivery person and product IDs
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="submit" class="btn btn-info btn-lg" id="submit-btn">
+                <i class="fas fa-upload me-2"></i>
+                Import Customer Daily Tasks
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Download Template Card -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-download me-2"></i>
+            Download Template
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="card-text mb-3">
+            Download the standardized CSV template with the exact format for customer and daily task fields.
+          </p>
+
+          <div class="d-grid gap-2">
+            <%= link_to download_template_admin_imports_path(template_type: 'customer_daily_tasks', format: 'csv'),
+                class: "btn btn-info",
+                target: "_blank" do %>
+              <i class="fas fa-file-csv me-2"></i>
+              Download CSV Template
+            <% end %>
+
+            <%= link_to download_template_admin_imports_path(template_type: 'customer_daily_tasks', format: 'xlsx'),
+                class: "btn btn-outline-info",
+                target: "_blank" do %>
+              <i class="fas fa-file-excel me-2"></i>
+              Download Excel Template
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import Guidelines -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Import Guidelines
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <h6 class="text-primary mb-2">Required Fields (marked with *):</h6>
+            <ul class="list-unstyled small">
+              <li><i class="fas fa-check text-success me-1"></i> Customer Name*</li>
+              <li><i class="fas fa-check text-success me-1"></i> Customer Number* (mobile)</li>
+              <li><i class="fas fa-check text-success me-1"></i> delivery_person_id*</li>
+              <li><i class="fas fa-check text-success me-1"></i> Rate*</li>
+              <li><i class="fas fa-check text-success me-1"></i> start_date*</li>
+              <li><i class="fas fa-check text-success me-1"></i> end_date*</li>
+              <li><i class="fas fa-check text-success me-1"></i> quantity*</li>
+              <li><i class="fas fa-check text-success me-1"></i> unit*</li>
+              <li><i class="fas fa-check text-success me-1"></i> product_id*</li>
+              <li><i class="fas fa-check text-success me-1"></i> pattern* (every_day, alternative_day, etc.)</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <h6 class="text-primary mb-2">Pattern Options:</h6>
+            <ul class="list-unstyled small">
+              <li><i class="fas fa-check me-1"></i> every_day</li>
+              <li><i class="fas fa-check me-1"></i> alternative_day</li>
+              <li><i class="fas fa-check me-1"></i> weekly_once, weekly_twice, etc.</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <h6 class="text-primary mb-2">Date Format:</h6>
+            <ul class="list-unstyled small">
+              <li><i class="fas fa-calendar me-1"></i> YYYY-MM-DD (e.g., 2026-02-01)</li>
+              <li><i class="fas fa-calendar me-1"></i> start_date must be before end_date</li>
+            </ul>
+          </div>
+
+          <div class="alert alert-warning small mb-0">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            <strong>Note:</strong> Email field is intentionally skipped. All daily tasks will be marked as completed.
+          </div>
+        </div>
+      </div>
+
+      <!-- What Gets Created -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-magic me-2"></i>
+            What Gets Created
+          </h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2">
+              <i class="fas fa-user-plus text-primary me-2"></i>
+              Customer records (no email)
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-calendar-alt text-success me-2"></i>
+              Milk subscription records
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-clipboard-list text-info me-2"></i>
+              Customer format configurations
+            </li>
+            <li class="mb-0">
+              <i class="fas fa-check-circle text-warning me-2"></i>
+              Daily delivery tasks (marked completed at 8 AM)
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Custom file input styling */
+.form-control[type="file"] {
+  border: 2px dashed #dee2e6;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control[type="file"]:hover {
+  border-color: #17a2b8;
+  background-color: #d1ecf1;
+}
+
+.form-control[type="file"]:focus {
+  border-color: #17a2b8;
+  background-color: #fff;
+  box-shadow: 0 0 0 0.25rem rgba(23, 162, 184, 0.25);
+}
+
+/* Card animations */
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Loading state for submit button */
+.btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn.loading::after {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.5rem;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('file');
+  const filePreview = document.getElementById('file-preview');
+  const fileName = document.getElementById('file-name');
+  const fileSize = document.getElementById('file-size');
+  const fileType = document.getElementById('file-type');
+  const form = document.querySelector('form');
+  const submitBtn = document.getElementById('submit-btn');
+
+  // Handle file selection
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+
+    if (file) {
+      // Show file preview
+      filePreview.style.display = 'block';
+      fileName.textContent = file.name;
+      fileSize.textContent = formatFileSize(file.size);
+      fileType.textContent = file.type || 'Unknown';
+
+      // Add visual feedback
+      fileInput.classList.add('is-valid');
+      fileInput.classList.remove('is-invalid');
+    } else {
+      filePreview.style.display = 'none';
+      fileInput.classList.remove('is-valid');
+    }
+  });
+
+  // Form submission handling
+  form.addEventListener('submit', function(e) {
+    // Add loading state
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
+    // Show progress
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'progress-container';
+    progressContainer.innerHTML = `
+      <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+             role="progressbar" style="width: 100%">
+          Uploading and processing customer daily tasks...
+        </div>
+      </div>
+    `;
+
+    submitBtn.parentElement.appendChild(progressContainer);
+    progressContainer.style.display = 'block';
+  });
+
+  // File size formatter
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Form validation
+  form.addEventListener('submit', function(e) {
+    if (!form.checkValidity()) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    form.classList.add('was-validated');
+  });
+});
+</script>

@@ -1026,7 +1026,7 @@ class Product < ApplicationRecord
 
   def generate_sku
     # Generate SKU based on category and random number
-    category_prefix = category&.name&.first(3)&.upcase || 'PRD'
+    category_prefix = category&.name&.strip&.first(3)&.upcase || 'PRD'
     random_suffix = SecureRandom.hex(3).upcase
     self.sku = "#{category_prefix}#{random_suffix}"
 
@@ -1193,8 +1193,12 @@ class Product < ApplicationRecord
     end
 
     # Validate that at least one GST configuration is present
-    if cgst_percentage.blank? && sgst_percentage.blank? && igst_percentage.blank?
-      errors.add(:base, 'At least one GST configuration (CGST/SGST or IGST) must be specified')
+    # Allow simple GST (only gst_percentage) OR detailed GST (CGST/SGST or IGST)
+    if gst_percentage.present? && gst_percentage > 0
+      # Simple GST mode - gst_percentage is sufficient
+      return
+    elsif cgst_percentage.blank? && sgst_percentage.blank? && igst_percentage.blank?
+      errors.add(:base, 'At least one GST configuration (GST percentage, CGST/SGST, or IGST) must be specified')
     end
 
     # Validate individual GST rates are reasonable
@@ -1211,10 +1215,15 @@ class Product < ApplicationRecord
     end
 
     # Validate GST amounts are consistent with percentages if present
+    # Using reverse calculation (price inclusive of GST)
     if gst_amount.present? && price.present? && gst_percentage.present?
-      expected_gst_amount = calculate_gst_amount(price, gst_percentage)
-      if (gst_amount - expected_gst_amount).abs > 0.01
-        errors.add(:gst_amount, "should be approximately ₹#{expected_gst_amount.round(2)} based on price and GST rate")
+      # Reverse calculation: base_price = inclusive_price / (1 + gst_rate)
+      base_price = price / (1 + (gst_percentage / 100.0))
+      expected_gst_amount = price - base_price
+
+      # Allow for small rounding differences (up to ₹1)
+      if (gst_amount - expected_gst_amount).abs > 1.0
+        errors.add(:gst_amount, "should be approximately ₹#{expected_gst_amount.round(2)} based on inclusive price and GST rate")
       end
     end
   end

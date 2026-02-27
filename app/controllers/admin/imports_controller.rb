@@ -30,6 +30,10 @@ class Admin::ImportsController < Admin::ApplicationController
     # Show customer subscriptions import form
   end
 
+  def customer_daily_tasks_form
+    # Show customer with daily tasks import form
+  end
+
   # POST /admin/import/customers
   def customers
     uploaded_file = params[:file]
@@ -145,6 +149,29 @@ class Admin::ImportsController < Admin::ApplicationController
     end
   end
 
+  # POST /admin/import/customer_daily_tasks
+  def customer_daily_tasks
+    uploaded_file = params[:file]
+
+    if uploaded_file.blank?
+      redirect_back fallback_location: admin_imports_path, alert: 'Please select a file to import.'
+      return
+    end
+
+    begin
+      import_result = ImportService::CustomerDailyTaskImporter.new(uploaded_file).import
+
+      if import_result[:success]
+        redirect_to admin_customers_path, notice: "Successfully imported #{import_result[:imported_count]} customers with daily tasks. #{import_result[:skipped_count]} records were skipped due to validation errors."
+      else
+        redirect_back fallback_location: admin_imports_path, alert: "Import failed: #{import_result[:error]}"
+      end
+    rescue => e
+      Rails.logger.error "Customer daily task import error: #{e.message}"
+      redirect_back fallback_location: admin_imports_path, alert: 'An error occurred during import. Please check your file format and try again.'
+    end
+  end
+
   # CSV Validation endpoint
   def validate_csv
     uploaded_file = params[:file]
@@ -203,6 +230,8 @@ class Admin::ImportsController < Admin::ApplicationController
       send_product_template
     when 'customer_subscriptions'
       send_customer_subscription_template
+    when 'customer_daily_tasks'
+      send_customer_daily_task_template
     else
       redirect_to admin_imports_path, alert: 'Invalid template type'
     end
@@ -513,63 +542,81 @@ class Admin::ImportsController < Admin::ApplicationController
       'product_name', 'delivery_person_id', 'delivery_person_name', 'delivery_time'
     ]
 
+    # Add daily quantity columns (1-31 for each day of the month)
+    (1..31).each { |day| headers << day.to_s }
+
     # Get available products for the template
     milk_product = Product.where("name ILIKE '%milk%'").first
-    tomato_product = Product.find_by(name: 'Organic Tomato')
+    vinay_delivery = DeliveryPerson.where("first_name ILIKE '%vinay%'").first
 
-    # Use actual product IDs from the database
-    milk_id = milk_product&.id || 21
-    tomato_id = tomato_product&.id || 19
+    # Use actual IDs from the database
+    milk_id = milk_product&.id || 1
     milk_name = milk_product&.name || 'Fresh Cow Milk'
+    vinay_id = vinay_delivery&.id || 4
 
     sample_data = [
       [
         # Customer required fields
-        'Ramesh', 'ramesh.kumar@example.com', '9876543210',
+        'Madhavi', '9844145993',
 
         # Customer basic information
-        'Kumar', 'Singh', '', '123 Milk Street, Mumbai, Maharashtra, 400001', '9876543210',
+        '', '', '', '123 Milk Street, Mumbai, Maharashtra, 400001', '9844145993',
 
         # Customer personal details
-        '1985-01-15', 'male', 'ABCDE1234F', '', 'Business Owner', '500000', 'Daily milk subscription customer', 'true',
+        '1985-01-15', 'female', '', '', 'Homemaker', '500000', 'Daily milk subscription customer', 'true',
 
         # Subscription required fields
-        milk_id.to_s, '2', 'Liter', '2026-03-01', '2026-03-31',
+        milk_id.to_s, '0.5', 'Liter', '2026-02-01', '2026-02-28',
 
         # Subscription optional fields
-        milk_name, '', '', '07:00'
+        milk_name, vinay_id.to_s, 'Vinay Kumar', '07:00',
+
+        # Daily quantities (1-31) - Sample pattern with some X days
+        '0.5', 'X', '0.5', 'X', '0.5', 'X', '0.5', 'X', '0.5', 'X',
+        '0.5', 'X', '0.5', 'X', '0.5', 'X', '0.5', 'X', '0.5', 'X',
+        '0.5', 'X', '0.5', 'X', '0.5', 'X', '0.5', 'X', '', '', ''
       ],
       [
         # Customer required fields
-        'Priya', 'priya.sharma@example.com', '9876543211',
+        'Latha', '7892292123',
 
         # Customer basic information
-        '', 'Sharma', '', '456 Park Avenue, Delhi, 110001', '9876543211',
+        '', 'Kalyan', '', '456 Park Avenue, Kalyan Nagar, Bangalore', '7892292123',
 
         # Customer personal details
-        '1988-05-20', 'female', '', '', 'Doctor', '800000', 'Morning milk delivery', 'true',
+        '1988-05-20', 'female', '', '', 'Teacher', '800000', 'Daily milk delivery', 'true',
 
         # Subscription required fields
-        milk_id.to_s, '1', 'Liter', '2026-03-01', '2026-03-31',
+        milk_id.to_s, '0.5', 'Liter', '2026-02-01', '2026-02-28',
 
         # Subscription optional fields
-        milk_name, '', '', '06:30'
+        milk_name, vinay_id.to_s, 'Vinay Kumar', '06:30',
+
+        # Daily quantities (1-31) - Every day pattern
+        '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5',
+        '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5',
+        '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '0.5', '', '', ''
       ],
       [
         # Customer required fields
-        'Sunil', 'sunil.patel@example.com', '9876543212',
+        'Purushotham', '8095336993',
 
         # Customer basic information
-        'Kumar', 'Patel', 'Patel Family', '789 Society, Ahmedabad, Gujarat, 380001', '9876543212',
+        '', 'Agarbathi', 'Purushotham Agarbathi', '789 Business Complex, Bangalore', '8095336993',
 
         # Customer personal details
-        '1980-12-10', 'male', 'KLMNO9012P', '', 'Engineer', '1200000', 'Family subscription', 'true',
+        '1980-12-10', 'male', '', '', 'Business Owner', '1200000', 'Alternate day delivery', 'true',
 
         # Subscription required fields
-        tomato_id.to_s, '3', 'Kg', '2026-03-01', '2026-04-30',
+        milk_id.to_s, '1', 'Liter', '2026-02-01', '2026-02-28',
 
         # Subscription optional fields
-        'Organic Tomato', '', '', '08:00'
+        milk_name, vinay_id.to_s, 'Vinay Kumar', '08:00',
+
+        # Daily quantities (1-31) - Alternating 1L and 0.5L pattern
+        '1', '0.5', '1', '0.5', '1', '0.5', '1', '0.5', '1', '0.5',
+        '1', '0.5', '1', '0.5', '1', '0.5', '1', '0.5', '1', '0.5',
+        '1', '0.5', '1', '0.5', '1', '0.5', '1', '0.5', '', '', ''
       ]
     ]
 
@@ -579,6 +626,47 @@ class Admin::ImportsController < Admin::ApplicationController
     end
 
     filename = format == 'xlsx' ? 'customer_subscriptions_import_template.xlsx' : 'customer_subscriptions_import_template.csv'
+    send_data csv_data, filename: filename, type: 'text/csv'
+  end
+
+  def send_customer_daily_task_template
+    format = params[:format] || 'csv'
+
+    headers = [
+      'Customer Name*', 'Customer Number*', 'delivery_person_id*',
+      'Delivery Boy', 'Rate*', 'start_date*', 'end_date*',
+      'quantity*', 'unit*', 'product_id*', 'pattern*'
+    ]
+
+    # Get available products and delivery persons
+    milk_product = Product.where("name ILIKE '%milk%'").first
+    vinay_delivery = DeliveryPerson.where("first_name ILIKE '%vinay%'").first
+
+    # Use actual IDs from the database
+    milk_id = milk_product&.id || 1
+    vinay_id = vinay_delivery&.id || 4
+
+    sample_data = [
+      [
+        'Madhavi', '9844145993', vinay_id.to_s, 'Vinay Kumar', '100',
+        '2026-02-01', '2026-02-28', '0.5', 'Liter', milk_id.to_s, 'every_day'
+      ],
+      [
+        'Latha Kalyan Nagar', '7892292123', vinay_id.to_s, 'Vinay Kumar', '100',
+        '2026-02-01', '2026-02-28', '0.5', 'Liter', milk_id.to_s, 'every_day'
+      ],
+      [
+        'Purushotham Agarbathi', '8095336993', vinay_id.to_s, 'Vinay Kumar', '100',
+        '2026-02-01', '2026-02-28', '1', 'Liter', milk_id.to_s, 'every_day'
+      ]
+    ]
+
+    csv_data = CSV.generate(headers: true) do |csv|
+      csv << headers
+      sample_data.each { |row| csv << row }
+    end
+
+    filename = format == 'xlsx' ? 'customer_daily_tasks_import_template.xlsx' : 'customer_daily_tasks_import_template.csv'
     send_data csv_data, filename: filename, type: 'text/csv'
   end
 

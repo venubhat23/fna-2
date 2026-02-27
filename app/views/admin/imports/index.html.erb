@@ -226,8 +226,41 @@
             <i class="fas fa-download me-1"></i> Download Template
           <% end %>
 
-          <%= link_to "/admin/imports/customer_subscriptions_form", class: "btn btn-success" do %>
+          <%= link_to customer_subscriptions_form_admin_imports_path, class: "btn btn-success" do %>
             <i class="fas fa-upload me-1"></i> Import Customer Subscriptions
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer with Daily Tasks Import Card -->
+  <div class="col-xl-6 col-lg-6 mb-4">
+    <div class="card shadow-lg border-0 h-100 import-card">
+      <div class="card-header bg-gradient-info text-white">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-calendar-check fa-2x me-3"></i>
+          <div>
+            <h5 class="mb-0 text-dark"><strong>Import Customer with Daily Tasks</strong></h5>
+            <small class="text-dark-75"><strong>Bulk upload customers with completed daily tasks</strong></small>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-text text-muted mb-4">
+          Import customers with subscription data and automatically generate completed daily delivery tasks.
+          Perfect for migrating existing customer data with historical delivery records.
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <%= link_to download_template_admin_imports_path(template_type: 'customer_daily_tasks'),
+                      class: "btn btn-outline-info btn-sm",
+                      target: "_blank" do %>
+            <i class="fas fa-download me-1"></i> Download Template
+          <% end %>
+
+          <%= link_to customer_daily_tasks_form_admin_imports_path, class: "btn btn-info" do %>
+            <i class="fas fa-upload me-1"></i> Import Customer Daily Tasks
           <% end %>
         </div>
       </div>
