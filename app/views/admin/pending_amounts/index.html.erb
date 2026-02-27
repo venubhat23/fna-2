@@ -5,7 +5,7 @@
     <p class="text-muted mb-0">Track and manage customer pending amounts from previous month</p>
   </div>
   <div class="d-flex gap-2">
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPendingAmountModal">
+    <button type="button" class="btn btn-primary" onclick="openAddPendingAmountModal()">
       <i class="bi bi-plus-lg me-1"></i>
       Add Pending Amount
     </button>
@@ -227,60 +227,69 @@
 </div>
 
 <!-- Add Pending Amount Modal -->
-<div class="modal fade" id="addPendingAmountModal" tabindex="-1" aria-labelledby="addPendingAmountModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content shadow-lg">
-      <div class="modal-header border-bottom">
-        <h5 class="modal-title" id="addPendingAmountModalLabel">
-          <i class="bi bi-plus-circle me-2 text-primary"></i>
-          Add Pending Amount
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+<div class="modal-overlay" id="addPendingAmountModal" style="display: none;">
+  <div class="simple-modal">
+    <div class="modal-header bg-primary text-white">
+      <h5 class="modal-title">
+        <i class="bi bi-plus-circle me-2"></i>
+        Add Pending Amount
+      </h5>
+      <button type="button" class="btn-close btn-close-white" onclick="closeAddPendingAmountModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body pt-4">
       <%= form_with(model: @new_pending_amount, url: admin_pending_amounts_path, local: false,
                     class: "pending-amount-form", id: "addPendingAmountForm") do |form| %>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Customer <span class="text-danger">*</span></label>
-            <%= form.select :customer_id, options_from_collection_for_select(@customers, :id, :display_name),
-                            { prompt: "Select Customer" },
-                            { class: "form-select", required: true } %>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Customer <span class="text-danger">*</span></label>
+              <%= form.select :customer_id, options_from_collection_for_select(@customers, :id, :display_name),
+                              { prompt: "Select Customer" },
+                              { class: "form-select", required: true } %>
+            </div>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Amount <span class="text-danger">*</span></label>
-            <%= form.number_field :amount, class: "form-control", step: 0.01, min: 0, required: true, placeholder: "Enter amount" %>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Description <span class="text-danger">*</span></label>
-            <%= form.text_area :description, class: "form-control", rows: 3, required: true, placeholder: "Describe the pending amount..." %>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Pending Date <span class="text-danger">*</span></label>
-            <%= form.date_field :pending_date, class: "form-control", required: true, value: 1.month.ago.beginning_of_month %>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Status</label>
-            <%= form.select :status, options_for_select([
-                              ['Pending', 'pending'],
-                              ['Resolved', 'resolved'],
-                              ['Cancelled', 'cancelled']
-                            ], 'pending'), {}, { class: "form-select" } %>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Notes</label>
-            <%= form.text_area :notes, class: "form-control", rows: 2, placeholder: "Additional notes..." %>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Amount <span class="text-danger">*</span></label>
+              <%= form.number_field :amount, class: "form-control", step: 0.01, min: 0, required: true, placeholder: "Enter amount" %>
+            </div>
           </div>
         </div>
-        <div class="modal-footer border-top bg-light">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+
+        <div class="mb-3">
+          <label class="form-label">Description <span class="text-danger">*</span></label>
+          <%= form.text_area :description, class: "form-control", rows: 3, required: true, placeholder: "Describe the pending amount..." %>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Pending Date <span class="text-danger">*</span></label>
+              <%= form.date_field :pending_date, class: "form-control", required: true, value: 1.month.ago.beginning_of_month %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Status</label>
+              <%= form.select :status, options_for_select([
+                                ['Pending', 'pending'],
+                                ['Resolved', 'resolved'],
+                                ['Cancelled', 'cancelled']
+                              ], 'pending'), {}, { class: "form-select" } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Notes</label>
+          <%= form.text_area :notes, class: "form-control", rows: 2, placeholder: "Additional notes..." %>
+        </div>
+
+        <div class="text-end">
+          <button type="button" class="btn btn-secondary me-2" onclick="closeAddPendingAmountModal()">
             <i class="bi bi-x-lg me-1"></i>Cancel
           </button>
-          <%= form.submit "Add Pending Amount", class: "btn btn-primary px-4" %>
+          <%= form.submit "Add Pending Amount", class: "btn btn-primary px-4", id: "addPendingAmountBtn" %>
         </div>
       <% end %>
     </div>
@@ -288,62 +297,71 @@
 </div>
 
 <!-- Edit Pending Amount Modal -->
-<div class="modal fade" id="editPendingAmountModal" tabindex="-1" aria-labelledby="editPendingAmountModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content shadow-lg">
-      <div class="modal-header border-bottom">
-        <h5 class="modal-title" id="editPendingAmountModalLabel">
-          <i class="bi bi-pencil-square me-2 text-warning"></i>
-          Edit Pending Amount
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+<div class="modal-overlay" id="editPendingAmountModal" style="display: none;">
+  <div class="simple-modal">
+    <div class="modal-header bg-warning text-white">
+      <h5 class="modal-title">
+        <i class="bi bi-pencil-square me-2"></i>
+        Edit Pending Amount
+      </h5>
+      <button type="button" class="btn-close btn-close-white" onclick="closeEditPendingAmountModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body pt-4">
       <form id="editPendingAmountForm" class="pending-amount-form">
         <input type="hidden" id="edit-pending-amount-id">
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Customer <span class="text-danger">*</span></label>
-            <select class="form-select" id="edit-customer-id" name="customer_id" required>
-              <% @customers.each do |customer| %>
-                <option value="<%= customer.id %>"><%= customer.display_name %></option>
-              <% end %>
-            </select>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Customer <span class="text-danger">*</span></label>
+              <select class="form-select" id="edit-customer-id" name="customer_id" required>
+                <% @customers.each do |customer| %>
+                  <option value="<%= customer.id %>"><%= customer.display_name %></option>
+                <% end %>
+              </select>
+            </div>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Amount <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="edit-amount" name="amount" step="0.01" min="0" required>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Description <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="edit-description" name="description" rows="3" required></textarea>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Pending Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" id="edit-pending-date" name="pending_date" required>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Status</label>
-            <select class="form-select" id="edit-status" name="status">
-              <option value="pending">Pending</option>
-              <option value="resolved">Resolved</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Notes</label>
-            <textarea class="form-control" id="edit-notes" name="notes" rows="2"></textarea>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Amount <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="edit-amount" name="amount" step="0.01" min="0" required>
+            </div>
           </div>
         </div>
-        <div class="modal-footer border-top bg-light">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+
+        <div class="mb-3">
+          <label class="form-label">Description <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="edit-description" name="description" rows="3" required></textarea>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Pending Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="edit-pending-date" name="pending_date" required>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" id="edit-status" name="status">
+                <option value="pending">Pending</option>
+                <option value="resolved">Resolved</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="edit-notes" name="notes" rows="2"></textarea>
+        </div>
+
+        <div class="text-end">
+          <button type="button" class="btn btn-secondary me-2" onclick="closeEditPendingAmountModal()">
             <i class="bi bi-x-lg me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-primary px-4">
+          <button type="submit" class="btn btn-primary px-4" id="editPendingAmountBtn">
             <i class="bi bi-check-lg me-1"></i>Update Pending Amount
           </button>
         </div>
@@ -353,12 +371,53 @@
 </div>
 
 <script>
+// Open Add Pending Amount Modal
+function openAddPendingAmountModal() {
+  const modal = document.getElementById('addPendingAmountModal');
+  if (modal) {
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// Close Add Pending Amount Modal
+function closeAddPendingAmountModal() {
+  const modal = document.getElementById('addPendingAmountModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Open Edit Pending Amount Modal
+function openEditPendingAmountModal() {
+  const modal = document.getElementById('editPendingAmountModal');
+  if (modal) {
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// Close Edit Pending Amount Modal
+function closeEditPendingAmountModal() {
+  const modal = document.getElementById('editPendingAmountModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Add Pending Amount Form Submission
   const addForm = document.getElementById('addPendingAmountForm');
   if (addForm) {
     addForm.addEventListener('submit', function(e) {
       e.preventDefault();
+
+      const addBtn = document.getElementById('addPendingAmountBtn');
+      const originalText = addBtn.innerHTML;
+      addBtn.disabled = true;
+      addBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Adding...';
 
       const formData = new FormData(addForm);
 
@@ -373,6 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
+          closeAddPendingAmountModal();
           location.reload(); // Reload page to show new entry
         } else {
           alert('Error: ' + (data.errors ? data.errors.join(', ') : data.message));
@@ -381,6 +441,10 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => {
         console.error('Error:', error);
         alert('An error occurred while adding the pending amount.');
+      })
+      .finally(() => {
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalText;
       });
     });
   }
@@ -397,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('edit-status').value = btn.dataset.status;
       document.getElementById('edit-notes').value = btn.dataset.notes;
 
-      new bootstrap.Modal(document.getElementById('editPendingAmountModal')).show();
+      openEditPendingAmountModal();
     }
   });
 
@@ -498,6 +562,27 @@ document.addEventListener('DOMContentLoaded', function() {
       window.location.search = '';
     }
   });
+
+  // Close modals when clicking outside
+  document.addEventListener('click', function(e) {
+    const addModal = document.getElementById('addPendingAmountModal');
+    const editModal = document.getElementById('editPendingAmountModal');
+
+    if (e.target === addModal) {
+      closeAddPendingAmountModal();
+    }
+    if (e.target === editModal) {
+      closeEditPendingAmountModal();
+    }
+  });
+
+  // Close modals on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeAddPendingAmountModal();
+      closeEditPendingAmountModal();
+    }
+  });
 });
 </script>
 
@@ -534,86 +619,88 @@ document.addEventListener('DOMContentLoaded', function() {
   margin: 0;
 }
 
-/* Modal Improvements with Z-Index Fix */
-.modal,
-.modal.fade,
-.modal.show,
-#addPendingAmountModal,
-#editPendingAmountModal {
-  z-index: 99999 !important;
+/* Custom Modal System (Working Pattern from Invoices) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  overflow-y: auto;
+  padding: 20px;
 }
 
-.modal-backdrop,
-.modal-backdrop.fade,
-.modal-backdrop.show {
-  z-index: 99998 !important;
-  background-color: rgba(0, 0, 0, 0.6) !important;
-}
-
-.modal-dialog {
-  max-width: 700px;
-  margin: 1.75rem auto;
-  z-index: 100000 !important;
-  position: relative;
-}
-
-.modal-content {
-  border: none;
+.simple-modal {
+  background: white;
   border-radius: 15px;
-  overflow: hidden;
-  z-index: 100001 !important;
+  max-width: 90%;
+  width: 700px;
+  margin: 50px auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
 }
 
-.modal-header {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 1.5rem;
-  z-index: 100002 !important;
-  position: relative;
+.simple-modal .modal-header {
+  padding: 20px 30px;
+  border-radius: 15px 15px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.modal-title {
-  font-weight: 600;
+.simple-modal .modal-title {
   font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
 }
 
-.modal-body {
-  padding: 2rem;
-  background: #ffffff;
-  z-index: 100002 !important;
-  position: relative;
+.simple-modal .btn-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  margin-left: auto;
 }
 
-.modal-footer {
-  padding: 1.5rem 2rem;
-  gap: 10px;
-  justify-content: flex-end;
-  z-index: 100002 !important;
-  position: relative;
+.simple-modal .btn-close:hover {
+  opacity: 1;
 }
 
-/* Override any conflicting sidebar or layout z-index */
-.sidebar,
-.modern-sidebar,
-.header,
-.main-content {
-  z-index: 1040 !important;
+.simple-modal .modal-body {
+  padding: 30px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
 }
 
-/* Ensure modal elements are always on top */
-body.modal-open {
-  overflow: hidden;
+/* Scrollbar styling for modal content */
+.simple-modal .modal-body::-webkit-scrollbar {
+  width: 8px;
 }
 
-/* Force modal positioning */
-.modal.fade .modal-dialog {
-  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
-  transform: translate(0, -50px);
+.simple-modal .modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
 }
 
-.modal.show .modal-dialog {
-  transform: none;
+.simple-modal .modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.simple-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* Form Improvements */
