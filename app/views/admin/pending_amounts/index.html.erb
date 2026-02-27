@@ -534,21 +534,43 @@ document.addEventListener('DOMContentLoaded', function() {
   margin: 0;
 }
 
-/* Modal Improvements */
+/* Modal Improvements with Z-Index Fix */
+.modal,
+.modal.fade,
+.modal.show,
+#addPendingAmountModal,
+#editPendingAmountModal {
+  z-index: 99999 !important;
+}
+
+.modal-backdrop,
+.modal-backdrop.fade,
+.modal-backdrop.show {
+  z-index: 99998 !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
 .modal-dialog {
   max-width: 700px;
   margin: 1.75rem auto;
+  z-index: 100000 !important;
+  position: relative;
 }
 
 .modal-content {
   border: none;
   border-radius: 15px;
   overflow: hidden;
+  z-index: 100001 !important;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
 }
 
 .modal-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 1.5rem;
+  z-index: 100002 !important;
+  position: relative;
 }
 
 .modal-title {
@@ -559,18 +581,32 @@ document.addEventListener('DOMContentLoaded', function() {
 .modal-body {
   padding: 2rem;
   background: #ffffff;
+  z-index: 100002 !important;
+  position: relative;
 }
 
 .modal-footer {
   padding: 1.5rem 2rem;
   gap: 10px;
   justify-content: flex-end;
+  z-index: 100002 !important;
+  position: relative;
 }
 
-.modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.6);
+/* Override any conflicting sidebar or layout z-index */
+.sidebar,
+.modern-sidebar,
+.header,
+.main-content {
+  z-index: 1040 !important;
 }
 
+/* Ensure modal elements are always on top */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Force modal positioning */
 .modal.fade .modal-dialog {
   transition: transform 0.4s ease-out, opacity 0.4s ease-out;
   transform: translate(0, -50px);
