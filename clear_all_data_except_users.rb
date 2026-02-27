@@ -2,118 +2,51 @@
 # Run this in Rails console: load 'clear_all_data_except_users.rb'
 # WARNING: This will permanently delete all data except users!
 
-puts "🚨 WARNING: This will delete ALL data except users!"
-puts "💾 This includes all products, categories, orders, invoices, customers, etc."
+puts "🚨 WARNING: This will delete PRODUCTS, CATEGORIES, INVOICES, ITEMS & VENDOR DATA!"
+puts "💾 This includes all products, categories, invoices, invoice items, vendor purchases, vendor payments, etc."
+puts "✅ PRESERVED: Users, customers, orders, bookings, insurance data, affiliates, etc. will be kept"
 puts ""
 puts "Models to be cleared:"
 
-# List all models that will be cleared
+# List all models that will be cleared - FOCUSED ON PRODUCTS, CATEGORIES, INVOICES & VENDOR DATA
 # IMPORTANT: Ordered by dependencies - child tables first, parent tables last
 models_to_clear = [
-  # Start with junction tables and items that reference other tables
-  'BookingItem',
-  'OrderItem',
+  # Items and junction tables (delete first)
   'InvoiceItem',
   'VendorPurchaseItem',
   'SaleItem',
+  'BookingItem',
+  'OrderItem',
   'StockMovement',
   'ProductReview',
   'ProductRating',
-  'MilkDeliveryTask',
-  'WalletTransaction',
-  'DeviceToken',
   'Wishlist',
-  'Notification',
-  'CustomerAddress',
-  'CustomerFormat',
 
-  # Insurance member/nominee/document tables
-  'HealthInsuranceMember',
-  'LifeInsuranceNominee',
-  'LifeInsuranceDocument',
-  'LifeInsuranceBankDetail',
-
-  # Document tables
-  'CustomerDocument',
-  'DistributorDocument',
-  'SubAgentDocument',
-  'InvestorDocument',
-
-  # Financial records that reference other entities
-  'CommissionPayout',
-  'CommissionReceipt',
-  'PayoutDistribution',
-  'PayoutAuditLog',
+  # Vendor financial records
   'VendorPayment',
-  'DistributorPayout',
-
-  # Business relationship tables
-  'DistributorAssignment',
-  'Referral',
-
-  # Booking and order related (after items are deleted)
-  'BookingInvoice',
-  'BookingSchedule',
   'VendorInvoice',
+
+  # Invoice related (after items deleted)
+  'BookingInvoice',
   'Invoice',
-  'Booking',
-  'Order',
+
+  # Vendor purchases (after items deleted)
   'VendorPurchase',
-
-  # Subscription related
-  'MilkSubscription',
-  'SubscriptionTemplate',
-
-  # Insurance policies (after members/nominees deleted)
-  'HealthInsurance',
-  'LifeInsurance',
-  'MotorInsurance',
-  'OtherInsurance',
-
-  # Financial entities
-  'Payout',
-  'Investment',
-  'CustomerWallet',
 
   # Stock and inventory
   'StockBatch',
 
-  # Business entities (after their related records deleted)
-  'Lead',
-  'ClientRequest',
-  'TaxService',
-  'Loan',
-  'TravelPackage',
-
-  # Network entities (after assignments/documents deleted)
-  'SubAgent',
-  'Investor',
-  'Distributor',
-  'Affiliate',
-  'Franchise',
-
-  # Core entities that are referenced by others
-  'Customer',
-  'DeliveryPerson',
+  # Vendor entity (after all vendor-related records deleted)
   'Vendor',
-  'Store',
-  'Product',
-  'Category',
 
-  # System and config entities
-  'InsuranceCompany',
-  'AgencyCode',
-  'AgencyBroker',
-  'Broker',
-  'Banner',
-  'Coupon',
-  'DeliveryRule',
-  'Report',
-  'Document',
-  'FamilyMember',
-  'CorporateMember',
-  'Message',
-  'SystemSetting'
+  # Store (if related to products/vendors)
+  'Store',
+
+  # Products (after all items and references deleted)
+  'Product',
+
+  # Categories (after products deleted)
+  'Category'
 ]
 
 models_to_clear.each_with_index do |model, index|
@@ -121,7 +54,7 @@ models_to_clear.each_with_index do |model, index|
 end
 
 puts ""
-puts "🔒 PRESERVED: User, Role, Permission, RolePermission, UserRole models will be kept"
+puts "🔒 PRESERVED: Users, Customers, Orders, Bookings, Insurance, Affiliates, and other business data will be kept"
 puts ""
 print "Type 'YES' to confirm deletion (anything else to cancel): "
 
@@ -213,9 +146,16 @@ if confirmation == 'YES'
   puts ""
   puts "🎯 TOTAL DELETED: #{total_deleted} records"
 
-  # Verify users are still there
+  # Verify preserved data is still there
   user_count = User.count rescue 0
+  customer_count = Customer.count rescue 0
+  booking_count = Booking.count rescue 0
+  order_count = Order.count rescue 0
+
   puts "👥 USERS PRESERVED: #{user_count} user records"
+  puts "👥 CUSTOMERS PRESERVED: #{customer_count} customer records"
+  puts "📋 BOOKINGS PRESERVED: #{booking_count} booking records"
+  puts "📋 ORDERS PRESERVED: #{order_count} order records"
 
   # Reset auto-increment sequences (for PostgreSQL)
   if ActiveRecord::Base.connection.adapter_name == 'PostgreSQL'
@@ -238,9 +178,10 @@ if confirmation == 'YES'
   end
 
   puts ""
-  puts "🎉 DATA CLEANUP COMPLETED SUCCESSFULLY!"
-  puts "🔒 All user accounts have been preserved"
-  puts "📈 You can now start fresh with clean data"
+  puts "🎉 PRODUCT & VENDOR DATA CLEANUP COMPLETED SUCCESSFULLY!"
+  puts "🔒 Users, customers, orders, bookings, and insurance data preserved"
+  puts "📦 Products, categories, invoices, and vendor data have been cleared"
+  puts "📈 You can now add fresh product catalog and vendor data"
 
 else
   puts ""

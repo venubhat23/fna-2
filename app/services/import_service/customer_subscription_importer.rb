@@ -158,7 +158,7 @@ module ImportService
       )
 
       # Create daily delivery tasks
-      create_daily_tasks(subscription)
+      create_daily_tasks(subscription, row)
 
       @imported_count += 1
     end
@@ -215,28 +215,66 @@ module ImportService
       delivery_person # Can be nil if not found
     end
 
-    def create_daily_tasks(subscription)
+    def create_daily_tasks(subscription, row = nil)
       start_date = subscription.start_date
       end_date = subscription.end_date
 
-      (start_date..end_date).each do |date|
-        # Skip if task already exists for this date
-        next if MilkDeliveryTask.exists?(
-          subscription_id: subscription.id,
-          customer_id: subscription.customer_id,
-          delivery_date: date
-        )
+      # Check if row contains daily quantity columns (1-31 for each day)
+      has_daily_quantities = row && (1..31).any? { |day| get_row_value(row, day.to_s).present? }
 
-        MilkDeliveryTask.create!(
-          subscription_id: subscription.id,
-          customer_id: subscription.customer_id,
-          product_id: subscription.product_id,
-          delivery_person_id: subscription.delivery_person_id,
-          quantity: subscription.quantity,
-          unit: subscription.unit,
-          delivery_date: date,
-          status: 'pending'
-        )
+      if has_daily_quantities
+        # Create tasks based on daily quantities in columns 1-31
+        (start_date..end_date).each_with_index do |date, index|
+          day_column = (index + 1).to_s # Day 1, Day 2, etc.
+          daily_quantity = get_row_value(row, day_column)
+
+          # Skip if day exceeds 31 or quantity is 'X' or blank
+          next if index >= 31 || daily_quantity.blank? || daily_quantity.upcase == 'X'
+
+          # Skip if task already exists for this date
+          next if MilkDeliveryTask.exists?(
+            subscription_id: subscription.id,
+            customer_id: subscription.customer_id,
+            delivery_date: date
+          )
+
+          # Parse quantity (could be 0.5, 1, 1.5, etc.)
+          quantity = parse_decimal(daily_quantity)
+          next if quantity.nil? || quantity <= 0
+
+          MilkDeliveryTask.create!(
+            subscription_id: subscription.id,
+            customer_id: subscription.customer_id,
+            product_id: subscription.product_id,
+            delivery_person_id: subscription.delivery_person_id,
+            quantity: quantity,
+            unit: subscription.unit,
+            delivery_date: date,
+            status: 'completed', # Set as completed as per requirement
+            completed_at: date.beginning_of_day + 8.hours # Mark as completed at 8 AM
+          )
+        end
+      else
+        # Default behavior: create tasks with subscription quantity for all days
+        (start_date..end_date).each do |date|
+          # Skip if task already exists for this date
+          next if MilkDeliveryTask.exists?(
+            subscription_id: subscription.id,
+            customer_id: subscription.customer_id,
+            delivery_date: date
+          )
+
+          MilkDeliveryTask.create!(
+            subscription_id: subscription.id,
+            customer_id: subscription.customer_id,
+            product_id: subscription.product_id,
+            delivery_person_id: subscription.delivery_person_id,
+            quantity: subscription.quantity,
+            unit: subscription.unit,
+            delivery_date: date,
+            status: 'pending'
+          )
+        end
       end
     end
 

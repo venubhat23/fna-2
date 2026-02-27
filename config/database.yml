@@ -4,22 +4,31 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
-  <<: *default
-  host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a.oregon-postgres.render.com' %>
-  database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
-  username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
-  password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
-  port: <%= ENV['DB_PORT'] || 5432 %>
+  primary: &primary_development
+    <<: *default
+    host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a.oregon-postgres.render.com' %>
+    database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
+    username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
+    password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
+    port: <%= ENV['DB_PORT'] || 5432 %>
+  cable:
+    <<: *primary_development
 
 test:
-  <<: *default
-  database: atmanirbhar_farm_test
+  primary: &primary_test
+    <<: *default
+    database: atmanirbhar_farm_test
+  cable:
+    <<: *primary_test
 
 production:
-  <<: *default
-  url: <%= ENV['DATABASE_URL'] %>
-  host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a' %>
-  database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
-  username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
-  password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
-  port: <%= ENV['DB_PORT'] || 5432 %>
+  primary: &primary_production
+    <<: *default
+    url: <%= ENV['DATABASE_URL'] %>
+    host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a' %>
+    database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
+    username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
+    password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
+    port: <%= ENV['DB_PORT'] || 5432 %>
+  cable:
+    <<: *primary_production

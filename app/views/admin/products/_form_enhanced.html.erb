@@ -671,7 +671,7 @@
           <%= form.number_field :price, class: "form-control",
               step: "0.01", required: true, placeholder: "0.00",
               id: "selling-price" %>
-          <div class="help-text">Price at which you sell to customers</div>
+          <div class="help-text">Final price customer pays (inclusive of GST if enabled)</div>
         </div>
       </div>
 
@@ -804,6 +804,202 @@
         <%= form.text_field :dimensions, class: "form-control",
             placeholder: "30cm x 20cm x 10cm" %>
         <div class="help-text">Product dimensions (optional)</div>
+      </div>
+    </div>
+
+    <!-- GST Configuration Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="bi bi-receipt"></i>
+        GST Configuration
+      </h3>
+
+      <div class="toggle-container">
+        <div class="toggle-switch">
+          <%= form.check_box :gst_enabled, id: "gst-toggle" %>
+          <label class="toggle-slider" for="gst-toggle"></label>
+        </div>
+        <div>
+          <strong>Enable GST</strong><br>
+          <small class="text-muted">Apply GST to this product pricing</small>
+        </div>
+      </div>
+
+      <div id="gst-config" style="display: none;" class="mt-4">
+        <div class="discount-config-card">
+
+          <!-- GST Type Selection -->
+          <div class="form-group">
+            <label class="form-label">GST Configuration Type</label>
+            <div class="radio-group">
+              <div class="radio-option">
+                <input type="radio" id="gst-simple" name="gst_type" value="simple" checked>
+                <label for="gst-simple">
+                  <i class="bi bi-percent"></i> Simple GST (%)
+                </label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" id="gst-detailed" name="gst_type" value="detailed">
+                <label for="gst-detailed">
+                  <i class="bi bi-file-text"></i> Detailed GST (CGST + SGST + IGST)
+                </label>
+              </div>
+            </div>
+            <div class="help-text">
+              <i class="bi bi-info-circle"></i>
+              Simple: Enter single GST percentage. Detailed: Configure CGST, SGST, and IGST separately
+            </div>
+          </div>
+
+          <!-- Simple GST Configuration -->
+          <div id="simple-gst-config">
+            <div class="form-grid form-grid-2">
+              <div class="form-group">
+                <%= form.label :gst_percentage, "GST Percentage", class: "form-label" %>
+                <div class="input-group">
+                  <%= form.number_field :gst_percentage, class: "form-control",
+                      step: "0.01", min: 0, max: 100,
+                      placeholder: "18", id: "gst-percentage-input" %>
+                  <span class="input-addon">%</span>
+                </div>
+                <div class="help-text">Standard GST rates: 5%, 12%, 18%, 28%</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Base Price (Excluding GST)</label>
+                <div class="final-price-display">
+                  <span class="currency-symbol">₹</span>
+                  <input type="text" id="base-price-display" class="form-control" readonly
+                         value="0.00" style="font-weight: bold; color: #28a745;">
+                </div>
+                <div class="help-text">Price before adding GST</div>
+                <%= form.hidden_field :base_price_excluding_gst, id: "base-price-hidden" %>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Total GST Amount</label>
+                <div class="final-price-display">
+                  <span class="currency-symbol">₹</span>
+                  <input type="text" id="gst-amount-display" class="form-control" readonly
+                         value="0.00" style="font-weight: bold; color: #dc3545;">
+                </div>
+                <%= form.hidden_field :gst_amount, id: "gst-amount-hidden" %>
+                <div class="help-text">Total GST included in selling price</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed GST Configuration -->
+          <div id="detailed-gst-config" style="display: none;">
+            <div class="form-grid form-grid-3">
+              <div class="form-group">
+                <%= form.label :cgst_percentage, "CGST (%)", class: "form-label" %>
+                <div class="input-group">
+                  <%= form.number_field :cgst_percentage, class: "form-control gst-component",
+                      step: "0.01", min: 0, max: 50,
+                      placeholder: "9", id: "cgst-percentage" %>
+                  <span class="input-addon">%</span>
+                </div>
+                <%= form.hidden_field :cgst_amount, id: "cgst-amount-hidden" %>
+              </div>
+
+              <div class="form-group">
+                <%= form.label :sgst_percentage, "SGST (%)", class: "form-label" %>
+                <div class="input-group">
+                  <%= form.number_field :sgst_percentage, class: "form-control gst-component",
+                      step: "0.01", min: 0, max: 50,
+                      placeholder: "9", id: "sgst-percentage" %>
+                  <span class="input-addon">%</span>
+                </div>
+                <%= form.hidden_field :sgst_amount, id: "sgst-amount-hidden" %>
+              </div>
+
+              <div class="form-group">
+                <%= form.label :igst_percentage, "IGST (%)", class: "form-label" %>
+                <div class="input-group">
+                  <%= form.number_field :igst_percentage, class: "form-control gst-component",
+                      step: "0.01", min: 0, max: 100,
+                      placeholder: "18", id: "igst-percentage" %>
+                  <span class="input-addon">%</span>
+                </div>
+                <%= form.hidden_field :igst_amount, id: "igst-amount-hidden" %>
+              </div>
+            </div>
+
+            <!-- Base Price for Detailed GST -->
+            <div class="form-group">
+              <label class="form-label">Base Price (Excluding GST)</label>
+              <div class="final-price-display">
+                <span class="currency-symbol">₹</span>
+                <input type="text" id="base-price-detailed-display" class="form-control" readonly
+                       value="0.00" style="font-weight: bold; color: #28a745;">
+              </div>
+              <div class="help-text">Price before adding GST components</div>
+            </div>
+
+            <div class="form-grid form-grid-3">
+              <div class="form-group">
+                <label class="form-label">CGST Amount</label>
+                <div class="input-group">
+                  <span class="input-addon">₹</span>
+                  <input type="text" id="cgst-amount-display" class="form-control" readonly value="0.00">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">SGST Amount</label>
+                <div class="input-group">
+                  <span class="input-addon">₹</span>
+                  <input type="text" id="sgst-amount-display" class="form-control" readonly value="0.00">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">IGST Amount</label>
+                <div class="input-group">
+                  <span class="input-addon">₹</span>
+                  <input type="text" id="igst-amount-display" class="form-control" readonly value="0.00">
+                </div>
+              </div>
+            </div>
+
+            <div class="help-text">
+              <i class="bi bi-info-circle"></i>
+              <strong>For Intra-state transactions:</strong> Use CGST + SGST (e.g., 2.5% + 2.5% = 5% total)<br>
+              <strong>For Inter-state transactions:</strong> Use IGST only (e.g., 5% IGST)<br>
+              <strong>Example for 5% GST:</strong> CGST = 2.5%, SGST = 2.5%, IGST = 0% (for intra-state)
+            </div>
+          </div>
+
+          <!-- Total Price with GST (Confirmation) -->
+          <div class="form-group mt-4">
+            <label class="form-label">Final Customer Price (Confirmation)</label>
+            <div class="final-price-display" style="border-color: #007bff; background: #e7f3ff;">
+              <span class="currency-symbol">₹</span>
+              <input type="text" id="final-price-with-gst" class="form-control" readonly
+                     value="0.00" style="font-weight: bold; color: #007bff; font-size: 1.2rem;">
+            </div>
+            <div class="help-text">
+              <i class="bi bi-info-circle"></i>
+              This should match your selling price (confirmation that calculations are correct)
+            </div>
+            <%= form.hidden_field :final_amount_with_gst, id: "final-amount-with-gst-hidden" %>
+          </div>
+
+          <!-- GST Summary -->
+          <div id="gst-summary" class="alert alert-success mt-3" style="display: none;">
+            <div class="row">
+              <div class="col-md-6">
+                <strong>Price Breakdown:</strong><br>
+                <span id="gst-summary-breakdown"></span>
+              </div>
+              <div class="col-md-6">
+                <strong>Tax Details:</strong><br>
+                <span id="gst-summary-taxes"></span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1456,14 +1652,280 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Add event listeners for price calculations
   if (sellingPriceInput) {
-    sellingPriceInput.addEventListener('input', calculateFinalPrice);
+    sellingPriceInput.addEventListener('input', function() {
+      calculateFinalPrice();
+      calculateGSTAmounts();
+    });
   }
   if (discountPercentageValue) {
-    discountPercentageValue.addEventListener('input', calculateFinalPrice);
+    discountPercentageValue.addEventListener('input', function() {
+      calculateFinalPrice();
+      calculateGSTAmounts();
+    });
   }
   if (discountFixedValue) {
-    discountFixedValue.addEventListener('input', calculateFinalPrice);
+    discountFixedValue.addEventListener('input', function() {
+      calculateFinalPrice();
+      calculateGSTAmounts();
+    });
   }
+
+  // GST Configuration Handlers
+  const gstToggle = document.getElementById('gst-toggle');
+  const gstConfig = document.getElementById('gst-config');
+  const gstSimpleRadio = document.getElementById('gst-simple');
+  const gstDetailedRadio = document.getElementById('gst-detailed');
+  const simpleGstConfig = document.getElementById('simple-gst-config');
+  const detailedGstConfig = document.getElementById('detailed-gst-config');
+
+  // GST Input fields
+  const gstPercentageInput = document.getElementById('gst-percentage-input');
+  const cgstPercentageInput = document.getElementById('cgst-percentage');
+  const sgstPercentageInput = document.getElementById('sgst-percentage');
+  const igstPercentageInput = document.getElementById('igst-percentage');
+
+  // GST Display fields
+  const gstAmountDisplay = document.getElementById('gst-amount-display');
+  const cgstAmountDisplay = document.getElementById('cgst-amount-display');
+  const sgstAmountDisplay = document.getElementById('sgst-amount-display');
+  const igstAmountDisplay = document.getElementById('igst-amount-display');
+  const finalPriceWithGST = document.getElementById('final-price-with-gst');
+  const basePriceDisplay = document.getElementById('base-price-display');
+  const basePriceDetailedDisplay = document.getElementById('base-price-detailed-display');
+
+  // GST Hidden fields
+  const gstAmountHidden = document.getElementById('gst-amount-hidden');
+  const cgstAmountHidden = document.getElementById('cgst-amount-hidden');
+  const sgstAmountHidden = document.getElementById('sgst-amount-hidden');
+  const igstAmountHidden = document.getElementById('igst-amount-hidden');
+  const finalAmountWithGSTHidden = document.getElementById('final-amount-with-gst-hidden');
+  const basePriceHidden = document.getElementById('base-price-hidden');
+
+  // GST Summary elements
+  const gstSummary = document.getElementById('gst-summary');
+  const gstSummaryBreakdown = document.getElementById('gst-summary-breakdown');
+  const gstSummaryTaxes = document.getElementById('gst-summary-taxes');
+
+  // GST Toggle Handler
+  if (gstToggle) {
+    gstToggle.addEventListener('change', function() {
+      if (this.checked) {
+        gstConfig.style.display = 'block';
+        // Show default GST type
+        if (gstSimpleRadio.checked) {
+          simpleGstConfig.style.display = 'block';
+          detailedGstConfig.style.display = 'none';
+        } else {
+          simpleGstConfig.style.display = 'none';
+          detailedGstConfig.style.display = 'block';
+        }
+        calculateGSTAmounts();
+      } else {
+        gstConfig.style.display = 'none';
+        resetGSTCalculations();
+      }
+    });
+
+    // Trigger on page load if GST is enabled
+    if (gstToggle.checked) {
+      gstConfig.style.display = 'block';
+      if (gstSimpleRadio.checked) {
+        simpleGstConfig.style.display = 'block';
+      } else {
+        detailedGstConfig.style.display = 'block';
+      }
+      calculateGSTAmounts();
+    }
+  }
+
+  // GST Type Selection Handlers
+  if (gstSimpleRadio) {
+    gstSimpleRadio.addEventListener('change', function() {
+      if (this.checked) {
+        simpleGstConfig.style.display = 'block';
+        detailedGstConfig.style.display = 'none';
+        // Clear detailed GST values
+        if (cgstPercentageInput) cgstPercentageInput.value = '';
+        if (sgstPercentageInput) sgstPercentageInput.value = '';
+        if (igstPercentageInput) igstPercentageInput.value = '';
+        calculateGSTAmounts();
+      }
+    });
+  }
+
+  if (gstDetailedRadio) {
+    gstDetailedRadio.addEventListener('change', function() {
+      if (this.checked) {
+        simpleGstConfig.style.display = 'none';
+        detailedGstConfig.style.display = 'block';
+        // Clear simple GST value
+        if (gstPercentageInput) gstPercentageInput.value = '';
+        calculateGSTAmounts();
+      }
+    });
+  }
+
+  // GST Calculation Function - REVERSE CALCULATION (Inclusive GST)
+  function calculateGSTAmounts() {
+    if (!gstToggle || !gstToggle.checked) {
+      resetGSTCalculations();
+      return;
+    }
+
+    // Get the selling price (inclusive of GST)
+    let sellingPriceInclusive = parseFloat(sellingPriceInput?.value) || 0;
+
+    // If discount is enabled, use the discounted price as the inclusive price
+    if (discountToggle && discountToggle.checked) {
+      const discountedPrice = parseFloat(finalPriceInput?.value) || 0;
+      if (discountedPrice > 0) {
+        sellingPriceInclusive = discountedPrice;
+      }
+    }
+
+    // Round the selling price to avoid floating point precision issues
+    sellingPriceInclusive = Math.round(sellingPriceInclusive * 100) / 100;
+
+    let totalGSTAmount = 0;
+    let basePrice = 0;
+    let cgstAmount = 0;
+    let sgstAmount = 0;
+    let igstAmount = 0;
+    let breakdown = '';
+    let taxDetails = '';
+
+    if (gstSimpleRadio && gstSimpleRadio.checked) {
+      // Simple GST Reverse Calculation
+      const gstPercentage = parseFloat(gstPercentageInput?.value) || 0;
+
+      if (gstPercentage > 100) {
+        gstPercentageInput.value = 100;
+        gstPercentage = 100;
+      }
+
+      // Reverse calculation: Base Price = Inclusive Price / (1 + GST Rate)
+      basePrice = sellingPriceInclusive / (1 + (gstPercentage / 100));
+      // Round base price to 2 decimal places
+      basePrice = Math.round(basePrice * 100) / 100;
+      totalGSTAmount = sellingPriceInclusive - basePrice;
+      // Round GST amount to 2 decimal places
+      totalGSTAmount = Math.round(totalGSTAmount * 100) / 100;
+
+      // Update displays
+      if (basePriceDisplay) basePriceDisplay.value = basePrice.toFixed(2);
+      if (basePriceHidden) basePriceHidden.value = basePrice.toFixed(2);
+      if (gstAmountDisplay) gstAmountDisplay.value = totalGSTAmount.toFixed(2);
+      if (gstAmountHidden) gstAmountHidden.value = totalGSTAmount.toFixed(2);
+
+      breakdown = `Selling Price (Inclusive): ₹${sellingPriceInclusive.toFixed(2)}<br>Base Price: ₹${basePrice.toFixed(2)}<br>GST (${gstPercentage}%): ₹${totalGSTAmount.toFixed(2)}`;
+      taxDetails = `GST: ${gstPercentage}%`;
+
+    } else if (gstDetailedRadio && gstDetailedRadio.checked) {
+      // Detailed GST Reverse Calculation
+      const cgstPercentage = parseFloat(cgstPercentageInput?.value) || 0;
+      const sgstPercentage = parseFloat(sgstPercentageInput?.value) || 0;
+      const igstPercentage = parseFloat(igstPercentageInput?.value) || 0;
+
+      const totalGSTPercentage = cgstPercentage + sgstPercentage + igstPercentage;
+
+      // Reverse calculation: Base Price = Inclusive Price / (1 + Total GST Rate)
+      basePrice = sellingPriceInclusive / (1 + (totalGSTPercentage / 100));
+      // Round base price to 2 decimal places
+      basePrice = Math.round(basePrice * 100) / 100;
+
+      // Calculate individual GST components based on base price
+      cgstAmount = (basePrice * cgstPercentage) / 100;
+      sgstAmount = (basePrice * sgstPercentage) / 100;
+      igstAmount = (basePrice * igstPercentage) / 100;
+
+      // Round individual GST amounts
+      cgstAmount = Math.round(cgstAmount * 100) / 100;
+      sgstAmount = Math.round(sgstAmount * 100) / 100;
+      igstAmount = Math.round(igstAmount * 100) / 100;
+
+      totalGSTAmount = cgstAmount + sgstAmount + igstAmount;
+      // Round total GST amount
+      totalGSTAmount = Math.round(totalGSTAmount * 100) / 100;
+
+      // Update displays
+      if (basePriceDetailedDisplay) basePriceDetailedDisplay.value = basePrice.toFixed(2);
+      if (basePriceHidden) basePriceHidden.value = basePrice.toFixed(2);
+      if (cgstAmountDisplay) cgstAmountDisplay.value = cgstAmount.toFixed(2);
+      if (sgstAmountDisplay) sgstAmountDisplay.value = sgstAmount.toFixed(2);
+      if (igstAmountDisplay) igstAmountDisplay.value = igstAmount.toFixed(2);
+
+      // Update hidden fields
+      if (cgstAmountHidden) cgstAmountHidden.value = cgstAmount.toFixed(2);
+      if (sgstAmountHidden) sgstAmountHidden.value = sgstAmount.toFixed(2);
+      if (igstAmountHidden) igstAmountHidden.value = igstAmount.toFixed(2);
+
+      breakdown = `Selling Price (Inclusive): ₹${sellingPriceInclusive.toFixed(2)}<br>Base Price: ₹${basePrice.toFixed(2)}<br>CGST @ ${cgstPercentage}%: ₹${cgstAmount.toFixed(2)}<br>SGST @ ${sgstPercentage}%: ₹${sgstAmount.toFixed(2)}<br>IGST @ ${igstPercentage}%: ₹${igstAmount.toFixed(2)}`;
+
+      let activeTaxes = [];
+      if (cgstPercentage > 0) activeTaxes.push(`CGST: ${cgstPercentage}%`);
+      if (sgstPercentage > 0) activeTaxes.push(`SGST: ${sgstPercentage}%`);
+      if (igstPercentage > 0) activeTaxes.push(`IGST: ${igstPercentage}%`);
+      taxDetails = activeTaxes.join('<br>');
+    }
+
+    // The final amount should match the selling price (confirmation)
+    if (finalPriceWithGST) finalPriceWithGST.value = sellingPriceInclusive.toFixed(2);
+    if (finalAmountWithGSTHidden) finalAmountWithGSTHidden.value = sellingPriceInclusive.toFixed(2);
+
+    // Update total GST amount
+    if (gstAmountHidden) gstAmountHidden.value = totalGSTAmount.toFixed(2);
+
+    // Show GST summary
+    if (totalGSTAmount > 0 && gstSummary) {
+      if (gstSummaryBreakdown) gstSummaryBreakdown.innerHTML = breakdown;
+      if (gstSummaryTaxes) gstSummaryTaxes.innerHTML = taxDetails;
+      gstSummary.style.display = 'block';
+    } else if (gstSummary) {
+      gstSummary.style.display = 'none';
+    }
+  }
+
+  function resetGSTCalculations() {
+    // Reset all GST displays
+    if (basePriceDisplay) basePriceDisplay.value = '0.00';
+    if (basePriceDetailedDisplay) basePriceDetailedDisplay.value = '0.00';
+    if (gstAmountDisplay) gstAmountDisplay.value = '0.00';
+    if (cgstAmountDisplay) cgstAmountDisplay.value = '0.00';
+    if (sgstAmountDisplay) sgstAmountDisplay.value = '0.00';
+    if (igstAmountDisplay) igstAmountDisplay.value = '0.00';
+    if (finalPriceWithGST) {
+      // Set to selling price or discounted price if available
+      const currentPrice = discountToggle?.checked ?
+        (parseFloat(finalPriceInput?.value) || 0) :
+        (parseFloat(sellingPriceInput?.value) || 0);
+      finalPriceWithGST.value = currentPrice.toFixed(2);
+    }
+
+    // Reset hidden fields
+    if (gstAmountHidden) gstAmountHidden.value = '';
+    if (cgstAmountHidden) cgstAmountHidden.value = '';
+    if (sgstAmountHidden) sgstAmountHidden.value = '';
+    if (igstAmountHidden) igstAmountHidden.value = '';
+    if (finalAmountWithGSTHidden) {
+      const currentPrice = discountToggle?.checked ?
+        (parseFloat(finalPriceInput?.value) || 0) :
+        (parseFloat(sellingPriceInput?.value) || 0);
+      finalAmountWithGSTHidden.value = currentPrice.toFixed(2);
+    }
+
+    // Hide summary
+    if (gstSummary) gstSummary.style.display = 'none';
+  }
+
+  // Add event listeners for GST inputs
+  if (gstPercentageInput) {
+    gstPercentageInput.addEventListener('input', calculateGSTAmounts);
+  }
+
+  const gstComponentInputs = document.querySelectorAll('.gst-component');
+  gstComponentInputs.forEach(input => {
+    input.addEventListener('input', calculateGSTAmounts);
+  });
 
   // SEO Character Counters
   const metaTitleInput = document.getElementById('meta-title');

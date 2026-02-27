@@ -464,6 +464,9 @@ class Admin::ProductsController < Admin::ApplicationController
       :occasional_schedule_type, :occasional_recurring_from_day, :occasional_recurring_from_time,
       :occasional_recurring_to_day, :occasional_recurring_to_time,
       :image_url, :additional_images_urls,
+      # GST Configuration Parameters
+      :gst_enabled, :gst_percentage, :cgst_percentage, :sgst_percentage, :igst_percentage,
+      :gst_amount, :cgst_amount, :sgst_amount, :igst_amount, :final_amount_with_gst, :base_price_excluding_gst,
       :image,
       additional_images: [],
       remove_images: [],
