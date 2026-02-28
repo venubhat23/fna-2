@@ -11,8 +11,14 @@ class Invoice < ApplicationRecord
   validates :invoice_date, presence: true
 
   before_validation :generate_invoice_number, on: :create
+  before_create :generate_share_token
 
   scope :for_month, ->(month, year) { where(invoice_date: Date.new(year, month).beginning_of_month..Date.new(year, month).end_of_month) }
+
+  def generate_share_token!
+    self.share_token = SecureRandom.urlsafe_base64(32)
+    save!
+  end
 
   private
 
@@ -22,5 +28,10 @@ class Invoice < ApplicationRecord
     last_invoice = Invoice.order(:created_at).last
     number = last_invoice ? last_invoice.invoice_number.split('-').last.to_i + 1 : 1
     self.invoice_number = "INV-#{Date.current.strftime('%Y%m')}-#{number.to_s.rjust(4, '0')}"
+  end
+
+  def generate_share_token
+    return if share_token.present?
+    self.share_token = SecureRandom.urlsafe_base64(32)
   end
 end

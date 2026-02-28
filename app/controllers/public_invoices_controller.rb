@@ -6,6 +6,19 @@ class PublicInvoicesController < ApplicationController
   skip_load_and_authorize_resource
   layout false
 
+  def show
+    # Find invoice by share token - handle both BookingInvoice and regular Invoice
+    @invoice = Invoice.find_by!(share_token: params[:token])
+    @customer = @invoice.customer
+
+    # Get business settings
+    @business_settings = SystemSetting.business_settings
+
+    render template: 'public_invoices/show'
+  rescue ActiveRecord::RecordNotFound
+    render template: 'public_invoices/not_found', status: :not_found
+  end
+
   def index
     # Start with optimized base query - include all needed associations
     @invoices = BookingInvoice.includes(:booking, :customer, booking: [:booking_items, booking_items: :product])

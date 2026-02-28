@@ -104,7 +104,7 @@ class ApplicationController < ActionController::Base
     # Define actions that don't require authentication
     public_controllers = [
       'sessions', 'devise/sessions', 'registrations', 'devise/registrations',
-      'public_pages', 'api/cities', 'booking_invoices'
+      'public_pages', 'api/cities', 'booking_invoices', 'public_invoices'
     ]
     public_controllers.any? { |controller| self.class.name.downcase.include?(controller) }
   end
