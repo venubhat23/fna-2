@@ -87,7 +87,6 @@ module ImportService
       unit = get_row_value(row, 'unit')
       start_date = parse_date(get_row_value(row, 'start_date'))
       end_date = parse_date(get_row_value(row, 'end_date'))
-      rate = parse_decimal(get_row_value(row, 'Rate'))
       pattern = get_row_value(row, 'pattern')
 
       # Validate required fields
@@ -97,7 +96,6 @@ module ImportService
       raise "Missing unit" if unit.blank?
       raise "Missing start_date" if start_date.nil?
       raise "Missing end_date" if end_date.nil?
-      raise "Missing rate" if rate.nil? || rate <= 0
 
       # Validate dates
       raise "start_date must be before end_date" if start_date >= end_date
@@ -106,9 +104,17 @@ module ImportService
       delivery_person = DeliveryPerson.find_by(id: delivery_person_id)
       raise "Delivery person with ID #{delivery_person_id} not found" if delivery_person.nil?
 
-      # Validate product exists
+      # Validate product exists and get rate from product
       product = Product.find_by(id: product_id)
       raise "Product with ID #{product_id} not found" if product.nil?
+
+      # Get rate from product (use final_amount_with_gst if GST enabled, else selling_price)
+      if product.gst_enabled? && product.final_amount_with_gst.present?
+        rate = product.final_amount_with_gst
+      else
+        rate = product.selling_price || product.price || 0
+      end
+      raise "Product #{product.name} has no valid price set" if rate <= 0
 
       # Calculate total amount
       days_count = (end_date - start_date).to_i + 1
