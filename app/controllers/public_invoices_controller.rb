@@ -20,8 +20,8 @@ class PublicInvoicesController < ApplicationController
   end
 
   def index
-    # Start with optimized base query - include all needed associations
-    @invoices = BookingInvoice.includes(:booking, :customer, booking: [:booking_items, booking_items: :product])
+    # Start with optimized base query for regular invoices - include all needed associations
+    @invoices = Invoice.includes(:customer)
 
     # Apply filters
     if params[:customer_name].present?
@@ -60,9 +60,10 @@ class PublicInvoicesController < ApplicationController
     # Batch update share tokens for invoices that don't have them
     invoices_without_tokens = @invoices.select { |invoice| invoice.share_token.blank? }
     if invoices_without_tokens.any?
-      invoices_without_tokens.each(&:generate_share_token)
-      BookingInvoice.transaction do
-        invoices_without_tokens.each(&:save!)
+      Invoice.transaction do
+        invoices_without_tokens.each do |invoice|
+          invoice.generate_share_token!
+        end
       end
     end
 
@@ -71,9 +72,9 @@ class PublicInvoicesController < ApplicationController
   end
 
   def complete
-    @invoice = BookingInvoice.find(params[:id])
+    @invoice = Invoice.find(params[:id])
 
-    if @invoice.update(status: 'paid')
+    if @invoice.update(status: 'paid', payment_status: 'fully_paid', paid_at: Time.current)
       render json: {
         success: true,
         message: "Invoice ##{@invoice.invoice_number} marked as completed successfully!"
@@ -92,7 +93,7 @@ class PublicInvoicesController < ApplicationController
   end
 
   def destroy
-    @invoice = BookingInvoice.find(params[:id])
+    @invoice = Invoice.find(params[:id])
     invoice_number = @invoice.invoice_number
 
     # Delete the invoice

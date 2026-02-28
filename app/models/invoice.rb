@@ -20,6 +20,26 @@ class Invoice < ApplicationRecord
     save!
   end
 
+  def formatted_number
+    invoice_number
+  end
+
+  def customer_name
+    "#{customer&.first_name} #{customer&.last_name}".strip
+  end
+
+  def customer_phone
+    customer&.mobile
+  end
+
+  def customer_email
+    customer&.email
+  end
+
+  def overdue?
+    due_date && due_date < Date.current && payment_status != 'fully_paid'
+  end
+
   private
 
   def generate_invoice_number

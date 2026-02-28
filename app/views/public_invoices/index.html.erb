@@ -1229,7 +1229,7 @@
 
                   # Generate public URL
                   host = request.host_with_port
-                  public_url = "#{request.protocol}#{host}/invoice/#{invoice.share_token}"
+                  public_url = "#{request.protocol}#{host}/invoices_public/#{invoice.share_token}"
                 %>
                 <a href="<%= public_url %>" class="btn-view" target="_blank">
                   <i class="fas fa-eye"></i>

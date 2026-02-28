@@ -33,6 +33,7 @@ Rails.application.routes.draw do
 
   # Public invoices list (no authentication required)
   get '/invoices_public', to: 'public_invoices#index', as: 'public_invoices'
+  get '/invoices_public/:token', to: 'public_invoices#show', as: 'public_invoice_by_token'
   patch '/invoices_public/:id/complete', to: 'public_invoices#complete', as: 'public_invoice_complete'
   delete '/invoices_public/:id', to: 'public_invoices#destroy', as: 'public_invoice_delete'
 
