@@ -703,7 +703,18 @@
               </td>
               <td class="center-align"><%= item.product&.hsn_code || '-' %></td>
               <td class="center-align"><%= item.quantity %> <%= item.product&.unit_type || 'PCS' %></td>
-              <td class="right-align">₹<%= number_with_delimiter(sprintf('%.2f', item.unit_price || 0), delimiter: ',') %></td>
+              <td class="right-align">
+                <%
+                  # Display GST-inclusive unit price
+                  if item.product&.gst_enabled
+                    gst_rate = item.product.gst_percentage || 0
+                    unit_price_with_gst = (item.unit_price || 0) * (1 + gst_rate/100)
+                  else
+                    unit_price_with_gst = item.unit_price || 0
+                  end
+                %>
+                ₹<%= number_with_delimiter(sprintf('%.2f', unit_price_with_gst), delimiter: ',') %>
+              </td>
               <td class="right-align">
                 <%
                   base_amount = item.quantity * (item.unit_price || 0)
@@ -726,11 +737,13 @@
               </td>
               <td class="right-align">
                 <%
-                  # For GST items, the unit_price is base price, so total amount should include GST
-                  if item.product&.gst_enabled && total_gst_rate > 0
-                    final_amount = base_amount + tax_amount
+                  # Calculate final amount consistently with the rate display
+                  if item.product&.gst_enabled
+                    gst_rate = item.product.gst_percentage || 0
+                    unit_price_with_gst = (item.unit_price || 0) * (1 + gst_rate/100)
+                    final_amount = item.quantity * unit_price_with_gst
                   else
-                    final_amount = base_amount
+                    final_amount = item.quantity * (item.unit_price || 0)
                   end
                 %>
                 ₹<%= number_with_delimiter(final_amount.round(2), delimiter: ',') %>

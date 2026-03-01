@@ -307,7 +307,7 @@ class Admin::InvoicesController < Admin::ApplicationController
       customers = Customer.where(id: customer_ids)
     end
 
-    # Get pending amounts for the selected customers - include ALL pending amounts
+    # Get pending amounts for the selected customers - only include unresolved pending amounts
     pending_amounts = PendingAmount.joins(:customer)
                                    .where(customer: customers)
                                    .current_pending
@@ -424,7 +424,7 @@ class Admin::InvoicesController < Admin::ApplicationController
       end
     end
 
-    # 3. Check for pending amounts for this customer - include ALL pending amounts
+    # 3. Check for pending amounts for this customer - only include unresolved pending amounts
     pending_amounts = PendingAmount.where(customer: customer)
                                   .current_pending
 
@@ -505,9 +505,18 @@ class Admin::InvoicesController < Admin::ApplicationController
         if item_data[:pending_amount]
           # Build update attributes based on available columns
           update_attributes = {
-            status: :resolved,
-            notes: "#{item_data[:pending_amount].notes || ''} | Resolved via Invoice ##{invoice.invoice_number} on #{Time.current.strftime('%Y-%m-%d')}".strip
+            status: :resolved
           }
+
+          # Add resolution information to notes field (append, don't replace)
+          resolution_info = "Resolved via Invoice ##{invoice.invoice_number} on #{Time.current.strftime('%Y-%m-%d')}"
+          existing_notes = item_data[:pending_amount].notes.present? ? item_data[:pending_amount].notes : ""
+
+          if existing_notes.present?
+            update_attributes[:notes] = "#{existing_notes} | #{resolution_info}"
+          else
+            update_attributes[:notes] = resolution_info
+          end
 
           # Add resolved_at if the column exists
           if item_data[:pending_amount].respond_to?(:resolved_at)
