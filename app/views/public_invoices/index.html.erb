@@ -1178,7 +1178,7 @@
               <!-- Invoice Header -->
               <div class="invoice-header">
                 <h3 class="invoice-number">#<%= invoice.formatted_number %></h3>
-                <h3 class="invoice-amount">₹<%= number_with_delimiter(invoice.total_amount, delimiter: ',') %></h3>
+                <h3 class="invoice-amount">₹<%= number_with_delimiter(sprintf('%.2f', invoice.total_amount), delimiter: ',') %></h3>
               </div>
 
               <!-- Invoice Details -->
@@ -1240,12 +1240,12 @@
                   invoice_month_year = invoice.invoice_date&.strftime('%B %Y') || Date.current.strftime('%B %Y')
                 %>
                 <% if invoice.customer_phone.present? %>
-                  <button class="btn-whatsapp" onclick="shareViaWhatsApp('<%= invoice.customer_phone %>', '<%= public_url %>', '<%= invoice.formatted_number %>', '<%= number_with_delimiter(invoice.total_amount, delimiter: ',') %>', '<%= invoice.customer_name %>', '<%= invoice_month_year %>')">
+                  <button class="btn-whatsapp" onclick="shareViaWhatsApp('<%= invoice.customer_phone %>', '<%= public_url %>', '<%= invoice.formatted_number %>', '<%= number_with_delimiter(sprintf('%.2f', invoice.total_amount), delimiter: ',') %>', '<%= invoice.customer_name %>', '<%= invoice_month_year %>')">
                     <i class="fab fa-whatsapp"></i>
                     Share WhatsApp
                   </button>
                 <% else %>
-                  <button class="btn-whatsapp" onclick="shareViaWhatsApp('', '<%= public_url %>', '<%= invoice.formatted_number %>', '<%= number_with_delimiter(invoice.total_amount, delimiter: ',') %>', '<%= invoice.customer_name || 'Customer' %>', '<%= invoice_month_year %>')">
+                  <button class="btn-whatsapp" onclick="shareViaWhatsApp('', '<%= public_url %>', '<%= invoice.formatted_number %>', '<%= number_with_delimiter(sprintf('%.2f', invoice.total_amount), delimiter: ',') %>', '<%= invoice.customer_name || 'Customer' %>', '<%= invoice_month_year %>')">
                     <i class="fab fa-whatsapp"></i>
                     Share WhatsApp
                   </button>
