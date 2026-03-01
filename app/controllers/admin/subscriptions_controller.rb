@@ -120,8 +120,32 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def update
+    # Check if delivery person is being changed
+    delivery_person_changed = @subscription.delivery_person_id != subscription_params[:delivery_person_id].to_i
+    old_delivery_person = @subscription.delivery_person
+    new_delivery_person_id = subscription_params[:delivery_person_id]
+
     if @subscription.update(subscription_params)
-      redirect_to admin_subscription_path(@subscription), notice: 'Subscription updated successfully!'
+      # If delivery person changed, update all related delivery tasks
+      if delivery_person_changed
+        update_result = update_delivery_tasks_for_subscription(@subscription, new_delivery_person_id)
+
+        new_delivery_person = DeliveryPerson.find(new_delivery_person_id) if new_delivery_person_id.present?
+        old_name = old_delivery_person&.display_name || 'Not Assigned'
+        new_name = new_delivery_person&.display_name || 'Not Assigned'
+
+        update_message = "Subscription updated successfully! Delivery person changed from #{old_name} to #{new_name}."
+
+        if update_result[:tasks] > 0 || update_result[:formats] > 0
+          update_message += " Updated #{update_result[:tasks]} delivery tasks (including completed ones) and #{update_result[:formats]} customer formats."
+        else
+          update_message += " No delivery tasks found to update."
+        end
+
+        redirect_to admin_subscription_path(@subscription), notice: update_message
+      else
+        redirect_to admin_subscription_path(@subscription), notice: 'Subscription updated successfully!'
+      end
     else
       @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
       @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
@@ -322,8 +346,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def subscription_params
     params.require(:milk_subscription).permit(
-      :customer_id, :start_date, :end_date, :delivery_time, :delivery_pattern,
-      :specific_dates, :status, :is_active, :delivery_person_id
+      :customer_id, :product_id, :quantity, :unit, :start_date, :end_date,
+      :delivery_time, :delivery_pattern, :specific_dates, :status,
+      :is_active, :delivery_person_id
     )
   end
 
@@ -460,5 +485,48 @@ class Admin::SubscriptionsController < Admin::ApplicationController
         format.json { render json: { error: 'Permission denied' }, status: :forbidden }
       end
     end
+  end
+
+  def update_delivery_tasks_for_subscription(subscription, new_delivery_person_id)
+    # Update ALL delivery tasks for this subscription (including completed ones)
+    all_tasks = subscription.milk_delivery_tasks
+
+    updated_tasks_count = 0
+    updated_formats_count = 0
+
+    MilkDeliveryTask.transaction do
+      # Update ALL delivery tasks for this subscription
+      all_tasks.find_each do |task|
+        if new_delivery_person_id.present?
+          task.update!(delivery_person_id: new_delivery_person_id)
+        else
+          task.update!(delivery_person_id: nil)
+        end
+        updated_tasks_count += 1
+      end
+
+      # Update CustomerFormat records for this customer and product combination
+      if defined?(CustomerFormat)
+        customer_formats = CustomerFormat.where(
+          customer: subscription.customer,
+          product: subscription.product
+        )
+
+        customer_formats.find_each do |format|
+          if new_delivery_person_id.present?
+            format.update!(delivery_person_id: new_delivery_person_id)
+          else
+            format.update!(delivery_person_id: nil)
+          end
+          updated_formats_count += 1
+        end
+      end
+    end
+
+    Rails.logger.info "Updated #{updated_tasks_count} delivery tasks (all tasks) and #{updated_formats_count} customer formats for subscription #{subscription.id}"
+    { tasks: updated_tasks_count, formats: updated_formats_count }
+  rescue => e
+    Rails.logger.error "Failed to update delivery tasks for subscription #{subscription.id}: #{e.message}"
+    raise e
   end
 end

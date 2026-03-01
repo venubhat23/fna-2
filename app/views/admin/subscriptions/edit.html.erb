@@ -272,6 +272,16 @@
                     <small class="text-muted">Current: <strong><%= @subscription.status.humanize %></strong></small>
                   </div>
                   <div class="col-md-4">
+                    <%= form.label :delivery_person_id, "Delivery Person", class: "form-label fw-bold" %>
+                    <%= form.select :delivery_person_id,
+                        options_for_select([['Not Assigned', '']] + @delivery_people, @subscription.delivery_person_id),
+                        {},
+                        { class: "form-select select2-delivery-person" } %>
+                    <small class="text-muted">
+                      Current: <strong><%= @subscription.delivery_person&.display_name || 'Not Assigned' %></strong>
+                    </small>
+                  </div>
+                  <div class="col-md-4">
                     <div class="form-check form-switch mt-4">
                       <%= form.check_box :is_active,
                           class: "form-check-input",
@@ -333,6 +343,12 @@ document.addEventListener('DOMContentLoaded', function() {
     $('.select2-product').select2({
       theme: 'bootstrap-5',
       placeholder: 'Select product...',
+      allowClear: true
+    });
+
+    $('.select2-delivery-person').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Select delivery person...',
       allowClear: true
     });
   }

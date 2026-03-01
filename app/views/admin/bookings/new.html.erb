@@ -114,10 +114,22 @@
                   <%# Price %>
                   <div class="mb-3">
                     <%
-                      base_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
-                      gst_rate = product.gst_enabled ? (product.gst_percentage || 0) : 0
-                      gst_amount = base_price * gst_rate / 100
-                      final_price = base_price + gst_amount
+                      # Get the selling price (including any discounts and GST)
+                      selling_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
+
+                      # For GST enabled products, calculate base price and GST
+                      if product.gst_enabled && product.gst_percentage.present? && product.gst_percentage > 0
+                        gst_rate = product.gst_percentage
+                        # selling_price includes GST, so extract base price
+                        base_price = selling_price / (1 + (gst_rate / 100.0))
+                        gst_amount = selling_price - base_price
+                        final_price = selling_price
+                      else
+                        base_price = selling_price
+                        gst_rate = 0
+                        gst_amount = 0
+                        final_price = selling_price
+                      end
                     %>
 
                     <% if product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price %>
@@ -131,7 +143,7 @@
 
                     <% if product.gst_enabled && gst_rate > 0 %>
                       <small class="text-muted d-block">
-                        Base: ₹<%= number_with_delimiter(base_price.round(2)) %> + GST <%= gst_rate %>%
+                        Base: ₹<%= number_with_delimiter(base_price.round(2)) %> + GST: ₹<%= number_with_delimiter(gst_amount.round(2)) %> (<%= gst_rate %>%) = ₹<%= number_with_delimiter(final_price.round(2)) %>
                       </small>
                     <% end %>
                   </div>
@@ -169,10 +181,10 @@
 
                       <!-- Add to Cart Button -->
                       <%
-                        cart_base_price = product.respond_to?(:discount_price) && product.discount_price.present? ? product.discount_price : product.price
-                        cart_gst_rate = product.gst_enabled ? (product.gst_percentage || 0) : 0
-                        cart_gst_amount = cart_base_price * cart_gst_rate / 100
-                        cart_final_price = cart_base_price + cart_gst_amount
+                        # Use the same calculation logic as the display
+                        cart_final_price = final_price
+                        cart_base_price = base_price
+                        cart_gst_rate = gst_rate
                       %>
                       <button class="btn btn-primary w-100"
                               onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= cart_final_price %>, <%= current_stock %>, <%= cart_base_price %>, <%= cart_gst_rate %>)"
@@ -683,7 +695,10 @@ function updateCartDisplay() {
           <div class="flex-grow-1">
             <div class="fw-semibold text-dark" style="font-size: 0.95rem;">${item.name}</div>
             <div class="d-flex align-items-center gap-2 mt-1">
-              <span class="badge bg-light text-dark">₹${item.price} each</span>
+              ${itemGSTRate > 0 ?
+                `<span class="badge bg-light text-dark">₹${itemBasePrice.toFixed(2)} + GST ${itemGSTRate}%</span>` :
+                `<span class="badge bg-light text-dark">₹${item.price} each</span>`
+              }
               ${item.quantity >= item.stock - 2 ? `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Only ${item.stock} in stock</span>` : ''}
             </div>
           </div>
@@ -703,7 +718,10 @@ function updateCartDisplay() {
           </div>
           <div class="text-end">
             <div class="fw-bold fs-5 text-primary">₹${itemTotal.toFixed(2)}</div>
-            <small class="text-muted">${item.quantity} × ₹${item.price}</small>
+            ${itemGSTRate > 0 ?
+              `<small class="text-muted">${item.quantity} × ₹${itemBasePrice.toFixed(2)} (base)</small>` :
+              `<small class="text-muted">${item.quantity} × ₹${item.price}</small>`
+            }
           </div>
         </div>
       </div>
