@@ -334,6 +334,22 @@ class Admin::InvoicesController < Admin::ApplicationController
       end
     end
 
+    # 3. Check for pending amounts for this customer for the current month
+    pending_amounts = PendingAmount.where(customer: customer)
+                                  .where(status: :pending)
+                                  .where(pending_date: start_date..end_date)
+
+    # Add pending amounts as line items
+    pending_amounts.each do |pending_amount|
+      invoice_items_data << {
+        product: nil,
+        quantity: 1,
+        unit_price: pending_amount.amount,
+        description: "Pending from last month: #{pending_amount.description}",
+        pending_amount: pending_amount
+      }
+    end
+
     return nil if invoice_items_data.empty?
 
     # Create new invoice
@@ -359,7 +375,7 @@ class Admin::InvoicesController < Admin::ApplicationController
                        item_data[:delivery_task]
                      end
 
-      invoice.invoice_items.build(
+      invoice_item = invoice.invoice_items.build(
         description: item_data[:description],
         quantity: item_data[:quantity],
         unit_price: item_data[:unit_price],
@@ -367,6 +383,9 @@ class Admin::InvoicesController < Admin::ApplicationController
         product: item_data[:product],
         milk_delivery_task: delivery_task
       )
+
+      # Store reference to pending amount for later processing
+      invoice_item.instance_variable_set(:@pending_amount, item_data[:pending_amount]) if item_data[:pending_amount]
 
       total_amount += item_total
     end
@@ -389,6 +408,24 @@ class Admin::InvoicesController < Admin::ApplicationController
           tasks_to_mark.each do |task|
             task.update(invoiced: true, invoiced_at: Time.current) if task
           end
+        end
+      end
+
+      # Mark pending amounts as resolved since they're now included in the invoice
+      invoice_items_data.each do |item_data|
+        if item_data[:pending_amount]
+          # Build update attributes based on available columns
+          update_attributes = {
+            status: :resolved,
+            notes: "#{item_data[:pending_amount].notes || ''} | Resolved via Invoice ##{invoice.invoice_number} on #{Time.current.strftime('%Y-%m-%d')}".strip
+          }
+
+          # Add resolved_at if the column exists
+          if item_data[:pending_amount].respond_to?(:resolved_at)
+            update_attributes[:resolved_at] = Time.current
+          end
+
+          item_data[:pending_amount].update!(update_attributes)
         end
       end
 
