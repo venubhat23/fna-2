@@ -147,6 +147,22 @@ class MilkSubscription < ApplicationRecord
     end
   end
 
+  # Current quantity methods for showing updated quantities
+  def current_average_quantity
+    return quantity unless milk_delivery_tasks.any?
+    milk_delivery_tasks.average(:quantity)&.round(2) || quantity
+  end
+
+  def current_total_quantity
+    return total_quantity unless milk_delivery_tasks.any?
+    milk_delivery_tasks.sum(:quantity).round(2)
+  end
+
+  def has_quantity_changes?
+    return false unless milk_delivery_tasks.any?
+    current_average_quantity != quantity
+  end
+
   private
 
   def end_date_after_start_date

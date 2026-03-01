@@ -268,9 +268,20 @@
                   <div>
                     <h6 class="mb-0"><%= subscription.product.name %></h6>
                     <div class="d-flex align-items-center gap-2 mt-1">
-                      <span class="badge bg-info-subtle text-info">
-                        <%= subscription.quantity %> <%= subscription.unit %>
-                      </span>
+                      <% if subscription.has_quantity_changes? %>
+                        <div class="d-flex flex-column gap-1">
+                          <span class="badge bg-warning-subtle text-warning">
+                            Original: <%= subscription.quantity %> <%= subscription.unit %>
+                          </span>
+                          <span class="badge bg-success-subtle text-success">
+                            Current Avg: <%= subscription.current_average_quantity %> <%= subscription.unit %>
+                          </span>
+                        </div>
+                      <% else %>
+                        <span class="badge bg-info-subtle text-info">
+                          <%= subscription.quantity %> <%= subscription.unit %>
+                        </span>
+                      <% end %>
                       <small class="text-muted">₹<%= subscription.product.price %>/unit</small>
                     </div>
                   </div>
@@ -1096,8 +1107,16 @@ function renderModalContent(data) {
       <div class="col-6">${data.subscription.product_name}</div>
     </div>
     <div class="row">
-      <div class="col-6"><strong>Quantity:</strong></div>
-      <div class="col-6">${data.subscription.quantity} ${data.subscription.unit}</div>
+      <div class="col-6"><strong>Original Quantity:</strong></div>
+      <div class="col-6"><span class="text-muted">${data.subscription.original_quantity} ${data.subscription.unit}</span></div>
+    </div>
+    <div class="row">
+      <div class="col-6"><strong>Current Avg Quantity:</strong></div>
+      <div class="col-6"><span class="badge bg-success">${data.subscription.current_avg_quantity} ${data.subscription.unit}</span></div>
+    </div>
+    <div class="row">
+      <div class="col-6"><strong>Total Quantity:</strong></div>
+      <div class="col-6"><span class="badge bg-primary">${data.subscription.current_total_quantity} ${data.subscription.unit}</span></div>
     </div>
     <div class="row">
       <div class="col-6"><strong>Pattern:</strong></div>

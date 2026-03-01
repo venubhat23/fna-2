@@ -180,11 +180,18 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     @delivery_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(:delivery_date)
 
+    # Calculate current average quantity from tasks
+    current_avg_quantity = @delivery_tasks.any? ? @delivery_tasks.average(:quantity).round(2) : @subscription.quantity
+    current_total_quantity = @delivery_tasks.sum(:quantity).round(2)
+
     # Prepare data for JSON response
     subscription_data = {
       customer_name: "#{@subscription.customer.first_name} #{@subscription.customer.last_name}".strip,
       product_name: @subscription.product.name,
-      quantity: @subscription.quantity,
+      original_quantity: @subscription.quantity,
+      current_avg_quantity: current_avg_quantity,
+      current_total_quantity: current_total_quantity,
+      quantity: current_avg_quantity, # For backward compatibility
       unit: @subscription.unit,
       delivery_pattern: @subscription.delivery_pattern.humanize,
       start_date: @subscription.start_date.strftime('%d %b %Y'),
