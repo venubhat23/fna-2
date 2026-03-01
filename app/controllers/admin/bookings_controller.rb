@@ -63,7 +63,9 @@ class Admin::BookingsController < Admin::ApplicationController
   def create
     @booking = Booking.new(booking_params)
     @booking.user = current_user
-    @booking.booking_date = Time.current
+
+    # Only set booking_date to current time if not provided in params
+    @booking.booking_date = @booking.booking_date.present? ? @booking.booking_date : Time.current
 
     # Clean and validate discount amount
     discount_value = params[:booking][:discount_amount] if params[:booking]
@@ -657,7 +659,7 @@ class Admin::BookingsController < Admin::ApplicationController
       :customer_id, :customer_name, :customer_email, :customer_phone,
       :payment_method, :payment_status, :discount_amount, :notes,
       :delivery_address, :cash_received, :change_amount, :status, :store_id,
-      booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
+      :booking_date, booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
     )
   end
 

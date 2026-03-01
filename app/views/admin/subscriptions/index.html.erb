@@ -187,9 +187,8 @@
               ], params[:status]),
               {},
               {
-                class: "form-select",
-                style: "width: 180px;",
-                onchange: "this.form.submit();"
+                class: "form-select select2",
+                style: "width: 180px;"
               } %>
 
           <!-- Customer Filter -->
@@ -198,18 +197,16 @@
               {},
               {
                 class: "form-select select2",
-                style: "width: 200px;",
-                onchange: "this.form.submit();"
+                style: "width: 200px;"
               } %>
 
           <!-- Delivery Person Filter -->
           <%= form.select :delivery_person_id,
-              options_for_select([['Select Delivery Person', '']] + @delivery_people, params[:delivery_person_id]),
+              options_for_select([['All Delivery People', '']] + @delivery_people, params[:delivery_person_id]),
               {},
               {
                 class: "form-select select2",
-                style: "width: 200px;",
-                onchange: "this.form.submit();"
+                style: "width: 200px;"
               } %>
 
           <!-- Search Input -->
@@ -225,6 +222,14 @@
 
           <!-- Hidden submit button -->
           <%= form.submit "Search", class: "btn btn-outline-primary d-none" %>
+        <% end %>
+
+        <!-- Clear Filters Button -->
+        <% if params[:status].present? || params[:customer_id].present? || params[:delivery_person_id].present? || params[:search].present? %>
+          <%= link_to admin_subscriptions_path, class: "btn btn-outline-secondary", title: "Clear all filters" do %>
+            <i class="bi bi-x-circle me-1"></i>
+            Clear Filters
+          <% end %>
         <% end %>
       </div>
     </div>
@@ -922,6 +927,70 @@
 }
 
 /* Responsive design */
+/* Select2 Custom Styling */
+.select2-container--bootstrap-5 .select2-selection {
+  border-radius: 8px !important;
+  border: 1px solid #ced4da !important;
+  min-height: 38px !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single {
+  padding: 6px 12px !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  line-height: 1.5 !important;
+  color: #495057 !important;
+  padding-left: 0 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+  height: 36px !important;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+  border-radius: 8px !important;
+  border: 1px solid #ced4da !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.select2-container--bootstrap-5 .select2-results__option {
+  padding: 8px 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.select2-container--bootstrap-5 .select2-results__option:hover {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+}
+
+.select2-container--bootstrap-5 .select2-results__option--highlighted {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+.select2-container--bootstrap-5 .select2-search__field {
+  border-radius: 6px !important;
+  border: 1px solid #ced4da !important;
+  padding: 6px 8px !important;
+}
+
+.select2-container--bootstrap-5 .select2-search__field:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+  outline: none !important;
+}
+
+/* Filter section enhancements */
+.d-flex.gap-2 .select2-container {
+  margin-right: 10px;
+}
+
 @media (max-width: 768px) {
   .simple-modal {
     max-width: 95%;
@@ -941,10 +1010,17 @@
 
   .d-flex.gap-2 {
     flex-wrap: wrap;
+    gap: 10px !important;
   }
 
-  .form-select, .form-control {
+  .form-select, .form-control, .select2-container {
     min-width: 150px;
+    margin-bottom: 10px;
+  }
+
+  .select2-container {
+    width: 100% !important;
+    max-width: 200px;
   }
 }
 </style>
@@ -953,18 +1029,83 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof $ !== 'undefined' && $.fn.select2) {
-    // Customer dropdown
-    $('select[name="customer_id"]').select2({
+    // Status dropdown
+    $('select[name="status"]').select2({
       theme: 'bootstrap-5',
-      placeholder: 'Select customer...',
-      allowClear: true
+      placeholder: 'All Status',
+      allowClear: true,
+      minimumResultsForSearch: Infinity, // Disable search for small lists
+      width: '180px'
     });
 
-    // Delivery person dropdown
+    // Customer dropdown with search
+    $('select[name="customer_id"]').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search customers...',
+      allowClear: true,
+      width: '200px',
+      matcher: function(params, data) {
+        // If there are no search terms, return all data
+        if ($.trim(params.term) === '') {
+          return data;
+        }
+
+        // Skip if there is no 'text' property
+        if (typeof data.text === 'undefined') {
+          return null;
+        }
+
+        // Search in customer name and phone number
+        var searchText = data.text.toLowerCase();
+        var searchTerm = params.term.toLowerCase();
+
+        // Check if search term matches customer name or phone number
+        if (searchText.indexOf(searchTerm) > -1) {
+          return data;
+        }
+
+        // Return null if the term should not be displayed
+        return null;
+      }
+    });
+
+    // Delivery person dropdown with search
     $('select[name="delivery_person_id"]').select2({
       theme: 'bootstrap-5',
-      placeholder: 'Select delivery person...',
-      allowClear: true
+      placeholder: 'Search delivery person...',
+      allowClear: true,
+      width: '200px',
+      matcher: function(params, data) {
+        // If there are no search terms, return all data
+        if ($.trim(params.term) === '') {
+          return data;
+        }
+
+        // Skip if there is no 'text' property
+        if (typeof data.text === 'undefined') {
+          return null;
+        }
+
+        // Search in delivery person name and phone number
+        var searchText = data.text.toLowerCase();
+        var searchTerm = params.term.toLowerCase();
+
+        // Check if search term matches delivery person name or phone number
+        if (searchText.indexOf(searchTerm) > -1) {
+          return data;
+        }
+
+        // Return null if the term should not be displayed
+        return null;
+      }
+    });
+
+    // Handle form submission when Select2 dropdown changes
+    $('.select2').on('select2:select select2:clear', function (e) {
+      // Small delay to ensure the value is updated
+      setTimeout(function() {
+        $(e.target).closest('form').submit();
+      }, 100);
     });
   }
 

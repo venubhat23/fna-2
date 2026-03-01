@@ -58,12 +58,19 @@ class MonthlyInvoiceGenerationService
                                  .uninvoiced
 
     milk_tasks.each do |task|
+      # Calculate proper unit price (base price excluding GST for GST products)
+      unit_price = if task.product.gst_enabled? && task.product.gst_percentage.present?
+        task.product.calculate_base_price
+      else
+        task.product.price
+      end
+
       items << {
         source: 'milk_delivery',
         source_id: task.id,
         product: task.product,
         quantity: task.quantity,
-        unit_price: task.product.price,
+        unit_price: unit_price,
         description: "Milk delivery - #{task.product.name} (#{task.delivery_date.strftime('%d %b')})",
         date: task.delivery_date,
         model: task
@@ -79,12 +86,19 @@ class MonthlyInvoiceGenerationService
 
     pending_bookings.includes(:booking_items).each do |booking|
       booking.booking_items.each do |item|
+        # Calculate proper unit price (base price excluding GST for GST products)
+        unit_price = if item.product.gst_enabled? && item.product.gst_percentage.present?
+          item.product.calculate_base_price
+        else
+          item.price
+        end
+
         items << {
           source: 'booking',
           source_id: booking.id,
           product: item.product,
           quantity: item.quantity,
-          unit_price: item.price,
+          unit_price: unit_price,
           description: "Order item - #{item.product.name} (#{booking.booking_date.strftime('%d %b')})",
           date: booking.booking_date,
           model: booking,
@@ -93,10 +107,10 @@ class MonthlyInvoiceGenerationService
       end
     end
 
-    # 3. Pending amounts from last month that are still pending
+    # 3. Pending amounts from last month to today that are still pending
     pending_amounts = PendingAmount.where(customer: customer)
                                   .current_pending
-                                  .for_last_month
+                                  .from_last_month_to_today
 
     pending_amounts.each do |pending_amount|
       items << {

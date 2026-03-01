@@ -318,6 +318,26 @@
                   </div>
                 </div>
 
+                <div class="col-md-4">
+                  <label class="form-label">
+                    <i class="bi bi-calendar-date me-1"></i>Booking Date <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <%= f.date_field :booking_date,
+                        class: 'form-control',
+                        value: Date.current.strftime('%Y-%m-%d'),
+                        required: true,
+                        id: 'booking_date_field' %>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setBookingDateToToday()" title="Set to Today">
+                      <i class="bi bi-calendar-today"></i>
+                    </button>
+                  </div>
+                  <div class="form-text">
+                    <small><i class="bi bi-info-circle me-1"></i>Select the date for this booking (can be past, present, or future)</small>
+                  </div>
+                  <div id="bookingDateAlert" class="mt-2" style="display: none;"></div>
+                </div>
+
                 <div class="col-md-6">
                   <label class="form-label">Customer Name <span class="text-danger">*</span></label>
                   <%= f.text_field :customer_name, class: 'form-control', placeholder: 'Enter customer name', required: true %>
@@ -1578,6 +1598,9 @@ document.addEventListener('DOMContentLoaded', function() {
     statusSelect.addEventListener('change', updateStatusPreview);
   }
 
+  // Initialize booking date functionality
+  initializeBookingDate();
+
   // Prevent form submission with empty cart
   const bookingForm = document.getElementById('bookingForm');
   if (bookingForm) {
@@ -1620,6 +1643,95 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// Booking Date Management Functions
+function setBookingDateToToday() {
+  const dateField = document.getElementById('booking_date_field');
+  if (dateField) {
+    const today = new Date().toISOString().split('T')[0];
+    dateField.value = today;
+    validateBookingDate();
+    showNotification('Booking date set to today', 'success');
+  }
+}
+
+function initializeBookingDate() {
+  const dateField = document.getElementById('booking_date_field');
+  if (dateField) {
+    // Add event listener for date changes
+    dateField.addEventListener('change', validateBookingDate);
+
+    // Initial validation
+    validateBookingDate();
+  }
+}
+
+function validateBookingDate() {
+  const dateField = document.getElementById('booking_date_field');
+  const alertDiv = document.getElementById('bookingDateAlert');
+
+  if (!dateField || !alertDiv) return;
+
+  const selectedDate = new Date(dateField.value);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  // Clear previous alerts
+  alertDiv.style.display = 'none';
+  alertDiv.innerHTML = '';
+
+  // Reset field styling
+  dateField.classList.remove('border-warning', 'border-danger', 'border-success');
+
+  if (isNaN(selectedDate.getTime())) {
+    return; // Invalid date, let browser handle validation
+  }
+
+  // Compare dates (ignore time)
+  const selectedDateOnly = selectedDate.toDateString();
+  const todayDateOnly = today.toDateString();
+  const yesterdayDateOnly = yesterday.toDateString();
+
+  if (selectedDateOnly === todayDateOnly) {
+    // Today - show success
+    showBookingDateAlert('Today\'s booking', 'success', 'bi-calendar-check');
+    dateField.classList.add('border-success');
+  } else if (selectedDate < yesterday) {
+    // Past date (more than yesterday) - show warning
+    const daysAgo = Math.ceil((today - selectedDate) / (1000 * 60 * 60 * 24));
+    showBookingDateAlert(`Past booking (${daysAgo} day${daysAgo > 1 ? 's' : ''} ago)`, 'warning', 'bi-calendar-x');
+    dateField.classList.add('border-warning');
+  } else if (selectedDate > today) {
+    // Future date - show info
+    const daysAhead = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
+    showBookingDateAlert(`Future booking (${daysAhead} day${daysAhead > 1 ? 's' : ''} ahead)`, 'info', 'bi-calendar-plus');
+    dateField.classList.add('border-primary');
+  }
+}
+
+function showBookingDateAlert(message, type, icon) {
+  const alertDiv = document.getElementById('bookingDateAlert');
+  if (!alertDiv) return;
+
+  const alertClass = {
+    'success': 'alert-success',
+    'warning': 'alert-warning',
+    'info': 'alert-info',
+    'danger': 'alert-danger'
+  }[type] || 'alert-info';
+
+  alertDiv.innerHTML = `
+    <div class="alert ${alertClass} border-0 py-2 px-3 mb-0">
+      <div class="d-flex align-items-center">
+        <i class="bi ${icon} me-2"></i>
+        <small class="mb-0">${message}</small>
+      </div>
+    </div>
+  `;
+
+  alertDiv.style.display = 'block';
+}
 </script>
 
 <style>

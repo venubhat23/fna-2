@@ -187,6 +187,9 @@ class Admin::InvoicesController < Admin::ApplicationController
     customer_ids = params[:customer_ids]
     delivery_person_id = params[:delivery_person_id]
 
+    # Get pending items summary before generation
+    pending_summary = get_pending_items_summary(customer_selection, customer_ids, delivery_person_id)
+
     if customer_selection == 'all'
       customers = Customer.all
     elsif customer_selection == 'delivery_person' && delivery_person_id.present?
@@ -244,6 +247,7 @@ class Admin::InvoicesController < Admin::ApplicationController
         invoices_created: generated_invoices.count,
         message: "Generated #{generated_invoices.count} invoices successfully",
         errors: errors,
+        pending_items_summary: pending_summary,
         invoices: generated_invoices.map { |inv| { id: inv.id, number: inv.invoice_number, customer: inv.customer.display_name, amount: inv.total_amount } }
       }
     else
@@ -251,7 +255,8 @@ class Admin::InvoicesController < Admin::ApplicationController
         success: false,
         invoices_created: 0,
         error: "No invoices could be generated. " + (errors.any? ? errors.join(', ') : 'No completed deliveries found for the selected period.'),
-        errors: errors
+        errors: errors,
+        pending_items_summary: pending_summary
       }
     end
   end
@@ -260,6 +265,78 @@ class Admin::InvoicesController < Admin::ApplicationController
 
   def set_invoice
     @invoice = Invoice.find(params[:id])
+  end
+
+  def get_pending_items_summary(customer_selection, customer_ids, delivery_person_id)
+    # Determine which customers to check based on selection criteria
+    customers = []
+
+    if customer_selection == 'all'
+      customers = Customer.all
+    elsif customer_selection == 'delivery_person' && delivery_person_id.present?
+      # Get customers who have bookings or subscriptions with the selected delivery person
+      customer_ids_from_bookings = Booking.where(delivery_person_id: delivery_person_id)
+                                         .distinct
+                                         .pluck(:customer_id)
+                                         .compact
+
+      customer_ids_from_subscriptions = []
+      if defined?(MilkSubscription)
+        customer_ids_from_subscriptions += MilkSubscription.where(delivery_person_id: delivery_person_id)
+                                                          .distinct
+                                                          .pluck(:customer_id)
+                                                          .compact
+      end
+
+      if defined?(SubscriptionTemplate)
+        customer_ids_from_subscriptions += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
+                                                               .distinct
+                                                               .pluck(:customer_id)
+                                                               .compact
+      end
+
+      all_customer_ids_from_delivery_person = (customer_ids_from_bookings + customer_ids_from_subscriptions).uniq
+
+      if customer_ids.present?
+        final_customer_ids = all_customer_ids_from_delivery_person & customer_ids.map(&:to_i)
+        customers = Customer.where(id: final_customer_ids)
+      else
+        customers = Customer.where(id: all_customer_ids_from_delivery_person)
+      end
+    else
+      customers = Customer.where(id: customer_ids)
+    end
+
+    # Get pending amounts for the selected customers - include ALL pending amounts
+    pending_amounts = PendingAmount.joins(:customer)
+                                   .where(customer: customers)
+                                   .current_pending
+
+    # Build summary
+    summary = {
+      total_count: pending_amounts.count,
+      total_amount: pending_amounts.sum(:amount),
+      customers_count: pending_amounts.distinct.count(:customer_id),
+      from_date: 'All time',
+      to_date: Date.current.strftime('%Y-%m-%d'),
+      breakdown: []
+    }
+
+    # Group by customer for breakdown
+    customer_breakdown = pending_amounts.joins(:customer)
+                                       .group('customers.id', 'customers.first_name', 'customers.last_name')
+                                       .select('customers.id, customers.first_name, customers.last_name, COUNT(*) as count, SUM(amount) as total')
+
+    customer_breakdown.each do |item|
+      summary[:breakdown] << {
+        customer_id: item.id,
+        customer_name: "#{item.first_name} #{item.last_name}".strip,
+        pending_count: item.count,
+        pending_amount: item.total
+      }
+    end
+
+    summary
   end
 
   def invoice_params
@@ -290,10 +367,17 @@ class Admin::InvoicesController < Admin::ApplicationController
         product = item.product
         next unless product
 
+        # Calculate proper unit price (base price excluding GST for GST products)
+        unit_price = if product.gst_enabled? && product.gst_percentage.present?
+          product.calculate_base_price
+        else
+          item.price || product.selling_price
+        end
+
         invoice_items_data << {
           product: product,
           quantity: item.quantity,
-          unit_price: item.price || product.selling_price,
+          unit_price: unit_price,
           description: "#{product.name} - Booking ##{booking.booking_number}",
           booking_item: item
         }
@@ -314,7 +398,13 @@ class Admin::InvoicesController < Admin::ApplicationController
 
       grouped_tasks.each do |product, tasks|
         total_quantity = tasks.sum(&:quantity)
-        unit_price = product.selling_price
+
+        # Calculate proper unit price (base price excluding GST for GST products)
+        unit_price = if product.gst_enabled? && product.gst_percentage.present?
+          product.calculate_base_price
+        else
+          product.selling_price
+        end
 
         # Get date range for description
         dates = tasks.map(&:delivery_date).sort
@@ -334,10 +424,9 @@ class Admin::InvoicesController < Admin::ApplicationController
       end
     end
 
-    # 3. Check for pending amounts for this customer for the current month
+    # 3. Check for pending amounts for this customer - include ALL pending amounts
     pending_amounts = PendingAmount.where(customer: customer)
-                                  .where(status: :pending)
-                                  .where(pending_date: start_date..end_date)
+                                  .current_pending
 
     # Add pending amounts as line items
     pending_amounts.each do |pending_amount|
