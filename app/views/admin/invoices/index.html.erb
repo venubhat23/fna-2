@@ -286,7 +286,7 @@
           </div>
           <div>
             <% if @invoices.count >= 50 %>
-              <%= link_to "Load More", admin_invoices_path(params.merge(limit: 100)),
+              <%= link_to "Load More", admin_invoices_path(params.permit!.merge(limit: 100)),
                          class: "btn btn-sm btn-outline-primary" %>
             <% end %>
           </div>
