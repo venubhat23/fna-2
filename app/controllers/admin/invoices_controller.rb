@@ -1,3 +1,5 @@
+require 'set'
+
 class Admin::InvoicesController < Admin::ApplicationController
   before_action :set_invoice, only: [:show, :edit, :update, :destroy, :mark_as_paid]
 
@@ -413,7 +415,7 @@ class Admin::InvoicesController < Admin::ApplicationController
 
   def generate_customer_invoice(customer, month, year)
     start_date = Date.new(year, month).beginning_of_month
-    end_date = Date.today
+    end_date = Date.new(year, month).end_of_month
 
     # Check if invoice already exists for this month
     existing_invoice = Invoice.where(customer: customer)
@@ -429,41 +431,68 @@ class Admin::InvoicesController < Admin::ApplicationController
     unpaid_bookings = customer.bookings
                              .where(booking_date: start_date..end_date)
                              .where(status: ['completed', 'delivered'])
-                             .where(payment_status: 'unpaid')
+                             .where(payment_status: [nil, '', 'unpaid'])
                              .where(invoice_generated: [false, nil])
                              .where.not(id: BookingInvoice.select(:booking_id).where.not(booking_id: nil))
 
-    # Process unpaid bookings - add 1 line item per booking considering amount after discount
+    # Process unpaid bookings - add individual line items for each booking item
     unpaid_bookings.each do |booking|
-      # Use final_amount_after_discount if available, otherwise calculate from items
-      amount_to_invoice = booking.final_amount_after_discount.present? ?
-                          booking.final_amount_after_discount :
-                          booking.total_amount
+      booking.booking_items.includes(:product).each do |item|
+        product = item.product
+        next unless product
 
-      next if amount_to_invoice.to_f <= 0
+        # Calculate proper unit price (base price excluding GST for GST products)
+        unit_price = if product.gst_enabled? && product.gst_percentage.present?
+          product.calculate_base_price || item.price
+        else
+          item.price || product.selling_price
+        end
 
+        # Apply any booking-level discount proportionally
+        if booking.discount_amount.to_f > 0 && booking.total_amount.to_f > 0
+          discount_ratio = booking.discount_amount.to_f / booking.total_amount.to_f
+          unit_price = unit_price * (1 - discount_ratio)
+        end
+
+        invoice_items_data << {
+          product: product,
+          quantity: item.quantity,
+          unit_price: unit_price,
+          description: "#{product.name} - Booking ##{booking.booking_number} (#{booking.booking_date.strftime('%d %b %Y')})",
+          booking_item: item,
+          booking: booking
+        }
+      end
+    end
+
+    # 2. Check pending amounts for this customer for date range and check the line items pending
+    pending_amounts = PendingAmount.where(customer: customer)
+                                  .where(pending_date: start_date..end_date)
+                                  .current_pending
+
+    # Add pending amounts as line items
+    pending_amounts.each do |pending_amount|
       invoice_items_data << {
-        product: nil, # Single line item for whole booking
+        product: nil,
         quantity: 1,
-        unit_price: amount_to_invoice,
-        description: "Booking ##{booking.booking_number} (#{booking.booking_date.strftime('%d %b %Y')}) - Amount after discount",
-        booking: booking
+        unit_price: pending_amount.amount,
+        description: "Pending Amount: #{pending_amount.description} (#{pending_amount.pending_date&.strftime('%d %b %Y') || pending_amount.created_at.strftime('%d %b %Y')})",
+        pending_amount: pending_amount
       }
     end
 
-    # 2. Find completed delivery tasks if MilkDeliveryTask model exists
+    # 3. Check MilkDeliveryTask if we have any pending for month check
     if defined?(MilkDeliveryTask)
-      completed_tasks = MilkDeliveryTask.joins(:product)
-                                      .where(customer: customer,
-                                             delivery_date: start_date..end_date,
-                                             status: 'completed')
-                                      .where.not(id: InvoiceItem.joins(:milk_delivery_task)
-                                                              .select(:milk_delivery_task_id))
+      pending_delivery_tasks = MilkDeliveryTask.joins(:product)
+                                              .where(customer: customer,
+                                                     delivery_date: start_date..end_date)
+                                              .where(status: ['pending', 'scheduled', 'completed'])
+                                              .where(invoiced: [false, nil])
 
-      # Group delivery tasks by product and sum quantities
-      grouped_tasks = completed_tasks.group_by(&:product)
+      # Group pending delivery tasks by product and sum quantities
+      grouped_pending_tasks = pending_delivery_tasks.group_by(&:product)
 
-      grouped_tasks.each do |product, tasks|
+      grouped_pending_tasks.each do |product, tasks|
         total_quantity = tasks.sum(&:quantity)
 
         # Calculate proper unit price (base price excluding GST for GST products)
@@ -485,25 +514,10 @@ class Admin::InvoicesController < Admin::ApplicationController
           product: product,
           quantity: total_quantity,
           unit_price: unit_price,
-          description: "#{product.name} (#{dates.size} deliveries: #{date_range})",
-          delivery_tasks: tasks  # Changed from single task to multiple tasks
+          description: "#{product.name} - Milk Deliveries (#{dates.size} tasks: #{date_range})",
+          delivery_tasks: tasks
         }
       end
-    end
-
-    # 3. Check for pending amounts for this customer - only include unresolved pending amounts
-    pending_amounts = PendingAmount.where(customer: customer)
-                                  .current_pending
-
-    # Add pending amounts as line items
-    pending_amounts.each do |pending_amount|
-      invoice_items_data << {
-        product: nil,
-        quantity: 1,
-        unit_price: pending_amount.amount,
-        description: "Pending from last month: #{pending_amount.description}",
-        pending_amount: pending_amount
-      }
     end
 
     return nil if invoice_items_data.empty?
@@ -564,6 +578,18 @@ class Admin::InvoicesController < Admin::ApplicationController
           tasks_to_mark.each do |task|
             task.update(invoiced: true, invoiced_at: Time.current) if task
           end
+        end
+      end
+
+      # Mark bookings as invoiced (avoid duplicates)
+      invoiced_bookings = Set.new
+      invoice_items_data.each do |item_data|
+        if item_data[:booking] && !invoiced_bookings.include?(item_data[:booking].id)
+          item_data[:booking].update!(
+            invoice_generated: true,
+            invoice_number: invoice.invoice_number
+          )
+          invoiced_bookings.add(item_data[:booking].id)
         end
       end
 

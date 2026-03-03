@@ -115,17 +115,28 @@ class Admin::BookingsController < Admin::ApplicationController
       # Log the calculated totals for debugging
       Rails.logger.info "Booking totals - Subtotal: #{@booking.subtotal}, Tax: #{@booking.tax_amount}, Discount: #{@booking.discount_amount}, Total: #{@booking.total_amount}"
 
-      # Invoice generation moved to consolidated invoice system to prevent duplicates
-      # @booking.generate_invoice_number
-
-      Rails.logger.info "Booking ##{@booking.id} created successfully. Invoice will be generated via consolidated system."
+      # Generate invoice immediately if payment is received
+      invoice_notice = ""
+      if @booking.payment_status == 'paid'
+        begin
+          invoice = generate_immediate_invoice_for_booking(@booking)
+          if invoice
+            invoice_notice = " Invoice ##{invoice.invoice_number} generated with paid status."
+          end
+        rescue => e
+          Rails.logger.error "Failed to generate immediate invoice for booking ##{@booking.id}: #{e.message}"
+          invoice_notice = " Note: Invoice generation failed, will be handled via consolidated system."
+        end
+      else
+        Rails.logger.info "Booking ##{@booking.id} created successfully. Invoice will be generated via consolidated system when payment is received."
+      end
 
       # Convert to order if payment is received
-      if @booking.payment_status_paid? && params[:create_order] == '1'
+      if @booking.payment_status == 'paid' && params[:create_order] == '1'
         @booking.convert_to_order!
       end
 
-      redirect_to admin_booking_path(@booking), notice: 'Booking created successfully! Invoice will be generated via consolidated system.'
+      redirect_to admin_booking_path(@booking), notice: "Booking created successfully!#{invoice_notice}"
     else
       Rails.logger.error "Booking creation failed: #{@booking.errors.full_messages.join(', ')}"
       Rails.logger.error "Booking items errors: #{@booking.booking_items.map(&:errors).map(&:full_messages).flatten.join(', ')}"
@@ -902,6 +913,68 @@ class Admin::BookingsController < Admin::ApplicationController
     respond_to do |format|
       format.html { redirect_to admin_bookings_path, alert: "Error updating booking: #{e.message}" }
       format.json { render json: { success: false, error: e.message } }
+    end
+  end
+
+  # Generate immediate invoice for paid booking
+  def generate_immediate_invoice_for_booking(booking)
+    # Create invoice for this specific booking with paid status
+    invoice = Invoice.new(
+      customer: booking.customer,
+      invoice_date: Date.current,
+      due_date: Date.current + 30.days,
+      status: :sent,
+      payment_status: :fully_paid,
+      paid_at: Time.current
+    )
+
+    total_amount = 0
+
+    # Create invoice items for each booking item, applying discount proportionally
+    booking.booking_items.includes(:product).each do |item|
+      product = item.product
+      next unless product
+
+      # Calculate proper unit price (base price excluding GST for GST products)
+      unit_price = if product.gst_enabled? && product.gst_percentage.present?
+        product.calculate_base_price || item.price
+      else
+        item.price || product.selling_price
+      end
+
+      # Apply any booking-level discount proportionally
+      if booking.discount_amount.to_f > 0 && booking.total_amount.to_f > 0
+        discount_ratio = booking.discount_amount.to_f / booking.total_amount.to_f
+        unit_price = unit_price * (1 - discount_ratio)
+      end
+
+      item_total = item.quantity * unit_price
+
+      invoice_item = invoice.invoice_items.build(
+        description: "#{product.name} - Booking ##{booking.booking_number} (#{booking.booking_date.strftime('%d %b %Y')})",
+        quantity: item.quantity,
+        unit_price: unit_price,
+        total_amount: item_total,
+        product: product
+      )
+
+      total_amount += item_total
+    end
+
+    invoice.total_amount = total_amount
+
+    if invoice.save
+      # Mark booking as invoiced
+      booking.update!(
+        invoice_generated: true,
+        invoice_number: invoice.invoice_number
+      )
+
+      Rails.logger.info "Immediate invoice ##{invoice.invoice_number} generated for paid booking ##{booking.booking_number}"
+      return invoice
+    else
+      Rails.logger.error "Failed to generate immediate invoice for booking ##{booking.booking_number}: #{invoice.errors.full_messages.join(', ')}"
+      return nil
     end
   end
 end

@@ -618,10 +618,41 @@
   </head>
   <body>
     <%
-      # Get invoice items - adapt for public view
+      # Get invoice items with booking expansion for detailed view
       invoice_items = []
       if @invoice.respond_to?(:invoice_items) && @invoice.invoice_items.any?
-        invoice_items = @invoice.invoice_items
+        @invoice.invoice_items.each do |item|
+          # Check if this is a booking summary item
+          if item.description&.include?('Booking #') && !item.product_id.present?
+            # Extract booking number and get individual items
+            booking_match = item.description.match(/#(BK[A-Z0-9]+)/)
+            if booking_match
+              booking_number = booking_match[1]
+              booking = Booking.find_by(booking_number: booking_number)
+
+              if booking&.booking_items&.any?
+                # Add individual booking items instead of summary
+                booking.booking_items.includes(:product).each do |booking_item|
+                  invoice_items << OpenStruct.new(
+                    description: booking_item.product&.name || 'Product',
+                    quantity: booking_item.quantity || 1,
+                    unit_price: booking_item.price || 0,
+                    product: booking_item.product
+                  )
+                end
+              else
+                # Fallback to original item if booking not found
+                invoice_items << item
+              end
+            else
+              # Not a booking item, add as is
+              invoice_items << item
+            end
+          else
+            # Regular item, add as is
+            invoice_items << item
+          end
+        end
       elsif @invoice.respond_to?(:booking) && @invoice.booking&.order&.order_items&.any?
         # For booking invoices, try to get items from order
         invoice_items = @invoice.booking.order.order_items.map do |order_item|
@@ -771,8 +802,17 @@
               <tr>
                 <td>
                   <div>
-                    <%= item.product&.name || 'Product' %>
-                    <% if item.description.present? && item.description != (item.product&.name || 'Product') %>
+                    <%
+                      # Show product name if available, otherwise show description
+                      if item.product&.name.present?
+                        product_name = item.product.name
+                      else
+                        # For items without products (like booking summaries), use description
+                        product_name = item.description.present? ? item.description : 'Product'
+                      end
+                    %>
+                    <%= product_name %>
+                    <% if item.description.present? && item.description != product_name && item.product&.name.present? %>
                       <br><span class="description"><%= item.description %></span>
                     <% end %>
                   </div>

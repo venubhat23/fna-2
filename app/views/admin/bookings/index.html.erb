@@ -197,63 +197,104 @@
 
 <!-- Bookings Table -->
 <div class="card border-0 shadow-sm">
-  <div class="card-header bg-transparent border-0">
-    <div class="d-flex justify-content-between align-items-center">
+  <div class="card-header bg-transparent border-0 pb-0">
+    <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="mb-0">Booking List</h5>
-      <div class="d-flex gap-2">
-        <!-- Filters -->
-        <%= form_with url: admin_bookings_path, method: :get, local: true, class: "d-flex gap-2 align-items-center flex-wrap" do |form| %>
+    </div>
+
+    <!-- Enhanced Filters Bar -->
+    <div class="filters-container bg-light rounded-3 p-3 mb-3">
+      <%= form_with url: admin_bookings_path, method: :get, local: true, class: "filter-form" do |form| %>
+        <div class="row g-3 align-items-center">
           <!-- Customer Filter -->
-          <%= form.select :customer_id,
-              options_from_collection_for_select(@customers, :id, :display_name, params[:customer_id]),
-              { prompt: 'All Customers' },
-              {
-                class: "form-select customer-select",
-                style: "width: 200px;",
-                data: {
-                  placeholder: "Select Customer...",
-                  allow_clear: true
-                }
-              } %>
-
-          <!-- Stage Filter -->
-          <%= form.select :status,
-              options_for_select([
-                ['All Stages', ''],
-                ['Draft', 'draft'],
-                ['Pending Delivery', 'ordered_and_delivery_pending'],
-                ['Confirmed', 'confirmed'],
-                ['Processing', 'processing'],
-                ['Packed', 'packed'],
-                ['Shipped', 'shipped'],
-                ['Out for Delivery', 'out_for_delivery'],
-                ['Delivered', 'delivered'],
-                ['Completed', 'completed'],
-                ['Cancelled', 'cancelled'],
-                ['Returned', 'returned']
-              ], params[:status]),
-              {},
-              {
-                class: "form-select",
-                style: "width: 180px;",
-                onchange: "this.form.submit();"
-              } %>
-
-          <!-- Search Input -->
-          <div class="position-relative">
-            <%= form.text_field :search,
-                value: params[:search],
-                class: "form-control",
-                placeholder: "Search bookings...",
-                id: "searchInput",
-                style: "width: 250px;" %>
-            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+          <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="filter-group">
+              <label class="form-label text-muted mb-1 small fw-semibold">
+                <i class="bi bi-person me-1"></i>Customer
+              </label>
+              <%= form.select :customer_id,
+                  options_from_collection_for_select(@customers, :id, :display_name, params[:customer_id]),
+                  { prompt: 'All Customers' },
+                  {
+                    class: "form-select form-select-sm customer-select shadow-sm",
+                    data: {
+                      placeholder: "Select Customer...",
+                      allow_clear: true
+                    }
+                  } %>
+            </div>
           </div>
 
-          <!-- Search Button (hidden, form submits automatically) -->
-          <%= form.submit "Search", class: "btn btn-outline-primary d-none" %>
-        <% end %>
-      </div>
+          <!-- Stage Filter -->
+          <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="filter-group">
+              <label class="form-label text-muted mb-1 small fw-semibold">
+                <i class="bi bi-flag me-1"></i>Status
+              </label>
+              <%= form.select :status,
+                  options_for_select([
+                    ['All Stages', ''],
+                    ['Draft', 'draft'],
+                    ['Pending Delivery', 'ordered_and_delivery_pending'],
+                    ['Confirmed', 'confirmed'],
+                    ['Processing', 'processing'],
+                    ['Packed', 'packed'],
+                    ['Shipped', 'shipped'],
+                    ['Out for Delivery', 'out_for_delivery'],
+                    ['Delivered', 'delivered'],
+                    ['Completed', 'completed'],
+                    ['Cancelled', 'cancelled'],
+                    ['Returned', 'returned']
+                  ], params[:status]),
+                  {},
+                  {
+                    class: "form-select form-select-sm shadow-sm",
+                    onchange: "this.form.submit();"
+                  } %>
+            </div>
+          </div>
+
+          <!-- Search Input -->
+          <div class="col-lg-4 col-md-4 col-sm-12">
+            <div class="filter-group">
+              <label class="form-label text-muted mb-1 small fw-semibold">
+                <i class="bi bi-search me-1"></i>Search
+              </label>
+              <div class="position-relative">
+                <%= form.text_field :search,
+                    value: params[:search],
+                    class: "form-control form-control-sm shadow-sm search-input",
+                    placeholder: "Search by booking #, customer, phone...",
+                    id: "searchInput" %>
+                <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-1 p-1"
+                        onclick="document.getElementById('searchInput').value=''; this.form.submit();"
+                        title="Clear search"
+                        style="<%= params[:search].present? ? '' : 'display: none;' %>">
+                  <i class="bi bi-x text-muted"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Actions -->
+          <div class="col-lg-2 col-md-12">
+            <div class="filter-actions d-flex gap-2 flex-wrap justify-content-end">
+              <%= form.submit "Apply", class: "btn btn-primary btn-sm px-3 shadow-sm d-none" %>
+              <% if params[:search].present? || params[:status].present? || params[:customer_id].present? %>
+                <%= link_to admin_bookings_path, class: "btn btn-outline-secondary btn-sm px-3 shadow-sm", title: "Clear all filters" do %>
+                  <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                <% end %>
+              <% end %>
+              <div class="filter-status small text-muted align-self-center">
+                <%= pluralize(@bookings.respond_to?(:total_count) ? @bookings.total_count : @bookings.count, 'result') %>
+                <% if params[:search].present? || params[:status].present? || params[:customer_id].present? %>
+                  <span class="text-primary">(filtered)</span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
   <div class="card-body p-0">
@@ -325,12 +366,11 @@
                   <% end %>
                 </td>
                 <td class="align-middle">
-                  <% if booking.invoice_generated? %>
-                    <% booking_invoice = booking.booking_invoices.first %>
-                    <% if booking_invoice %>
-                      <%= link_to admin_booking_invoice_path(booking_invoice), class: "badge bg-success-subtle text-success text-decoration-none", target: "_blank", title: "View Invoice ##{booking.invoice_number}" do %>
+                  <% if booking.has_invoice? %>
+                    <% if booking.invoice_link_path %>
+                      <%= link_to booking.invoice_link_path, class: "badge bg-success-subtle text-success text-decoration-none", target: "_blank", title: "View Invoice ##{booking.display_invoice_number}" do %>
                         <i class="bi bi-check-circle me-1"></i>
-                        <%= booking.invoice_number %>
+                        <%= booking.display_invoice_number %>
                       <% end %>
                     <% else %>
                       <span class="badge bg-warning-subtle text-warning">
@@ -455,9 +495,15 @@
                       <a href="#" class="action-icon delete" title="Delete Booking" onclick="confirmDelete(<%= booking.id %>, '<%= booking.booking_number %>', '<%= booking.customer&.display_name || 'Unknown' %>')">
                         <i class="bi bi-trash"></i>
                       </a>
-                      <% if booking.invoice_generated? %>
-                        <%= link_to invoice_admin_booking_path(booking), class: "action-icon invoice", title: "View Invoice", target: "_blank" do %>
-                          <i class="bi bi-receipt"></i>
+                      <% if booking.has_invoice? %>
+                        <% if booking.invoice_link_path %>
+                          <%= link_to booking.invoice_link_path, class: "action-icon invoice", title: "View Invoice", target: "_blank" do %>
+                            <i class="bi bi-receipt"></i>
+                          <% end %>
+                        <% else %>
+                          <%= link_to "#", class: "action-icon invoice", title: "Invoice Generated", onclick: "alert('Invoice generated but link not available')" do %>
+                            <i class="bi bi-receipt-cutoff"></i>
+                          <% end %>
                         <% end %>
                       <% else %>
                         <%= link_to "#", class: "action-icon invoice", title: "Generate Invoice", onclick: "alert('Invoice not generated yet')" do %>
@@ -623,7 +669,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Auto-submit form when customer selection changes
   $('.customer-select').on('change', function() {
+    const form = $(this).closest('form');
+    form.addClass('loading');
     this.form.submit();
+  });
+
+  // Enhanced search functionality with debounce
+  let searchTimeout;
+  $('#searchInput').on('input', function() {
+    const searchValue = $(this).val();
+    const clearBtn = $(this).siblings('button');
+
+    // Show/hide clear button
+    if (searchValue.length > 0) {
+      clearBtn.show();
+    } else {
+      clearBtn.hide();
+    }
+
+    // Debounced search submission
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      if (searchValue !== $(this).data('last-value')) {
+        $(this).data('last-value', searchValue);
+        const form = $(this).closest('form');
+        form.addClass('loading');
+        form.submit();
+      }
+    }, 500);
+  });
+
+  // Clear search functionality
+  $('.btn-link').on('click', function() {
+    const form = $(this).closest('form');
+    form.addClass('loading');
   });
   // Real-time data functionality
   let realtimeInterval = null;
@@ -1836,52 +1915,195 @@ td .d-flex.gap-2 {
   }
 }
 
+/* Enhanced Filters Container Styling */
+.filters-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.filters-container:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.filter-group {
+  position: relative;
+}
+
+.filter-group .form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.filter-group .form-label i {
+  color: #6c757d;
+}
+
+.filter-group .form-select,
+.filter-group .form-control {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.filter-group .form-select:focus,
+.filter-group .form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  transform: translateY(-1px);
+}
+
+.filter-group .form-select:hover,
+.filter-group .form-control:hover {
+  border-color: #adb5bd;
+}
+
+/* Search Input Enhancements */
+.search-input {
+  padding-right: 35px;
+}
+
+.search-input:focus {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+/* Filter Actions */
+.filter-actions {
+  align-items: center;
+  min-height: 38px;
+}
+
+.filter-status {
+  background: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  font-weight: 500;
+}
+
 /* Select2 Customer Dropdown Styling */
 .select2-container--bootstrap-5 .select2-selection {
   border-radius: 8px !important;
-  border: 1px solid #ced4da !important;
-  min-height: 38px !important;
+  border: 1px solid #dee2e6 !important;
+  min-height: 31px !important;
+  background: white !important;
+  transition: all 0.3s ease !important;
 }
 
 .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
   padding-left: 12px !important;
   padding-right: 12px !important;
-  line-height: 36px !important;
+  line-height: 29px !important;
+  font-size: 0.875rem !important;
 }
 
 .select2-container--bootstrap-5.select2-container--focus .select2-selection {
   border-color: #0d6efd !important;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection:hover {
+  border-color: #adb5bd !important;
 }
 
 .select2-dropdown {
   border-radius: 8px !important;
-  border: 1px solid #ced4da !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  z-index: 1060 !important;
 }
 
 .select2-results__option--highlighted {
   background-color: #0d6efd !important;
+  background: linear-gradient(135deg, #0d6efd 0%, #084298 100%) !important;
 }
 
-/* Ensure proper spacing between filters */
-.d-flex.gap-2.align-items-center.flex-wrap > * {
-  margin-bottom: 8px;
+.select2-results__option {
+  font-size: 0.875rem !important;
+  padding: 8px 12px !important;
+}
+
+/* Clear button styling */
+.btn-link:hover i {
+  color: #dc3545 !important;
+}
+
+/* Responsive Filter Styling */
+@media (max-width: 992px) {
+  .filter-actions {
+    justify-content: center !important;
+    margin-top: 1rem;
+  }
+
+  .filter-status {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 @media (max-width: 768px) {
-  .customer-select {
-    width: 100% !important;
-    min-width: 200px !important;
+  .filters-container {
+    padding: 1rem !important;
+    margin: 0 -0.5rem 1rem -0.5rem;
+    border-radius: 0 !important;
   }
 
-  .d-flex.gap-2.align-items-center.flex-wrap {
-    flex-direction: column;
-    align-items: stretch !important;
+  .filter-group .form-select,
+  .filter-group .form-control {
+    font-size: 0.875rem;
   }
 
-  .d-flex.gap-2.align-items-center.flex-wrap > * {
-    width: 100% !important;
+  .col-lg-3,
+  .col-lg-4,
+  .col-lg-2 {
+    margin-bottom: 1rem;
+  }
+
+  .col-lg-2:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* Loading states for filters */
+.filter-form.loading .form-select,
+.filter-form.loading .form-control {
+  pointer-events: none;
+  opacity: 0.6;
+  background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,.5) 25%, rgba(255,255,255,.5) 75%, transparent 75%, transparent),
+                    linear-gradient(45deg, transparent 25%, rgba(255,255,255,.5) 25%, rgba(255,255,255,.5) 75%, transparent 75%, transparent);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  animation: loading-stripes 1s linear infinite;
+}
+
+@keyframes loading-stripes {
+  0% {
+    background-position: 0 0, 10px 10px;
+  }
+  100% {
+    background-position: 20px 20px, 30px 30px;
+  }
+}
+
+/* Filter container animation */
+.filters-container {
+  animation: slideInDown 0.5s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

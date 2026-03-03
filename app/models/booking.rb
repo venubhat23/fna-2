@@ -348,6 +348,45 @@ class Booking < ApplicationRecord
     # Do nothing for now
   end
 
+  # Find the associated invoice created by the consolidated invoice generation system
+  def associated_invoice
+    return @associated_invoice if defined?(@associated_invoice)
+
+    # Look for invoice items that reference this booking by booking number in the description
+    invoice_item = InvoiceItem.joins(:invoice)
+                             .where('description LIKE ?', "%#{booking_number}%")
+                             .first
+
+    @associated_invoice = invoice_item&.invoice
+  end
+
+  # Check if this booking has an associated invoice (either BookingInvoice or regular Invoice)
+  def has_invoice?
+    booking_invoices.any? || associated_invoice.present?
+  end
+
+  # Get the invoice link for this booking (prioritize regular Invoice over BookingInvoice)
+  def invoice_link_path
+    if associated_invoice
+      "/admin/invoices/#{associated_invoice.id}"
+    elsif booking_invoices.any?
+      "/admin/booking_invoices/#{booking_invoices.first.id}"
+    else
+      nil
+    end
+  end
+
+  # Get the invoice number for display (prioritize regular Invoice over BookingInvoice)
+  def display_invoice_number
+    if associated_invoice
+      associated_invoice.invoice_number
+    elsif booking_invoices.any?
+      booking_invoices.first.invoice_number
+    else
+      invoice_number # fallback to booking's own invoice_number field
+    end
+  end
+
   # Calculate final amount after discount
   def calculate_final_amount_after_discount
     # Calculate from subtotal + tax - discount (not from total_amount which may already include discount)
