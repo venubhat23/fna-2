@@ -4,25 +4,17 @@ class Admin::InvoicesController < Admin::ApplicationController
   before_action :set_invoice, only: [:show, :edit, :update, :destroy, :mark_as_paid]
 
   def index
-    # Decide which type of invoices to show based on params
-    invoice_type = params[:type] || 'all'  # 'all', 'regular', 'booking'
+    # Show only regular invoices by default (exclude booking invoices)
+    invoice_type = params[:type] || 'regular'  # Default to 'regular' only
 
-    # Build combined invoices collection
+    # Build invoices collection - only regular invoices
     @all_invoices = []
 
-    # Get regular invoices if needed
-    if ['all', 'regular'].include?(invoice_type)
-      regular_invoices = build_regular_invoices_query
-      @all_invoices.concat(regular_invoices.map { |inv| prepare_invoice_data(inv, 'regular') })
-    end
+    # Get only regular invoices
+    regular_invoices = build_regular_invoices_query
+    @all_invoices.concat(regular_invoices.map { |inv| prepare_invoice_data(inv, 'regular') })
 
-    # Get booking invoices if needed
-    if ['all', 'booking'].include?(invoice_type)
-      booking_invoices = build_booking_invoices_query
-      @all_invoices.concat(booking_invoices.map { |inv| prepare_invoice_data(inv, 'booking') })
-    end
-
-    # Sort combined invoices by created_at descending
+    # Sort invoices by created_at descending
     @all_invoices.sort_by! { |inv| inv[:created_at] }.reverse!
 
     # Apply pagination
@@ -30,8 +22,8 @@ class Admin::InvoicesController < Admin::ApplicationController
     offset = params[:offset]&.to_i || 0
     @invoices = @all_invoices[offset, limit] || []
 
-    # Calculate summary statistics
-    @stats = calculate_combined_invoice_stats
+    # Calculate summary statistics for regular invoices only
+    @stats = calculate_regular_invoice_stats_only
 
     # Get delivery persons for filter dropdown
     @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
@@ -342,9 +334,23 @@ class Admin::InvoicesController < Admin::ApplicationController
     }
   end
 
+  def calculate_regular_invoice_stats_only
+    # Calculate stats from regular invoices only (exclude booking invoices)
+    regular_query = build_regular_invoices_query_for_stats
+
+    {
+      total_invoices: regular_query.count,
+      total_amount: regular_query.sum(:total_amount) || 0,
+      paid_amount: regular_query.where(payment_status: ['paid', 'fully_paid']).sum(:total_amount) || 0,
+      pending_amount: regular_query.where(payment_status: ['unpaid', 'partially_paid']).sum(:total_amount) || 0,
+      paid_count: regular_query.where(payment_status: ['paid', 'fully_paid']).count,
+      pending_count: regular_query.where(payment_status: ['unpaid', 'partially_paid']).count
+    }
+  end
+
   def calculate_combined_invoice_stats
     # Calculate stats from full database, not just paginated results
-    invoice_type = params[:type] || 'all'
+    invoice_type = params[:type] || 'regular'
 
     # Get full queries without limits for accurate stats
     regular_stats = { total_amount: 0, paid_amount: 0, pending_amount: 0, total_count: 0, paid_count: 0, pending_count: 0 }

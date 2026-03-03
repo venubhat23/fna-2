@@ -117,11 +117,13 @@
       <!-- Second Row: Additional Filters -->
       <div class="row g-3 align-items-end">
         <div class="col-lg-3 col-md-6">
-          <%= f.select :type, options_for_select([
-                ['All Types', 'all'],
-                ['Regular Invoices', 'regular'],
-                ['Booking Invoices', 'booking']
-              ], params[:type] || 'all'), {}, { class: "form-select" } %>
+          <div class="input-group">
+            <span class="input-group-text bg-primary text-white">
+              <i class="bi bi-receipt"></i>
+            </span>
+            <input type="text" class="form-control" value="Regular Invoices Only" readonly>
+            <input type="hidden" name="type" value="regular">
+          </div>
         </div>
         <div class="col-lg-3 col-md-6">
           <%= f.select :delivery_person_id,
