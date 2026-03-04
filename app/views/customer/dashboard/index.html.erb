@@ -1,145 +1,196 @@
 <% content_for :title, 'Dashboard' %>
 
 <% if current_customer %>
-<!-- Welcome Banner Section -->
-<div class="welcome-banner mb-4">
-  <div class="welcome-content">
-    <div class="row align-items-center">
-      <div class="col-md-8">
-        <h1 class="welcome-title">Welcome back, <%= current_customer.first_name %>! 👋</h1>
-        <p class="welcome-subtitle">Browse products, add to cart, and manage your bookings all in one place!</p>
+<!-- Hero Banner Section - Show Active Banners First -->
+<% if @banners&.any? %>
+<div class="hero-banner-carousel mb-5">
+  <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="5000">
+    <div class="carousel-indicators">
+      <% @banners.each_with_index do |banner, index| %>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<%= index %>"
+                class="<%= 'active' if index == 0 %>" aria-current="<%= 'true' if index == 0 %>"></button>
+      <% end %>
+    </div>
+
+    <div class="carousel-inner">
+      <% @banners.each_with_index do |banner, index| %>
+        <div class="carousel-item <%= 'active' if index == 0 %>">
+          <div class="hero-banner-slide"
+               style="<%= banner.has_image? ? "background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(#{banner.main_image_url})" : '' %>">
+            <div class="container">
+              <div class="row align-items-center min-vh-50">
+                <div class="col-lg-7">
+                  <div class="hero-content">
+                    <h1 class="hero-title display-3 fw-bold mb-4 text-white">
+                      <%= banner.title %>
+                    </h1>
+                    <p class="hero-description lead mb-4 text-white-75">
+                      <%= banner.description || "Discover fresh, organic products delivered straight to your doorstep." %>
+                    </p>
+                    <div class="hero-actions">
+                      <% if banner.redirect_link.present? %>
+                        <%= link_to "Shop Now", banner.redirect_link,
+                            class: "btn btn-hero-primary btn-lg me-3",
+                            data: { aos: "fade-up", aos_delay: "200" } %>
+                      <% else %>
+                        <%= link_to "Shop Now", customer_products_path,
+                            class: "btn btn-hero-primary btn-lg me-3",
+                            data: { aos: "fade-up", aos_delay: "200" } %>
+                      <% end %>
+                      <%= link_to "Learn More", "#features",
+                          class: "btn btn-hero-outline btn-lg",
+                          data: { aos: "fade-up", aos_delay: "400" } %>
+                    </div>
+                  </div>
+                </div>
+                <% unless banner.has_image? %>
+                <div class="col-lg-5 text-center">
+                  <div class="hero-visual" data-aos="zoom-in" data-aos-delay="600">
+                    <i class="bi bi-basket-fill hero-icon"></i>
+                  </div>
+                </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Decorative Elements -->
+            <div class="hero-decoration">
+              <div class="floating-shape shape-1"></div>
+              <div class="floating-shape shape-2"></div>
+              <div class="floating-shape shape-3"></div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @banners.count > 1 %>
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    <% end %>
+  </div>
+</div>
+<% else %>
+<!-- Default Hero Banner When No Active Banners -->
+<div class="hero-banner-default mb-5">
+  <div class="container">
+    <div class="row align-items-center min-vh-50">
+      <div class="col-lg-7">
+        <div class="hero-content">
+          <h1 class="hero-title display-3 fw-bold mb-4">
+            Welcome back, <%= current_customer.first_name %>! 🌟
+          </h1>
+          <p class="hero-description lead mb-4">
+            Discover fresh, organic products and natural groceries delivered straight to your doorstep.
+            Your healthy lifestyle journey starts here.
+          </p>
+          <div class="hero-actions">
+            <%= link_to "Explore Products", customer_products_path,
+                class: "btn btn-hero-primary btn-lg me-3" %>
+            <%= link_to "My Orders", customer_orders_path,
+                class: "btn btn-hero-outline btn-lg" %>
+          </div>
+        </div>
       </div>
-      <div class="col-md-4 text-end">
-        <div class="weather-widget">
-          <i class="fas fa-sun weather-icon"></i>
-          <span class="weather-text">Perfect day for fresh deliveries!</span>
+      <div class="col-lg-5 text-center">
+        <div class="hero-visual">
+          <i class="bi bi-heart-fill hero-icon text-success"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decorative Elements -->
+  <div class="hero-decoration">
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+  </div>
+</div>
+<% end %>
+
+<!-- Quick Action Cards -->
+<div class="container mb-5">
+  <div class="row g-4">
+    <div class="col-lg-3 col-md-6">
+      <div class="action-card action-cart" data-aos="fade-up" data-aos-delay="100">
+        <div class="action-icon-wrapper">
+          <div class="action-icon">
+            <i class="bi bi-cart3"></i>
+          </div>
+          <div class="action-badge" id="cart-count-badge">0</div>
+        </div>
+        <div class="action-content">
+          <h4 class="action-title">Shopping Cart</h4>
+          <p class="action-description">View items ready for checkout</p>
+          <%= link_to customer_cart_path, class: "action-link" do %>
+            View Cart <i class="bi bi-arrow-right ms-2"></i>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+      <div class="action-card action-orders" data-aos="fade-up" data-aos-delay="200">
+        <div class="action-icon-wrapper">
+          <div class="action-icon">
+            <i class="bi bi-bag-check"></i>
+          </div>
+          <div class="action-badge"><%= @recent_orders.count %></div>
+        </div>
+        <div class="action-content">
+          <h4 class="action-title">My Orders</h4>
+          <p class="action-description">Track your recent purchases</p>
+          <%= link_to customer_orders_path, class: "action-link" do %>
+            View Orders <i class="bi bi-arrow-right ms-2"></i>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+      <div class="action-card action-subscriptions" data-aos="fade-up" data-aos-delay="300">
+        <div class="action-icon-wrapper">
+          <div class="action-icon">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+          <div class="action-badge"><%= @active_subscriptions.count %></div>
+        </div>
+        <div class="action-content">
+          <h4 class="action-title">Subscriptions</h4>
+          <p class="action-description">Manage recurring deliveries</p>
+          <%= link_to customer_subscriptions_path, class: "action-link" do %>
+            View Subscriptions <i class="bi bi-arrow-right ms-2"></i>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+      <div class="action-card action-profile" data-aos="fade-up" data-aos-delay="400">
+        <div class="action-icon-wrapper">
+          <div class="action-icon">
+            <i class="bi bi-person-circle"></i>
+          </div>
+        </div>
+        <div class="action-content">
+          <h4 class="action-title">My Profile</h4>
+          <p class="action-description">Update account settings</p>
+          <%= link_to customer_profile_path, class: "action-link" do %>
+            Edit Profile <i class="bi bi-arrow-right ms-2"></i>
+          <% end %>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Quick Action Cards -->
-<div class="row mb-4">
-  <div class="col-md-4 mb-3">
-    <div class="stat-card stat-cart">
-      <div class="stat-icon">
-        <i class="fas fa-shopping-cart"></i>
-      </div>
-      <div class="stat-info">
-        <h3><%= cart_count %></h3>
-        <p>Items in Cart</p>
-      </div>
-      <div class="stat-trend">
-        <%= link_to customer_cart_path, class: "btn btn-sm btn-primary" do %>
-          View Cart <i class="fas fa-arrow-right"></i>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-4 mb-3">
-    <div class="stat-card stat-orders">
-      <div class="stat-icon">
-        <i class="fas fa-shopping-bag"></i>
-      </div>
-      <div class="stat-info">
-        <h3><%= @recent_orders.count %></h3>
-        <p>Recent Bookings</p>
-      </div>
-      <div class="stat-trend">
-        <%= link_to customer_orders_path, class: "btn btn-sm btn-primary" do %>
-          View Bookings <i class="fas fa-arrow-right"></i>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-4 mb-3">
-    <div class="stat-card stat-subscriptions">
-      <div class="stat-icon">
-        <i class="fas fa-box"></i>
-      </div>
-      <div class="stat-info">
-        <h3>Shop</h3>
-        <p>Browse Products</p>
-      </div>
-      <div class="stat-trend">
-        <%= link_to customer_products_path, class: "btn btn-sm btn-primary" do %>
-          Explore <i class="fas fa-arrow-right"></i>
-        <% end %>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Hero Banner Section -->
-<% if @banners&.any? %>
-<div class="hero-carousel-section mb-5">
-  <div class="container">
-    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
-      <div class="carousel-indicators">
-        <% @banners.each_with_index do |banner, index| %>
-          <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<%= index %>"
-                  class="<%= 'active' if index == 0 %>" aria-current="true"></button>
-        <% end %>
-      </div>
-      <div class="carousel-inner">
-        <% @banners.each_with_index do |banner, index| %>
-          <div class="carousel-item <%= 'active' if index == 0 %>">
-            <div class="row align-items-center">
-              <div class="col-md-6">
-                <h1 class="display-4 fw-bold mb-4"><%= banner.title %></h1>
-                <p class="lead mb-4"><%= banner.description %></p>
-                <% if banner.redirect_link.present? %>
-                  <%= link_to "Shop Now", banner.redirect_link, class: "btn btn-light btn-lg me-3" %>
-                <% else %>
-                  <%= link_to "Shop Now", customer_products_path, class: "btn btn-light btn-lg me-3" %>
-                <% end %>
-                <%= link_to "Learn More", "#features", class: "btn btn-outline-light btn-lg" %>
-              </div>
-              <div class="col-md-6">
-                <% if banner.has_image? %>
-                  <%= image_tag banner.main_image_url, class: "img-fluid rounded", alt: banner.title %>
-                <% else %>
-                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 300px;">
-                    <i class="bi bi-image display-1 text-muted"></i>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        <% end %>
-      </div>
-      <% if @banners.count > 1 %>
-        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-          <span class="carousel-control-next-icon"></span>
-        </button>
-      <% end %>
-    </div>
-  </div>
-</div>
-<% else %>
-<!-- Default hero section -->
-<div class="hero-carousel-section mb-5">
-  <div class="container">
-    <div class="row align-items-center">
-      <div class="col-md-6">
-        <h1 class="display-4 fw-bold mb-4">Welcome to Dhanvantri Naturals</h1>
-        <p class="lead mb-4">Fresh milk, organic groceries, and natural products delivered right to your doorstep. Experience the convenience of healthy living with our premium quality products.</p>
-        <%= link_to "Shop Now", customer_products_path, class: "btn btn-light btn-lg me-3" %>
-        <%= link_to "Learn More", "#features", class: "btn btn-outline-light btn-lg" %>
-      </div>
-      <div class="col-md-6 text-center">
-        <i class="bi bi-basket display-1 text-white"></i>
-      </div>
-    </div>
-  </div>
-</div>
-<% end %>
 
 <div class="container">
   <!-- Features Section -->
@@ -173,30 +224,54 @@
   <!-- Product Categories Section -->
   <% if @categories.any? %>
     <section class="mb-5">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Shop by Category</h2>
-        <%= link_to "View All Categories", customer_categories_path, class: "btn btn-outline-primary" %>
-      </div>
-      <div class="row">
-        <% @categories.each do |category| %>
-          <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-4">
-            <%= link_to customer_category_path(category), class: "text-decoration-none" do %>
-              <div class="category-card bg-white rounded-lg shadow-sm p-4 text-center h-100">
-                <div class="mb-3">
-                  <% if category.has_image? %>
-                    <%= image_tag category.display_image_url, class: "img-fluid rounded", style: "width: 60px; height: 60px; object-fit: cover;", alt: category.name %>
-                  <% else %>
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; margin: 0 auto;">
-                      <i class="bi bi-grid display-6 text-muted"></i>
+      <div class="container">
+        <div class="section-header mb-5 text-center">
+          <h2 class="section-title mb-3" data-aos="fade-up">Shop by Category</h2>
+          <p class="section-subtitle mb-4" data-aos="fade-up" data-aos-delay="100">
+            Explore our carefully curated collection of fresh, organic products
+          </p>
+          <%= link_to customer_categories_path,
+              class: "btn btn-outline-primary btn-lg",
+              data: { aos: "fade-up", aos_delay: "200" } do %>
+            View All Categories <i class="bi bi-arrow-right ms-2"></i>
+          <% end %>
+        </div>
+
+        <div class="row g-4">
+          <% @categories.each_with_index do |category, index| %>
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6"
+                 data-aos="zoom-in"
+                 data-aos-delay="<%= (index * 100) + 100 %>">
+              <%= link_to customer_category_path(category), class: "text-decoration-none h-100" do %>
+                <div class="modern-category-card">
+                  <div class="category-image-wrapper">
+                    <% if category.has_image? %>
+                      <%= image_tag category.display_image_url,
+                          class: "category-image",
+                          alt: category.name,
+                          loading: "lazy" %>
+                    <% else %>
+                      <div class="category-placeholder">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                      </div>
+                    <% end %>
+                    <div class="category-overlay">
+                      <div class="category-overlay-content">
+                        <i class="bi bi-arrow-right-circle"></i>
+                      </div>
                     </div>
-                  <% end %>
+                  </div>
+                  <div class="category-content">
+                    <h5 class="category-name"><%= category.name %></h5>
+                    <p class="category-count">
+                      <%= pluralize(category.products_count || 0, 'Product') %>
+                    </p>
+                  </div>
                 </div>
-                <h6 class="fw-semibold text-dark mb-2"><%= category.name %></h6>
-                <p class="text-muted small mb-0"><%= pluralize(category.products_count, 'Product') %></p>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       </div>
     </section>
   <% end %>
@@ -204,75 +279,139 @@
   <!-- Featured Products Section -->
   <% if @featured_products.any? %>
     <section class="mb-5">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Featured Products</h2>
-        <%= link_to "View All Products", customer_products_path, class: "btn btn-outline-primary" %>
-      </div>
-      <div class="row">
-        <% @featured_products.each do |product| %>
-          <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-            <div class="product-card bg-white rounded-lg shadow-sm h-100">
-              <div class="position-relative">
-                <% if product.main_image_url %>
-                  <%= image_tag product.main_image_url, class: "card-img-top", style: "height: 200px; object-fit: cover;", alt: product.name %>
-                <% else %>
-                  <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                    <i class="bi bi-image display-4 text-muted"></i>
-                  </div>
-                <% end %>
+      <div class="container">
+        <div class="section-header mb-5 text-center">
+          <h2 class="section-title mb-3" data-aos="fade-up">Featured Products</h2>
+          <p class="section-subtitle mb-4" data-aos="fade-up" data-aos-delay="100">
+            Hand-picked premium products that our customers love most
+          </p>
+          <%= link_to customer_products_path,
+              class: "btn btn-outline-primary btn-lg",
+              data: { aos: "fade-up", aos_delay: "200" } do %>
+            View All Products <i class="bi bi-arrow-right ms-2"></i>
+          <% end %>
+        </div>
 
-                <% if product.discounted? %>
-                  <span class="position-absolute top-0 start-0 badge bg-danger m-2">
-                    <%= product.discount_percentage.round %>% OFF
-                  </span>
-                <% end %>
-
-                <% unless product.in_stock? %>
-                  <span class="position-absolute top-0 end-0 badge bg-secondary m-2">
-                    Out of Stock
-                  </span>
-                <% end %>
-              </div>
-
-              <div class="card-body d-flex flex-column">
-                <h6 class="card-title fw-semibold"><%= link_to product.name, customer_product_path(product), class: "text-decoration-none text-dark" %></h6>
-
-                <div class="mb-2">
-                  <span class="fw-bold text-success fs-5">₹<%= product.selling_price %></span>
-                  <% if product.discounted? %>
-                    <span class="text-muted text-decoration-line-through ms-2">₹<%= product.price %></span>
+        <div class="row g-4">
+          <% @featured_products.each_with_index do |product, index| %>
+            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6"
+                 data-aos="fade-up"
+                 data-aos-delay="<%= (index * 100) + 100 %>">
+              <div class="modern-product-card">
+                <div class="product-image-wrapper">
+                  <%= link_to customer_product_path(product), class: "product-image-link" do %>
+                    <% if product.main_image_url %>
+                      <%= image_tag product.main_image_url,
+                          class: "product-image",
+                          alt: product.name,
+                          loading: "lazy" %>
+                    <% else %>
+                      <div class="product-placeholder">
+                        <i class="bi bi-image"></i>
+                      </div>
+                    <% end %>
                   <% end %>
+
+                  <!-- Product Badges -->
+                  <div class="product-badges">
+                    <% if product.respond_to?(:discounted?) && product.discounted? %>
+                      <span class="badge badge-sale">
+                        <%= product.discount_percentage.round %>% OFF
+                      </span>
+                    <% end %>
+
+                    <% if product.respond_to?(:in_stock?) && !product.in_stock? %>
+                      <span class="badge badge-out-of-stock">
+                        Out of Stock
+                      </span>
+                    <% end %>
+
+                    <% if product.respond_to?(:is_new?) && product.is_new? %>
+                      <span class="badge badge-new">
+                        New
+                      </span>
+                    <% end %>
+                  </div>
+
+                  <!-- Quick View Overlay -->
+                  <div class="product-overlay">
+                    <div class="product-overlay-content">
+                      <%= link_to customer_product_path(product),
+                          class: "btn btn-overlay-primary" do %>
+                        <i class="bi bi-eye"></i>
+                      <% end %>
+                      <% if defined?(add_item_customer_cart_path) && product.respond_to?(:in_stock?) && product.in_stock? %>
+                        <button type="button"
+                                class="btn btn-overlay-secondary"
+                                onclick="addToCartFromButton(<%= product.id %>, '<%= j product.name %>', <%= product.selling_price || product.price || 0 %>, '<%= product.main_image_url || '' %>')">
+                          <i class="bi bi-cart-plus"></i>
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
                 </div>
 
-                <% if product.has_reviews? %>
-                  <div class="mb-2">
-                    <span class="text-warning">
-                      <% product.average_rating.floor.times do %>
-                        <i class="bi bi-star-fill"></i>
-                      <% end %>
-                      <% (5 - product.average_rating.floor).times do %>
-                        <i class="bi bi-star"></i>
-                      <% end %>
-                    </span>
-                    <small class="text-muted ms-1">(<%= product.total_reviews %>)</small>
-                  </div>
-                <% end %>
-
-                <div class="mt-auto">
-                  <% if product.in_stock? %>
-                    <%= form_with url: add_item_customer_cart_path, method: :post, local: true, class: "d-flex align-items-center gap-2" do |f| %>
-                      <%= f.hidden_field :product_id, value: product.id %>
-                      <%= f.number_field :quantity, value: 1, min: 1, max: [product.available_quantity, 10].min, class: "form-control form-control-sm", style: "width: 70px;" %>
-                      <%= f.submit "Add to Cart", class: "btn btn-primary btn-sm flex-grow-1" %>
+                <div class="product-content">
+                  <div class="product-category">
+                    <% if product.respond_to?(:category) && product.category %>
+                      <%= product.category.name %>
+                    <% else %>
+                      Product
                     <% end %>
-                  <% else %>
-                    <button class="btn btn-secondary btn-sm w-100" disabled>Out of Stock</button>
+                  </div>
+
+                  <h5 class="product-name">
+                    <%= link_to product.name, customer_product_path(product),
+                        class: "text-decoration-none product-name-link" %>
+                  </h5>
+
+                  <% if product.respond_to?(:has_reviews?) && product.has_reviews? %>
+                    <div class="product-rating mb-2">
+                      <div class="rating-stars">
+                        <% (1..5).each do |star| %>
+                          <i class="bi bi-star<%= '-fill' if star <= product.average_rating.floor %>"></i>
+                        <% end %>
+                      </div>
+                      <span class="rating-count">(<%= product.total_reviews %>)</span>
+                    </div>
                   <% end %>
+
+                  <div class="product-pricing">
+                    <span class="current-price">₹<%= product.selling_price || product.price || 0 %></span>
+                    <% if product.respond_to?(:discounted?) && product.discounted? %>
+                      <span class="original-price">₹<%= product.price %></span>
+                    <% end %>
+                  </div>
+
+                  <div class="product-actions">
+                    <% if product.respond_to?(:in_stock?) && product.in_stock? %>
+                      <% if defined?(add_item_customer_cart_path) %>
+                        <%= form_with url: add_item_customer_cart_path, method: :post, local: true,
+                            class: "add-to-cart-form d-flex gap-2 align-items-center" do |f| %>
+                          <%= f.hidden_field :product_id, value: product.id %>
+                          <%= f.number_field :quantity, value: 1, min: 1,
+                              max: [product.respond_to?(:available_quantity) ? product.available_quantity : 10, 10].min,
+                              class: "form-control quantity-input" %>
+                          <%= f.submit "Add to Cart", class: "btn btn-cart-primary flex-grow-1" %>
+                        <% end %>
+                      <% else %>
+                        <button type="button"
+                                class="btn btn-cart-primary w-100"
+                                onclick="addToCartFromButton(<%= product.id %>, '<%= j product.name %>', <%= product.selling_price || product.price || 0 %>, '<%= product.main_image_url || '' %>')">
+                          Add to Cart
+                        </button>
+                      <% end %>
+                    <% else %>
+                      <button class="btn btn-out-of-stock w-100" disabled>
+                        <i class="bi bi-x-circle me-2"></i>Out of Stock
+                      </button>
+                    <% end %>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        <% end %>
+          <% end %>
+        </div>
       </div>
     </section>
   <% end %>

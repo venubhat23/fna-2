@@ -123,28 +123,31 @@
 <!-- GST Breakdown Cards -->
 <div class="row mb-4">
   <div class="col-md-4">
-    <div class="card border-success">
-      <div class="card-body text-center">
-        <h6 class="card-title text-success">CGST Total</h6>
-        <h4 class="text-success">₹<%= number_with_delimiter(@report_data[:totals][:cgst]&.round(2) || 0, delimiter: ',') %></h4>
+    <div class="card bg-light border-success shadow-sm">
+      <div class="card-body text-center py-4">
+        <h6 class="card-title text-success fw-bold mb-3">CGST Total</h6>
+        <h3 class="text-success fw-bold">₹<%= number_with_delimiter(@report_data[:totals][:cgst]&.round(2) || 0, delimiter: ',') %></h3>
+        <small class="text-muted">Central GST</small>
       </div>
     </div>
   </div>
 
   <div class="col-md-4">
-    <div class="card border-primary">
-      <div class="card-body text-center">
-        <h6 class="card-title text-primary">SGST Total</h6>
-        <h4 class="text-primary">₹<%= number_with_delimiter(@report_data[:totals][:sgst]&.round(2) || 0, delimiter: ',') %></h4>
+    <div class="card bg-light border-primary shadow-sm">
+      <div class="card-body text-center py-4">
+        <h6 class="card-title text-primary fw-bold mb-3">SGST Total</h6>
+        <h3 class="text-primary fw-bold">₹<%= number_with_delimiter(@report_data[:totals][:sgst]&.round(2) || 0, delimiter: ',') %></h3>
+        <small class="text-muted">State GST</small>
       </div>
     </div>
   </div>
 
   <div class="col-md-4">
-    <div class="card border-secondary">
-      <div class="card-body text-center">
-        <h6 class="card-title text-secondary">IGST Total</h6>
-        <h4 class="text-secondary">₹<%= number_with_delimiter(@report_data[:totals][:igst]&.round(2) || 0, delimiter: ',') %></h4>
+    <div class="card bg-light border-warning shadow-sm">
+      <div class="card-body text-center py-4">
+        <h6 class="card-title text-warning fw-bold mb-3">IGST Total</h6>
+        <h3 class="text-warning fw-bold">₹<%= number_with_delimiter(@report_data[:totals][:igst]&.round(2) || 0, delimiter: ',') %></h3>
+        <small class="text-muted">Integrated GST</small>
       </div>
     </div>
   </div>
@@ -271,6 +274,47 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Enhanced GST Cards Styling */
+.card.bg-light {
+  background-color: #f8f9fa !important;
+  border-width: 2px !important;
+}
+
+.card.bg-light .card-body {
+  padding: 1.5rem !important;
+}
+
+.card.border-success {
+  border-color: #198754 !important;
+}
+
+.card.border-primary {
+  border-color: #0d6efd !important;
+}
+
+.card.border-warning {
+  border-color: #ffc107 !important;
+}
+
+.text-success.fw-bold {
+  color: #198754 !important;
+  font-weight: 700 !important;
+}
+
+.text-primary.fw-bold {
+  color: #0d6efd !important;
+  font-weight: 700 !important;
+}
+
+.text-warning.fw-bold {
+  color: #e6b800 !important;
+  font-weight: 700 !important;
+}
+
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
 .table th {
   font-weight: 600;
   font-size: 0.9rem;
@@ -295,5 +339,24 @@
 
 .table-responsive {
   border-radius: 8px;
+}
+
+/* Additional contrast improvements */
+h3.fw-bold {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+h6.fw-bold {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.text-muted {
+  color: #6c757d !important;
+  font-weight: 500;
 }
 </style>

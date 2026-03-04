@@ -9,8 +9,8 @@ module ApplicationHelper
   def show_sidebar_item?(module_name, action = 'read')
     return false unless current_user
 
-    # Show all sidebar items to all logged in users
-    return true
+    # Check user's sidebar permissions
+    current_user.has_sidebar_permission?(module_name)
   end
 
   # Helper method to check if any items in a section are visible

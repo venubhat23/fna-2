@@ -72,11 +72,12 @@
               <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                   <i class="fas fa-user-circle me-2"></i>
-                  <span class="d-none d-sm-inline">Admin</span>
+                  <span class="d-none d-sm-inline">Profile</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                  <li><%= link_to admin_user_path(current_user), class: "dropdown-item" do %>
+                    <i class="fas fa-user me-2"></i>My Profile
+                  <% end %></li>
                   <li><hr class="dropdown-divider"></li>
                   <li><%= link_to destroy_user_session_path, class: "dropdown-item", data: { turbo_method: :delete } do %>
                     <i class="fas fa-sign-out-alt me-2"></i>Logout

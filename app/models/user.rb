@@ -50,7 +50,6 @@ class User < ApplicationRecord
   belongs_to :user_role, optional: true
   belongs_to :authenticatable, polymorphic: true, optional: true
   has_one :franchise, dependent: :destroy
-  has_many :policies, dependent: :destroy
   has_many_attached :profile_images
   has_many_attached :documents
   has_many :uploaded_documents, as: :documentable, class_name: 'Document', dependent: :destroy
@@ -141,10 +140,6 @@ class User < ApplicationRecord
     []
   end
 
-  def has_sidebar_permission?(permission_key)
-    # Show all sidebar items to all users
-    return true
-  end
 
   # Sidebar permissions methods
   def sidebar_permissions_array
@@ -198,8 +193,8 @@ class User < ApplicationRecord
     # Super admin (admin@dhanvantri-naturals.com) has access to everything
     return true if email == 'admin@dhanvantri-naturals.com'
 
-    # Admin users have access to all sidebars
-    return true if admin?
+    # Only give full access to users with 'super_admin' role, not all admin user types
+    return true if role_name == 'super_admin' || (role.present? && role.name == 'super_admin')
 
     # Check CRUD permissions - user needs 'view' permission for sidebar access
     permissions = sidebar_permissions_hash

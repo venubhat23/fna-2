@@ -21,13 +21,22 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
   end
 
   def create
-    @user = User.new(user_params)
+    # Remove role_name from user_params since it's not a User attribute
+    user_attributes = user_params.except(:role_name)
+    @user = User.new(user_attributes)
+
     @user.user_type = 'admin'
     @user.status = true
 
     # Map role_name to role field
     if params[:user][:role_name].present?
-      @user.role = params[:user][:role_name]
+      role = find_role_by_display_name(params[:user][:role_name])
+      if role
+        @user.role = role.name
+        @user.role_id = role.id
+      else
+        @user.errors.add(:role, "Role '#{params[:user][:role_name]}' not found")
+      end
     end
 
     # Store the plain password temporarily for display (before it gets encrypted)
@@ -47,14 +56,10 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
   end
 
   def update
-    # Map role_name to role field if present
-    if params[:user][:role_name].present?
-      user_params_with_role = user_params.merge(role: params[:user][:role_name])
-    else
-      user_params_with_role = user_params
-    end
+    # For edit form, only allow updating basic info and permissions, not role or password
+    user_attributes = user_params.except(:role_name, :password, :password_confirmation)
 
-    if @user.update(user_params_with_role)
+    if @user.update(user_attributes)
       redirect_to admin_settings_user_role_path(@user), notice: 'User was successfully updated.'
     else
       @sidebar_options = get_sidebar_options
@@ -78,8 +83,31 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
     @user = User.find(params[:id])
   end
 
+  def find_role_by_display_name(display_name)
+    # Map display names to database role names
+    role_mapping = {
+      'Data entry' => 'data_entry',
+      'Tele calling' => 'tele_calling',
+      'Accounts' => 'accounts',
+      'Super admin' => 'super_admin',
+      'Franchise' => 'franchise',
+      'Affiliate' => 'affiliate',
+      'Delivery' => 'delivery'
+    }
+
+    # Try to find the role by mapped name first
+    database_name = role_mapping[display_name]
+    if database_name
+      Role.find_by(name: database_name)
+    else
+      # Fallback: try to find by exact display name or convert to underscore format
+      Role.find_by(name: display_name) ||
+      Role.find_by(name: display_name.downcase.gsub(' ', '_'))
+    end
+  end
+
   def user_params
-    permitted_params = params.require(:user).permit(:first_name, :last_name, :email, :mobile, :password, :password_confirmation, :original_password, sidebar_permissions: [], crud_permissions: {})
+    permitted_params = params.require(:user).permit(:first_name, :last_name, :email, :mobile, :password, :password_confirmation, :original_password, :role_name, sidebar_permissions: [], crud_permissions: {})
 
     # Handle CRUD permissions - store as JSON in sidebar_permissions field
     if params[:user][:crud_permissions].present?
@@ -110,8 +138,20 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
       # Clear the crud_permissions field to avoid confusion
       permitted_params[:crud_permissions] = nil
     elsif permitted_params[:sidebar_permissions].present?
-      # Legacy format - convert array to JSON string for storage
-      permitted_params[:sidebar_permissions] = permitted_params[:sidebar_permissions].compact_blank.to_json
+      # Convert array to CRUD permissions format for proper sidebar access
+      permissions_array = permitted_params[:sidebar_permissions].compact_blank
+      crud_data = {}
+
+      permissions_array.each do |permission_key|
+        crud_data[permission_key] = {
+          'view' => true,
+          'create' => true,
+          'edit' => true,
+          'delete' => true
+        }
+      end
+
+      permitted_params[:sidebar_permissions] = crud_data.to_json
     end
 
     permitted_params
@@ -127,23 +167,38 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
         { key: 'stores', name: 'Stores' }
       ],
       'Subscription' => [
-        { key: 'subscriptions', name: 'Subscriptions' }
+        { key: 'customer_formats', name: 'Customer Format' },
+        { key: 'subscriptions', name: 'Subscriptions' },
+        { key: 'invoices', name: 'Invoices' },
+        { key: 'notes', name: 'Notes' },
+        { key: 'pending_amounts', name: 'Last Month Pending' },
+        { key: 'invoice_check', name: 'Invoice Check' }
       ],
       'Inventory' => [
         { key: 'vendors', name: 'Vendors' },
-        { key: 'vendor_purchases', name: 'Vendor Purchases' }
+        { key: 'vendor_purchases', name: 'Vendor Purchase' }
       ],
       'Master Data' => [
         { key: 'customers', name: 'Customers' },
         { key: 'categories', name: 'Categories' },
         { key: 'products', name: 'Products' },
-        { key: 'customer_wallets', name: 'Customer Wallets' },
         { key: 'coupons', name: 'Coupons' },
+        { key: 'customer_wallets', name: 'Customer Wallets' },
         { key: 'franchises', name: 'Franchise' },
         { key: 'affiliates', name: 'Affiliate' }
       ],
+      'Delivery Management' => [
+        { key: 'delivery_people', name: 'Delivery People' }
+      ],
+      'Import & Export' => [
+        { key: 'imports', name: 'Import Data' }
+      ],
+      'Reports' => [
+        { key: 'reports', name: 'Enhanced Sales Report' }
+      ],
       'Settings & Configuration' => [
         { key: 'system_settings', name: 'System Settings' },
+        { key: 'user_roles', name: 'User Roles' },
         { key: 'banners', name: 'Banners' },
         { key: 'client_requests', name: 'Client Requests' }
       ]

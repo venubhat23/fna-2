@@ -34,7 +34,8 @@ class Admin::UsersController < Admin::ApplicationController
 
   # GET /admin/users/1
   def show
-    @policies = @user.policies.includes(:customer, :insurance_company).order(created_at: :desc).limit(10)
+    # No policies to load since Policy model was removed
+    @policies = []
   end
 
   # GET /admin/users/new
@@ -68,12 +69,8 @@ class Admin::UsersController < Admin::ApplicationController
 
   # DELETE /admin/users/1
   def destroy
-    if @user.policies.exists?
-      redirect_to admin_users_path, alert: 'Cannot delete user with existing policies.'
-    else
-      @user.destroy
-      redirect_to admin_users_path, notice: 'User was successfully deleted.'
-    end
+    @user.destroy
+    redirect_to admin_users_path, notice: 'User was successfully deleted.'
   end
 
   private

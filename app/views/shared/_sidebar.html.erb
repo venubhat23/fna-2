@@ -119,6 +119,21 @@
           </li>
         <% end %>
 
+        <!-- Bookings -->
+        <% if show_sidebar_item?('bookings') %>
+          <li class="nav-item">
+            <%= link_to admin_bookings_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/bookings')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-indigo">
+                  <i class="bi bi-calendar-check-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Bookings</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
         <!-- Leads -->
         <% if show_sidebar_item?('leads') %>
           <li class="nav-item">

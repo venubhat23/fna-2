@@ -483,6 +483,7 @@
     </div>
 
     <!-- Subscription Section -->
+    <% if current_user.has_sidebar_permission?('customer_formats') || current_user.has_sidebar_permission?('subscriptions') || current_user.has_sidebar_permission?('invoices') || current_user.has_sidebar_permission?('notes') || current_user.has_sidebar_permission?('pending_amounts') || current_user.has_sidebar_permission?('invoice_check') %>
     <div class="nav-section">
       <div class="nav-section-title">Subscription</div>
       <ul class="nav-menu">
@@ -584,8 +585,10 @@
         <% end %>
       </ul>
     </div>
+    <% end %>
 
     <!-- Inventory Section -->
+    <% if current_user.has_sidebar_permission?('vendors') || current_user.has_sidebar_permission?('vendor_purchases') %>
     <div class="nav-section">
       <div class="nav-section-title">Inventory</div>
       <ul class="nav-menu">
@@ -643,8 +646,10 @@
         <% end %>
       </ul>
     </div>
+    <% end %>
 
     <!-- Master Data Section -->
+    <% if current_user.has_sidebar_permission?('customers') || current_user.has_sidebar_permission?('categories') || current_user.has_sidebar_permission?('products') || current_user.has_sidebar_permission?('coupons') || current_user.has_sidebar_permission?('customer_wallets') || current_user.has_sidebar_permission?('franchises') || current_user.has_sidebar_permission?('affiliates') %>
     <div class="nav-section">
       <div class="nav-section-title">Master Data</div>
       <ul class="nav-menu">
@@ -770,8 +775,10 @@
         <%# end %>
       </ul>
     </div>
+    <% end %>
 
     <!-- Delivery Management Section -->
+    <% if current_user.has_sidebar_permission?('delivery_people') %>
     <div class="nav-section">
       <div class="nav-section-title">Delivery Management</div>
       <ul class="nav-menu">
@@ -791,8 +798,10 @@
         <% end %>
       </ul>
     </div>
+    <% end %>
 
     <!-- Import & Export Section -->
+    <% if current_user.has_sidebar_permission?('imports') %>
     <div class="nav-section">
       <div class="nav-section-title">Import & Export</div>
       <ul class="nav-menu">
@@ -812,8 +821,10 @@
         <% end %>
       </ul>
     </div>
+    <% end %>
 
     <!-- Reports Section -->
+    <% if current_user.has_sidebar_permission?('reports') %>
     <div class="nav-section">
       <div class="nav-section-title">Reports</div>
       <ul class="nav-menu">
@@ -833,8 +844,10 @@
         <% end %>
       </ul>
     </div>
+    <% end %>
 
     <!-- Settings & Configuration Section -->
+    <% if current_user.has_sidebar_permission?('system_settings') || current_user.has_sidebar_permission?('user_roles') || current_user.has_sidebar_permission?('banners') || current_user.has_sidebar_permission?('client_requests') %>
     <div class="nav-section">
       <div class="nav-section-title">Settings & Configuration</div>
       <ul class="nav-menu">
@@ -899,6 +912,7 @@
         <% end %>
       </ul>
     </div>
+    <% end %>
 
 
 

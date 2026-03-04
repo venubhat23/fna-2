@@ -850,6 +850,9 @@ Rails.application.routes.draw do
     # Business Settings
     resource :business_settings, only: [:show, :edit, :update]
 
+    # Profile Management
+    resource :profile, only: [:show, :edit, :update]
+
   end
 
   # Franchise routes

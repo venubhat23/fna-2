@@ -23,11 +23,45 @@ class ApplicationController < ActionController::Base
   protected
 
   def after_sign_in_path_for(resource)
-    if resource.admin? || resource.user_type == 'admin'
-      admin_bookings_path
+    # Check if user has dashboard access
+    if resource.has_sidebar_permission?('dashboard')
+      root_path  # Dashboard
     else
-      admin_bookings_path  # Redirect all users to bookings page for now
+      # Find first available sidebar page for the user
+      redirect_to_first_available_page(resource)
     end
+  end
+
+  def redirect_to_first_available_page(user)
+    # Define available routes in order of preference
+    available_routes = [
+      { permission: 'bookings', path: -> { admin_bookings_path } },
+      { permission: 'customers', path: -> { admin_customers_path } },
+      { permission: 'products', path: -> { admin_products_path } },
+      { permission: 'categories', path: -> { admin_categories_path } },
+      { permission: 'vendors', path: -> { admin_vendors_path } },
+      { permission: 'vendor_purchases', path: -> { admin_vendor_purchases_path } },
+      { permission: 'invoices', path: -> { admin_invoices_path } },
+      { permission: 'subscriptions', path: -> { admin_subscriptions_path } },
+      { permission: 'reports', path: -> { admin_reports_enhanced_sales_path } },
+      { permission: 'stores', path: -> { admin_stores_path } },
+      { permission: 'delivery_people', path: -> { admin_delivery_people_path } },
+      { permission: 'franchises', path: -> { admin_franchises_path } },
+      { permission: 'affiliates', path: -> { admin_affiliates_path } },
+      { permission: 'system_settings', path: -> { admin_settings_system_path } },
+      { permission: 'user_roles', path: -> { admin_settings_user_roles_path } },
+      { permission: 'banners', path: -> { admin_banners_path } }
+    ]
+
+    # Find first available route
+    available_routes.each do |route|
+      if user.has_sidebar_permission?(route[:permission])
+        return route[:path].call
+      end
+    end
+
+    # Fallback - if user has no permissions, redirect to a safe page
+    root_path
   end
 
   def configure_permitted_parameters

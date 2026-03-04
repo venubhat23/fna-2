@@ -553,6 +553,15 @@ class Admin::ReportsController < Admin::ApplicationController
     @from_date = params[:from_date].present? ? Date.parse(params[:from_date]) : Date.current.beginning_of_month
     @to_date = params[:to_date].present? ? Date.parse(params[:to_date]) : Date.current.end_of_month
 
+    # Handle Excel export separately
+    if params[:format] == 'xlsx'
+      @report_data = build_enhanced_sales_data
+      send_data generate_excel(@report_data),
+                filename: "enhanced_sales_report_#{@from_date.strftime('%Y%m%d')}_#{@to_date.strftime('%Y%m%d')}.xlsx",
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      return
+    end
+
     # Export format check
     respond_to do |format|
       format.html do
@@ -563,12 +572,6 @@ class Admin::ReportsController < Admin::ApplicationController
         send_data generate_csv(@report_data),
                   filename: "enhanced_sales_report_#{@from_date.strftime('%Y%m%d')}_#{@to_date.strftime('%Y%m%d')}.csv",
                   type: 'text/csv'
-      end
-      format.xlsx do
-        @report_data = build_enhanced_sales_data
-        send_data generate_excel(@report_data),
-                  filename: "enhanced_sales_report_#{@from_date.strftime('%Y%m%d')}_#{@to_date.strftime('%Y%m%d')}.xlsx",
-                  type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       end
     end
   rescue => e
@@ -768,6 +771,7 @@ class Admin::ReportsController < Admin::ApplicationController
 
     # Create a temporary file
     temp_file = Tempfile.new(['enhanced_sales_report', '.xlsx'])
+    temp_file.close
 
     begin
       workbook = WriteXLSX.new(temp_file.path)
@@ -822,10 +826,12 @@ class Admin::ReportsController < Admin::ApplicationController
       worksheet.write(totals_row, 10, totals[:igst], currency_format)
 
       workbook.close
-      temp_file.read
+
+      # Read the file content
+      content = File.binread(temp_file.path)
+      content
     ensure
-      temp_file.close
-      temp_file.unlink
+      temp_file.unlink if temp_file
     end
   end
 end

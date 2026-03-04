@@ -1,0 +1,216 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Edit Profile</h2>
+    <p class="text-muted mb-0">Update your profile information</p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_profile_path, class: "btn btn-outline-info" do %>
+      <i class="bi bi-eye me-1"></i>
+      View Profile
+    <% end %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <%= form_with model: [:admin, @user], url: admin_profile_path, local: true, multipart: true, class: "needs-validation", novalidate: true do |form| %>
+
+      <!-- Personal Details -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0">Personal Details</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= form.label :first_name, class: "form-label" do %>
+                First Name <span class="text-danger">*</span>
+              <% end %>
+              <%= form.text_field :first_name, class: "form-control", placeholder: "Enter first name", required: true %>
+              <div class="invalid-feedback">Please provide a first name.</div>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :last_name, class: "form-label" do %>
+                Last Name <span class="text-danger">*</span>
+              <% end %>
+              <%= form.text_field :last_name, class: "form-control", placeholder: "Enter last name", required: true %>
+              <div class="invalid-feedback">Please provide a last name.</div>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :middle_name, class: "form-label" %>
+              <%= form.text_field :middle_name, class: "form-control", placeholder: "Enter middle name" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :email, class: "form-label" do %>
+                Email <span class="text-danger">*</span>
+              <% end %>
+              <%= form.email_field :email, class: "form-control", placeholder: "Enter email address", required: true %>
+              <div class="invalid-feedback">Please provide a valid email address.</div>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :mobile, class: "form-label" %>
+              <%= form.text_field :mobile, class: "form-control", placeholder: "Enter mobile number" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :birth_date, class: "form-label" %>
+              <%= form.date_field :birth_date, class: "form-control" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :gender, class: "form-label" %>
+              <%= form.select :gender,
+                  options_for_select([
+                    ['Select Gender', ''],
+                    ['Male', 'male'],
+                    ['Female', 'female'],
+                    ['Other', 'other']
+                  ], @user.gender),
+                  {},
+                  { class: "form-select" } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Professional Details -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0">Professional Details</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= form.label :department, class: "form-label" %>
+              <%= form.text_field :department, class: "form-control", placeholder: "Enter department" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :designation, class: "form-label" %>
+              <%= form.text_field :designation, class: "form-control", placeholder: "Enter designation" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :company_name, class: "form-label" %>
+              <%= form.text_field :company_name, class: "form-control", placeholder: "Enter company name" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :pan_no, class: "form-label" %>
+              <%= form.text_field :pan_no, class: "form-control", placeholder: "Enter PAN number", maxlength: "10" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :aadhar_no, class: "form-label" %>
+              <%= form.text_field :aadhar_no, class: "form-control", placeholder: "Enter Aadhar number", maxlength: "12" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :gst_no, class: "form-label" %>
+              <%= form.text_field :gst_no, class: "form-control", placeholder: "Enter GST number" %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0">Contact Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <%= form.label :address, class: "form-label" %>
+              <%= form.text_area :address, class: "form-control", rows: 3, placeholder: "Enter full address" %>
+            </div>
+            <div class="col-md-4">
+              <%= form.label :city, class: "form-label" %>
+              <%= form.text_field :city, class: "form-control", placeholder: "Enter city" %>
+            </div>
+            <div class="col-md-4">
+              <%= form.label :state, class: "form-label" %>
+              <%= form.text_field :state, class: "form-control", placeholder: "Enter state" %>
+            </div>
+            <div class="col-md-4">
+              <%= form.label :pincode, class: "form-label" %>
+              <%= form.text_field :pincode, class: "form-control", placeholder: "Enter pincode", maxlength: "6" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :emergency_contact_name, class: "form-label" %>
+              <%= form.text_field :emergency_contact_name, class: "form-control", placeholder: "Enter emergency contact name" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :emergency_contact_mobile, class: "form-label" %>
+              <%= form.text_field :emergency_contact_mobile, class: "form-control", placeholder: "Enter emergency contact mobile" %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <%= link_to admin_profile_path, class: "btn btn-outline-secondary" do %>
+              <i class="bi bi-arrow-left me-1"></i>
+              Cancel
+            <% end %>
+            <%= form.submit "Update Profile", class: "btn btn-primary" do %>
+              <i class="bi bi-check-lg me-1"></i>
+              Update Profile
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+    <% end %>
+  </div>
+
+  <!-- Sidebar Information -->
+  <div class="col-lg-4">
+    <!-- Profile Summary -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Current Profile</h5>
+      </div>
+      <div class="card-body text-center">
+        <div class="mb-3">
+          <% if @user.profile_picture.present? %>
+            <img src="<%= @user.profile_picture %>" alt="Profile Picture" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+          <% else %>
+            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+              <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
+            </div>
+          <% end %>
+        </div>
+        <h6 class="mb-1"><%= @user.first_name %> <%= @user.last_name %></h6>
+        <p class="text-muted mb-2"><%= @user.email %></p>
+        <span class="badge bg-<%= @user.status? ? 'success' : 'danger' %>">
+          <%= @user.status? ? 'Active' : 'Inactive' %>
+        </span>
+      </div>
+    </div>
+
+    <!-- Profile Tips -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Profile Tips</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Keep your contact information updated
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Add emergency contact details for security
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Complete all professional details
+          </li>
+          <li class="mb-0">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Use a valid email for notifications
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
