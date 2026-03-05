@@ -985,14 +985,20 @@ Rails.application.routes.draw do
 
     # Shop functionality
     get 'shop', to: 'shop#index'
+    get 'shop/success', to: 'shop#success', as: :shop_success
     get 'shop/category/:id', to: 'shop#category', as: :shop_category
     get 'shop/product/:id', to: 'shop#product', as: :shop_product
+    post 'shop/create_booking', to: 'shop#create_booking', as: :create_booking_shop
+    post 'shop/cart_order', to: 'shop#cart_order', as: :cart_order_shop
 
     # Offers
     get 'offers', to: 'offers#index'
 
     # Support
     get 'support', to: 'support#index'
+
+    # Client requests/support tickets
+    resources :client_requests, only: [:index, :show, :new, :create]
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

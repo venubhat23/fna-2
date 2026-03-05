@@ -26,6 +26,11 @@ class Customer < ApplicationRecord
   has_many :wishlists, dependent: :destroy
   has_many :notifications, dependent: :destroy
   has_many :pending_amounts, dependent: :destroy
+  has_many :client_requests, dependent: :destroy
+
+  # Referral associations
+  has_many :referrals, foreign_key: 'referring_customer_id', dependent: :destroy
+  has_many :received_referrals, class_name: 'Referral', foreign_key: 'customer_id', dependent: :destroy
 
   # Nested attributes - commented out as tables don't exist
   # accepts_nested_attributes_for :family_members, allow_destroy: true, reject_if: :all_blank

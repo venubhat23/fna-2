@@ -1,10 +1,11 @@
 <style>
+/* Modern Customer Sidebar - Perfectly Matching Admin Design */
 .customer-sidebar {
   position: fixed !important;
-  top: 70px !important;
+  top: 80px !important;
   left: 0 !important;
-  width: 260px !important;
-  height: calc(100vh - 70px) !important;
+  width: 280px !important;
+  height: calc(100vh - 80px) !important;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
   border-right: 2px solid #e2e8f0 !important;
   z-index: 1040 !important;
@@ -27,7 +28,8 @@
   }
 }
 
-.customer-nav-link {
+/* Modern Navigation Link - Based on Admin Design */
+.customer-nav-link-modern {
   display: flex !important;
   align-items: center !important;
   padding: 12px 20px !important;
@@ -43,7 +45,7 @@
   border: 1px solid rgba(226, 232, 240, 0.8) !important;
 }
 
-.customer-nav-link::before {
+.customer-nav-link-modern::before {
   content: '' !important;
   position: absolute !important;
   left: 0 !important;
@@ -55,7 +57,7 @@
   transition: transform 0.3s ease !important;
 }
 
-.customer-nav-link:hover {
+.customer-nav-link-modern:hover {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%) !important;
   color: #1e293b !important;
   transform: translateY(-2px) !important;
@@ -63,16 +65,16 @@
   border: 1px solid rgba(16, 185, 129, 0.2) !important;
 }
 
-.customer-nav-link:hover::before {
+.customer-nav-link-modern:hover::before {
   transform: scaleY(1) !important;
 }
 
-.customer-nav-link:hover .nav-text {
+.customer-nav-link-modern:hover .customer-nav-text {
   color: #1e293b !important;
   font-weight: 600 !important;
 }
 
-.customer-nav-link.active {
+.customer-nav-link-modern.active {
   background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
   color: #ffffff !important;
   box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3) !important;
@@ -80,22 +82,22 @@
   transform: translateY(-2px) !important;
 }
 
-.customer-nav-link.active::before {
+.customer-nav-link-modern.active::before {
   transform: scaleY(1) !important;
   background: rgba(255, 255, 255, 0.3) !important;
 }
 
-.customer-nav-link.active .nav-text {
+.customer-nav-link-modern.active .customer-nav-text {
   color: #ffffff !important;
   font-weight: 600 !important;
 }
 
-.customer-nav-link.active .icon-bg {
+.customer-nav-link-modern.active .customer-icon-bg {
   background: rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
 }
 
-.nav-text {
+.customer-nav-text {
   color: #64748b !important;
   font-weight: 500 !important;
   margin-left: 12px !important;
@@ -104,6 +106,7 @@
   transition: all 0.3s ease !important;
 }
 
+/* Section Title - Based on Admin Design */
 .customer-nav-section-title {
   color: #10b981 !important;
   font-size: 11px !important;
@@ -126,7 +129,8 @@
   border-radius: 2px !important;
 }
 
-.icon-bg {
+/* Icon Background - Based on Admin Design */
+.customer-icon-bg {
   width: 36px !important;
   height: 36px !important;
   border-radius: 10px !important;
@@ -137,7 +141,7 @@
   position: relative !important;
 }
 
-.icon-bg::after {
+.customer-icon-bg::after {
   content: '' !important;
   position: absolute !important;
   inset: 1px !important;
@@ -146,124 +150,113 @@
   transition: all 0.3s ease !important;
 }
 
-.customer-nav-link:hover .icon-bg {
+.customer-nav-link-modern:hover .customer-icon-bg {
   transform: scale(1.1) rotate(2deg) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
 }
 
-.customer-nav-link:hover .icon-bg::after {
+.customer-nav-link-modern:hover .customer-icon-bg::after {
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-.customer-nav-link.active .icon-bg {
+.customer-nav-link-modern.active .customer-icon-bg {
   transform: scale(1.1) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
-.customer-nav-link.active .icon-bg::after {
+.customer-nav-link-modern.active .customer-icon-bg::after {
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Customer specific gradient colors */
-.gradient-green {
+/* Gradient Backgrounds for Icons - Based on Admin Design */
+.customer-gradient-green {
   background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
 }
-
-.gradient-blue {
+.customer-gradient-emerald {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4) !important;
+}
+.customer-gradient-teal {
+  background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%) !important;
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4) !important;
+}
+.customer-gradient-blue {
   background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4) !important;
 }
-
-.gradient-purple {
+.customer-gradient-purple {
   background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;
 }
-
-.gradient-orange {
+.customer-gradient-orange {
   background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
   box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
 }
-
-.gradient-cyan {
+.customer-gradient-cyan {
   background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%) !important;
   box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
 }
-
-.gradient-pink {
-  background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4) !important;
-}
-
-.gradient-amber {
-  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4) !important;
-}
-
-.gradient-red {
+.customer-gradient-red {
   background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
 }
 
-.sidebar-nav {
+/* Layout Structure */
+.customer-sidebar-nav {
   padding: 1rem 0 !important;
   flex: 1 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
 }
 
-.nav-section {
+.customer-nav-section {
   margin-bottom: 1.5rem !important;
 }
 
-.nav-menu {
+.customer-nav-menu {
   list-style: none !important;
   padding: 0 !important;
   margin: 0 !important;
 }
 
-.nav-item {
+.customer-nav-item {
   margin-bottom: 4px !important;
 }
 
-.customer-user-profile {
+/* User Profile Section */
+.customer-user-profile-modern {
   display: flex !important;
   align-items: center !important;
   padding: 1.5rem !important;
   border-bottom: 1px solid #e2e8f0 !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .customer-avatar-circle {
   width: 40px !important;
   height: 40px !important;
   border-radius: 50% !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   color: white !important;
   margin-right: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3) !important;
 }
 
-.customer-name {
+.customer-user-name {
   color: #1e293b !important;
   font-weight: 600 !important;
+  font-size: 14px !important;
   margin: 0 !important;
 }
 
-.customer-role-badge {
-  background: linear-gradient(135deg, #10b981, #34d399) !important;
-  color: #ffffff !important;
-  padding: 2px 8px !important;
-  border-radius: 6px !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
-  margin-top: 2px !important;
-}
-
+/* Footer Section */
 .customer-sidebar-footer {
   margin-top: auto !important;
   padding: 1rem !important;
@@ -284,166 +277,167 @@
   background: linear-gradient(to right, transparent, #10b981, #34d399, transparent) !important;
 }
 
-.customer-logout-btn {
+.customer-logout-btn-modern {
   display: flex !important;
   align-items: center !important;
   padding: 12px 16px !important;
   border-radius: 12px !important;
-  color: #ef4444 !important;
+  color: #f87171 !important;
   text-decoration: none !important;
   width: 100% !important;
   transition: all 0.3s ease !important;
-  background: rgba(239, 68, 68, 0.05) !important;
-  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+  background: rgba(248, 113, 113, 0.05) !important;
+  border: 1px solid rgba(248, 113, 113, 0.2) !important;
 }
 
-.customer-logout-btn:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(248, 113, 113, 0.15)) !important;
+.customer-logout-btn-modern:hover {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(251, 113, 133, 0.15)) !important;
   color: #ffffff !important;
   transform: translateX(4px) !important;
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 6px 20px rgba(248, 113, 113, 0.3) !important;
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
 }
 
-.customer-logout-btn .nav-text {
+.customer-logout-btn-modern .customer-nav-text {
   margin-left: 12px !important;
   font-weight: 500 !important;
 }
 
-/* Badge for orders/notifications */
-.nav-badge {
-  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+/* Badge Styles */
+.customer-nav-badge {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   color: white !important;
-  border-radius: 10px !important;
-  padding: 2px 6px !important;
+  border-radius: 12px !important;
+  padding: 4px 8px !important;
   font-size: 10px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   margin-left: auto !important;
-  min-width: 18px !important;
-  height: 18px !important;
+  min-width: 20px !important;
+  height: 20px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+  animation: pulse 2s infinite !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 </style>
 
-<div class="customer-sidebar" id="customerSidebar">
-  <% if current_customer %>
-  <!-- User Profile Section -->
-  <div class="customer-user-profile">
-    <div class="customer-avatar-circle">
-      <%= current_customer.first_name.first.upcase %>
-    </div>
-    <div>
-      <p class="customer-name"><%= current_customer.display_name %></p>
-      <span class="customer-role-badge">Customer</span>
-    </div>
-  </div>
-  <% end %>
+<div class="customer-sidebar modern-sidebar" id="customerSidebar">
 
   <!-- Navigation Menu -->
-  <nav class="sidebar-nav">
+  <nav class="customer-sidebar-nav">
     <!-- Main Menu Section -->
-    <div class="nav-section">
+    <div class="customer-nav-section">
       <div class="customer-nav-section-title">Main Menu</div>
-      <ul class="nav-menu">
+      <ul class="customer-nav-menu">
         <!-- Dashboard -->
-        <li class="nav-item">
-          <%= link_to customer_root_path, class: "customer-nav-link #{'active' if current_page?(customer_root_path) || current_page?(customer_dashboard_path)}" do %>
-            <div class="icon-bg gradient-green">
-              <i class="fas fa-home"></i>
+        <li class="customer-nav-item">
+          <%= link_to customer_root_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_root_path) || current_page?(customer_dashboard_path)}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-green">
+                <i class="bi bi-grid-3x3-gap-fill"></i>
+              </div>
             </div>
-            <span class="nav-text">Dashboard</span>
+            <span class="customer-nav-text">Dashboard</span>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
 
         <!-- Shop -->
-        <li class="nav-item">
-          <%= link_to customer_shop_path, class: "customer-nav-link #{'active' if current_page?(customer_shop_path) || request.path.include?('/customer/shop')}" do %>
-            <div class="icon-bg gradient-blue">
-              <i class="fas fa-store"></i>
+        <li class="customer-nav-item">
+          <%= link_to customer_shop_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_shop_path) || request.path.include?('/customer/shop')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-emerald">
+                <i class="bi bi-shop"></i>
+              </div>
             </div>
-            <span class="nav-text">Shop</span>
+            <span class="customer-nav-text">Shop</span>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
 
         <!-- My Orders -->
-        <li class="nav-item">
-          <%= link_to customer_orders_path, class: "customer-nav-link #{'active' if current_page?(customer_orders_path) || request.path.include?('/customer/orders')}" do %>
-            <div class="icon-bg gradient-purple">
-              <i class="fas fa-shopping-bag"></i>
+        <li class="customer-nav-item">
+          <%= link_to customer_orders_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_orders_path) || request.path.include?('/customer/orders')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-teal">
+                <i class="bi bi-cart-check-fill"></i>
+              </div>
             </div>
-            <span class="nav-text">My Orders</span>
-            <% if current_customer && current_customer.orders.where(status: ['pending', 'confirmed', 'processing']).count > 0 %>
-              <span class="nav-badge"><%= current_customer.orders.where(status: ['pending', 'confirmed', 'processing']).count %></span>
+            <span class="customer-nav-text">My Orders</span>
+            <% if current_customer && current_customer.bookings.where(status: ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery']).count > 0 %>
+              <span class="customer-nav-badge"><%= current_customer.bookings.where(status: ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery']).count %></span>
             <% end %>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
 
         <!-- Subscriptions -->
-        <li class="nav-item">
-          <%= link_to customer_subscriptions_path, class: "customer-nav-link #{'active' if current_page?(customer_subscriptions_path) || request.path.include?('/customer/subscriptions')}" do %>
-            <div class="icon-bg gradient-orange">
-              <i class="fas fa-sync-alt"></i>
+        <li class="customer-nav-item">
+          <%= link_to customer_subscriptions_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_subscriptions_path) || request.path.include?('/customer/subscriptions')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-blue">
+                <i class="bi bi-arrow-repeat"></i>
+              </div>
             </div>
-            <span class="nav-text">Subscriptions</span>
+            <span class="customer-nav-text">Subscriptions</span>
             <% if current_customer && current_customer.milk_subscriptions.where(is_active: true).count > 0 %>
-              <span class="nav-badge"><%= current_customer.milk_subscriptions.where(is_active: true).count %></span>
+              <span class="customer-nav-badge"><%= current_customer.milk_subscriptions.where(is_active: true).count %></span>
             <% end %>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
 
-        <!-- Cart -->
-        <li class="nav-item">
-          <%= link_to customer_cart_path, class: "customer-nav-link #{'active' if current_page?(customer_cart_path) || request.path.include?('/customer/cart')}" do %>
-            <div class="icon-bg gradient-cyan">
-              <i class="fas fa-shopping-cart"></i>
-            </div>
-            <span class="nav-text">Cart</span>
-            <% if cart_count > 0 %>
-              <span class="nav-badge"><%= cart_count %></span>
-            <% end %>
-          <% end %>
-        </li>
 
         <!-- Offers -->
-        <li class="nav-item">
-          <%= link_to customer_offers_path, class: "customer-nav-link #{'active' if current_page?(customer_offers_path) || request.path.include?('/customer/offers')}" do %>
-            <div class="icon-bg gradient-pink">
-              <i class="fas fa-gift"></i>
+        <li class="customer-nav-item">
+          <%= link_to customer_offers_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_offers_path) || request.path.include?('/customer/offers')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-purple">
+                <i class="bi bi-tags-fill"></i>
+              </div>
             </div>
-            <span class="nav-text">Offers</span>
-          <% end %>
-        </li>
-
-        <!-- Refer & Earn -->
-        <li class="nav-item">
-          <%= link_to "#", class: "customer-nav-link" do %>
-            <div class="icon-bg gradient-amber">
-              <i class="fas fa-star"></i>
-            </div>
-            <span class="nav-text">Refer & Earn</span>
+            <span class="customer-nav-text">Offers</span>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
 
         <!-- My Profile -->
-        <li class="nav-item">
-          <%= link_to customer_profile_path, class: "customer-nav-link #{'active' if current_page?(customer_profile_path) || request.path.include?('/customer/profile')}" do %>
-            <div class="icon-bg gradient-green">
-              <i class="fas fa-user"></i>
+        <li class="customer-nav-item">
+          <%= link_to customer_profile_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_profile_path) || request.path.include?('/customer/profile')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-orange">
+                <i class="bi bi-person-circle"></i>
+              </div>
             </div>
-            <span class="nav-text">My Profile</span>
+            <span class="customer-nav-text">My Profile</span>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
 
-        <!-- Support -->
-        <li class="nav-item">
-          <%= link_to customer_support_path, class: "customer-nav-link #{'active' if current_page?(customer_support_path) || request.path.include?('/customer/support')}" do %>
-            <div class="icon-bg gradient-red">
-              <i class="fas fa-headset"></i>
+        <!-- Support Requests -->
+        <li class="customer-nav-item">
+          <%= link_to customer_client_requests_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_client_requests_path) || request.path.include?('/customer/client_requests')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-cyan">
+                <i class="bi bi-life-preserver"></i>
+              </div>
             </div>
-            <span class="nav-text">Support</span>
+            <span class="customer-nav-text">Support</span>
+            <% if current_customer && current_customer.client_requests.where(status: ['pending', 'in_progress']).count > 0 %>
+              <span class="customer-nav-badge"><%= current_customer.client_requests.where(status: ['pending', 'in_progress']).count %></span>
+            <% end %>
+            <div class="nav-indicator"></div>
           <% end %>
         </li>
       </ul>
@@ -453,11 +447,13 @@
   <% if current_customer %>
   <!-- Logout Section -->
   <div class="customer-sidebar-footer">
-    <%= link_to customer_logout_path, method: :delete, class: "customer-logout-btn" do %>
-      <div class="icon-bg gradient-red">
-        <i class="fas fa-sign-out-alt"></i>
+    <%= link_to customer_logout_path, method: :delete, class: "customer-logout-btn-modern" do %>
+      <div class="nav-icon-modern">
+        <div class="customer-icon-bg customer-gradient-red">
+          <i class="bi bi-box-arrow-right"></i>
+        </div>
       </div>
-      <span class="nav-text">Logout</span>
+      <span class="customer-nav-text">Logout</span>
     <% end %>
   </div>
   <% end %>

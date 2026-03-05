@@ -1,0 +1,94 @@
+<div class="container-fluid px-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">
+            <i class="fas fa-headset me-2"></i>
+            My Support Requests
+          </h4>
+          <%= link_to "New Request", new_customer_client_request_path, class: "btn btn-primary" %>
+        </div>
+
+        <div class="card-body">
+          <% if @client_requests.any? %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Ticket #</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Department</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @client_requests.each do |request| %>
+                    <tr>
+                      <td>
+                        <code><%= request.id %></code>
+                      </td>
+                      <td>
+                        <strong><%= request.title %></strong>
+                        <% if request.description.present? %>
+                          <br>
+                          <small class="text-muted">
+                            <%= truncate(request.description, length: 100) %>
+                          </small>
+                        <% end %>
+                      </td>
+                      <td>
+                        <span class="badge <%= request.status_badge_class %>">
+                          <%= request.status.humanize %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge <%= request.priority_badge_class %>">
+                          <%= request.priority.humanize %>
+                        </span>
+                      </td>
+                      <td>
+                        <% if request.department.present? %>
+                          <span class="badge badge-light">
+                            <%= request.department.humanize %>
+                          </span>
+                        <% else %>
+                          <span class="text-muted">-</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <small>
+                          <%= request.created_at.strftime("%d %b %Y") %><br>
+                          <span class="text-muted"><%= request.created_at.strftime("%I:%M %p") %></span>
+                        </small>
+                      </td>
+                      <td>
+                        <%= link_to "View", customer_client_request_path(request),
+                            class: "btn btn-sm btn-outline-primary" %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <div class="text-center py-5">
+              <div class="mb-3">
+                <i class="fas fa-headset fa-3x text-muted"></i>
+              </div>
+              <h5 class="text-muted">No Support Requests Yet</h5>
+              <p class="text-muted mb-4">
+                When you need assistance, you can submit a support request and track its progress here.
+              </p>
+              <%= link_to "Submit Your First Request", new_customer_client_request_path,
+                  class: "btn btn-primary btn-lg" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

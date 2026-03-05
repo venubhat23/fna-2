@@ -1,125 +1,295 @@
-<% content_for :title, "My Orders - Dhanvantri Naturals" %>
+<% content_for :title, "My Orders - Atma Nirbhar Farm" %>
 
 <style>
 :root {
-  --primary-purple: #8B5DFF;
-  --purple-light: #A983FF;
-  --purple-dark: #7048E8;
-  --purple-gradient: linear-gradient(135deg, #8B5DFF 0%, #A983FF 100%);
+  --primary-green: #22c55e;
+  --green-light: #4ade80;
+  --green-dark: #16a34a;
+  --green-gradient: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+  --yellow: #fbbf24;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --red: #ef4444;
+  --gray: #6b7280;
 }
 
 .orders-page {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  background: #f8fafc;
   min-height: 100vh;
+  padding: 2rem 0;
 }
 
 .page-header {
-  background: var(--purple-gradient);
-  color: white;
+  background: white;
   padding: 2rem 0;
-  border-radius: 15px;
   margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .page-title {
   font-size: 2rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.stats-card {
-  background: white;
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.1);
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-
-.stats-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(139, 93, 255, 0.15);
-}
-
-.stats-card .card-body {
-  padding: 1.5rem;
-}
-
-.stats-icon {
-  width: 50px;
-  height: 50px;
+.page-title .bag-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--green-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   font-size: 1.5rem;
 }
 
-.stats-icon.pending { background: linear-gradient(135deg, #FFE082 0%, #FFCC02 100%); color: #F57C00; }
-.stats-icon.processing { background: linear-gradient(135deg, #81D4FA 0%, #03A9F4 100%); color: #0277BD; }
-.stats-icon.shipped { background: linear-gradient(135deg, #A5D6A7 0%, #4CAF50 100%); color: #2E7D32; }
-.stats-icon.completed { background: linear-gradient(135deg, #C8E6C9 0%, #66BB6A 100%); color: #388E3C; }
-.stats-icon.issues { background: linear-gradient(135deg, #FFCDD2 0%, #F44336 100%); color: #C62828; }
-.stats-icon.total { background: var(--purple-gradient); color: white; }
+.page-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+}
 
-.filter-card {
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stats-card {
   background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.stats-card.yellow {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #f59e0b;
+}
+
+.stats-card.blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
+  border-color: #2563eb;
+}
+
+.stats-card.purple {
+  background: linear-gradient(135deg, #ede9fe 0%, #c4b5fd 100%);
+  border-color: #7c3aed;
+}
+
+.stats-card.green {
+  background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%);
+  border-color: #16a34a;
+}
+
+.stats-card.red {
+  background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+  border-color: #dc2626;
+}
+
+.stats-card.gray {
+  background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+  border-color: #6b7280;
+}
+
+.stats-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+  text-transform: capitalize;
+}
+
+.stats-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.filter-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.form-control, .form-select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  outline: none;
+}
+
+.btn-primary {
+  background: var(--green-gradient);
   border: none;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.08);
-  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+  border-color: #9ca3af;
+  color: #374151;
+  background: #f9fafb;
 }
 
 .orders-table-card {
   background: white;
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(139, 93, 255, 0.08);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   overflow: hidden;
 }
 
+.table {
+  margin: 0;
+}
+
 .table th {
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  color: var(--purple-dark);
+  background: #f8fafc;
+  color: #374151;
   font-weight: 600;
+  font-size: 0.875rem;
   border: none;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .table td {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem;
   border: none;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .table tbody tr {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .table tbody tr:hover {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-  transform: scale(1.01);
+  background: #f8fafc;
 }
 
 .order-number {
-  color: var(--primary-purple);
+  color: var(--primary-green);
   font-weight: 600;
-  font-size: 1rem;
-}
-
-.status-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 25px;
-  font-weight: 500;
   font-size: 0.875rem;
 }
 
-.status-badge.pending { background: linear-gradient(135deg, #FFE082 0%, #FFCC02 100%); color: #E65100; }
-.status-badge.confirmed { background: linear-gradient(135deg, #81D4FA 0%, #03A9F4 100%); color: #01579B; }
-.status-badge.processing { background: linear-gradient(135deg, #81D4FA 0%, #03A9F4 100%); color: #01579B; }
-.status-badge.shipped { background: linear-gradient(135deg, #A5D6A7 0%, #4CAF50 100%); color: #1B5E20; }
-.status-badge.completed { background: linear-gradient(135deg, #C8E6C9 0%, #66BB6A 100%); color: #2E7D32; }
-.status-badge.cancelled { background: linear-gradient(135deg, #FFCDD2 0%, #F44336 100%); color: #B71C1C; }
+.order-subtext {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.status-badge.confirmed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.processing {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.shipped {
+  background: #ede9fe;
+  color: #6b21a8;
+}
+
+.status-badge.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
 .actions-column {
   text-align: center;
@@ -127,370 +297,249 @@
   min-width: 120px;
 }
 
-.action-icons {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  align-items: center;
-}
-
-.action-icon {
+.action-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
   text-decoration: none;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 2px;
+}
+
+.action-button.view {
+  background: var(--green-gradient);
   color: white;
 }
 
-.action-icon:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+.action-button.view:hover {
+  background: var(--green-dark);
+  color: white;
+  transform: translateY(-1px);
 }
 
-.action-icon.view {
-  background: var(--purple-gradient);
-}
-.action-icon.view:hover {
+.action-button.invoice {
+  background: #f97316;
   color: white;
 }
 
-.action-icon.invoice {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-}
-.action-icon.invoice:hover {
+.action-button.invoice:hover {
+  background: #ea580c;
   color: white;
-}
-
-.btn-primary {
-  background: var(--purple-gradient);
-  border: none;
-  border-radius: 10px;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139, 93, 255, 0.3);
-}
-
-.btn-outline-secondary {
-  border: 2px solid #e0e0e0;
-  color: #666;
-  border-radius: 10px;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.3s ease;
-}
-
-.btn-outline-secondary:hover {
-  background: #f5f5f5;
-  border-color: var(--primary-purple);
-  color: var(--primary-purple);
-}
-
-.form-control, .form-select {
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  transition: all 0.3s ease;
-}
-
-.form-control:focus, .form-select:focus {
-  border-color: var(--primary-purple);
-  box-shadow: 0 0 0 0.2rem rgba(139, 93, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .empty-state {
-  padding: 3rem 0;
+  padding: 4rem 0;
   text-align: center;
-  color: #888;
+  color: #6b7280;
 }
 
 .empty-state i {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  color: var(--primary-purple);
-  opacity: 0.5;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #d1d5db;
 }
 </style>
 
 <div class="orders-page">
   <!-- Page Header -->
-  <div class="page-header text-center">
+  <div class="page-header">
     <div class="container">
-      <h2 class="page-title">
-        <i class="fas fa-shopping-bag me-3"></i>
+      <h1 class="page-title">
+        <div class="bag-icon">
+          <i class="fas fa-shopping-bag"></i>
+        </div>
         My Orders
-      </h2>
-      <p class="mb-0 opacity-75">Track and manage all your orders in one place</p>
+      </h1>
+      <p class="page-subtitle">Track and manage all your purchases</p>
     </div>
   </div>
 
   <!-- Order Statistics Cards -->
   <div class="container">
-    <div class="row mb-4">
-      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="stats-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-grow-1">
-                <h6 class="text-muted mb-1 fw-normal">Pending</h6>
-                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.ordered_and_delivery_pending.count %></h4>
-              </div>
-              <div class="stats-icon pending">
-                <i class="fas fa-clock"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="stats-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-grow-1">
-                <h6 class="text-muted mb-1 fw-normal">Processing</h6>
-                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: [:confirmed, :processing, :packed]).count %></h4>
-              </div>
-              <div class="stats-icon processing">
-                <i class="fas fa-cogs"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="stats-row">
+      <div class="stats-card yellow">
+        <div class="stats-label">Pending</div>
+        <div class="stats-number"><%= @bookings_for_stats.ordered_and_delivery_pending.count %></div>
       </div>
 
-      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="stats-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-grow-1">
-                <h6 class="text-muted mb-1 fw-normal">Shipped</h6>
-                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: [:shipped, :out_for_delivery]).count %></h4>
-              </div>
-              <div class="stats-icon shipped">
-                <i class="fas fa-truck"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="stats-card blue">
+        <div class="stats-label">Processing</div>
+        <div class="stats-number"><%= @bookings_for_stats.where(status: [:confirmed, :processing, :packed]).count %></div>
       </div>
 
-      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="stats-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-grow-1">
-                <h6 class="text-muted mb-1 fw-normal">Completed</h6>
-                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: :completed).count %></h4>
-              </div>
-              <div class="stats-icon completed">
-                <i class="fas fa-check-circle"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="stats-card purple">
+        <div class="stats-label">Shipped</div>
+        <div class="stats-number"><%= @bookings_for_stats.where(status: [:shipped, :out_for_delivery]).count %></div>
       </div>
 
-      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="stats-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-grow-1">
-                <h6 class="text-muted mb-1 fw-normal">Issues</h6>
-                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.where(status: [:cancelled, :returned]).count %></h4>
-              </div>
-              <div class="stats-icon issues">
-                <i class="fas fa-exclamation-triangle"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="stats-card green">
+        <div class="stats-label">Completed</div>
+        <div class="stats-number"><%= @bookings_for_stats.where(status: :completed).count %></div>
       </div>
 
-      <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="stats-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-grow-1">
-                <h6 class="text-muted mb-1 fw-normal">Total</h6>
-                <h4 class="mb-0 fw-bold"><%= @bookings_for_stats.count %></h4>
-              </div>
-              <div class="stats-icon total">
-                <i class="fas fa-list"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="stats-card red">
+        <div class="stats-label">Issues</div>
+        <div class="stats-number"><%= @bookings_for_stats.where(status: [:cancelled, :returned]).count %></div>
+      </div>
+
+      <div class="stats-card gray">
+        <div class="stats-label">Total</div>
+        <div class="stats-number"><%= @bookings_for_stats.count %></div>
       </div>
     </div>
-  </div>
 
-  <!-- Filters and Search -->
-  <div class="container">
-    <div class="filter-card mb-4">
-      <div class="card-body">
-        <%= form_with url: customer_orders_path, method: :get, local: true, class: "row g-3" do |f| %>
-          <div class="col-md-3">
-            <%= f.text_field :search,
-                placeholder: "Search orders...",
-                value: params[:search],
-                class: "form-control" %>
-          </div>
-          <div class="col-md-2">
-            <%= f.select :status,
-                options_for_select([
-                  ['All Statuses', ''],
-                  ['Pending', 'ordered_and_delivery_pending'],
-                  ['Confirmed', 'confirmed'],
-                  ['Processing', 'processing'],
-                  ['Packed', 'packed'],
-                  ['Shipped', 'shipped'],
-                  ['Out for Delivery', 'out_for_delivery'],
-                  ['Delivered', 'delivered'],
-                  ['Completed', 'completed'],
-                  ['Cancelled', 'cancelled'],
-                  ['Returned', 'returned']
-                ], params[:status]),
-                { include_blank: false },
-                { class: "form-select" } %>
-          </div>
-          <div class="col-md-2">
-            <%= f.date_field :date_from,
-                placeholder: "From Date",
-                value: params[:date_from],
-                class: "form-control" %>
-          </div>
-          <div class="col-md-2">
-            <%= f.date_field :date_to,
-                placeholder: "To Date",
-                value: params[:date_to],
-                class: "form-control" %>
-          </div>
-          <div class="col-md-3">
-            <%= f.submit "Filter Orders", class: "btn btn-primary me-2" %>
-            <%= link_to "Clear", customer_orders_path, class: "btn btn-outline-secondary" %>
-          </div>
-        <% end %>
-      </div>
+    <!-- Filters and Search -->
+    <div class="filter-section">
+      <%= form_with url: customer_orders_path, method: :get, local: true, class: "filter-row" do |f| %>
+        <div class="filter-item">
+          <label class="filter-label">Search orders...</label>
+          <%= f.text_field :search,
+              placeholder: "Search orders...",
+              value: params[:search],
+              class: "form-control" %>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label">All Statuses</label>
+          <%= f.select :status,
+              options_for_select([
+                ['All Statuses', ''],
+                ['Pending', 'ordered_and_delivery_pending'],
+                ['Confirmed', 'confirmed'],
+                ['Processing', 'processing'],
+                ['Packed', 'packed'],
+                ['Shipped', 'shipped'],
+                ['Out for Delivery', 'out_for_delivery'],
+                ['Delivered', 'delivered'],
+                ['Completed', 'completed'],
+                ['Cancelled', 'cancelled'],
+                ['Returned', 'returned']
+              ], params[:status]),
+              { include_blank: false },
+              { class: "form-select" } %>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label">From date</label>
+          <%= f.date_field :date_from,
+              placeholder: "From Date",
+              value: params[:date_from],
+              class: "form-control" %>
+        </div>
+        <div class="filter-item" style="min-width: auto;">
+          <%= f.submit "FILTER ORDERS", class: "btn btn-primary" %>
+        </div>
+        <div class="filter-item" style="min-width: auto;">
+          <%= link_to "Clear", customer_orders_path, class: "btn btn-outline-secondary" %>
+        </div>
+      <% end %>
     </div>
-  </div>
 
-  <!-- Orders Table -->
-  <div class="container">
+    <!-- Orders Table -->
     <div class="orders-table-card">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th>Order #</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Items</th>
-                <th>Total</th>
-                <th>Franchise</th>
-                <th class="actions-column">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% if @bookings.any? %>
-                <% @bookings.each do |booking| %>
-                  <tr>
-                    <td>
-                      <div class="order-number">#<%= booking.booking_number %></div>
-                      <small class="text-muted">
-                        <% if booking.invoice_number.present? %>
-                          Invoice: <%= booking.invoice_number %>
-                        <% else %>
-                          No invoice generated
-                        <% end %>
-                      </small>
-                    </td>
-                    <td>
-                      <div class="fw-semibold"><%= booking.booking_date.strftime("%d %b %Y") %></div>
-                      <small class="text-muted"><%= booking.booking_date.strftime("%I:%M %p") %></small>
-                    </td>
-                    <td>
-                      <span class="status-badge <%= booking.status.downcase.gsub('_', '-') %>">
-                        <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
-                        <%= booking.status.humanize %>
-                      </span>
-                    </td>
-                    <td>
-                      <div class="fw-semibold"><%= booking.booking_items.count %> items</div>
-                      <small class="text-muted">
-                        <%= booking.booking_items.sum(:quantity) %> units
-                      </small>
-                    </td>
-                    <td>
-                      <div class="fw-bold" style="color: var(--primary-purple);">₹<%= booking.total_amount.to_f %></div>
-                      <small class="text-muted">
-                        <span class="badge <%= booking.payment_status == 'paid' ? 'bg-success' : 'bg-warning' %>">
-                          <%= booking.payment_status&.humanize || 'Unpaid' %>
-                        </span>
-                      </small>
-                    </td>
-                    <td>
-                      <% if booking.franchise %>
-                        <div class="fw-semibold"><%= booking.franchise.name %></div>
-                        <small class="text-muted"><%= booking.franchise.city %></small>
-                      <% else %>
-                        <span class="text-muted"><i class="fas fa-store me-1"></i> Direct Order</span>
-                      <% end %>
-                    </td>
-                    <td class="actions-column">
-                      <div class="action-icons">
-                        <%= link_to customer_order_path(booking),
-                            class: "action-icon view",
-                            title: "View Details" do %>
-                          <i class="fas fa-eye"></i>
-                        <% end %>
-
-                        <% if booking.invoice_generated? %>
-                          <%= link_to invoice_customer_order_path(booking),
-                              class: "action-icon invoice",
-                              title: "Download Invoice",
-                              target: "_blank" do %>
-                            <i class="fas fa-file-pdf"></i>
-                          <% end %>
-                        <% end %>
-                      </div>
-                    </td>
-                  </tr>
-                <% end %>
-              <% else %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ORDER #</th>
+              <th>DATE</th>
+              <th>STATUS</th>
+              <th>ITEMS</th>
+              <th>TOTAL</th>
+              <th class="actions-column">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @bookings.any? %>
+              <% @bookings.each do |booking| %>
                 <tr>
-                  <td colspan="7" class="text-center">
-                    <div class="empty-state">
-                      <i class="fas fa-shopping-bag"></i>
-                      <h4 class="mt-3 mb-2">No Orders Found</h4>
-                      <p class="text-muted mb-4">You haven't placed any orders yet. Start shopping to see your orders here!</p>
-                      <%= link_to customer_shop_path, class: "btn btn-primary" do %>
-                        <i class="fas fa-shopping-cart me-2"></i>
-                        Start Shopping
+                  <td>
+                    <div class="order-number">#<%= booking.booking_number %></div>
+                    <div class="order-subtext">
+                      <% if booking.invoice_number.present? %>
+                        No invoice generated
+                      <% else %>
+                        No invoice generated
+                      <% end %>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #374151;"><%= booking.booking_date.strftime("%d %b %Y") %></div>
+                    <div class="order-subtext"><%= booking.booking_date.strftime("%I:%M %p") %></div>
+                  </td>
+                  <td>
+                    <span class="status-badge <%= booking.status.downcase.gsub('_', '-') %>">
+                      <span style="display: inline-block; width: 6px; height: 6px; background: currentColor; border-radius: 50%; margin-right: 6px;"></span>
+                      <%= booking.status.humanize %>
+                    </span>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #374151;"><%= booking.booking_items.count %> item</div>
+                    <div class="order-subtext"><%= booking.booking_items.sum(:quantity) %> units</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #374151;">₹<%= booking.total_amount.to_f %></div>
+                    <div class="order-subtext">
+                      <span style="
+                        display: inline-block;
+                        background: <%= booking.payment_status == 'paid' ? '#dcfce7' : '#fef3c7' %>;
+                        color: <%= booking.payment_status == 'paid' ? '#166534' : '#92400e' %>;
+                        padding: 2px 6px;
+                        border-radius: 12px;
+                        font-size: 0.625rem;
+                        font-weight: 500;
+                      ">
+                        <%= booking.payment_status&.humanize || 'Unpaid' %>
+                      </span>
+                    </div>
+                  </td>
+                  <td class="actions-column">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                      <%= link_to customer_order_path(booking),
+                          class: "action-button view",
+                          title: "View Details" do %>
+                        <i class="fas fa-eye" style="font-size: 0.875rem;"></i>
+                      <% end %>
+
+                      <% if booking.invoice_generated? %>
+                        <%= link_to invoice_customer_order_path(booking),
+                            class: "action-button invoice",
+                            title: "Download Invoice",
+                            target: "_blank" do %>
+                          <i class="fas fa-file-pdf" style="font-size: 0.875rem;"></i>
+                        <% end %>
                       <% end %>
                     </div>
                   </td>
                 </tr>
               <% end %>
-            </tbody>
-          </table>
-        </div>
+            <% else %>
+              <tr>
+                <td colspan="6" class="text-center">
+                  <div class="empty-state">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #374151;">No Orders Found</h4>
+                    <p style="margin-bottom: 1.5rem;">You haven't placed any orders yet. Start shopping to see your orders here!</p>
+                    <%= link_to customer_shop_path, class: "btn btn-primary" do %>
+                      <i class="fas fa-shopping-cart" style="margin-right: 0.5rem;"></i>
+                      Start Shopping
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
 
       <!-- Pagination -->
       <% if @bookings.respond_to?(:total_pages) && @bookings.total_pages > 1 %>
-        <div class="card-footer border-0" style="background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);">
-          <div class="d-flex justify-content-between align-items-center">
-            <small class="text-muted fw-medium">
+        <div style="padding: 1rem; border-top: 1px solid #f1f5f9; background: #f8fafc;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <small style="color: #6b7280; font-weight: 500;">
               Showing <%= @bookings.offset_value + 1 %> -
               <%= [@bookings.offset_value + @bookings.length, @bookings.total_count].min %>
               of <%= @bookings.total_count %> orders

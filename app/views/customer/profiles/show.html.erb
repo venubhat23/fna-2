@@ -379,28 +379,50 @@
                 <%= @customer.address.present? ? @customer.address : 'Not provided' %>
               </div>
             </div>
-            <div class="info-item">
-              <div class="info-label">City</div>
-              <div class="info-value <%= 'empty' unless @customer.city.present? %>">
-                <%= @customer.city.present? ? @customer.city : 'Not provided' %>
+            <% if @customer.customer_addresses.any? %>
+              <% default_address = @customer.customer_addresses.find(&:is_default?) || @customer.customer_addresses.first %>
+              <div class="info-item">
+                <div class="info-label">City</div>
+                <div class="info-value <%= 'empty' unless default_address.city.present? %>">
+                  <%= default_address.city.present? ? default_address.city : 'Not provided' %>
+                </div>
               </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">State</div>
-              <div class="info-value <%= 'empty' unless @customer.state.present? %>">
-                <%= @customer.state.present? ? @customer.state : 'Not provided' %>
+              <div class="info-item">
+                <div class="info-label">State</div>
+                <div class="info-value <%= 'empty' unless default_address.state.present? %>">
+                  <%= default_address.state.present? ? default_address.state : 'Not provided' %>
+                </div>
               </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">PIN Code</div>
-              <div class="info-value <%= 'empty' unless @customer.pincode.present? %>">
-                <%= @customer.pincode.present? ? @customer.pincode : 'Not provided' %>
+              <div class="info-item">
+                <div class="info-label">PIN Code</div>
+                <div class="info-value <%= 'empty' unless default_address.pincode.present? %>">
+                  <%= default_address.pincode.present? ? default_address.pincode : 'Not provided' %>
+                </div>
               </div>
-            </div>
+            <% else %>
+              <div class="info-item">
+                <div class="info-label">City</div>
+                <div class="info-value empty">
+                  Not provided
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">State</div>
+                <div class="info-value empty">
+                  Not provided
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">PIN Code</div>
+                <div class="info-value empty">
+                  Not provided
+                </div>
+              </div>
+            <% end %>
             <div class="info-item">
               <div class="info-label">Country</div>
-              <div class="info-value <%= 'empty' unless @customer.country.present? %>">
-                <%= @customer.country.present? ? @customer.country : 'India' %>
+              <div class="info-value">
+                India
               </div>
             </div>
           </div>
@@ -420,9 +442,9 @@
               </div>
             </div>
             <div class="info-item">
-              <div class="info-label">Business/Job</div>
-              <div class="info-value <%= 'empty' unless @customer.business_job.present? %>">
-                <%= @customer.business_job.present? ? @customer.business_job : 'Not provided' %>
+              <div class="info-label">Occupation</div>
+              <div class="info-value <%= 'empty' unless @customer.occupation.present? %>">
+                <%= @customer.occupation.present? ? @customer.occupation : 'Not provided' %>
               </div>
             </div>
             <div class="info-item">
@@ -435,12 +457,6 @@
               <div class="info-label">PAN Number</div>
               <div class="info-value <%= 'empty' unless @customer.pan_no.present? %>">
                 <%= @customer.pan_no.present? ? @customer.pan_no : 'Not provided' %>
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Aadhar Number</div>
-              <div class="info-value <%= 'empty' unless @customer.aadhar_no.present? %>">
-                <%= @customer.aadhar_no.present? ? @customer.aadhar_no.gsub(/\d(?=\d{4})/, 'X') : 'Not provided' %>
               </div>
             </div>
             <div class="info-item">
@@ -457,8 +473,8 @@
             </div>
             <div class="info-item">
               <div class="info-label">Emergency Mobile</div>
-              <div class="info-value <%= 'empty' unless @customer.emergency_contact_mobile.present? %>">
-                <%= @customer.emergency_contact_mobile.present? ? @customer.emergency_contact_mobile : 'Not provided' %>
+              <div class="info-value <%= 'empty' unless @customer.emergency_contact_number.present? %>">
+                <%= @customer.emergency_contact_number.present? ? @customer.emergency_contact_number : 'Not provided' %>
               </div>
             </div>
           </div>

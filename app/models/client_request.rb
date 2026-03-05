@@ -2,18 +2,16 @@ class ClientRequest < ApplicationRecord
   include PgSearch::Model
 
   # Associations
+  belongs_to :customer, optional: true
   belongs_to :resolved_by, class_name: 'User', optional: true
   belongs_to :assignee, class_name: 'User', optional: true
 
   # Validations
-  validates :name, presence: true
-  validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :phone_number, presence: true
+  validates :title, presence: true
   validates :description, presence: true
   validates :status, presence: true, inclusion: { in: %w[pending in_progress resolved closed] }
   validates :priority, presence: true, inclusion: { in: %w[low medium high urgent] }
   validates :stage, presence: true, inclusion: { in: %w[new assigned investigating awaiting_customer in_development testing resolved closed escalated on_hold] }
-  validates :submitted_at, presence: true
 
   # Enums
   STATUSES = %w[pending in_progress resolved closed].freeze

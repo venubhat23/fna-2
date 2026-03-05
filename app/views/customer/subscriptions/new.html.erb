@@ -1,0 +1,712 @@
+<% content_for :title, "Create New Subscription - Atma Nirbhar Farm" %>
+
+<style>
+:root {
+  --primary-green: #22c55e;
+  --green-light: #4ade80;
+  --green-dark: #16a34a;
+  --green-gradient: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+  --blue: #3b82f6;
+  --yellow: #fbbf24;
+  --orange: #f97316;
+}
+
+.subscription-page {
+  background: #f8fafc;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.page-header {
+  background: white;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.subscription-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--green-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.form-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  background: var(--green-gradient);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.step-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  outline: none;
+}
+
+.product-selection-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: #f8fafc;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.product-selection-card:hover {
+  border-color: var(--primary-green);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+.product-selection-card.selected {
+  border-color: var(--primary-green);
+  background: #dcfce7;
+}
+
+.product-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.product-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #f1f5f9;
+}
+
+.product-image.placeholder {
+  background: var(--green-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.product-info h5 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.product-price {
+  color: var(--primary-green);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.product-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.delivery-pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pattern-option {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.pattern-option:hover {
+  border-color: var(--primary-green);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+.pattern-option.active {
+  border-color: var(--primary-green);
+  background: #dcfce7;
+}
+
+.pattern-icon {
+  width: 48px;
+  height: 48px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+  font-size: 1.5rem;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.pattern-option.active .pattern-icon {
+  background: var(--green-gradient);
+  color: white;
+}
+
+.pattern-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.pattern-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.btn-primary {
+  background: var(--green-gradient);
+  border: none;
+  border-radius: 8px;
+  padding: 0.875rem 2rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+  color: white;
+}
+
+.btn-outline-secondary {
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  background: white;
+  border-radius: 8px;
+  padding: 0.875rem 2rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+  border-color: #9ca3af;
+  color: #374151;
+  background: #f9fafb;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.summary-title {
+  color: #0369a1;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quantity-input-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+}
+
+.quantity-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quantity-btn:hover {
+  background: #f3f4f6;
+  color: var(--primary-green);
+}
+
+.quantity-input {
+  width: 80px;
+  border: none;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem;
+  background: transparent;
+}
+
+.quantity-input:focus {
+  outline: none;
+}
+
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.success-message {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.back-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--primary-green);
+}
+</style>
+
+<div class="subscription-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="page-title">
+            <div class="subscription-icon">
+              <i class="fas fa-plus"></i>
+            </div>
+            Create New Subscription
+          </h1>
+          <p class="page-subtitle">Set up recurring deliveries for your favorite products</p>
+        </div>
+        <%= link_to customer_subscriptions_path, class: "back-link" do %>
+          <i class="fas fa-arrow-left me-2"></i>Back to Subscriptions
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <%= form_with model: [@subscription], url: customer_subscriptions_path, local: true do |form| %>
+
+      <!-- Error Messages -->
+      <% if @subscription.errors.any? %>
+        <div class="error-message">
+          <strong>Please fix the following errors:</strong>
+          <ul class="mb-0 mt-2">
+            <% @subscription.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Step 1: Product Selection -->
+      <div class="form-card mb-4">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Choose Your Product</h3>
+        </div>
+
+        <div class="row">
+          <% if @products && @products.any? %>
+            <% @products.each do |product| %>
+              <div class="col-md-6 col-lg-4 mb-3">
+                <div class="product-selection-card" onclick="selectProduct(<%= product.id %>, '<%= product.name %>', <%= product.selling_price %>)">
+                  <div class="product-card">
+                    <% if product.image_url.present? %>
+                      <%= image_tag product.image_url, alt: product.name, class: "product-image" %>
+                    <% else %>
+                      <div class="product-image placeholder">
+                        <i class="fas fa-bottle-water"></i>
+                      </div>
+                    <% end %>
+
+                    <div class="product-info">
+                      <h5><%= product.name %></h5>
+                      <div class="product-price">₹<%= product.selling_price %> per unit</div>
+                      <% if product.description.present? %>
+                        <p class="product-description"><%= truncate(product.description, length: 60) %></p>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="col-12">
+              <div class="text-center py-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h4>No Subscription Products Available</h4>
+                <p class="text-muted">Please contact us to enable subscription products.</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <%= form.hidden_field :product_id, id: "selected_product_id" %>
+      </div>
+
+      <!-- Step 2: Quantity & Unit -->
+      <div class="form-card mb-4">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Set Quantity & Unit</h3>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Quantity per Delivery</label>
+            <div class="quantity-controls">
+              <button type="button" class="quantity-btn" onclick="decreaseQuantity()">
+                <i class="fas fa-minus"></i>
+              </button>
+              <%= form.number_field :quantity,
+                  value: 1,
+                  step: 0.1,
+                  min: 0.1,
+                  class: "quantity-input",
+                  id: "quantity_input",
+                  required: true %>
+              <button type="button" class="quantity-btn" onclick="increaseQuantity()">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Unit</label>
+            <%= form.select :unit,
+                options_for_select([
+                  ['Liter', 'liter'],
+                  ['ML', 'ml'],
+                  ['Packet', 'packet'],
+                  ['Bottle', 'bottle']
+                ], @subscription.unit || 'liter'),
+                {},
+                { class: "form-select" } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Delivery Schedule -->
+      <div class="form-card mb-4">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Delivery Schedule</h3>
+        </div>
+
+        <!-- Delivery Pattern -->
+        <label class="form-label">Delivery Frequency</label>
+        <div class="delivery-pattern-grid">
+          <div class="pattern-option active" onclick="selectPattern('daily', this)">
+            <div class="pattern-icon">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="pattern-title">Daily</div>
+            <div class="pattern-description">Every day delivery</div>
+          </div>
+
+          <div class="pattern-option" onclick="selectPattern('alternate', this)">
+            <div class="pattern-icon">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="pattern-title">Alternate Days</div>
+            <div class="pattern-description">Every other day</div>
+          </div>
+
+          <div class="pattern-option" onclick="selectPattern('weekly', this)">
+            <div class="pattern-icon">
+              <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="pattern-title">Weekly</div>
+            <div class="pattern-description">Once per week</div>
+          </div>
+        </div>
+
+        <%= form.hidden_field :delivery_pattern, value: "daily", id: "delivery_pattern_input" %>
+
+        <!-- Date Range -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Start Date</label>
+            <%= form.date_field :start_date,
+                value: Date.tomorrow,
+                min: Date.tomorrow,
+                class: "form-control",
+                required: true %>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">End Date</label>
+            <%= form.date_field :end_date,
+                value: 1.month.from_now.to_date,
+                min: Date.tomorrow,
+                class: "form-control",
+                required: true %>
+          </div>
+        </div>
+
+        <!-- Delivery Time -->
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Preferred Delivery Time</label>
+            <%= form.select :delivery_time,
+                options_for_select([
+                  ['Morning (6 AM - 10 AM)', 'morning'],
+                  ['Evening (5 PM - 8 PM)', 'evening'],
+                  ['Anytime', 'anytime']
+                ], @subscription.delivery_time || 'morning'),
+                {},
+                { class: "form-select" } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Subscription Summary -->
+      <div class="summary-card">
+        <div class="summary-title">
+          <i class="fas fa-clipboard-list"></i>
+          Subscription Summary
+        </div>
+
+        <div id="subscription-summary">
+          <p class="text-muted">Select a product to see subscription summary</p>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="text-center mt-4">
+        <%= form.submit "Create Subscription", class: "btn btn-primary me-3" %>
+        <%= link_to "Cancel", customer_subscriptions_path, class: "btn btn-outline-secondary" %>
+      </div>
+
+    <% end %>
+  </div>
+</div>
+
+<script>
+let selectedProduct = null;
+let selectedPattern = 'daily';
+
+function selectProduct(productId, productName, productPrice) {
+  // Remove previous selection
+  document.querySelectorAll('.product-selection-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+
+  // Add selection to clicked card
+  event.currentTarget.classList.add('selected');
+
+  // Store product info
+  selectedProduct = {
+    id: productId,
+    name: productName,
+    price: productPrice
+  };
+
+  // Update hidden field
+  document.getElementById('selected_product_id').value = productId;
+
+  // Update summary
+  updateSummary();
+}
+
+function selectPattern(pattern, element) {
+  // Remove active class from all patterns
+  document.querySelectorAll('.pattern-option').forEach(option => {
+    option.classList.remove('active');
+  });
+
+  // Add active to selected
+  element.classList.add('active');
+
+  // Store pattern
+  selectedPattern = pattern;
+  document.getElementById('delivery_pattern_input').value = pattern;
+
+  // Update summary
+  updateSummary();
+}
+
+function increaseQuantity() {
+  const input = document.getElementById('quantity_input');
+  const currentValue = parseFloat(input.value) || 0;
+  input.value = (currentValue + 0.1).toFixed(1);
+  updateSummary();
+}
+
+function decreaseQuantity() {
+  const input = document.getElementById('quantity_input');
+  const currentValue = parseFloat(input.value) || 0;
+  if (currentValue > 0.1) {
+    input.value = (currentValue - 0.1).toFixed(1);
+    updateSummary();
+  }
+}
+
+function updateSummary() {
+  const summaryDiv = document.getElementById('subscription-summary');
+
+  if (!selectedProduct) {
+    summaryDiv.innerHTML = '<p class="text-muted">Select a product to see subscription summary</p>';
+    return;
+  }
+
+  const quantity = parseFloat(document.getElementById('quantity_input').value) || 1;
+  const startDate = document.getElementById('milk_subscription_start_date').value;
+  const endDate = document.getElementById('milk_subscription_end_date').value;
+
+  if (!startDate || !endDate) {
+    summaryDiv.innerHTML = '<p class="text-muted">Select dates to see full summary</p>';
+    return;
+  }
+
+  // Calculate delivery count based on pattern
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+  let deliveryCount = 0;
+  let patternText = '';
+
+  switch(selectedPattern) {
+    case 'daily':
+      deliveryCount = totalDays;
+      patternText = 'Daily';
+      break;
+    case 'alternate':
+      deliveryCount = Math.ceil(totalDays / 2);
+      patternText = 'Alternate Days';
+      break;
+    case 'weekly':
+      deliveryCount = Math.ceil(totalDays / 7);
+      patternText = 'Weekly';
+      break;
+  }
+
+  const totalQuantity = deliveryCount * quantity;
+  const totalAmount = totalQuantity * selectedProduct.price;
+
+  summaryDiv.innerHTML = `
+    <div class="row">
+      <div class="col-md-6">
+        <p><strong>Product:</strong> ${selectedProduct.name}</p>
+        <p><strong>Quantity per delivery:</strong> ${quantity} units</p>
+        <p><strong>Delivery pattern:</strong> ${patternText}</p>
+      </div>
+      <div class="col-md-6">
+        <p><strong>Total deliveries:</strong> ${deliveryCount}</p>
+        <p><strong>Total quantity:</strong> ${totalQuantity.toFixed(1)} units</p>
+        <p><strong>Estimated total:</strong> <span style="color: var(--primary-green); font-size: 1.25rem;">₹${totalAmount.toFixed(2)}</span></p>
+      </div>
+    </div>
+  `;
+}
+
+// Update summary when dates change
+document.addEventListener('change', function(e) {
+  if (e.target.matches('input[type="date"], #quantity_input')) {
+    updateSummary();
+  }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  updateSummary();
+});
+</script>

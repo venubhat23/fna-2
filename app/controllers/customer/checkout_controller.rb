@@ -84,7 +84,7 @@ class Customer::CheckoutController < Customer::BaseController
   end
 
   def calculate_cart_total
-    @cart[:items].sum { |item| item['price'].to_f * item['quantity'].to_i }
+    @cart[:items].sum { |item| item['price'].to_f * item['quantity'].to_f }
   end
 
   def find_selected_address

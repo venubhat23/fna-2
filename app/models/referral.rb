@@ -1,6 +1,7 @@
 class Referral < ApplicationRecord
   # Associations
-  belongs_to :affiliate
+  belongs_to :affiliate, optional: true
+  belongs_to :referring_customer, class_name: 'Customer', optional: true
   belongs_to :customer, optional: true # Only set when referred person registers
 
   # Validations
@@ -9,12 +10,16 @@ class Referral < ApplicationRecord
   validates :referred_email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :referral_date, presence: true
   validates :status, presence: true, inclusion: { in: %w[pending registered converted] }
+  validate :has_referrer
 
   # Scopes
   scope :pending, -> { where(status: 'pending') }
   scope :registered, -> { where(status: 'registered') }
   scope :converted, -> { where(status: 'converted') }
   scope :by_affiliate, ->(affiliate_id) { where(affiliate_id: affiliate_id) }
+  scope :by_customer, ->(customer_id) { where(referring_customer_id: customer_id) }
+  scope :customer_referrals, -> { where.not(referring_customer_id: nil) }
+  scope :affiliate_referrals, -> { where.not(affiliate_id: nil) }
   scope :recent, -> { order(created_at: :desc) }
 
   # Callbacks
@@ -65,10 +70,40 @@ class Referral < ApplicationRecord
     ((converted.to_f / total) * 100).round(2)
   end
 
+  def referrer_name
+    if referring_customer.present?
+      referring_customer.display_name
+    elsif affiliate.present?
+      affiliate.display_name
+    else
+      "Unknown Referrer"
+    end
+  end
+
+  def referrer_type
+    if referring_customer.present?
+      "Customer"
+    elsif affiliate.present?
+      "Affiliate"
+    else
+      "Unknown"
+    end
+  end
+
   private
 
   def set_defaults
     self.referral_date ||= Date.current
     self.status ||= 'pending'
+  end
+
+  def has_referrer
+    if affiliate_id.blank? && referring_customer_id.blank?
+      errors.add(:base, "Either affiliate or referring customer must be present")
+    end
+
+    if affiliate_id.present? && referring_customer_id.present?
+      errors.add(:base, "Cannot have both affiliate and customer as referrer")
+    end
   end
 end

@@ -1,0 +1,175 @@
+<div class="container-fluid px-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">
+            <i class="fas fa-ticket-alt me-2"></i>
+            Support Request #<%= @client_request.id %>
+          </h4>
+          <div>
+            <%= link_to "Back to Requests", customer_client_requests_path, class: "btn btn-outline-secondary" %>
+            <%= link_to "New Request", new_customer_client_request_path, class: "btn btn-primary" %>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <h5 class="mb-3"><%= @client_request.title %></h5>
+
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="badge <%= @client_request.status_badge_class %> fs-6">
+                  <%= @client_request.status.humanize %>
+                </span>
+                <span class="badge <%= @client_request.priority_badge_class %> fs-6">
+                  <%= @client_request.priority.humanize %> Priority
+                </span>
+                <% if @client_request.stage.present? %>
+                  <span class="badge <%= @client_request.stage_badge_class %> fs-6">
+                    <%= @client_request.stage.humanize.gsub('_', ' ') %>
+                  </span>
+                <% end %>
+                <% if @client_request.department.present? %>
+                  <span class="badge badge-light fs-6">
+                    <%= @client_request.department.humanize %>
+                  </span>
+                <% end %>
+              </div>
+
+              <div class="card bg-light">
+                <div class="card-body">
+                  <h6 class="card-title">Request Description</h6>
+                  <p class="card-text"><%= simple_format(@client_request.description) %></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0">Request Information</h6>
+                </div>
+                <div class="card-body">
+                  <div class="row mb-2">
+                    <div class="col-5"><strong>Ticket #:</strong></div>
+                    <div class="col-7"><code>#<%= @client_request.id %></code></div>
+                  </div>
+
+                  <div class="row mb-2">
+                    <div class="col-5"><strong>Created:</strong></div>
+                    <div class="col-7">
+                      <%= @client_request.created_at.strftime("%d %b %Y") %><br>
+                      <small class="text-muted"><%= @client_request.created_at.strftime("%I:%M %p") %></small>
+                    </div>
+                  </div>
+
+                  <div class="row mb-2">
+                    <div class="col-5"><strong>Status:</strong></div>
+                    <div class="col-7">
+                      <span class="badge <%= @client_request.status_badge_class %>">
+                        <%= @client_request.status.humanize %>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="row mb-2">
+                    <div class="col-5"><strong>Priority:</strong></div>
+                    <div class="col-7">
+                      <span class="badge <%= @client_request.priority_badge_class %>">
+                        <%= @client_request.priority.humanize %>
+                      </span>
+                    </div>
+                  </div>
+
+                  <% if @client_request.assignee.present? %>
+                    <div class="row mb-2">
+                      <div class="col-5"><strong>Assigned to:</strong></div>
+                      <div class="col-7">
+                        <%= @client_request.assignee.first_name %> <%= @client_request.assignee.last_name %>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <% if @client_request.stage_updated_at.present? && @client_request.stage_updated_at != @client_request.created_at %>
+                    <div class="row mb-2">
+                      <div class="col-5"><strong>Last Update:</strong></div>
+                      <div class="col-7">
+                        <%= @client_request.stage_updated_at.strftime("%d %b %Y") %><br>
+                        <small class="text-muted"><%= @client_request.stage_updated_at.strftime("%I:%M %p") %></small>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+
+              <% if @client_request.estimated_resolution_time.present? %>
+                <div class="card mt-3">
+                  <div class="card-body text-center">
+                    <h6 class="card-title">Expected Resolution</h6>
+                    <p class="mb-0">
+                      <%= @client_request.estimated_resolution_time.strftime("%d %b %Y at %I:%M %p") %>
+                    </p>
+                    <% if @client_request.is_overdue? %>
+                      <small class="text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Overdue
+                      </small>
+                    <% else %>
+                      <small class="text-muted">
+                        (in <%= @client_request.estimated_hours_remaining %> hours)
+                      </small>
+                    <% end %>
+                  </p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <% if @client_request.admin_response.present? %>
+            <div class="card border-success">
+              <div class="card-header bg-light">
+                <h6 class="mb-0 text-success">
+                  <i class="fas fa-reply me-2"></i>
+                  Admin Response
+                </h6>
+              </div>
+              <div class="card-body">
+                <%= simple_format(@client_request.admin_response) %>
+                <% if @client_request.resolved_by.present? %>
+                  <hr>
+                  <small class="text-muted">
+                    Response by: <%= @client_request.resolved_by.first_name %> <%= @client_request.resolved_by.last_name %>
+                  </small>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <% if ['pending', 'in_progress'].include?(@client_request.status) %>
+            <div class="alert alert-info mt-4">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>What happens next?</strong>
+              <% case @client_request.stage %>
+              <% when 'new' %>
+                Your request has been received and will be reviewed by our support team shortly.
+              <% when 'assigned' %>
+                Your request has been assigned to a support representative who will begin investigating your issue.
+              <% when 'investigating' %>
+                Our support team is actively investigating your request and will provide updates soon.
+              <% when 'awaiting_customer' %>
+                We're waiting for additional information from you. Please check if there are any follow-up questions.
+              <% when 'in_development' %>
+                Your request requires development work. Our technical team is working on a solution.
+              <% when 'testing' %>
+                A solution is being tested. We'll notify you once it's ready for deployment.
+              <% else %>
+                We're working on your request and will keep you updated on the progress.
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

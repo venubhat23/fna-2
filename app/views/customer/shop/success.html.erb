@@ -1,0 +1,264 @@
+<% content_for :title, "Order Placed Successfully - Dhanvantri Naturals" %>
+<% content_for :layout_class, "customer-main-content" %>
+
+<style>
+/* Success Page Styles */
+.success-header {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: bounceIn 1s ease-out;
+}
+
+.order-summary-card {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.success-details {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #28a745;
+}
+
+.item-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e9ecef;
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.status-badge {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-weight: 600;
+}
+
+.total-amount {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  margin: 1rem 0;
+}
+</style>
+
+<!-- Success Header -->
+<div class="success-header">
+  <div class="container">
+    <div class="success-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <h1 class="h2 mb-3">Order Placed Successfully!</h1>
+    <p class="mb-0 fs-5">Thank you for your order. We'll process it shortly.</p>
+  </div>
+</div>
+
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Order Details Card -->
+      <div class="order-summary-card">
+        <div class="text-center mb-4">
+          <h3 class="h4 mb-3">
+            <i class="fas fa-receipt me-2 text-success"></i>
+            Order Confirmation
+          </h3>
+        </div>
+
+        <!-- Booking Information -->
+        <div class="success-details">
+          <h5 class="mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Order Information
+          </h5>
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-2"><strong>Order Number:</strong></p>
+              <code class="bg-light p-2 rounded"><%= @booking.booking_number %></code>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-2"><strong>Order Date:</strong></p>
+              <p class="mb-0"><%= @booking.booking_date.strftime('%d %B %Y') %></p>
+            </div>
+          </div>
+          <hr class="my-3">
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-2"><strong>Status:</strong></p>
+              <span class="status-badge">
+                <i class="fas fa-check me-1"></i>
+                <%= @booking.status.humanize %>
+              </span>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-2"><strong>Payment Method:</strong></p>
+              <p class="mb-0">
+                <i class="fas fa-<%= (@booking.payment_method&.in?(['cash', 'cod']) || @booking.payment_method_cash? || @booking.payment_method_cod?) ? 'money-bill-wave' : 'credit-card' %> me-2"></i>
+                <%= @booking.payment_method_display %>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Information -->
+        <div class="success-details">
+          <h5 class="mb-3">
+            <i class="fas fa-user me-2"></i>
+            Customer Information
+          </h5>
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-2"><strong>Name:</strong></p>
+              <p class="mb-0"><%= @booking.customer_name %></p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-2"><strong>Phone:</strong></p>
+              <p class="mb-0">
+                <i class="fas fa-phone me-1"></i>
+                <%= @booking.customer_phone %>
+              </p>
+            </div>
+          </div>
+          <% if @booking.customer_email.present? %>
+            <hr class="my-3">
+            <p class="mb-2"><strong>Email:</strong></p>
+            <p class="mb-0">
+              <i class="fas fa-envelope me-1"></i>
+              <%= @booking.customer_email %>
+            </p>
+          <% end %>
+        </div>
+
+        <!-- Delivery Information -->
+        <div class="success-details">
+          <h5 class="mb-3">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            Delivery Information
+          </h5>
+          <p class="mb-0"><%= @booking.delivery_address %></p>
+          <% if @booking.notes.present? %>
+            <hr class="my-3">
+            <p class="mb-2"><strong>Special Instructions:</strong></p>
+            <p class="mb-0 text-muted"><%= @booking.notes %></p>
+          <% end %>
+        </div>
+
+        <!-- Order Items -->
+        <div class="success-details">
+          <h5 class="mb-3">
+            <i class="fas fa-list me-2"></i>
+            Order Items (<%= @booking.booking_items.count %>)
+          </h5>
+          <% @booking.booking_items.includes(:product).each do |item| %>
+            <div class="item-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1"><%= item.product&.name || 'Product' %></h6>
+                  <p class="text-muted mb-1">
+                    Quantity: <strong><%= item.quantity %></strong> × ₹<%= item.price %>
+                  </p>
+                  <% if item.product&.category %>
+                    <small class="badge bg-light text-dark">
+                      <%= item.product.category.name %>
+                    </small>
+                  <% end %>
+                </div>
+                <div class="text-end">
+                  <div class="h6 text-primary mb-0">
+                    ₹<%= (item.quantity * item.price).round(2) %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Order Total -->
+        <div class="total-amount">
+          <div class="row align-items-center">
+            <div class="col">
+              <h4 class="mb-0">
+                <i class="fas fa-calculator me-2"></i>
+                Order Total
+              </h4>
+            </div>
+            <div class="col-auto">
+              <h3 class="mb-0">₹<%= number_with_delimiter(@booking.total_amount || 0) %></h3>
+            </div>
+          </div>
+          <% if @booking.discount_amount.present? && @booking.discount_amount > 0 %>
+            <div class="mt-2">
+              <small>
+                <i class="fas fa-tag me-1"></i>
+                Discount Applied: ₹<%= @booking.discount_amount %>
+              </small>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="text-center mt-4">
+          <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <%= link_to customer_dashboard_path, class: "btn btn-primary btn-lg" do %>
+              <i class="fas fa-home me-2"></i>
+              Go to Dashboard
+            <% end %>
+            <%= link_to customer_shop_path, class: "btn btn-outline-primary btn-lg" do %>
+              <i class="fas fa-shopping-bag me-2"></i>
+              Continue Shopping
+            <% end %>
+          </div>
+        </div>
+
+        <!-- What's Next -->
+        <div class="mt-4 p-3 bg-light rounded">
+          <h6 class="mb-2">
+            <i class="fas fa-clock me-2 text-primary"></i>
+            What happens next?
+          </h6>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-1">
+              <i class="fas fa-check text-success me-2"></i>
+              We'll prepare your order for delivery
+            </li>
+            <li class="mb-1">
+              <i class="fas fa-truck text-warning me-2"></i>
+              You'll receive delivery updates via phone/SMS
+            </li>
+            <li class="mb-0">
+              <% if (@booking.payment_method&.in?(['cash', 'cod']) || @booking.payment_method_cash? || @booking.payment_method_cod?) %>
+                <i class="fas fa-money-bill-wave text-info me-2"></i>
+                Payment will be collected on delivery
+              <% else %>
+                <i class="fas fa-credit-card text-info me-2"></i>
+                Payment confirmation will be processed
+              <% end %>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,586 @@
+<% content_for :title, "Subscription Details - Atma Nirbhar Farm" %>
+
+<style>
+:root {
+  --primary-green: #22c55e;
+  --green-light: #4ade80;
+  --green-dark: #16a34a;
+  --green-gradient: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+  --blue: #3b82f6;
+  --yellow: #fbbf24;
+  --red: #ef4444;
+}
+
+.subscription-detail-page {
+  background: #f8fafc;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.page-header {
+  background: white;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.subscription-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--green-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.detail-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.card-header-custom {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.header-icon.product { background: var(--green-gradient); }
+.header-icon.schedule { background: var(--blue); }
+.header-icon.delivery { background: var(--yellow); color: #92400e; }
+.header-icon.progress { background: var(--green-dark); }
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.product-display {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.product-image-large {
+  width: 100px;
+  height: 100px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #f1f5f9;
+}
+
+.product-image-large.placeholder {
+  background: var(--green-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
+}
+
+.product-details h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.product-price {
+  color: var(--primary-green);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.product-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.info-value {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.paused {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.stat-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.progress-bar-custom {
+  background: #e5e7eb;
+  border-radius: 10px;
+  height: 10px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.progress-fill {
+  background: var(--green-gradient);
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.btn-primary {
+  background: var(--green-gradient);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+  color: white;
+}
+
+.btn-warning {
+  background: var(--yellow);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  color: #92400e;
+}
+
+.btn-warning:hover {
+  background: #f59e0b;
+  transform: translateY(-1px);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--red);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  color: white;
+}
+
+.btn-outline-secondary {
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+  border-color: #9ca3af;
+  color: #374151;
+  background: #f9fafb;
+}
+
+.back-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--primary-green);
+}
+
+.upcoming-deliveries {
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.upcoming-title {
+  color: #0369a1;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delivery-item {
+  background: white;
+  border: 1px solid #e0f2fe;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: between;
+  align-items: center;
+}
+
+.delivery-date {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.delivery-quantity {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+</style>
+
+<div class="subscription-detail-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="page-title">
+            <div class="subscription-icon">
+              <i class="fas fa-sync-alt"></i>
+            </div>
+            Subscription Details
+          </h1>
+          <p class="page-subtitle">Manage your subscription settings and track deliveries</p>
+        </div>
+        <%= link_to customer_subscriptions_path, class: "back-link" do %>
+          <i class="fas fa-arrow-left me-2"></i>Back to Subscriptions
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Product Information -->
+    <div class="detail-card">
+      <div class="card-header-custom">
+        <div class="header-icon product">
+          <i class="fas fa-box"></i>
+        </div>
+        <h2 class="card-title">Product Information</h2>
+      </div>
+
+      <div class="product-display">
+        <% if @subscription.product.image_url.present? %>
+          <%= image_tag @subscription.product.image_url, alt: @subscription.product.name, class: "product-image-large" %>
+        <% else %>
+          <div class="product-image-large placeholder">
+            <i class="fas fa-bottle-water"></i>
+          </div>
+        <% end %>
+
+        <div class="product-details">
+          <h3><%= @subscription.product.name %></h3>
+          <div class="product-price">₹<%= @subscription.product.price %> per unit</div>
+          <% if @subscription.product.description.present? %>
+            <p class="product-description"><%= @subscription.product.description %></p>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Quantity per Delivery</div>
+          <div class="info-value"><%= @subscription.quantity %> <%= @subscription.unit %></div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Total per Delivery</div>
+          <div class="info-value">₹<%= (@subscription.product.price * @subscription.quantity).to_f %></div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Status</div>
+          <div class="info-value">
+            <span class="status-badge <%= @subscription.is_active? ? 'active' : 'paused' %>">
+              <span style="display: inline-block; width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></span>
+              <%= @subscription.is_active? ? 'Active' : 'Paused' %>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule Information -->
+    <div class="detail-card">
+      <div class="card-header-custom">
+        <div class="header-icon schedule">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <h2 class="card-title">Delivery Schedule</h2>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Delivery Pattern</div>
+          <div class="info-value"><%= @subscription.delivery_pattern&.humanize || 'Daily' %></div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Start Date</div>
+          <div class="info-value"><%= @subscription.start_date.strftime("%d %b %Y") %></div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">End Date</div>
+          <div class="info-value">
+            <% if @subscription.end_date.present? %>
+              <%= @subscription.end_date.strftime("%d %b %Y") %>
+            <% else %>
+              <span class="text-muted">Ongoing</span>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-label">Preferred Time</div>
+          <div class="info-value"><%= @subscription.delivery_time&.humanize || 'Anytime' %></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Tracking -->
+    <div class="detail-card">
+      <div class="card-header-custom">
+        <div class="header-icon progress">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <h2 class="card-title">Progress Tracking</h2>
+      </div>
+
+      <% if @subscription.respond_to?(:subscription_summary) %>
+        <% summary = @subscription.subscription_summary %>
+
+        <div class="progress-stats">
+          <div class="stat-item">
+            <div class="stat-number"><%= summary[:total_deliveries] %></div>
+            <div class="stat-label">Total Deliveries</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-number"><%= summary[:completed] %></div>
+            <div class="stat-label">Completed</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-number"><%= summary[:pending] %></div>
+            <div class="stat-label">Pending</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-number"><%= summary[:completion_rate] %>%</div>
+            <div class="stat-label">Completion Rate</div>
+          </div>
+        </div>
+
+        <div class="progress-bar-custom">
+          <div class="progress-fill" style="width: <%= summary[:completion_rate] %>%"></div>
+        </div>
+
+        <div class="text-center mt-2">
+          <small class="text-muted">
+            <%= summary[:completed] %> of <%= summary[:total_deliveries] %> deliveries completed
+          </small>
+        </div>
+      <% else %>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Total Days</div>
+            <div class="info-value">
+              <% if @subscription.start_date && @subscription.end_date %>
+                <%= (@subscription.end_date - @subscription.start_date).to_i + 1 %>
+              <% else %>
+                Ongoing
+              <% end %>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-label">Upcoming Deliveries</div>
+            <div class="info-value"><%= @upcoming_deliveries || 7 %></div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Upcoming Deliveries (if available) -->
+    <% if @subscription.respond_to?(:delivery_dates_array) && @subscription.delivery_dates_array.any? %>
+      <div class="upcoming-deliveries">
+        <div class="upcoming-title">
+          <i class="fas fa-truck"></i>
+          Upcoming Deliveries
+        </div>
+
+        <% next_deliveries = @subscription.delivery_dates_array.select { |date| date >= Date.current }.first(5) %>
+        <% if next_deliveries.any? %>
+          <% next_deliveries.each do |date| %>
+            <div class="delivery-item">
+              <div>
+                <div class="delivery-date"><%= date.strftime("%d %b %Y") %></div>
+                <div class="delivery-quantity"><%= @subscription.quantity %> <%= @subscription.unit %></div>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted">No upcoming deliveries scheduled</p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <%= link_to edit_customer_subscription_path(@subscription), class: "btn btn-primary" do %>
+        <i class="fas fa-edit me-2"></i>Edit Subscription
+      <% end %>
+
+      <% if @subscription.is_active? %>
+        <%= link_to pause_customer_subscription_path(@subscription), method: :patch, class: "btn btn-warning",
+            confirm: "Are you sure you want to pause this subscription?" do %>
+          <i class="fas fa-pause me-2"></i>Pause Subscription
+        <% end %>
+      <% else %>
+        <%= link_to resume_customer_subscription_path(@subscription), method: :patch, class: "btn btn-primary" do %>
+          <i class="fas fa-play me-2"></i>Resume Subscription
+        <% end %>
+      <% end %>
+
+      <%= link_to cancel_customer_subscription_path(@subscription), method: :delete, class: "btn btn-danger",
+          confirm: "Are you sure you want to cancel this subscription? This action cannot be undone." do %>
+        <i class="fas fa-times me-2"></i>Cancel Subscription
+      <% end %>
+
+      <%= link_to customer_subscriptions_path, class: "btn btn-outline-secondary" do %>
+        <i class="fas fa-arrow-left me-2"></i>Back to All Subscriptions
+      <% end %>
+    </div>
+  </div>
+</div>

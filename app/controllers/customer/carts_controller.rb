@@ -1,4 +1,4 @@
-class Customer::CartController < Customer::BaseController
+class Customer::CartsController < Customer::BaseController
   before_action :initialize_cart
 
   def show
@@ -82,6 +82,48 @@ class Customer::CartController < Customer::BaseController
     @cart[:items].reject! { |item| item['product_id'] == product_id }
     save_cart
     redirect_to customer_cart_path, notice: 'Item removed from cart.'
+  end
+
+  def create
+    # Handle AJAX cart sync from localStorage to session
+    cart_items = params[:cart_items] || []
+
+    # Clear existing session cart
+    @cart[:items] = []
+
+    # Add items from localStorage
+    cart_items.each do |item_data|
+      product = Product.find_by(id: item_data[:product_id])
+      next unless product && product.status == 'active'
+
+      # Validate quantity
+      quantity = item_data[:quantity].to_f
+      next if quantity <= 0
+
+      # Check stock availability
+      if !product.can_fulfill_order?(quantity)
+        render json: {
+          error: "Insufficient stock for #{product.name}. Only #{product.available_quantity} available."
+        }, status: :unprocessable_entity
+        return
+      end
+
+      @cart[:items] << {
+        'product_id' => product.id,
+        'product_name' => product.name,
+        'price' => item_data[:price].to_f,
+        'quantity' => quantity,
+        'basePrice' => item_data[:basePrice].to_f,
+        'gstRate' => item_data[:gstRate].to_f,
+        'image_url' => product.main_image_url
+      }
+    end
+
+    save_cart
+    render json: { success: true, message: 'Cart synced successfully' }
+
+  rescue => e
+    render json: { error: "Failed to sync cart: #{e.message}" }, status: :internal_server_error
   end
 
   def clear
