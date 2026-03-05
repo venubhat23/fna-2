@@ -1,6 +1,6 @@
 class Customer::CheckoutController < Customer::BaseController
   before_action :initialize_cart
-  before_action :check_cart_not_empty, except: [:confirmation]
+  before_action :check_cart_not_empty, except: [:confirmation, :cart_order]
 
   def show
     @cart_items = @cart[:items] || []
@@ -109,40 +109,42 @@ class Customer::CheckoutController < Customer::BaseController
     Rails.logger.info "Params: #{params.inspect}"
 
     begin
-      # Parse cart data from frontend
-      cart_data = JSON.parse(request.body.read)
-      Rails.logger.info "Cart data: #{cart_data.inspect}"
+      # Extract cart data from params (already parsed by Rails)
+      cart_items = params[:cart_data]
+      Rails.logger.info "Cart items: #{cart_items.inspect}"
 
       # Validate required fields
-      if cart_data['cart_data'].blank?
+      if cart_items.blank?
         render json: { success: false, error: 'Cart is empty' }, status: 400
         return
       end
 
       # Create booking from frontend cart data
       ActiveRecord::Base.transaction do
-        # Create booking attributes
+        # Create booking attributes (similar to admin bookings controller)
         booking_attributes = {
           customer: current_customer,
           booking_number: generate_booking_number,
           booking_date: Time.current,
           status: 'confirmed',
-          payment_method: cart_data['payment_method'] || 'cod',
-          customer_name: cart_data['customer_name'] || current_customer.full_name,
-          customer_email: cart_data['customer_email'] || current_customer.email,
-          customer_phone: cart_data['customer_phone'] || current_customer.mobile,
-          delivery_address: cart_data['delivery_address'],
-          payment_status: cart_data['payment_status'] || 'unpaid'
+          payment_method: params[:payment_method] || 'cod',
+          customer_name: params[:customer_name] || current_customer.display_name,
+          customer_email: params[:customer_email] || current_customer.email,
+          customer_phone: params[:customer_phone] || current_customer.mobile,
+          delivery_address: params[:delivery_address]
         }
 
         @booking = Booking.new(booking_attributes)
 
+        # Calculate totals before saving (like admin controller)
+        total_amount = 0
+
         # Build booking items from cart data
-        cart_data['cart_data'].each do |item|
+        cart_items.each do |item|
           begin
-            product = Product.find(item['id'])
-            quantity = item['quantity'].to_f
-            price = item['price'].to_f
+            product = Product.find(item[:id] || item['id'])
+            quantity = (item[:quantity] || item['quantity']).to_f
+            price = (item[:price] || item['price']).to_f
 
             @booking.booking_items.build(
               product: product,
@@ -150,19 +152,32 @@ class Customer::CheckoutController < Customer::BaseController
               price: price
             )
 
+            total_amount += (price * quantity)
             Rails.logger.info "Added booking item: #{product.name} x #{quantity} @ ₹#{price}"
           rescue ActiveRecord::RecordNotFound => e
-            Rails.logger.error "Product not found: #{item['id']}"
-            raise ActiveRecord::Rollback, "Product not found: #{item['id']}"
+            Rails.logger.error "Product not found: #{item[:id] || item['id']}"
+            raise ActiveRecord::Rollback, "Product not found: #{item[:id] || item['id']}"
           end
         end
 
+        # Set totals
+        @booking.subtotal = total_amount
+        @booking.total_amount = total_amount
+
+        # Set payment status based on payment method
+        if params[:payment_method] == 'cod'
+          @booking.payment_status = :unpaid
+        else
+          @booking.payment_status = :unpaid # Can be changed later for online payments
+        end
+
         if @booking.save
-          # Calculate totals
+          # Calculate detailed totals including tax (like admin controller)
           @booking.calculate_totals
           @booking.save!
 
           Rails.logger.info "Booking created successfully: #{@booking.booking_number}"
+          Rails.logger.info "Total amount: ₹#{@booking.total_amount}"
 
           render json: {
             success: true,
@@ -179,9 +194,6 @@ class Customer::CheckoutController < Customer::BaseController
 
     rescue ActiveRecord::Rollback => e
       render json: { success: false, error: e.message || 'Failed to create order' }, status: 422
-    rescue JSON::ParserError => e
-      Rails.logger.error "JSON parse error: #{e.message}"
-      render json: { success: false, error: 'Invalid data format' }, status: 400
     rescue => e
       Rails.logger.error "Unexpected error in cart_order: #{e.message}\n#{e.backtrace.join('\n')}"
       render json: { success: false, error: 'An unexpected error occurred' }, status: 500

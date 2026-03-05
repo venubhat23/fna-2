@@ -27,15 +27,15 @@
   <!-- Statistics Cards -->
   <div class="row mb-4">
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm h-100 stats-card-primary">
-        <div class="card-body text-white">
+      <div class="card border-0 shadow-sm h-100 stats-card-primary" style="background: linear-gradient(135deg, #3a57ce 0%, #1e3a8a 100%) !important;">
+        <div class="card-body text-white" style="color: #ffffff !important;">
           <div class="d-flex justify-content-between">
             <div>
-              <h6 class="card-title mb-1 fw-semibold">Total Notes</h6>
-              <h3 class="mb-0 fw-bold"><%= @stats[:total_notes] %></h3>
+              <h6 class="card-title mb-1 fw-semibold text-white" style="color: #ffffff !important; font-weight: 700 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">Total Notes</h6>
+              <h3 class="mb-0 fw-bold text-white" style="color: #ffffff !important; font-weight: 800 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);"><%= @stats[:total_notes] %></h3>
             </div>
             <div class="align-self-center">
-              <i class="bi bi-journal-text fs-1 stats-icon"></i>
+              <i class="bi bi-journal-text fs-1 stats-icon text-white" style="color: #ffffff !important; opacity: 0.3;"></i>
             </div>
           </div>
         </div>
@@ -43,15 +43,15 @@
     </div>
 
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm h-100 stats-card-info">
-        <div class="card-body text-white">
+      <div class="card border-0 shadow-sm h-100 stats-card-info" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;">
+        <div class="card-body text-white" style="color: #ffffff !important;">
           <div class="d-flex justify-content-between">
             <div>
-              <h6 class="card-title mb-1 fw-semibold">Total Amount</h6>
-              <h3 class="mb-0 fw-bold">₹<%= number_with_delimiter(@stats[:total_amount].to_i) %></h3>
+              <h6 class="card-title mb-1 fw-semibold text-white" style="color: #ffffff !important; font-weight: 700 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">Total Amount</h6>
+              <h3 class="mb-0 fw-bold text-white" style="color: #ffffff !important; font-weight: 800 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">₹<%= number_with_delimiter(@stats[:total_amount].to_i) %></h3>
             </div>
             <div class="align-self-center">
-              <i class="bi bi-currency-rupee fs-1 stats-icon"></i>
+              <i class="bi bi-currency-rupee fs-1 stats-icon text-white" style="color: #ffffff !important; opacity: 0.3;"></i>
             </div>
           </div>
         </div>
@@ -59,16 +59,16 @@
     </div>
 
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm h-100 stats-card-success">
-        <div class="card-body text-white">
+      <div class="card border-0 shadow-sm h-100 stats-card-success" style="background: linear-gradient(135deg, #059669 0%, #065f46 100%) !important;">
+        <div class="card-body text-white" style="color: #ffffff !important;">
           <div class="d-flex justify-content-between">
             <div>
-              <h6 class="card-title mb-1 fw-semibold">Completed</h6>
-              <h3 class="mb-0 fw-bold"><%= @stats[:completed_count] %></h3>
-              <small class="fw-medium">₹<%= number_with_delimiter(@stats[:completed_amount].to_i) %></small>
+              <h6 class="card-title mb-1 fw-semibold text-white" style="color: #ffffff !important; font-weight: 700 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">Completed</h6>
+              <h3 class="mb-0 fw-bold text-white" style="color: #ffffff !important; font-weight: 800 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);"><%= @stats[:completed_count] %></h3>
+              <small class="fw-medium text-white" style="color: #ffffff !important; font-weight: 600 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">₹<%= number_with_delimiter(@stats[:completed_amount].to_i) %></small>
             </div>
             <div class="align-self-center">
-              <i class="bi bi-check-circle fs-1 stats-icon"></i>
+              <i class="bi bi-check-circle fs-1 stats-icon text-white" style="color: #ffffff !important; opacity: 0.3;"></i>
             </div>
           </div>
         </div>
@@ -76,16 +76,16 @@
     </div>
 
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm h-100 stats-card-warning">
-        <div class="card-body text-white">
+      <div class="card border-0 shadow-sm h-100 stats-card-warning" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;">
+        <div class="card-body text-white" style="color: #ffffff !important;">
           <div class="d-flex justify-content-between">
             <div>
-              <h6 class="card-title mb-1 fw-semibold">Pending</h6>
-              <h3 class="mb-0 fw-bold"><%= @stats[:pending_count] %></h3>
-              <small class="fw-medium">₹<%= number_with_delimiter(@stats[:pending_amount].to_i) %></small>
+              <h6 class="card-title mb-1 fw-semibold text-white" style="color: #ffffff !important; font-weight: 700 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">Pending</h6>
+              <h3 class="mb-0 fw-bold text-white" style="color: #ffffff !important; font-weight: 800 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4);"><%= @stats[:pending_count] %></h3>
+              <small class="fw-medium text-white" style="color: #ffffff !important; font-weight: 600 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">₹<%= number_with_delimiter(@stats[:pending_amount].to_i) %></small>
             </div>
             <div class="align-self-center">
-              <i class="bi bi-clock fs-1 stats-icon"></i>
+              <i class="bi bi-clock fs-1 stats-icon text-white" style="color: #ffffff !important; opacity: 0.3;"></i>
             </div>
           </div>
         </div>
@@ -465,19 +465,23 @@
 
 /* Enhanced Stats Cards with Better Contrast */
 .stats-card-primary {
-  background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+  background: linear-gradient(135deg, #3a57ce 0%, #1e3a8a 100%) !important;
+  border: none !important;
 }
 
 .stats-card-info {
-  background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  border: none !important;
 }
 
 .stats-card-success {
-  background: linear-gradient(135deg, #1cc88a 0%, #169b6b 100%);
+  background: linear-gradient(135deg, #059669 0%, #065f46 100%) !important;
+  border: none !important;
 }
 
 .stats-card-warning {
-  background: linear-gradient(135deg, #f6c23e 0%, #e0a800 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+  border: none !important;
 }
 
 .stats-card-primary, .stats-card-info, .stats-card-success, .stats-card-warning {
@@ -524,20 +528,31 @@
   z-index: 2;
 }
 
-.stats-card-primary h3, .stats-card-primary h6,
-.stats-card-info h3, .stats-card-info h6,
-.stats-card-success h3, .stats-card-success h6,
-.stats-card-warning h3, .stats-card-warning h6 {
-  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+/* Force all text in stats cards to be white with better contrast */
+.stats-card-primary h3, .stats-card-primary h6, .stats-card-primary .card-title,
+.stats-card-info h3, .stats-card-info h6, .stats-card-info .card-title,
+.stats-card-success h3, .stats-card-success h6, .stats-card-success .card-title,
+.stats-card-warning h3, .stats-card-warning h6, .stats-card-warning .card-title {
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
   color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 .stats-card-primary small,
 .stats-card-info small,
 .stats-card-success small,
 .stats-card-warning small {
-  color: rgba(255,255,255,0.9) !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  color: rgba(255,255,255,0.95) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure all text elements in stats cards are white */
+.stats-card-primary .card-body *,
+.stats-card-info .card-body *,
+.stats-card-success .card-body *,
+.stats-card-warning .card-body * {
+  color: #ffffff !important;
 }
 
 /* Icon and gradient styling */
