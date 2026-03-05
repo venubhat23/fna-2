@@ -396,6 +396,20 @@ Rails.application.routes.draw do
       end
     end
 
+    # Referrals management
+    resources :referrals do
+      member do
+        patch :mark_registered
+        patch :mark_converted
+        patch :update_status
+      end
+      collection do
+        get :analytics
+        get :customer_referrals
+        get :affiliate_referrals
+      end
+    end
+
     # Vendor management
     resources :vendors do
       member do
@@ -996,6 +1010,13 @@ Rails.application.routes.draw do
 
     # Support
     get 'support', to: 'support#index'
+
+    # Referrals management
+    resources :referrals, only: [:index, :show, :new, :create, :destroy] do
+      collection do
+        get :success
+      end
+    end
 
     # Client requests/support tickets
     resources :client_requests, only: [:index, :show, :new, :create]

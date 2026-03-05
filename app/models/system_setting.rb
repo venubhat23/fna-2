@@ -136,4 +136,36 @@ class SystemSetting < ApplicationRecord
     return [] if terms_and_conditions.blank?
     terms_and_conditions.split("\n").map(&:strip).reject(&:empty?)
   end
+
+  # Collect From Store Feature Methods
+
+  # Check if collect from store feature is enabled
+  def self.collect_from_store_enabled?
+    setting = find_by(key: 'system_config')
+    setting&.collect_from_store_enabled || false
+  end
+
+  # Enable or disable collect from store feature
+  def self.set_collect_from_store_enabled(enabled)
+    setting = find_or_create_by(key: 'system_config') do |s|
+      s.value = 'system configuration'
+      s.setting_type = 'configuration'
+      s.description = 'System configuration settings'
+    end
+
+    setting.update!(collect_from_store_enabled: enabled)
+    setting
+  end
+
+  # Update collect from store setting along with other settings
+  def self.update_collect_from_store_settings(params)
+    setting = find_or_create_by(key: 'system_config') do |s|
+      s.value = 'system configuration'
+      s.setting_type = 'configuration'
+      s.description = 'System configuration settings'
+    end
+
+    setting.update!(collect_from_store_enabled: params[:collect_from_store_enabled] || false)
+    setting
+  end
 end

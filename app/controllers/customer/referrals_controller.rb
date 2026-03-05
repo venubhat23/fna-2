@@ -1,4 +1,4 @@
-class Customer::ReferralsController < CustomerApplicationController
+class Customer::ReferralsController < Customer::BaseController
   before_action :set_referral, only: [:show, :destroy]
   before_action :authenticate_customer!
 
@@ -32,7 +32,7 @@ class Customer::ReferralsController < CustomerApplicationController
     @referral = current_customer.referrals.build(referral_params)
 
     if @referral.save
-      redirect_to customer_referrals_path, notice: 'Referral was successfully created! Your friend will be contacted soon.'
+      redirect_to success_customer_referrals_path, notice: 'Referral was successfully created! Your friend will be contacted soon.'
     else
       render :new, status: :unprocessable_entity
     end

@@ -425,6 +425,22 @@
           <% end %>
         </li>
 
+        <!-- Referrals -->
+        <li class="customer-nav-item">
+          <%= link_to customer_referrals_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_referrals_path) || request.path.include?('/customer/referrals')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-purple">
+                <i class="bi bi-share-fill"></i>
+              </div>
+            </div>
+            <span class="customer-nav-text">Refer Friends</span>
+            <% if current_customer && current_customer.referrals.pending.count > 0 %>
+              <span class="customer-nav-badge"><%= current_customer.referrals.pending.count %></span>
+            <% end %>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
         <!-- Support Requests -->
         <li class="customer-nav-item">
           <%= link_to customer_client_requests_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_client_requests_path) || request.path.include?('/customer/client_requests')}" do %>

@@ -170,6 +170,85 @@ class Admin::InvoicesController < Admin::ApplicationController
     end
   end
 
+  def show
+    @invoice_items = @invoice&.invoice_items&.includes(:product, :milk_delivery_task) || []
+  end
+
+  def edit
+    @invoice_items = @invoice.invoice_items.includes(:product, :milk_delivery_task)
+  end
+
+  def update
+    if @invoice.update(invoice_params)
+      redirect_to admin_invoice_path(@invoice), notice: 'Invoice was successfully updated.'
+    else
+      @invoice_items = @invoice.invoice_items.includes(:product, :milk_delivery_task)
+      render :edit, alert: 'Failed to update invoice.'
+    end
+  end
+
+  def destroy
+    @invoice.destroy
+    redirect_to admin_invoices_path, notice: 'Invoice was successfully deleted.'
+  rescue => e
+    redirect_to admin_invoices_path, alert: "Error deleting invoice: #{e.message}"
+  end
+
+  def mark_as_paid
+    @invoice.update!(
+      payment_status: :fully_paid,
+      status: :paid,
+      paid_at: Time.current
+    )
+
+    redirect_to admin_invoices_path, notice: 'Invoice marked as paid successfully.'
+  rescue => e
+    redirect_to admin_invoices_path, alert: "Error marking invoice as paid: #{e.message}"
+  end
+
+  def bulk_mark_as_paid
+    invoice_ids = params[:invoice_ids]
+
+    if invoice_ids.blank? || !invoice_ids.is_a?(Array)
+      render json: { success: false, error: 'No invoice IDs provided' }, status: :bad_request
+      return
+    end
+
+    # Find invoices that are not already paid
+    invoices_to_update = Invoice.where(id: invoice_ids)
+                               .where.not(payment_status: 'fully_paid')
+
+    if invoices_to_update.empty?
+      render json: { success: false, error: 'No unpaid invoices found to update' }, status: :bad_request
+      return
+    end
+
+    updated_count = 0
+
+    Invoice.transaction do
+      invoices_to_update.find_each do |invoice|
+        invoice.update!(
+          payment_status: :fully_paid,
+          status: :paid,
+          paid_at: Time.current
+        )
+        updated_count += 1
+      end
+    end
+
+    render json: {
+      success: true,
+      updated_count: updated_count,
+      message: "Successfully marked #{updated_count} invoice(s) as paid"
+    }
+  rescue => e
+    Rails.logger.error "Bulk mark as paid error: #{e.message}"
+    render json: {
+      success: false,
+      error: "Error marking invoices as paid: #{e.message}"
+    }, status: :internal_server_error
+  end
+
   private
 
   def build_regular_invoices_query
@@ -389,87 +468,6 @@ class Admin::InvoicesController < Admin::ApplicationController
       pending_count: regular_stats[:pending_count] + booking_stats[:pending_count]
     }
   end
-
-  def show
-    @invoice_items = @invoice&.invoice_items&.includes(:product, :milk_delivery_task) || []
-  end
-
-  def edit
-    @invoice_items = @invoice.invoice_items.includes(:product, :milk_delivery_task)
-  end
-
-  def update
-    if @invoice.update(invoice_params)
-      redirect_to admin_invoice_path(@invoice), notice: 'Invoice was successfully updated.'
-    else
-      @invoice_items = @invoice.invoice_items.includes(:product, :milk_delivery_task)
-      render :edit, alert: 'Failed to update invoice.'
-    end
-  end
-
-  def destroy
-    @invoice.destroy
-    redirect_to admin_invoices_path, notice: 'Invoice was successfully deleted.'
-  rescue => e
-    redirect_to admin_invoices_path, alert: "Error deleting invoice: #{e.message}"
-  end
-
-  def mark_as_paid
-    @invoice.update!(
-      payment_status: :fully_paid,
-      status: :paid,
-      paid_at: Time.current
-    )
-
-    redirect_to admin_invoices_path, notice: 'Invoice marked as paid successfully.'
-  rescue => e
-    redirect_to admin_invoices_path, alert: "Error marking invoice as paid: #{e.message}"
-  end
-
-  def bulk_mark_as_paid
-    invoice_ids = params[:invoice_ids]
-
-    if invoice_ids.blank? || !invoice_ids.is_a?(Array)
-      render json: { success: false, error: 'No invoice IDs provided' }, status: :bad_request
-      return
-    end
-
-    # Find invoices that are not already paid
-    invoices_to_update = Invoice.where(id: invoice_ids)
-                               .where.not(payment_status: 'fully_paid')
-
-    if invoices_to_update.empty?
-      render json: { success: false, error: 'No unpaid invoices found to update' }, status: :bad_request
-      return
-    end
-
-    updated_count = 0
-
-    Invoice.transaction do
-      invoices_to_update.find_each do |invoice|
-        invoice.update!(
-          payment_status: :fully_paid,
-          status: :paid,
-          paid_at: Time.current
-        )
-        updated_count += 1
-      end
-    end
-
-    render json: {
-      success: true,
-      updated_count: updated_count,
-      message: "Successfully marked #{updated_count} invoice(s) as paid"
-    }
-  rescue => e
-    Rails.logger.error "Bulk mark as paid error: #{e.message}"
-    render json: {
-      success: false,
-      error: "Error marking invoices as paid: #{e.message}"
-    }, status: :internal_server_error
-  end
-
-  private
 
   def set_invoice
     @invoice = Invoice.find(params[:id])

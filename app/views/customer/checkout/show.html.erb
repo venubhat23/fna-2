@@ -114,50 +114,52 @@
 
     <!-- Order Summary Sidebar -->
     <div class="col-lg-4">
-      <div class="bg-white rounded shadow-sm p-4 position-sticky" style="top: 20px;">
-        <h5 class="mb-4">Order Total</h5>
+      <div class="checkout-sidebar">
+        <div class="bg-white rounded shadow-sm p-4">
+          <h5 class="mb-4">Order Total</h5>
 
-        <div class="d-flex justify-content-between mb-2">
-          <span>Subtotal</span>
-          <span>₹<%= @cart_total %></span>
-        </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>₹<%= @cart_total %></span>
+          </div>
 
-        <div class="d-flex justify-content-between mb-2">
-          <span>Shipping</span>
-          <span>
-            <% if @cart_total >= 500 %>
-              <span class="text-success">Free</span>
-            <% else %>
-              ₹50
-            <% end %>
-          </span>
-        </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Shipping</span>
+            <span>
+              <% if @cart_total >= 500 %>
+                <span class="text-success">Free</span>
+              <% else %>
+                ₹50
+              <% end %>
+            </span>
+          </div>
 
-        <div class="d-flex justify-content-between mb-2">
-          <span>Tax</span>
-          <span>₹0</span>
-        </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Tax</span>
+            <span>₹0</span>
+          </div>
 
-        <hr>
+          <hr>
 
-        <div class="d-flex justify-content-between fw-bold fs-5 mb-4">
-          <span>Total</span>
-          <span class="text-success">₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %></span>
-        </div>
+          <div class="d-flex justify-content-between fw-bold fs-5 mb-4">
+            <span>Total</span>
+            <span class="text-success">₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %></span>
+          </div>
 
-        <% if @addresses.any? %>
-          <div class="d-grid">
-            <%= link_to payment_customer_checkout_index_path, class: "btn btn-primary btn-lg", onclick: "setSelectedAddress()" do %>
-              Continue to Payment
-              <i class="bi bi-arrow-right ms-2"></i>
+          <% if @addresses.any? %>
+            <div class="d-grid">
+              <%= link_to payment_customer_checkout_index_path, class: "btn btn-primary btn-lg", onclick: "setSelectedAddress()" do %>
+                Continue to Payment
+                <i class="bi bi-arrow-right ms-2"></i>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="text-center mt-3">
+            <%= link_to customer_cart_path, class: "btn btn-outline-secondary" do %>
+              <i class="bi bi-arrow-left me-1"></i>Back to Cart
             <% end %>
           </div>
-        <% end %>
-
-        <div class="text-center mt-3">
-          <%= link_to customer_cart_path, class: "btn btn-outline-secondary" do %>
-            <i class="bi bi-arrow-left me-1"></i>Back to Cart
-          <% end %>
         </div>
       </div>
     </div>

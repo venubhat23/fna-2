@@ -26,6 +26,11 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
 
     # Get business settings
     @business_setting = SystemSetting.business_settings
+
+    # Get collect from store settings
+    @collect_from_store_enabled = SystemSetting.collect_from_store_enabled?
+    @stores_count = Store.count
+    @max_stores_limit = Store::MAX_STORES_LIMIT
   end
 
   def update
@@ -113,6 +118,24 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
         success_messages << 'Business settings updated successfully!'
       rescue => e
         redirect_to admin_settings_system_path, alert: "Error updating business settings: #{e.message}"
+        return
+      end
+    end
+
+    # Handle collect from store settings update
+    if params[:collect_from_store_update] == "true"
+      begin
+        collect_from_store_enabled = params[:collect_from_store_enabled] == "1"
+
+        SystemSetting.set_collect_from_store_enabled(collect_from_store_enabled)
+
+        if collect_from_store_enabled
+          success_messages << 'Collect From Store feature enabled successfully! You can now manage stores.'
+        else
+          success_messages << 'Collect From Store feature disabled successfully!'
+        end
+      rescue => e
+        redirect_to admin_settings_system_path, alert: "Error updating Collect From Store settings: #{e.message}"
         return
       end
     end

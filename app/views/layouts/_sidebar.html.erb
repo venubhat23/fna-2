@@ -668,6 +668,21 @@
           </li>
         <% end %>
 
+        <!-- Referrals -->
+        <% if current_user.has_sidebar_permission?('referrals') %>
+          <li class="nav-item">
+            <%= link_to admin_referrals_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/referrals')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-purple">
+                  <i class="bi bi-share-fill"></i>
+                </div>
+              </div>
+              <span class="nav-text">Referrals</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
         <!-- Categories -->
         <% if current_user.has_sidebar_permission?('categories') %>
           <li class="nav-item">

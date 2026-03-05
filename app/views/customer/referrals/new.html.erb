@@ -1,0 +1,322 @@
+<% content_for :title, "Refer a Friend" %>
+
+<style>
+/* Referral Form Specific Styles */
+.referral-form-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.referral-form-header {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.referral-form-header::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 20px solid #10b981;
+}
+
+.referral-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+.referral-form-body {
+  padding: 2.5rem 2rem 2rem;
+}
+
+.form-group-modern {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.form-control-modern {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #f8fafc;
+}
+
+.form-control-modern:focus {
+  outline: none;
+  border-color: #10b981;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 1.1rem;
+  z-index: 2;
+}
+
+.form-label-modern {
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.form-submit-btn {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  width: 100%;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.form-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.form-submit-btn:active {
+  transform: translateY(0);
+}
+
+.referral-benefits {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #bbf7d0;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.benefit-item:last-child {
+  margin-bottom: 0;
+}
+
+.benefit-icon {
+  background: #10b981;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.back-btn {
+  color: #64748b;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.back-btn:hover {
+  color: #10b981;
+  text-decoration: none;
+}
+
+.error-alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #dc2626;
+}
+
+.error-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+</style>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+
+      <%= link_to customer_referrals_path, class: "back-btn" do %>
+        <i class="bi bi-arrow-left"></i>
+        Back to Referrals
+      <% end %>
+
+      <div class="referral-form-card">
+        <div class="referral-form-header">
+          <div class="referral-icon">
+            <i class="bi bi-share-fill"></i>
+          </div>
+          <h2 class="mb-2">Refer a Friend</h2>
+          <p class="mb-0">Share the love and earn rewards together!</p>
+        </div>
+
+        <div class="referral-form-body">
+          <!-- Benefits Section -->
+          <div class="referral-benefits">
+            <h5 class="text-success mb-3">
+              <i class="bi bi-gift-fill me-2"></i>
+              Referral Benefits
+            </h5>
+            <div class="benefit-item">
+              <div class="benefit-icon">
+                <i class="bi bi-check"></i>
+              </div>
+              <span>Your friend gets a welcome bonus</span>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon">
+                <i class="bi bi-check"></i>
+              </div>
+              <span>You earn rewards for every successful referral</span>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon">
+                <i class="bi bi-check"></i>
+              </div>
+              <span>Both of you get exclusive offers</span>
+            </div>
+          </div>
+
+          <!-- Error Messages -->
+          <% if @referral.errors.any? %>
+            <div class="error-alert">
+              <strong>Please fix the following errors:</strong>
+              <ul class="error-list">
+                <% @referral.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <!-- Referral Form -->
+          <%= form_with(model: [@referral], url: customer_referrals_path, local: true, class: "referral-form") do |form| %>
+
+            <div class="form-group-modern">
+              <%= form.label :referred_name, "Friend's Full Name", class: "form-label-modern" %>
+              <div class="position-relative">
+                <i class="bi bi-person-fill form-icon"></i>
+                <%= form.text_field :referred_name,
+                    class: "form-control-modern",
+                    placeholder: "Enter your friend's full name",
+                    required: true %>
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <%= form.label :referred_email, "Friend's Email Address", class: "form-label-modern" %>
+              <div class="position-relative">
+                <i class="bi bi-envelope-fill form-icon"></i>
+                <%= form.email_field :referred_email,
+                    class: "form-control-modern",
+                    placeholder: "friend@example.com",
+                    required: true %>
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <%= form.label :referred_mobile, "Friend's Mobile Number", class: "form-label-modern" %>
+              <div class="position-relative">
+                <i class="bi bi-telephone-fill form-icon"></i>
+                <%= form.telephone_field :referred_mobile,
+                    class: "form-control-modern",
+                    placeholder: "9876543210",
+                    pattern: "[0-9]{10}",
+                    required: true %>
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <%= form.label :notes, "Personal Message (Optional)", class: "form-label-modern" %>
+              <div class="position-relative">
+                <i class="bi bi-chat-fill form-icon" style="top: 1.2rem;"></i>
+                <%= form.text_area :notes,
+                    class: "form-control-modern",
+                    placeholder: "Add a personal message for your friend...",
+                    rows: 3,
+                    style: "padding-top: 1rem;" %>
+              </div>
+            </div>
+
+            <div class="d-grid">
+              <%= form.submit "Send Referral", class: "form-submit-btn" do %>
+                <i class="bi bi-send-fill me-2"></i>
+                Send Referral
+              <% end %>
+            </div>
+
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Additional Info -->
+      <div class="text-center mt-4">
+        <p class="text-muted small">
+          <i class="bi bi-shield-check me-1"></i>
+          Your friend's information will be kept private and secure
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Add form validation
+  const form = document.querySelector('.referral-form');
+  const mobileInput = form.querySelector('input[name="referral[referred_mobile]"]');
+
+  mobileInput.addEventListener('input', function() {
+    // Remove any non-numeric characters
+    this.value = this.value.replace(/[^0-9]/g, '');
+
+    // Limit to 10 digits
+    if (this.value.length > 10) {
+      this.value = this.value.slice(0, 10);
+    }
+  });
+
+  // Add loading state to submit button
+  form.addEventListener('submit', function() {
+    const submitBtn = form.querySelector('.form-submit-btn');
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
+    submitBtn.disabled = true;
+  });
+});
+</script>

@@ -1,0 +1,296 @@
+<% content_for :title, 'Payment - Checkout' %>
+
+<div class="container py-4">
+  <h1 class="mb-4">
+    <i class="bi bi-credit-card me-2"></i>Payment & Delivery
+  </h1>
+
+  <!-- Checkout Steps -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-center">
+        <div class="d-flex align-items-center">
+          <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-check"></i>
+          </div>
+          <div class="bg-success" style="width: 50px; height: 2px;"></div>
+          <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-check"></i>
+          </div>
+          <div class="bg-primary" style="width: 50px; height: 2px;"></div>
+          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-credit-card"></i>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-center mt-2">
+        <div class="d-flex" style="width: 300px;">
+          <small class="text-success fw-semibold" style="width: 100px;">Cart Review</small>
+          <small class="text-success fw-semibold" style="width: 100px; text-align: center;">Address</small>
+          <small class="text-primary fw-semibold" style="width: 100px; text-align: right;">Payment</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%= form_with url: customer_checkout_path, method: :post, local: true, id: "payment-form" do |form| %>
+    <div class="row">
+      <!-- Payment & Delivery Options -->
+      <div class="col-lg-8">
+        <!-- Delivery Address -->
+        <div class="bg-white rounded shadow-sm p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Delivery Address</h5>
+            <%= link_to customer_checkout_address_path, class: "btn btn-outline-primary btn-sm" do %>
+              <i class="bi bi-pencil me-1"></i>Change
+            <% end %>
+          </div>
+
+          <% if @selected_address %>
+            <div class="alert alert-success">
+              <h6 class="alert-heading"><%= @selected_address.name %></h6>
+              <p class="mb-1"><%= @selected_address.address %></p>
+              <% if @selected_address.landmark.present? %>
+                <p class="mb-1">Landmark: <%= @selected_address.landmark %></p>
+              <% end %>
+              <p class="mb-1"><%= @selected_address.city %>, <%= @selected_address.state %> - <%= @selected_address.pincode %></p>
+              <p class="mb-0">Mobile: <%= @selected_address.mobile %></p>
+            </div>
+            <%= form.hidden_field :selected_address_id, value: @selected_address.id %>
+          <% end %>
+        </div>
+
+        <!-- Store Selection (if enabled) -->
+        <% if @collect_from_store_enabled && @available_stores.any? %>
+          <div class="bg-white rounded shadow-sm p-4 mb-4">
+            <h5 class="mb-3">
+              <i class="bi bi-shop me-2"></i>Collect From Store (Optional)
+            </h5>
+            <div class="form-text mb-3">
+              Select a store location if you prefer to collect your order instead of home delivery.
+            </div>
+
+            <div class="row">
+              <div class="col-12">
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="radio" name="delivery_option" id="home_delivery" value="home_delivery" checked>
+                  <label class="form-check-label fw-semibold" for="home_delivery">
+                    <i class="bi bi-house-door me-2"></i>Home Delivery
+                  </label>
+                  <div class="form-text">Products will be delivered to your address</div>
+                </div>
+
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="radio" name="delivery_option" id="store_collection" value="store_collection">
+                  <label class="form-check-label fw-semibold" for="store_collection">
+                    <i class="bi bi-shop me-2"></i>Collect from Store
+                  </label>
+                  <div class="form-text">Pick up your order from a store location</div>
+                </div>
+              </div>
+
+              <!-- Store Selection -->
+              <div class="col-12" id="store-selection-section" style="display: none;">
+                <div class="card">
+                  <div class="card-body">
+                    <h6 class="card-title">
+                      <i class="bi bi-geo-alt me-2"></i>Select Store Location
+                    </h6>
+
+                    <div class="row">
+                      <% @available_stores.each_with_index do |store, index| %>
+                        <div class="col-md-6 mb-3">
+                          <div class="form-check">
+                            <input class="form-check-input" type="radio" name="selected_store_id"
+                                   id="store_<%= store.id %>" value="<%= store.id %>"
+                                   <%= 'checked' if @selected_store&.id == store.id %>>
+                            <label class="form-check-label w-100" for="store_<%= store.id %>">
+                              <div class="card h-100">
+                                <div class="card-body">
+                                  <h6 class="card-title"><%= store.name %></h6>
+                                  <p class="card-text small text-muted mb-2">
+                                    <i class="bi bi-geo-alt me-1"></i>
+                                    <%= store.full_address %>
+                                  </p>
+                                  <p class="card-text small mb-2">
+                                    <i class="bi bi-person me-1"></i>
+                                    <%= store.contact_info %>
+                                  </p>
+                                  <% if store.description.present? %>
+                                    <p class="card-text small">
+                                      <i class="bi bi-info-circle me-1"></i>
+                                      <%= store.description %>
+                                    </p>
+                                  <% end %>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Payment Method -->
+        <div class="bg-white rounded shadow-sm p-4 mb-4">
+          <h5 class="mb-3">
+            <i class="bi bi-credit-card me-2"></i>Payment Method
+          </h5>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" checked>
+                <label class="form-check-label w-100" for="cod">
+                  <div class="card">
+                    <div class="card-body text-center">
+                      <i class="bi bi-cash-coin fs-1 text-success mb-2"></i>
+                      <h6 class="card-title">Cash on Delivery</h6>
+                      <small class="text-muted">Pay when you receive</small>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" id="online" value="online">
+                <label class="form-check-label w-100" for="online">
+                  <div class="card">
+                    <div class="card-body text-center">
+                      <i class="bi bi-credit-card fs-1 text-primary mb-2"></i>
+                      <h6 class="card-title">Online Payment</h6>
+                      <small class="text-muted">Pay now securely</small>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <div class="checkout-sidebar">
+          <div class="bg-white rounded shadow-sm p-4">
+            <h5 class="mb-3">Order Summary</h5>
+
+            <!-- Cart Items -->
+            <div class="checkout-items-container">
+              <% @cart_items.each do |item| %>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                  <div>
+                    <h6 class="mb-1"><%= item['name'] %></h6>
+                    <small class="text-muted">Qty: <%= item['quantity'] %></small>
+                  </div>
+                  <div class="text-end">
+                    <span class="fw-semibold">₹<%= (item['price'].to_f * item['quantity'].to_f).round(2) %></span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <!-- Totals -->
+            <div class="py-2 border-bottom">
+              <div class="d-flex justify-content-between">
+                <span>Subtotal</span>
+                <span>₹<%= @cart_total.round(2) %></span>
+              </div>
+            </div>
+
+            <div class="py-2 border-bottom">
+              <div class="d-flex justify-content-between">
+                <span>Delivery Charges</span>
+                <span class="text-success">Free</span>
+              </div>
+            </div>
+
+            <div class="py-3">
+              <div class="d-flex justify-content-between">
+                <h6 class="mb-0">Total</h6>
+                <h6 class="mb-0">₹<%= @cart_total.round(2) %></h6>
+              </div>
+            </div>
+
+            <!-- Place Order Button -->
+            <div class="d-grid">
+              <%= form.submit "Place Order", class: "btn btn-primary btn-lg", id: "place-order-btn" %>
+            </div>
+
+            <div class="text-center mt-3">
+              <small class="text-muted">
+                <i class="bi bi-shield-check me-1"></i>
+                Your order is secure and protected
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const deliveryOptions = document.querySelectorAll('input[name="delivery_option"]');
+  const storeSelectionSection = document.getElementById('store-selection-section');
+  const placeOrderBtn = document.getElementById('place-order-btn');
+
+  // Handle delivery option change
+  deliveryOptions.forEach(option => {
+    option.addEventListener('change', function() {
+      if (this.value === 'store_collection') {
+        storeSelectionSection.style.display = 'block';
+        // Make store selection required
+        const storeRadios = document.querySelectorAll('input[name="selected_store_id"]');
+        storeRadios.forEach(radio => radio.setAttribute('required', 'required'));
+      } else {
+        storeSelectionSection.style.display = 'none';
+        // Remove store selection requirement
+        const storeRadios = document.querySelectorAll('input[name="selected_store_id"]');
+        storeRadios.forEach(radio => {
+          radio.removeAttribute('required');
+          radio.checked = false;
+        });
+      }
+    });
+  });
+
+  // Form validation
+  document.getElementById('payment-form').addEventListener('submit', function(e) {
+    console.log('Form submit event triggered');
+
+    const storeCollectionSelected = document.getElementById('store_collection') && document.getElementById('store_collection').checked;
+    if (storeCollectionSelected) {
+      const storeSelected = document.querySelector('input[name="selected_store_id"]:checked');
+      if (!storeSelected) {
+        e.preventDefault();
+        alert('Please select a store location for collection.');
+        return false;
+      }
+    }
+
+    console.log('Form validation passed, submitting...');
+
+    // Disable button to prevent double submission
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+
+    // Allow form to submit naturally
+    return true;
+  });
+
+  // Initialize state if store was previously selected
+  <% if @selected_store %>
+    document.getElementById('store_collection').checked = true;
+    storeSelectionSection.style.display = 'block';
+  <% end %>
+});
+</script>

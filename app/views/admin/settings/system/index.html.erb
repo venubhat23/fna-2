@@ -26,6 +26,12 @@
       <i class="bi bi-gear me-2"></i>System Configuration
     </button>
   </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="store-settings-tab" data-bs-toggle="pill" data-bs-target="#store-settings"
+            type="button" role="tab" aria-controls="store-settings" aria-selected="false">
+      <i class="bi bi-shop me-2"></i>Store Settings
+    </button>
+  </li>
 </ul>
 
 <!-- Statistics Cards -->
@@ -83,11 +89,11 @@
       <div class="card-body">
         <div class="d-flex justify-content-between">
           <div>
-            <h6 class="text-muted mb-2">Permissions</h6>
-            <h3 class="mb-0 text-warning"><%= Permission.count %></h3>
+            <h6 class="text-muted mb-2">Store Locations</h6>
+            <h3 class="mb-0 text-warning"><%= @stores_count %></h3>
           </div>
           <div class="bg-warning bg-opacity-10 rounded p-3">
-            <i class="bi bi-key text-warning fs-4"></i>
+            <i class="bi bi-shop text-warning fs-4"></i>
           </div>
         </div>
       </div>
@@ -381,6 +387,183 @@
 
   </div> <!-- End of System Configuration Tab -->
 
+  <!-- Store Settings Tab -->
+  <div class="tab-pane fade" id="store-settings" role="tabpanel" aria-labelledby="store-settings-tab">
+
+    <div class="row">
+      <div class="col-lg-8">
+        <!-- Collect From Store Feature Card -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0">
+              <i class="bi bi-shop me-2"></i>
+              Collect From Store Feature
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-check form-switch mb-3">
+                  <%= form_with url: admin_settings_system_path, method: :patch, local: true, id: "collect-from-store-form" do |form| %>
+                    <%= form.check_box :collect_from_store_enabled,
+                          { checked: @collect_from_store_enabled,
+                            class: "form-check-input",
+                            id: "collect_from_store_enabled",
+                            onchange: "handleCollectFromStoreToggle(this)" },
+                          "1", "0" %>
+                    <%= form.hidden_field :collect_from_store_update, value: "true" %>
+                    <label class="form-check-label" for="collect_from_store_enabled">
+                      <strong>Enable Collect From Store</strong>
+                    </label>
+                  <% end %>
+                  <div class="form-text">
+                    When enabled, customers can select a store for product collection during checkout.
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="alert alert-info">
+                  <h6 class="alert-heading">Feature Status</h6>
+                  <% if @collect_from_store_enabled %>
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Enabled
+                    </span>
+                    <p class="mb-0 mt-2">Customers can select stores for collection during checkout.</p>
+                  <% else %>
+                    <span class="badge bg-secondary">
+                      <i class="bi bi-x-circle me-1"></i>
+                      Disabled
+                    </span>
+                    <p class="mb-0 mt-2">Store collection option is hidden from customers.</p>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Store Management Card -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-transparent border-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="bi bi-building me-2"></i>
+                Store Management
+              </h5>
+              <% if @collect_from_store_enabled %>
+                <%= link_to admin_stores_path, class: "btn btn-primary btn-sm" do %>
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Manage Stores
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-4">
+                <div class="stat-card">
+                  <h3 class="mb-1 text-primary"><%= @stores_count %></h3>
+                  <p class="text-muted mb-0">Total Stores</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="stat-card">
+                  <h3 class="mb-1 text-warning"><%= @max_stores_limit %></h3>
+                  <p class="text-muted mb-0">Maximum Limit</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="stat-card">
+                  <h3 class="mb-1 text-success"><%= [@max_stores_limit - @stores_count, 0].max %></h3>
+                  <p class="text-muted mb-0">Available Slots</p>
+                </div>
+              </div>
+            </div>
+
+            <% if !@collect_from_store_enabled %>
+              <div class="alert alert-warning mt-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Feature Disabled:</strong>
+                Enable the "Collect From Store" feature above to manage stores.
+              </div>
+            <% elsif @stores_count >= @max_stores_limit %>
+              <div class="alert alert-danger mt-3">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                <strong>Maximum Limit Reached:</strong>
+                You can add up to <%= @max_stores_limit %> stores maximum.
+              </div>
+            <% else %>
+              <div class="alert alert-info mt-3">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Available Slots:</strong>
+                You can add <%= @max_stores_limit - @stores_count %> more store(s).
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <!-- Quick Actions Card -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0">Quick Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              <% if @collect_from_store_enabled %>
+                <%= link_to admin_stores_path, class: "btn btn-outline-primary" do %>
+                  <i class="bi bi-list me-2"></i>
+                  View All Stores
+                <% end %>
+                <% if Store.can_add_more_stores? %>
+                  <%= link_to new_admin_store_path, class: "btn btn-outline-success" do %>
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Add New Store
+                  <% end %>
+                <% else %>
+                  <button class="btn btn-outline-secondary" disabled>
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Add New Store (Limit Reached)
+                  </button>
+                <% end %>
+              <% else %>
+                <div class="alert alert-warning">
+                  <small>
+                    <i class="bi bi-info-circle me-1"></i>
+                    Enable the feature to access store management.
+                  </small>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0">
+              <i class="bi bi-question-circle me-2"></i>
+              Help & Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <h6 class="text-muted">Collect From Store Feature:</h6>
+            <ul class="small text-muted mb-0">
+              <li>Enable customers to collect products from physical stores</li>
+              <li>Maximum <%= Store::MAX_STORES_LIMIT %> stores allowed</li>
+              <li>Stores must have contact details and address</li>
+              <li>Only active stores appear in customer checkout</li>
+              <li>Store selection is saved with each booking</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- End of Store Settings Tab -->
+
 </div> <!-- End of Tab Content -->
 
 <script>
@@ -431,6 +614,14 @@ function copyUpiId() {
     }, function() {
       alert('Failed to copy UPI ID');
     });
+  }
+}
+
+// Collect From Store Toggle Function
+function handleCollectFromStoreToggle(checkbox) {
+  const form = document.getElementById('collect-from-store-form');
+  if (form) {
+    form.submit();
   }
 }
 </script>

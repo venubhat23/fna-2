@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_04_150744) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_05_013057) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -794,7 +794,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_04_150744) do
   end
 
   create_table "referrals", force: :cascade do |t|
-    t.bigint "affiliate_id", null: false
+    t.bigint "affiliate_id"
     t.string "referred_name"
     t.string "referred_mobile"
     t.string "referred_email"
@@ -802,11 +802,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_04_150744) do
     t.string "status"
     t.text "notes"
     t.datetime "converted_at"
-    t.bigint "customer_id", null: false
+    t.bigint "customer_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "referring_customer_id"
+    t.string "referral_source", default: "affiliate"
     t.index ["affiliate_id"], name: "index_referrals_on_affiliate_id"
     t.index ["customer_id"], name: "index_referrals_on_customer_id"
+    t.index ["referral_source"], name: "index_referrals_on_referral_source"
+    t.index ["referring_customer_id"], name: "index_referrals_on_referring_customer_id"
   end
 
   create_table "roles", force: :cascade do |t|
@@ -1104,6 +1108,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_04_150744) do
     t.string "upi_id"
     t.string "qr_code_path"
     t.text "terms_and_conditions"
+    t.boolean "collect_from_store_enabled"
     t.index ["key"], name: "index_system_settings_on_key", unique: true
   end
 
@@ -1330,6 +1335,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_04_150744) do
   add_foreign_key "products", "categories"
   add_foreign_key "referrals", "affiliates"
   add_foreign_key "referrals", "customers"
+  add_foreign_key "referrals", "customers", column: "referring_customer_id"
   add_foreign_key "sale_items", "bookings"
   add_foreign_key "sale_items", "products"
   add_foreign_key "sale_items", "stock_batches"

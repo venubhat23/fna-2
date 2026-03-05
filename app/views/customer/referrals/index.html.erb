@@ -1,0 +1,268 @@
+<% content_for :title, "My Referrals" %>
+
+<style>
+/* Referral Page Specific Styles */
+.referral-stats-card {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: white;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+}
+
+.referral-stat {
+  text-align: center;
+}
+
+.referral-stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.referral-stat-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.referral-table-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.referral-table-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.referral-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.referral-status-pending {
+  background: rgba(251, 191, 36, 0.1);
+  color: #d97706;
+}
+
+.referral-status-registered {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.referral-status-converted {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.referral-create-btn {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.referral-create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+  color: white;
+  text-decoration: none;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #cbd5e1;
+}
+
+.table-responsive-custom {
+  overflow-x: auto;
+}
+
+.table-responsive-custom table {
+  min-width: 600px;
+}
+</style>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1 text-gray-800">My Referrals</h1>
+          <p class="text-muted">Refer friends and family to earn rewards</p>
+        </div>
+        <%= link_to new_customer_referral_path, class: "referral-create-btn" do %>
+          <i class="bi bi-plus-circle-fill"></i>
+          Create Referral
+        <% end %>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="referral-stats-card">
+        <div class="row">
+          <div class="col-md-3 col-6">
+            <div class="referral-stat">
+              <div class="referral-stat-number"><%= @total_referrals %></div>
+              <div class="referral-stat-label">Total Referrals</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="referral-stat">
+              <div class="referral-stat-number"><%= @pending_referrals %></div>
+              <div class="referral-stat-label">Pending</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="referral-stat">
+              <div class="referral-stat-number"><%= @registered_referrals %></div>
+              <div class="referral-stat-label">Registered</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="referral-stat">
+              <div class="referral-stat-number"><%= @conversion_rate %>%</div>
+              <div class="referral-stat-label">Conversion Rate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referrals Table -->
+      <div class="referral-table-card">
+        <div class="referral-table-header">
+          <h5 class="mb-0">My Referrals List</h5>
+        </div>
+
+        <% if @referrals.any? %>
+          <div class="table-responsive-custom">
+            <table class="table table-hover mb-0">
+              <thead style="background-color: #f8fafc;">
+                <tr>
+                  <th class="border-0 py-3">Friend's Name</th>
+                  <th class="border-0 py-3">Email</th>
+                  <th class="border-0 py-3">Mobile</th>
+                  <th class="border-0 py-3">Status</th>
+                  <th class="border-0 py-3">Date</th>
+                  <th class="border-0 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @referrals.each do |referral| %>
+                  <tr>
+                    <td class="py-3">
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary me-3">
+                          <%= referral.referred_name.first.upcase %>
+                        </div>
+                        <div>
+                          <div class="fw-semibold"><%= referral.referred_name %></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-3">
+                      <span class="text-muted"><%= referral.referred_email %></span>
+                    </td>
+                    <td class="py-3">
+                      <span class="text-muted"><%= referral.referred_mobile %></span>
+                    </td>
+                    <td class="py-3">
+                      <span class="referral-status-badge referral-status-<%= referral.status %>">
+                        <%= referral.status.humanize %>
+                      </span>
+                    </td>
+                    <td class="py-3">
+                      <span class="text-muted"><%= referral.referral_date.strftime("%d %b %Y") %></span>
+                    </td>
+                    <td class="py-3">
+                      <div class="dropdown">
+                        <button class="btn btn-link text-muted" type="button" data-bs-toggle="dropdown">
+                          <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li>
+                            <%= link_to customer_referral_path(referral), class: "dropdown-item" do %>
+                              <i class="bi bi-eye me-2"></i> View Details
+                            <% end %>
+                          </li>
+                          <% if referral.status == 'pending' %>
+                            <li>
+                              <%= link_to customer_referral_path(referral), method: :delete,
+                                  confirm: "Are you sure you want to delete this referral?",
+                                  class: "dropdown-item text-danger" do %>
+                                <i class="bi bi-trash me-2"></i> Delete
+                              <% end %>
+                            </li>
+                          <% end %>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <% if @referrals.respond_to?(:total_pages) && @referrals.total_pages > 1 %>
+            <div class="p-3 border-top">
+              <%= paginate @referrals %>
+            </div>
+          <% end %>
+
+        <% else %>
+          <!-- Empty State -->
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <i class="bi bi-share"></i>
+            </div>
+            <h5>No referrals yet</h5>
+            <p>Start referring friends and family to earn rewards!</p>
+            <%= link_to new_customer_referral_path, class: "referral-create-btn mt-3" do %>
+              <i class="bi bi-plus-circle-fill"></i>
+              Create Your First Referral
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+</style>

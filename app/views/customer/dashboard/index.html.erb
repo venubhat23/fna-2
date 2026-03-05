@@ -1,1119 +1,350 @@
 <% content_for :title, 'Dashboard - Atma Nirbhar Farm' %>
 <% content_for :layout_class, 'customer-main-content' %>
 
+<!-- Chart.js for interactive charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
 <style>
-  /* Premium Organic Dashboard Styles */
+  /* Modern Customer Dashboard - Matching Admin Design Language */
   * {
-    font-family: 'Poppins', sans-serif !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   }
 
   .dashboard-container {
-    padding: 0;
-    background: transparent;
+    padding: 1.5rem;
+    background: #f8fafc;
     min-height: calc(100vh - 80px);
     position: relative;
-  }
-
-  .dashboard-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="20" cy="20" r="1.5" fill="%23ffffff" opacity="0.03"/><circle cx="80" cy="40" r="1" fill="%23ffffff" opacity="0.02"/><circle cx="40" cy="80" r="1.2" fill="%23ffffff" opacity="0.025"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
-    pointer-events: none;
-    z-index: 0;
   }
 
   .dashboard-content {
     position: relative;
     z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
   }
 
+  /* Header Section */
   .dashboard-header {
-    margin-bottom: 48px;
-    text-align: center;
-  }
-
-  .dashboard-title {
-    font-size: 42px;
-    font-weight: 800;
-    color: #1C7C54;
-    margin: 0 0 12px 0;
-    background: linear-gradient(135deg, #1C7C54 0%, #2d9668 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 4px 12px rgba(28, 124, 84, 0.15);
-  }
-
-  .dashboard-subtitle {
-    color: #6b7f72;
-    margin: 0;
-    font-size: 18px;
-    font-weight: 500;
-    opacity: 0.9;
-  }
-
-  /* Premium Hero Section with Glassmorphism */
-  .hero-banner {
-    background: linear-gradient(135deg,
-      rgba(28, 124, 84, 0.95) 0%,
-      rgba(45, 150, 104, 0.9) 50%,
-      rgba(52, 211, 153, 0.85) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 24px;
-    padding: 48px;
-    margin-bottom: 48px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-      0 20px 40px rgba(28, 124, 84, 0.12),
-      0 8px 24px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-
-  .hero-banner::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%);
-    animation: shimmer 3s ease-in-out infinite;
-  }
-
-  @keyframes shimmer {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
-  }
-
-  .hero-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-    gap: 48px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .hero-text h1 {
-    font-size: 38px;
-    font-weight: 800;
-    color: white;
-    margin: 0 0 20px 0;
-    line-height: 1.2;
-    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-
-  .hero-text h2 {
-    font-size: 22px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.95);
-    margin: 0 0 32px 0;
-    line-height: 1.5;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  .shop-now-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    color: #1C7C54;
-    padding: 16px 32px;
-    border-radius: 18px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 16px;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow:
-      0 8px 24px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  }
-
-  .shop-now-btn:hover {
-    transform: translateY(-4px) scale(1.05);
     background: white;
-    color: #1C7C54;
-    box-shadow:
-      0 16px 32px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 1);
-  }
-
-  .hero-visual {
-    position: relative;
-    text-align: center;
-  }
-
-  .discount-badge {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    color: #1C7C54;
-    padding: 20px 24px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    box-shadow:
-      0 16px 32px rgba(255, 255, 255, 0.1),
-      0 8px 24px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    z-index: 3;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
-  }
-
-  .discount-amount {
-    font-size: 22px;
-    font-weight: 800;
-    color: #1C7C54;
-    background: linear-gradient(135deg, #1C7C54 0%, #059669 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .grocery-bag img {
-    width: 100%;
-    max-width: 320px;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    transition: all 0.4s ease;
-  }
-
-  .grocery-bag img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.2);
-  }
-
-  /* Premium Action Cards Grid */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 32px;
-    margin-bottom: 56px;
-  }
-
-  .action-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 20px;
-    padding: 32px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
-    box-shadow:
-      0 8px 32px rgba(28, 124, 84, 0.06),
-      0 4px 16px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  }
-
-  .action-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(28, 124, 84, 0.02) 0%, transparent 50%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-
-  .action-card:hover::before {
-    opacity: 1;
-  }
-
-  .action-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow:
-      0 20px 60px rgba(28, 124, 84, 0.12),
-      0 16px 32px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 1);
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .stat-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    font-size: 24px;
-    position: relative;
-    transition: all 0.4s ease;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  .action-card:hover .stat-icon {
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
-  }
-
-  .stat-icon.orange {
-    background: linear-gradient(135deg, #ff8c42 0%, #f97316 100%);
-    color: white;
-    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
-  }
-
-  .stat-icon.blue {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-    color: white;
-    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
-  }
-
-  .stat-icon.purple {
-    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
-    color: white;
-    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
-  }
-
-  .stat-icon.green {
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    color: white;
-    box-shadow: 0 8px 24px rgba(28, 124, 84, 0.3);
-  }
-
-  .stat-label {
-    color: #1C7C54;
-    font-size: 20px;
-    font-weight: 700;
-    margin: 0 0 12px 0;
-    transition: color 0.3s ease;
-  }
-
-  .action-card:hover .stat-label {
-    color: #0f5d3d;
-  }
-
-  .stat-value {
-    color: #6b7f72;
-    font-size: 15px;
-    font-weight: 500;
-    margin: 0 0 20px 0;
-    line-height: 1.5;
-    opacity: 0.9;
-  }
-
-  .action-link {
-    color: #1C7C54;
-    font-size: 15px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-  }
-
-  .action-card:hover .action-link {
-    color: #0f5d3d;
-    transform: translateX(4px);
-  }
-
-  /* Dashboard Grid */
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 32px;
-    margin-bottom: 40px;
-  }
-
-  @media (max-width: 768px) {
-    .dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .hero-content {
-      grid-template-columns: 1fr;
-      text-align: center;
-    }
-  }
-
-  .section-card {
-    background: #ffffff;
     border-radius: 16px;
-    border: 1px solid #e5e7eb;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+  }
+
+  .welcome-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .welcome-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .welcome-content p {
+    color: #64748b;
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .dashboard-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  /* KPI Cards - Admin Style */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    transition: all 0.2s ease;
+    position: relative;
     overflow: hidden;
   }
 
-  .section-header {
-    padding: 24px 24px 16px 24px;
+  .kpi-card:hover {
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .kpi-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
-  .section-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-  }
-
-  .section-link {
-    color: #3b82f6;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .section-content {
-    padding: 0 24px 24px 24px;
-  }
-
-  /* Offer Card */
-  .offer-card {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 16px;
-    align-items: center;
-    background: #f9fafb;
-    border-radius: 12px;
-    padding: 20px;
-  }
-
-  .offer-badge {
-    background: #10b981;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    text-align: center;
-  }
-
-  .offer-content h4 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 4px 0;
-  }
-
-  .offer-content p {
-    color: #6b7280;
-    font-size: 14px;
-    margin: 0 0 12px 0;
-  }
-
-  .shop-now-small-btn {
-    background: #10b981;
-    color: white;
-    padding: 6px 16px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .shop-now-small-btn:hover {
-    background: #059669;
-    color: white;
-  }
-
-  .offer-image img {
-    width: 80px;
-    height: 60px;
-    border-radius: 8px;
-    object-fit: cover;
-  }
-
-  /* Product List */
-  .product-list {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .product-item {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 0;
-    border-bottom: 1px solid #f3f4f6;
-  }
-
-  .product-item:last-child {
-    border-bottom: none;
-  }
-
-  .product-image {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .product-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .product-info h5 {
-    font-size: 15px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 4px 0;
-  }
-
-  .product-link {
-    color: #3b82f6;
-    font-size: 13px;
-    text-decoration: none;
-  }
-
-  /* Categories Section */
-  .categories-section {
-    margin-bottom: 48px;
-  }
-
-  .section-header {
-    text-align: center;
-    margin-bottom: 48px;
-    position: relative;
-  }
-
-  .section-header::after {
-    content: '';
-    position: absolute;
-    bottom: -16px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    border-radius: 2px;
-  }
-
-  .section-header h2 {
-    font-size: 36px;
-    font-weight: 800;
-    color: #1C7C54;
-    margin: 0 0 16px 0;
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .section-subtitle {
-    font-size: 18px;
-    color: #6b7f72;
-    margin: 0;
-    font-weight: 500;
-    opacity: 0.9;
-  }
-
-  .view-all-link {
-    color: #3b82f6;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 16px;
-    margin-left: 24px;
-    transition: color 0.2s ease;
-  }
-
-  .view-all-link:hover {
-    color: #2563eb;
-  }
-
-  .categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 32px;
-    margin-bottom: 32px;
-  }
-
-  .category-card {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 24px;
-    padding: 40px 32px;
-    text-align: center;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    position: relative;
-    overflow: hidden;
-    box-shadow:
-      0 8px 32px rgba(28, 124, 84, 0.08),
-      0 4px 16px rgba(0, 0, 0, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  }
-
-  .category-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(28, 124, 84, 0.03) 0%, transparent 50%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-
-  .category-card:hover::before {
-    opacity: 1;
-  }
-
-  .category-card:hover {
-    transform: translateY(-12px) scale(1.02);
-    box-shadow:
-      0 24px 60px rgba(28, 124, 84, 0.15),
-      0 16px 32px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 1);
-  }
-
-  .category-card.dairy {
-    background: linear-gradient(135deg, rgba(254, 243, 199, 0.9) 0%, rgba(253, 230, 138, 0.9) 100%);
-  }
-  .category-card.groceries {
-    background: linear-gradient(135deg, rgba(220, 252, 231, 0.9) 0%, rgba(187, 247, 208, 0.9) 100%);
-  }
-  .category-card.beverages {
-    background: linear-gradient(135deg, rgba(219, 234, 254, 0.9) 0%, rgba(191, 219, 254, 0.9) 100%);
-  }
-  .category-card.snacks {
-    background: linear-gradient(135deg, rgba(252, 231, 243, 0.9) 0%, rgba(251, 207, 232, 0.9) 100%);
-  }
-
-  .category-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    margin: 0 auto 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    color: white;
-    transition: all 0.4s ease;
-    box-shadow: 0 12px 32px rgba(28, 124, 84, 0.25);
-  }
-
-  .category-card:hover .category-icon {
-    transform: scale(1.1) rotate(10deg);
-    box-shadow: 0 20px 40px rgba(28, 124, 84, 0.35);
-  }
-
-  .category-card h3 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1C7C54;
-    margin: 0 0 12px 0;
-    transition: color 0.3s ease;
-  }
-
-  .category-card:hover h3 {
-    color: #0f5d3d;
-  }
-
-  .category-card p {
-    color: #6b7f72;
-    font-size: 15px;
-    font-weight: 500;
-    margin: 0 0 24px 0;
-    line-height: 1.6;
-    opacity: 0.9;
-  }
-
-  .category-btn {
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    color: white;
-    padding: 14px 28px;
-    border-radius: 18px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 15px;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 8px 24px rgba(28, 124, 84, 0.3);
-  }
-
-  .category-btn:hover {
-    background: linear-gradient(135deg, #0f5d3d 0%, #059669 100%);
-    color: white;
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 16px 32px rgba(28, 124, 84, 0.4);
-  }
-
-  /* Featured Products Section */
-  .featured-products-section {
-    margin-bottom: 48px;
-  }
-
-  .products-showcase {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-  }
-
-  .product-showcase-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    box-shadow:
-      0 8px 32px rgba(28, 124, 84, 0.08),
-      0 4px 16px rgba(0, 0, 0, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  }
-
-  .product-showcase-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(28, 124, 84, 0.02) 0%, transparent 50%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    z-index: 1;
-  }
-
-  .product-showcase-card:hover::before {
-    opacity: 1;
-  }
-
-  .product-showcase-card:hover {
-    transform: translateY(-12px) scale(1.02);
-    background: rgba(255, 255, 255, 1);
-    box-shadow:
-      0 24px 64px rgba(28, 124, 84, 0.15),
-      0 16px 32px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 1);
-  }
-
-  .product-showcase-card.featured {
-    border: 2px solid #1C7C54;
-    box-shadow:
-      0 8px 32px rgba(28, 124, 84, 0.15),
-      0 4px 16px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  }
-
-  .product-showcase-card .product-badge {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    padding: 8px 16px;
-    border-radius: 16px;
-    font-size: 12px;
-    font-weight: 700;
-    z-index: 3;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  }
-
-  .product-badge {
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    color: white;
-  }
-
-  .product-badge.trending {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: white;
-  }
-
-  .product-badge.new {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-  }
-
-  .product-badge.organic {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: white;
-  }
-
-  .product-showcase-card .product-image {
-    width: 100%;
-    height: 240px;
-    overflow: hidden;
-    position: relative;
-    border-radius: 20px 20px 0 0;
-  }
-
-  .product-showcase-card .product-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    position: relative;
-    z-index: 2;
-  }
-
-  .product-showcase-card:hover .product-image img {
-    transform: scale(1.1);
-  }
-
-  .product-showcase-card .product-info {
-    padding: 32px 24px 24px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .product-showcase-card .product-category {
-    color: #1C7C54;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-    display: block;
-    opacity: 0.8;
-  }
-
-  .product-showcase-card h4 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #1C7C54;
-    margin: 0 0 16px 0;
-    line-height: 1.3;
-    transition: color 0.3s ease;
-  }
-
-  .product-showcase-card:hover h4 {
-    color: #0f5d3d;
-  }
-
-  .product-showcase-card .product-price {
-    margin-bottom: 16px;
-  }
-
-  .product-showcase-card .product-price .current {
-    font-size: 28px;
-    font-weight: 800;
-    color: #1C7C54;
-    display: block;
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .product-showcase-card .gst-info {
-    font-size: 11px;
-    color: #6b7f72;
-    margin-top: 6px;
-    display: block;
-    opacity: 0.8;
-    font-weight: 500;
-  }
-
-  .product-description {
-    color: #6b7f72;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.6;
-    margin-bottom: 24px;
-    opacity: 0.9;
-  }
-
-  .add-to-cart-showcase {
-    width: 100%;
-    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
-    color: white;
-    border: none;
-    padding: 16px 24px;
-    border-radius: 18px;
-    font-weight: 700;
-    font-size: 15px;
-    cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 8px 24px rgba(28, 124, 84, 0.3);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .add-to-cart-showcase::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-  }
-
-  .add-to-cart-showcase:hover::before {
-    left: 100%;
-  }
-
-  .add-to-cart-showcase:hover {
-    background: linear-gradient(135deg, #0f5d3d 0%, #059669 100%);
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 16px 32px rgba(28, 124, 84, 0.4);
-  }
-
-  /* Popular This Week Section */
-  .popular-section {
-    margin-bottom: 48px;
-  }
-
-  .popular-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
-  }
-
-  .popular-item {
-    background: #ffffff;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: all 0.2s ease;
-  }
-
-  .popular-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-  }
-
-  .popular-image {
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .popular-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .popular-info {
+  .kpi-info {
     flex: 1;
   }
 
-  .popular-info h5 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 4px 0;
+  .kpi-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
   }
 
-  .popular-category {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 4px;
-    display: block;
-  }
-
-  .popular-price {
-    font-size: 18px;
+  .kpi-value {
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #10b981;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    line-height: 1;
   }
 
-  .popular-action {
-    flex-shrink: 0;
+  .kpi-change {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
   }
 
-  .quick-add-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #f3f4f6;
-    border: none;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  .kpi-change.positive {
+    color: #059669;
+  }
+
+  .kpi-change.neutral {
+    color: #64748b;
+  }
+
+  .kpi-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .quick-add-btn:hover {
-    background: #10b981;
+    font-size: 1.25rem;
     color: white;
-    transform: scale(1.1);
   }
 
-  /* Premium Mobile Responsive Design */
+  .kpi-icon.orders { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+  .kpi-icon.cart { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  .kpi-icon.subscriptions { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+  .kpi-icon.rewards { background: linear-gradient(135deg, #10b981, #059669); }
+
+  /* Chart Cards - Admin Style */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .chart-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .chart-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+
+  /* Quick Actions - Admin Style */
+  .quick-actions {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+  }
+
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #1e293b;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+
+  .action-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .action-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    color: white;
+  }
+
+  .btn-primary-custom {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary-custom:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  /* Recent Activity Card */
+  .activity-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+  }
+
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+
+  .activity-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    color: white;
+  }
+
+  .activity-content h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .activity-content p {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  /* Empty Chart Placeholder */
+  .empty-chart-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .empty-chart-placeholder p {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  /* Responsive Design */
   @media (max-width: 768px) {
     .dashboard-container {
-      padding: 24px 16px;
+      padding: 1rem;
     }
 
-    .dashboard-title {
-      font-size: 32px;
+    .dashboard-header {
+      padding: 1.5rem;
     }
 
-    .dashboard-subtitle {
-      font-size: 16px;
+    .welcome-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
     }
 
-    .hero-banner {
-      padding: 32px 24px;
-      margin-bottom: 40px;
+    .dashboard-actions {
+      width: 100%;
+      justify-content: flex-start;
     }
 
-    .hero-content {
-      grid-template-columns: 1fr;
-      gap: 32px;
-      text-align: center;
-    }
-
-    .hero-text h1 {
-      font-size: 28px;
-    }
-
-    .hero-text h2 {
-      font-size: 18px;
-      margin-bottom: 24px;
-    }
-
-    .discount-badge {
-      position: relative;
-      top: auto;
-      right: auto;
-      margin: 0 auto 24px;
-      display: inline-block;
-    }
-
-    .stats-grid {
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin-bottom: 48px;
-    }
-
-    .action-card {
-      padding: 24px;
-    }
-
-    .stat-icon {
-      width: 56px;
-      height: 56px;
-      font-size: 20px;
-    }
-
-    .categories-grid {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 24px;
-    }
-
-    .category-card {
-      padding: 32px 24px;
-    }
-
-    .category-icon {
-      width: 72px;
-      height: 72px;
-      font-size: 28px;
-    }
-
-    .products-showcase {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-
-    .popular-grid {
+    .kpi-grid {
       grid-template-columns: 1fr;
     }
 
-    .section-header h2 {
-      font-size: 28px;
-    }
-
-    .section-subtitle {
-      font-size: 15px;
-    }
-
-    .product-showcase-card .product-image {
-      height: 220px;
-    }
-
-    .product-showcase-card .product-info {
-      padding: 24px 20px 20px;
-    }
-
-    .product-showcase-card h4 {
-      font-size: 20px;
-    }
-
-    .product-showcase-card .product-price .current {
-      font-size: 24px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .dashboard-container {
-      padding: 20px 12px;
-    }
-
-    .hero-banner {
-      padding: 24px 16px;
-    }
-
-    .hero-text h1 {
-      font-size: 24px;
-    }
-
-    .hero-text h2 {
-      font-size: 16px;
-    }
-
-    .stats-grid {
+    .chart-grid {
       grid-template-columns: 1fr;
-      gap: 16px;
     }
 
-    .categories-grid {
+    .actions-grid {
       grid-template-columns: 1fr;
-      gap: 20px;
-    }
-
-    .category-card {
-      padding: 28px 20px;
     }
   }
 </style>
@@ -1121,264 +352,406 @@
 <% if current_customer %>
 <div class="dashboard-container">
   <div class="dashboard-content">
-  <!-- Hero Banner with "Shop Now" -->
-  <div class="hero-banner">
-    <div class="hero-content">
-      <div class="hero-text">
-        <h1>Welcome back, <%= current_customer.first_name %>! 👋</h1>
-        <h2>Get fresh, organic groceries delivered to<br>your doorstep every day.</h2>
-        <%= link_to customer_shop_path, class: "shop-now-btn" do %>
-          <i class="fas fa-store"></i>
-          Shop Now
-        <% end %>
-      </div>
-      <div class="hero-visual">
-        <div class="discount-badge">
-          Get UP TO<br>
-          <span class="discount-amount">15% OFF!</span><br>
-          on your first subscription
+
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+      <div class="welcome-section">
+        <div class="welcome-content">
+          <h1>Welcome back, <%= current_customer.first_name %>!</h1>
+          <p>Here's what's happening with your account today.</p>
         </div>
-        <div class="grocery-bag">
-          <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&h=200&fit=crop&crop=center" alt="Grocery Bag with Fresh Produce" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Quick Actions Grid -->
-  <div class="stats-grid">
-    <%= link_to customer_cart_path, class: "action-card" do %>
-      <div class="stat-icon orange">
-        <i class="fas fa-shopping-cart"></i>
-      </div>
-      <h3 class="stat-label">Shopping Cart</h3>
-      <p class="stat-value">
-        <%= @cart_items_count > 0 ? "#{@cart_items_count} items ready for checkout" : "Your cart is empty" %>
-      </p>
-      <span class="action-link">View Cart <i class="fas fa-arrow-right"></i></span>
-    <% end %>
-
-    <%= link_to customer_orders_path, class: "action-card" do %>
-      <div class="stat-icon blue">
-        <i class="fas fa-package"></i>
-      </div>
-      <h3 class="stat-label">My Orders</h3>
-      <p class="stat-value">
-        <%= @recent_orders_count > 0 ? "#{@recent_orders_count} orders this month" : "No recent orders" %>
-      </p>
-      <span class="action-link">View Orders <i class="fas fa-arrow-right"></i></span>
-    <% end %>
-
-    <%= link_to customer_subscriptions_path, class: "action-card" do %>
-      <div class="stat-icon purple">
-        <i class="fas fa-sync-alt"></i>
-      </div>
-      <h3 class="stat-label">Subscriptions</h3>
-      <p class="stat-value">
-        <%= @active_subscriptions_count > 0 ? "#{@active_subscriptions_count} active subscriptions" : "No active subscriptions" %>
-      </p>
-      <span class="action-link">View Subscriptions <i class="fas fa-arrow-right"></i></span>
-    <% end %>
-
-    <%= link_to customer_profile_path, class: "action-card" do %>
-      <div class="stat-icon green">
-        <i class="fas fa-user"></i>
-      </div>
-      <h3 class="stat-label">My Profile</h3>
-      <p class="stat-value">Update account settings</p>
-      <span class="action-link">Edit Profile <i class="fas fa-arrow-right"></i></span>
-    <% end %>
-  </div>
-
-  <!-- Featured Categories Section -->
-  <% if @categories.any? %>
-  <div class="categories-section">
-    <div class="section-header">
-      <h2 class="section-title">Shop by Category</h2>
-      <p class="section-subtitle">Explore our fresh, organic product categories</p>
-    </div>
-
-    <div class="categories-grid">
-      <% @categories.each_with_index do |category, index| %>
-        <%
-          # Assign different style classes for visual variety
-          card_classes = ['dairy', 'groceries', 'beverages', 'snacks']
-          card_class = card_classes[index % 4]
-
-          # Assign appropriate icons based on category name
-          icon_class = case category.name.downcase
-                      when /milk|dairy|ghee|butter|cheese/
-                        'fas fa-cow'
-                      when /grocery|food|grain|rice|dal/
-                        'fas fa-shopping-basket'
-                      when /beverage|drink|juice|tea|coffee/
-                        'fas fa-coffee'
-                      when /snack|sweet|namkeen|biscuit/
-                        'fas fa-cookie-bite'
-                      when /soap|cosmetic|beauty/
-                        'fas fa-spa'
-                      when /spice|masala|powder/
-                        'fas fa-pepper-hot'
-                      else
-                        'fas fa-box'
-                      end
-        %>
-
-        <div class="category-card <%= card_class %>">
-          <div class="category-icon">
-            <i class="<%= icon_class %>"></i>
-          </div>
-          <h3><%= category.name %></h3>
-          <p><%= category.description || "Explore our #{category.name.downcase} collection" %></p>
-          <%= link_to customer_shop_path(category_id: category.id), class: "category-btn" do %>
-            <i class="fas fa-eye"></i>
-            Browse Products
+        <div class="dashboard-actions">
+          <%= link_to customer_shop_path, class: "btn-primary-custom" do %>
+            <i class="bi bi-shop me-2"></i>Shop Now
           <% end %>
         </div>
-      <% end %>
-    </div>
-  </div>
-  <% end %>
-
-  <!-- Featured Products Section -->
-  <% if @featured_products.any? %>
-  <div class="featured-products-section">
-    <div class="section-header">
-      <h2 class="section-title">Featured Products</h2>
-      <p class="section-subtitle">Hand-picked premium products just for you</p>
-      <%= link_to customer_shop_path, class: "view-all-link" do %>
-        View All Products <i class="fas fa-arrow-right"></i>
-      <% end %>
+      </div>
     </div>
 
-    <div class="products-showcase">
-      <% @featured_products.each_with_index do |product, index| %>
-        <%
-          # Calculate price with GST
-          selling_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
-
-          if product.gst_enabled && product.gst_percentage.present? && product.gst_percentage > 0
-            gst_rate = product.gst_percentage
-            base_price = selling_price / (1 + (gst_rate / 100.0))
-            final_price = selling_price
-          else
-            base_price = selling_price
-            gst_rate = 0
-            final_price = selling_price
-          end
-
-          # Assign badges based on index and product properties
-          badge_options = ['featured', 'trending', 'new', 'organic']
-          badge_texts = ['Best Seller', 'Trending', 'New Arrival', '100% Organic']
-          badge_class = badge_options[index % 4]
-          badge_text = badge_texts[index % 4]
-
-          # Use product image or fallback
-          image_url = product.image.present? ? product.image :
-                     (product.image_url.present? ? product.image_url :
-                      "https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&h=200&fit=crop&crop=center")
-        %>
-
-        <div class="product-showcase-card <%= 'featured' if index == 0 %>">
-          <div class="product-badge <%= badge_class %>"><%= badge_text %></div>
-          <div class="product-image">
-            <% if product.image.present? %>
-              <%= image_tag product.image, alt: product.name %>
-            <% elsif product.image_url.present? %>
-              <img src="<%= product.image_url %>" alt="<%= product.name %>">
-            <% else %>
-              <img src="<%= image_url %>" alt="<%= product.name %>">
-            <% end %>
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-content">
+          <div class="kpi-info">
+            <div class="kpi-label">Recent Orders</div>
+            <div class="kpi-value"><%= @recent_orders_count || 0 %></div>
+            <div class="kpi-change neutral">
+              <i class="bi bi-dash"></i>
+              This month
+            </div>
           </div>
-          <div class="product-info">
-            <span class="product-category"><%= product.category&.name || 'Product' %></span>
-            <h4><%= product.name %></h4>
-            <div class="product-price">
-              <span class="current">₹<%= number_with_delimiter(final_price.round(2)) %></span>
-              <% if gst_rate > 0 %>
-                <span class="gst-info">Base: ₹<%= number_with_delimiter(base_price.round(2)) %> + GST: <%= gst_rate %>%</span>
+          <div class="kpi-icon orders">
+            <i class="bi bi-box-seam"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-content">
+          <div class="kpi-info">
+            <div class="kpi-label">Cart Items</div>
+            <div class="kpi-value"><%= @cart_items_count || 0 %></div>
+            <div class="kpi-change <%= @cart_items_count > 0 ? 'positive' : 'neutral' %>">
+              <% if @cart_items_count > 0 %>
+                <i class="bi bi-arrow-up"></i>
+                Ready to checkout
+              <% else %>
+                <i class="bi bi-dash"></i>
+                Cart empty
               <% end %>
             </div>
-            <div class="product-description">
-              <%= truncate(product.description || "High quality #{product.name.downcase} for your daily needs", length: 80) %>
-            </div>
-            <button class="add-to-cart-showcase"
-                    onclick="addToCartFromShowcase(<%= product.id %>, '<%= j(product.name) %>', <%= final_price %>, <%= product.stock %>, <%= base_price %>, <%= gst_rate %>)">
-              <i class="fas fa-plus"></i>
-              Add to Cart
-            </button>
+          </div>
+          <div class="kpi-icon cart">
+            <i class="bi bi-cart3"></i>
           </div>
         </div>
-      <% end %>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-content">
+          <div class="kpi-info">
+            <div class="kpi-label">Active Subscriptions</div>
+            <div class="kpi-value"><%= @active_subscriptions_count || 0 %></div>
+            <div class="kpi-change <%= @active_subscriptions_count > 0 ? 'positive' : 'neutral' %>">
+              <% if @active_subscriptions_count > 0 %>
+                <i class="bi bi-arrow-up"></i>
+                Active delivery
+              <% else %>
+                <i class="bi bi-dash"></i>
+                No subscriptions
+              <% end %>
+            </div>
+          </div>
+          <div class="kpi-icon subscriptions">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-content">
+          <div class="kpi-info">
+            <div class="kpi-label">Reward Points</div>
+            <div class="kpi-value">250</div>
+            <div class="kpi-change positive">
+              <i class="bi bi-arrow-up"></i>
+              +50 this month
+            </div>
+          </div>
+          <div class="kpi-icon rewards">
+            <i class="bi bi-star"></i>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  <% end %>
 
-  <!-- Popular This Week Section -->
-  <% if @popular_products.any? %>
-  <div class="popular-section">
-    <div class="section-header">
-      <h2 class="section-title">Popular This Week</h2>
-      <p class="section-subtitle">Most loved products by our customers</p>
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <h3 class="section-title">Quick Actions</h3>
+      <div class="actions-grid">
+        <%= link_to customer_shop_path, class: "action-btn" do %>
+          <div class="action-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+            <i class="bi bi-shop"></i>
+          </div>
+          <div>
+            <div>Browse Shop</div>
+            <small class="text-muted">Discover products</small>
+          </div>
+        <% end %>
+
+        <%= link_to customer_orders_path, class: "action-btn" do %>
+          <div class="action-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <i class="bi bi-box-seam"></i>
+          </div>
+          <div>
+            <div>My Orders</div>
+            <small class="text-muted">Track deliveries</small>
+          </div>
+        <% end %>
+
+        <%= link_to customer_subscriptions_path, class: "action-btn" do %>
+          <div class="action-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+          <div>
+            <div>Subscriptions</div>
+            <small class="text-muted">Manage delivery</small>
+          </div>
+        <% end %>
+
+        <%= link_to customer_profile_path, class: "action-btn" do %>
+          <div class="action-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <i class="bi bi-person"></i>
+          </div>
+          <div>
+            <div>My Profile</div>
+            <small class="text-muted">Account settings</small>
+          </div>
+        <% end %>
+      </div>
     </div>
 
-    <div class="popular-grid">
-      <% @popular_products.each do |product| %>
-        <%
-          # Calculate final price
-          selling_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
-
-          if product.gst_enabled && product.gst_percentage.present? && product.gst_percentage > 0
-            gst_rate = product.gst_percentage
-            base_price = selling_price / (1 + (gst_rate / 100.0))
-            final_price = selling_price
-          else
-            base_price = selling_price
-            gst_rate = 0
-            final_price = selling_price
-          end
-        %>
-
-        <div class="popular-item">
-          <div class="popular-image">
-            <% if product.image.present? %>
-              <%= image_tag product.image, alt: product.name %>
-            <% elsif product.image_url.present? %>
-              <img src="<%= product.image_url %>" alt="<%= product.name %>">
-            <% else %>
-              <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=80&h=80&fit=crop&crop=center" alt="<%= product.name %>">
+    <!-- Charts Grid -->
+    <div class="chart-grid">
+      <!-- Orders Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Order Activity</div>
+            <div class="chart-subtitle">Last 7 days</div>
+          </div>
+        </div>
+        <% if @order_activity_data[:has_data] %>
+          <canvas id="ordersChart" width="400" height="200"></canvas>
+        <% else %>
+          <div class="empty-chart-placeholder">
+            <i class="bi bi-bar-chart text-muted mb-3" style="font-size: 3rem;"></i>
+            <p class="text-muted mb-2"><%= @order_activity_data[:message] %></p>
+            <%= link_to customer_shop_path, class: "btn btn-primary btn-sm" do %>
+              <i class="bi bi-shop me-1"></i>Start Shopping
             <% end %>
           </div>
-          <div class="popular-info">
-            <h5><%= truncate(product.name, length: 25) %></h5>
-            <span class="popular-category"><%= product.category&.name || 'Product' %></span>
-            <div class="popular-price">₹<%= number_with_delimiter(final_price.round(2)) %></div>
-          </div>
-          <div class="popular-action">
-            <button class="quick-add-btn"
-                    onclick="addToCartFromPopular(<%= product.id %>, '<%= j(product.name) %>', <%= final_price %>, <%= product.stock %>, <%= base_price %>, <%= gst_rate %>)">
-              <i class="fas fa-plus"></i>
-            </button>
+          <canvas id="ordersChart" width="400" height="200" style="display: none;"></canvas>
+        <% end %>
+      </div>
+
+      <!-- Spending Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Monthly Spending</div>
+            <div class="chart-subtitle">This year</div>
           </div>
         </div>
-      <% end %>
+        <% if @monthly_spending_data[:has_data] %>
+          <canvas id="spendingChart" width="400" height="200"></canvas>
+        <% else %>
+          <div class="empty-chart-placeholder">
+            <i class="bi bi-wallet2 text-muted mb-3" style="font-size: 3rem;"></i>
+            <p class="text-muted mb-2"><%= @monthly_spending_data[:message] %></p>
+            <%= link_to customer_shop_path, class: "btn btn-primary btn-sm" do %>
+              <i class="bi bi-shop me-1"></i>Browse Products
+            <% end %>
+          </div>
+          <canvas id="spendingChart" width="400" height="200" style="display: none;"></canvas>
+        <% end %>
+      </div>
     </div>
-  </div>
-  <% end %>
 
-  </div> <!-- Close dashboard-content -->
+    <!-- Recent Activity -->
+    <div class="activity-card">
+      <h3 class="section-title">Recent Activity</h3>
+      <div class="activity-item">
+        <div class="activity-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="activity-content">
+          <h4>Order #1234 delivered successfully</h4>
+          <p>2 hours ago • Fresh Organic Milk</p>
+        </div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+          <i class="bi bi-cart-plus"></i>
+        </div>
+        <div class="activity-content">
+          <h4>Added items to cart</h4>
+          <p>1 day ago • 3 items added</p>
+        </div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <div class="activity-content">
+          <h4>Milk subscription renewed</h4>
+          <p>3 days ago • Daily delivery active</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <% else %>
 <!-- Not Logged In Section -->
 <div class="dashboard-container">
-  <div class="text-center">
-    <div class="hero-section py-5 mb-5">
-      <h1 class="display-4 fw-bold mb-4">Welcome to Dhanvantri Naturals</h1>
-      <p class="lead mb-4">Fresh milk, organic groceries, and natural products delivered right to your doorstep. Experience the convenience of healthy living with our premium quality products.</p>
-      <%= link_to "Login", customer_login_path, class: "btn btn-light btn-lg me-3" %>
-      <%= link_to "Register", customer_register_path, class: "btn btn-outline-light btn-lg" %>
+  <div class="dashboard-content">
+    <div class="text-center py-5">
+      <h1 class="display-4 fw-bold mb-4">Welcome to Atma Nirbhar Farm</h1>
+      <p class="lead mb-4">Fresh milk, organic groceries, and natural products delivered right to your doorstep.</p>
+      <div class="d-flex justify-content-center gap-3">
+        <%= link_to "Login", customer_login_path, class: "btn-primary-custom" %>
+        <%= link_to "Register", customer_register_path, class: "btn btn-outline-primary" %>
+      </div>
     </div>
   </div>
 </div>
 <% end %>
+
+<script>
+// Initialize Charts with Real Data
+document.addEventListener('DOMContentLoaded', function() {
+  // Orders Chart Data from Controller
+  const orderActivityData = <%= @order_activity_data.to_json.html_safe %>;
+
+  // Orders Chart
+  const ordersCtx = document.getElementById('ordersChart');
+  if (ordersCtx && ordersCtx.style.display !== 'none') {
+    new Chart(ordersCtx, {
+      type: 'line',
+      data: {
+        labels: orderActivityData.labels,
+        datasets: [{
+          label: 'Orders',
+          data: orderActivityData.data,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                return `Orders: ${context.parsed.y}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              stepSize: 1,
+              color: '#64748b'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: '#64748b'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Spending Chart Data from Controller
+  const monthlySpendingData = <%= @monthly_spending_data.to_json.html_safe %>;
+
+  // Spending Chart
+  const spendingCtx = document.getElementById('spendingChart');
+  if (spendingCtx && spendingCtx.style.display !== 'none') {
+    new Chart(spendingCtx, {
+      type: 'bar',
+      data: {
+        labels: monthlySpendingData.labels,
+        datasets: [{
+          label: 'Spending',
+          data: monthlySpendingData.data,
+          backgroundColor: function(context) {
+            const value = context.parsed.y;
+            if (value === 0) {
+              return 'rgba(203, 213, 225, 0.3)'; // Light gray for zero values
+            }
+            return 'rgba(16, 185, 129, 0.8)';
+          },
+          borderColor: function(context) {
+            const value = context.parsed.y;
+            if (value === 0) {
+              return 'rgba(203, 213, 225, 0.5)';
+            }
+            return 'rgb(16, 185, 129)';
+          },
+          borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgb(16, 185, 129)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                const value = context.parsed.y;
+                if (value === 0) {
+                  return 'No spending this month';
+                }
+                return `Spending: ₹${value.toFixed(2)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#64748b',
+              callback: function(value) {
+                if (value === 0) return '₹0';
+                return '₹' + value.toLocaleString();
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: '#64748b'
+            }
+          }
+        }
+      }
+    });
+  }
+});
