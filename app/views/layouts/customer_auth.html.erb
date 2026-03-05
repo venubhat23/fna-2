@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dhanvantri Naturals - <%= content_for?(:title) ? yield(:title) : 'Customer Login' %></title>
+  <title>AtmaNirbhar Farm - <%= content_for?(:title) ? yield(:title) : 'Customer Login' %></title>
 
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
@@ -16,66 +16,324 @@
   <%= javascript_importmap_tags %>
 
   <style>
+    :root {
+      --primary-green: #10b981;
+      --secondary-green: #34d399;
+      --dark-green: #059669;
+      --light-green: #6ee7b7;
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 25%, #06b6d4  75%, #10b981 100%);
       min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
     }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.2) 0%, transparent 50%);
+      z-index: -1;
+    }
+
+    .auth-container {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
     .auth-card {
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
     }
+
     .brand-section {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 50%, var(--light-green) 100%);
       color: white;
-      border-radius: 15px 0 0 15px;
+      position: relative;
+      overflow: hidden;
     }
-    .btn-primary {
-      background-color: #28a745;
-      border-color: #28a745;
+
+    .brand-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 20%, transparent 80%);
+      animation: rotate 20s linear infinite;
     }
-    .btn-primary:hover {
-      background-color: #218838;
-      border-color: #1e7e34;
+
+    .brand-section::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
     }
+
+    .brand-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .farm-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .brand-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 0.5rem;
+    }
+
+    .brand-subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      margin-top: 2rem;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+    }
+
+    .feature-item i {
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .form-section {
+      padding: 3rem 2.5rem;
+    }
+
+    .welcome-text {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .welcome-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome-subtitle {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-group-text {
+      background: var(--primary-green);
+      border: none;
+      color: white;
+      border-radius: 12px 0 0 12px;
+      padding: 0.875rem 1rem;
+      border-right: none;
+    }
+
+    .form-control {
+      border-radius: 0 12px 12px 0;
+      border: 2px solid #e5e7eb;
+      border-left: none;
+      padding: 0.875rem 1rem;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
     .form-control:focus {
-      border-color: #28a745;
-      box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+      outline: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 0.875rem 2rem;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+    }
+
+    .form-check-input:checked {
+      background-color: var(--primary-green);
+      border-color: var(--primary-green);
+    }
+
+    .form-check-input:focus {
+      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+    }
+
+    .auth-links {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .auth-links a {
+      color: var(--primary-green);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .auth-links a:hover {
+      color: var(--dark-green);
+      text-decoration: underline;
+    }
+
+    .back-home-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .back-home-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .brand-section {
+        border-radius: 20px 20px 0 0;
+        padding: 2rem 1.5rem;
+      }
+
+      .form-section {
+        padding: 2rem 1.5rem;
+      }
+
+      .brand-title {
+        font-size: 2rem;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+  <div class="container-fluid vh-100 d-flex align-items-center justify-content-center p-4">
     <div class="row w-100">
-      <div class="col-md-8 col-lg-6 mx-auto">
-        <div class="auth-card overflow-hidden">
-          <div class="row g-0">
-            <div class="col-md-6 brand-section d-flex flex-column justify-content-center align-items-center p-5">
-              <div class="text-center">
-                <i class="bi bi-leaf display-1 mb-3"></i>
-                <h2 class="fw-bold mb-3">Dhanvantri Naturals</h2>
-                <p class="lead">Fresh milk, groceries & natural products delivered to your doorstep</p>
-                <div class="mt-4">
-                  <i class="bi bi-check-circle me-2"></i> Fresh & Quality Products<br>
-                  <i class="bi bi-check-circle me-2"></i> Daily Delivery<br>
-                  <i class="bi bi-check-circle me-2"></i> Subscription Plans<br>
+      <div class="col-md-10 col-lg-8 col-xl-6 mx-auto">
+        <div class="auth-card">
+          <div class="row g-0 h-100">
+            <div class="col-md-6 brand-section d-flex flex-column justify-content-center align-items-center p-4">
+              <div class="brand-content text-center">
+                <div class="farm-icon">
+                  <i class="bi bi-flower2 display-6 text-white"></i>
+                </div>
+                <h1 class="brand-title">AtmaNirbhar Farm</h1>
+                <p class="brand-subtitle">Experience the finest organic products delivered fresh to your doorstep. Supporting local farmers, nurturing communities.</p>
+
+                <div class="feature-list">
+                  <div class="feature-item">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Premium Organic Products</span>
+                  </div>
+                  <div class="feature-item">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Farm-to-Table Freshness</span>
+                  </div>
+                  <div class="feature-item">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Sustainable Farming</span>
+                  </div>
+                  <div class="feature-item">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Community Supported</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-6 p-5">
+            <div class="col-md-6 form-section">
               <!-- Flash Messages -->
               <% if notice %>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                  <%= notice %>
+                  <i class="bi bi-check-circle-fill me-2"></i><%= notice %>
                   <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
               <% end %>
 
               <% if alert %>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                  <%= alert %>
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i><%= alert %>
                   <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
               <% end %>
@@ -87,8 +345,8 @@
 
         <!-- Back to Home -->
         <div class="text-center mt-4">
-          <%= link_to root_path, class: "btn btn-outline-light" do %>
-            <i class="bi bi-arrow-left me-2"></i>Back to Home
+          <%= link_to root_path, class: "btn back-home-btn px-4 py-2" do %>
+            <i class="bi bi-house-door me-2"></i>Back to Home
           <% end %>
         </div>
       </div>

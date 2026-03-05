@@ -1,0 +1,236 @@
+<% content_for :title, "Invoice ##{@invoice.invoice_number} - Atma Nirbhar Farm" %>
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Invoice #<%= @invoice.invoice_number %></h2>
+    <p class="text-muted mb-0">
+      Order #<%= @invoice.booking_number %> •
+      Generated on <%= @invoice.created_at.strftime("%B %d, %Y") %>
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to download_customer_invoice_path(@invoice, format: :pdf),
+        class: "btn btn-outline-danger",
+        target: "_blank" do %>
+      <i class="bi bi-file-earmark-pdf me-2"></i>Download PDF
+    <% end %>
+    <%= link_to customer_invoices_path, class: "btn btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-2"></i>Back to Invoices
+    <% end %>
+  </div>
+</div>
+
+<!-- Invoice Details Card -->
+<div class="row mb-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="mb-3">Invoice Details</h5>
+            <div class="mb-2">
+              <strong>Invoice Number:</strong> #<%= @invoice.invoice_number %>
+            </div>
+            <div class="mb-2">
+              <strong>Order Number:</strong> #<%= @invoice.booking_number %>
+            </div>
+            <div class="mb-2">
+              <strong>Invoice Date:</strong> <%= @invoice.created_at.strftime("%B %d, %Y") %>
+            </div>
+            <div class="mb-2">
+              <strong>Order Date:</strong> <%= @invoice.booking_date.strftime("%B %d, %Y") %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h5 class="mb-3">Payment Information</h5>
+            <div class="mb-2">
+              <strong>Payment Method:</strong> <%= @invoice.payment_method&.humanize || 'Not specified' %>
+            </div>
+            <div class="mb-2">
+              <strong>Payment Status:</strong>
+              <% case @invoice.payment_status&.to_s %>
+              <% when 'paid' %>
+                <span class="badge bg-success-subtle text-success ms-2">
+                  <i class="bi bi-check-circle me-1"></i>Paid
+                </span>
+              <% when 'overdue' %>
+                <span class="badge bg-danger-subtle text-danger ms-2">
+                  <i class="bi bi-exclamation-triangle me-1"></i>Overdue
+                </span>
+              <% when 'partially_paid' %>
+                <span class="badge bg-warning-subtle text-warning ms-2">
+                  <i class="bi bi-clock me-1"></i>Partially Paid
+                </span>
+              <% else %>
+                <span class="badge bg-warning-subtle text-warning ms-2">
+                  <i class="bi bi-hourglass me-1"></i>Unpaid
+                </span>
+              <% end %>
+            </div>
+            <div class="mb-2">
+              <strong>Total Amount:</strong> <span class="text-success fw-bold">₹<%= @invoice.total_amount.to_f %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0">Billing Address</h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <strong><%= @invoice.customer_name %></strong>
+        </div>
+        <% if @invoice.customer_email.present? %>
+          <div class="mb-1">
+            <i class="bi bi-envelope me-2"></i><%= @invoice.customer_email %>
+          </div>
+        <% end %>
+        <% if @invoice.customer_phone.present? %>
+          <div class="mb-2">
+            <i class="bi bi-telephone me-2"></i><%= @invoice.customer_phone %>
+          </div>
+        <% end %>
+        <% if @invoice.delivery_address.present? %>
+          <div class="text-muted">
+            <%= simple_format(@invoice.delivery_address) %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Items -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <h5 class="mb-0">Invoice Items</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="border-0 fw-semibold">Item</th>
+            <th class="border-0 fw-semibold text-center">Quantity</th>
+            <th class="border-0 fw-semibold text-end">Unit Price</th>
+            <th class="border-0 fw-semibold text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @invoice_items.each do |item| %>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <% if item.product.image.present? %>
+                    <div class="me-3">
+                      <%= image_tag item.product.image,
+                          class: "rounded",
+                          style: "width: 50px; height: 50px; object-fit: cover;" %>
+                    </div>
+                  <% else %>
+                    <div class="avatar-sm bg-light rounded d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-image text-muted"></i>
+                    </div>
+                  <% end %>
+                  <div>
+                    <h6 class="mb-1"><%= item.product.name %></h6>
+                    <% if item.product.category %>
+                      <small class="text-muted"><%= item.product.category.name %></small>
+                    <% end %>
+                  </div>
+                </div>
+              </td>
+              <td class="align-middle text-center">
+                <span class="badge bg-primary-subtle text-primary">
+                  <%= item.quantity %> <%= item.product.unit || 'pcs' %>
+                </span>
+              </td>
+              <td class="align-middle text-end">
+                <span class="fw-semibold">₹<%= item.price.to_f %></span>
+              </td>
+              <td class="align-middle text-end">
+                <span class="fw-bold text-success">₹<%= (item.quantity * item.price).to_f %></span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="3" class="text-end fw-semibold">Subtotal:</td>
+            <td class="text-end fw-semibold">₹<%= @invoice.subtotal.to_f %></td>
+          </tr>
+          <% if @invoice.tax_amount.to_f > 0 %>
+            <tr>
+              <td colspan="3" class="text-end">Tax:</td>
+              <td class="text-end">₹<%= @invoice.tax_amount.to_f %></td>
+            </tr>
+          <% end %>
+          <% if @invoice.delivery_charge.to_f > 0 %>
+            <tr>
+              <td colspan="3" class="text-end">Delivery Charge:</td>
+              <td class="text-end">₹<%= @invoice.delivery_charge.to_f %></td>
+            </tr>
+          <% end %>
+          <% if @invoice.discount_amount.to_f > 0 %>
+            <tr>
+              <td colspan="3" class="text-end text-success">Discount:</td>
+              <td class="text-end text-success">-₹<%= @invoice.discount_amount.to_f %></td>
+            </tr>
+          <% end %>
+          <tr class="table-dark">
+            <td colspan="3" class="text-end fw-bold">Total Amount:</td>
+            <td class="text-end fw-bold">₹<%= @invoice.total_amount.to_f %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Avatar styling */
+.avatar-sm {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* Enhanced table styling */
+.table td {
+  padding: 1rem 0.75rem;
+}
+
+.table th {
+  padding: 1rem 0.75rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Badge enhancements */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Button styling */
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+</style>

@@ -1114,8 +1114,8 @@
         customerAddresses = [
           {
             id: 1,
-            name: '<%= current_customer.display_name %>',
-            mobile: '<%= current_customer.mobile %>',
+            name: '<%= current_customer&.display_name || "Guest User" %>',
+            mobile: '<%= current_customer&.mobile || "N/A" %>',
             address: 'Sample Address, Street 1',
             city: 'City Name',
             state: 'State Name',

@@ -1,5 +1,6 @@
 class Customer::RegistrationsController < Customer::BaseController
   skip_before_action :authenticate_customer!
+  skip_before_action :ensure_customer_role
   layout 'customer_auth'
 
   def new

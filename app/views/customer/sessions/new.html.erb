@@ -1,18 +1,18 @@
 <% content_for :title, 'Customer Login' %>
 
-<div class="text-center mb-4">
-  <h3 class="fw-bold">Welcome Back!</h3>
-  <p class="text-muted">Sign in to your account</p>
+<div class="welcome-text">
+  <h1 class="welcome-title">Welcome Back!</h1>
+  <p class="welcome-subtitle">Sign in to continue to your account</p>
 </div>
 
 <%= form_with url: customer_login_path, method: :post, local: true, class: "needs-validation", novalidate: true do |f| %>
-  <div class="mb-3">
+  <div class="form-group">
     <%= f.label :email_or_mobile, "Email or Mobile Number", class: "form-label" %>
     <div class="input-group">
-      <span class="input-group-text"><i class="bi bi-person"></i></span>
+      <span class="input-group-text"><i class="bi bi-person-circle"></i></span>
       <%= f.text_field :email_or_mobile,
                       class: "form-control",
-                      placeholder: "Enter email or mobile number",
+                      placeholder: "Enter your email or mobile number",
                       required: true,
                       autofocus: true %>
       <div class="invalid-feedback">
@@ -21,10 +21,10 @@
     </div>
   </div>
 
-  <div class="mb-3">
+  <div class="form-group">
     <%= f.label :password, "Password", class: "form-label" %>
     <div class="input-group">
-      <span class="input-group-text"><i class="bi bi-lock"></i></span>
+      <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
       <%= f.password_field :password,
                           class: "form-control",
                           placeholder: "Enter your password",
@@ -35,23 +35,27 @@
     </div>
   </div>
 
-  <div class="mb-3 form-check">
-    <%= f.check_box :remember_me, class: "form-check-input" %>
-    <%= f.label :remember_me, "Remember me", class: "form-check-label" %>
+  <div class="form-group d-flex justify-content-between align-items-center">
+    <div class="form-check">
+      <%= f.check_box :remember_me, class: "form-check-input" %>
+      <%= f.label :remember_me, "Keep me signed in", class: "form-check-label" %>
+    </div>
+    <%= link_to customer_forgot_password_path, class: "text-decoration-none" do %>
+      <i class="bi bi-key me-1"></i>Forgot password?
+    <% end %>
   </div>
 
-  <div class="d-grid gap-2 mb-3">
-    <%= f.submit "Sign In", class: "btn btn-primary btn-lg" %>
+  <div class="d-grid gap-2 mb-4">
+    <%= f.submit "Sign In to Account", class: "btn btn-primary btn-lg" %>
   </div>
 <% end %>
 
-<div class="text-center">
-  <p class="mb-2">
-    <%= link_to "Forgot your password?", customer_forgot_password_path, class: "text-decoration-none" %>
-  </p>
-  <p>
-    Don't have an account?
-    <%= link_to "Sign up here", customer_register_path, class: "text-decoration-none fw-bold" %>
+<div class="auth-links">
+  <p class="mb-0">
+    New to AtmaNirbhar Farm?
+    <%= link_to customer_register_path do %>
+      <i class="bi bi-person-plus me-1"></i>Create an account
+    <% end %>
   </p>
 </div>
 

@@ -917,14 +917,15 @@ Rails.application.routes.draw do
   # Customer Web Application routes
   namespace :customer do
     # Authentication routes
-    get '/login', to: 'sessions#new'
+    get '/login', to: 'sessions#new', as: 'login'
     post '/login', to: 'sessions#create'
-    delete '/logout', to: 'sessions#destroy'
-    get '/register', to: 'registrations#new'
+    delete '/logout', to: 'sessions#destroy', as: 'logout'
+    get '/logout', to: 'sessions#logout_redirect'
+    get '/register', to: 'registrations#new', as: 'register'
     post '/register', to: 'registrations#create'
-    get '/forgot_password', to: 'passwords#new'
+    get '/forgot_password', to: 'passwords#new', as: 'forgot_password'
     post '/forgot_password', to: 'passwords#create'
-    get '/reset_password', to: 'passwords#edit'
+    get '/reset_password', to: 'passwords#edit', as: 'reset_password'
     patch '/reset_password', to: 'passwords#update'
 
     # Dashboard and main functionality
@@ -972,6 +973,13 @@ Rails.application.routes.draw do
       member do
         get :track
         get :invoice
+      end
+    end
+
+    # Invoices
+    resources :invoices, only: [:index, :show] do
+      member do
+        get :download
       end
     end
 

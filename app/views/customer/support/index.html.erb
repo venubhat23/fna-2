@@ -1,187 +1,411 @@
 <% content_for :title, "Support - Dhanvantri Naturals" %>
 
 <style>
-  .support-page {
-    background: #f8f9fa;
-    min-height: 100vh;
-    padding: 1rem 0;
+  /* Premium Support Page Styles - Matching Shop Design */
+  body {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
+    font-family: 'Poppins', sans-serif;
   }
 
-  .page-header {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid #e1f5fe;
+  /* Modern Container Spacing */
+  .container-fluid {
+    max-width: 1400px;
+    margin: 0 auto;
   }
 
-  .page-title {
-    color: #1565c0;
-    font-weight: 600;
-    font-size: 1.75rem;
-    margin-bottom: 0.5rem;
-  }
-
+  /* Enhanced Hover Effects */
   .hover-lift {
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hover-lift::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: all 0.5s;
+    z-index: 1;
+  }
+
+  .hover-lift:hover::before {
+    left: 100%;
   }
 
   .hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(28, 124, 84, 0.15) !important;
+  }
+
+  /* Enhanced Modern Cards */
+  .card {
+    border: 1px solid rgba(28, 124, 84, 0.08);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1C7C54, #10b981, #059669);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(28, 124, 84, 0.2);
+    box-shadow: 0 16px 32px rgba(28, 124, 84, 0.1);
+  }
+
+  .card:hover::before {
+    opacity: 1;
+  }
+
+  /* Premium Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, #1C7C54 0%, #10b981 100%);
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(28, 124, 84, 0.2);
+    border-radius: 8px;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #0f5d3d 0%, #047857 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+    box-shadow: 0 6px 20px rgba(28, 124, 84, 0.3);
+  }
+
+  .btn-outline-primary {
+    color: #1C7C54;
+    border-color: #1C7C54;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+  }
+
+  .btn-outline-primary:hover {
+    background: #1C7C54;
+    border-color: #1C7C54;
+    transform: translateY(-1px);
+  }
+
+  /* Text Colors */
+  .text-primary {
+    color: #1C7C54 !important;
+  }
+
+  .text-success {
+    color: #10b981 !important;
+  }
+
+  /* Enhanced Badge Styles */
+  .badge {
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .badge.bg-primary-subtle {
+    background-color: rgba(28, 124, 84, 0.1) !important;
+    border: 1px solid rgba(28, 124, 84, 0.2);
+    color: #1C7C54 !important;
+  }
+
+  .badge.bg-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  }
+
+  .badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Card Header Styling */
+  .card-header {
+    border-bottom: 1px solid rgba(28, 124, 84, 0.08);
+    background: linear-gradient(135deg, rgba(28, 124, 84, 0.02) 0%, rgba(16, 185, 129, 0.02) 100%);
+    border-radius: 16px 16px 0 0 !important;
+  }
+
+  /* List Group Styling */
+  .list-group-item {
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 8px !important;
+    margin-bottom: 4px;
+  }
+
+  .list-group-item:hover {
+    background: rgba(28, 124, 84, 0.05);
+    transform: translateX(4px);
+  }
+
+  /* FAQ Accordion Styling */
+  .accordion-button {
+    background: rgba(28, 124, 84, 0.02);
+    border: none;
+    color: #1C7C54;
+    font-weight: 600;
+    border-radius: 8px !important;
+  }
+
+  .accordion-button:not(.collapsed) {
+    background: linear-gradient(135deg, rgba(28, 124, 84, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+    box-shadow: none;
+    color: #0f5d3d;
+  }
+
+  .accordion-button:focus {
+    box-shadow: 0 0 0 3px rgba(28, 124, 84, 0.1);
+  }
+
+  .accordion-item {
+    border: 1px solid rgba(28, 124, 84, 0.08);
+    border-radius: 12px !important;
+    margin-bottom: 8px;
+  }
+
+  .accordion-body {
+    background: rgba(248, 250, 252, 0.5);
+    color: #374151;
+  }
+
+  /* Contact Icons Styling */
+  .contact-item .bi {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+
+  .bi-telephone-fill {
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .bi-envelope-fill {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  .bi-clock-fill {
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  /* Header Title Styling */
+  h2 {
+    color: #212529;
+    font-weight: 700;
+  }
+
+  .text-muted {
+    color: #6c757d !important;
+  }
+
+  /* Responsive improvements */
+  @media (max-width: 768px) {
+    .card-body {
+      padding: 1.5rem 1rem;
+    }
   }
 </style>
 
-<div class="container py-4">
-  <div class="support-page">
-    <div class="page-header mb-4">
-      <h1 class="page-title">
-        <i class="bi bi-headset me-2"></i>
+<div class="container-fluid py-4 px-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1 text-dark fw-bold">
+        <i class="bi bi-headset me-2 text-primary"></i>
         Customer Support
-      </h1>
-      <p class="text-muted">We're here to help you with any questions or concerns</p>
+      </h2>
+      <p class="text-muted mb-0">We're here to help you with any questions or concerns</p>
     </div>
-
-    <!-- Action Buttons Row -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-6">
-        <%= link_to new_customer_client_request_path, class: "btn btn-primary btn-lg w-100 shadow-sm hover-lift" do %>
-          <i class="bi bi-plus-circle me-2"></i>
-          Raise New Support Request
-        <% end %>
+    <div class="d-flex gap-3">
+      <div class="text-center">
+        <div class="badge bg-primary-subtle text-primary fs-6 px-3 py-2">
+          <i class="bi bi-clock me-1"></i>
+          24/7 Support
+        </div>
       </div>
-      <div class="col-md-6">
-        <%= link_to customer_client_requests_path, class: "btn btn-outline-primary btn-lg w-100 shadow-sm hover-lift" do %>
-          <i class="bi bi-list-check me-2"></i>
-          View My Requests
-          <% if current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count&.> 0 %>
-            <span class="badge bg-danger ms-2"><%= current_customer.client_requests.where(status: ['pending', 'in_progress']).count %></span>
+      <% if current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count&.> 0 %>
+      <div class="text-center">
+        <div class="badge bg-danger fs-6 px-3 py-2 text-white">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          <%= current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count %> Active Requests
+        </div>
+      </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Action Buttons Row -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <%= link_to new_customer_client_request_path, class: "btn btn-primary btn-lg w-100 shadow-sm hover-lift" do %>
+            <i class="bi bi-plus-circle me-2"></i>
+            Raise New Support Request
           <% end %>
-        <% end %>
+        </div>
+        <div class="col-md-6">
+          <%= link_to customer_client_requests_path, class: "btn btn-outline-primary btn-lg w-100 shadow-sm hover-lift" do %>
+            <i class="bi bi-list-check me-2"></i>
+            View My Requests
+            <% if current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count&.> 0 %>
+              <span class="badge bg-danger ms-2 text-white"><%= current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count %></span>
+            <% end %>
+          <% end %>
+        </div>
       </div>
     </div>
+  </div>
 
-    <div class="row g-4">
-      <!-- Contact Information -->
-      <div class="col-lg-6">
-        <div class="card h-100 border-0 shadow-sm hover-lift">
-          <div class="card-header bg-light">
-            <h5 class="mb-0 text-primary">
-              <i class="bi bi-phone me-2"></i>
-              Contact Information
-            </h5>
+  <!-- Support Content Section -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-info-circle me-2 text-primary"></i>
+        Support Information
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="p-4">
+        <div class="row g-4">
+          <!-- Contact Information -->
+          <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm hover-lift">
+              <div class="card-header">
+                <h5 class="mb-0 text-primary">
+                  <i class="bi bi-phone me-2"></i>
+                  Contact Information
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="contact-item mb-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-telephone-fill text-success me-2"></i>
+                    <strong>Phone:</strong>
+                  </div>
+                  <p class="mb-0 ms-4">+91 9900503118</p>
+                </div>
+                <div class="contact-item mb-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-envelope-fill text-info me-2"></i>
+                    <strong>Email:</strong>
+                  </div>
+                  <p class="mb-0 ms-4">support@dhanvantri-naturals.com</p>
+                </div>
+                <div class="contact-item mb-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-clock-fill text-warning me-2"></i>
+                    <strong>Business Hours:</strong>
+                  </div>
+                  <div class="ms-4">
+                    <p class="mb-1">Monday - Friday: 9:00 AM - 6:00 PM</p>
+                    <p class="mb-0">Saturday: 9:00 AM - 4:00 PM</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="card-body">
-            <div class="contact-item mb-3">
-              <div class="d-flex align-items-center mb-2">
-                <i class="bi bi-telephone-fill text-success me-2"></i>
-                <strong>Phone:</strong>
+
+          <!-- Quick Help -->
+          <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm hover-lift">
+              <div class="card-header">
+                <h5 class="mb-0 text-primary">
+                  <i class="bi bi-question-circle me-2"></i>
+                  Quick Help
+                </h5>
               </div>
-              <p class="mb-0 ms-4">+91 9900503118</p>
-            </div>
-            <div class="contact-item mb-3">
-              <div class="d-flex align-items-center mb-2">
-                <i class="bi bi-envelope-fill text-info me-2"></i>
-                <strong>Email:</strong>
-              </div>
-              <p class="mb-0 ms-4">support@dhanvantri-naturals.com</p>
-            </div>
-            <div class="contact-item mb-3">
-              <div class="d-flex align-items-center mb-2">
-                <i class="bi bi-clock-fill text-warning me-2"></i>
-                <strong>Business Hours:</strong>
-              </div>
-              <div class="ms-4">
-                <p class="mb-1">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                <p class="mb-0">Saturday: 9:00 AM - 4:00 PM</p>
+              <div class="card-body">
+                <div class="list-group list-group-flush">
+                  <%= link_to customer_orders_path, class: "list-group-item list-group-item-action border-0" do %>
+                    <i class="bi bi-truck text-primary me-3"></i>
+                    Track Your Order
+                  <% end %>
+                  <a href="#returns" class="list-group-item list-group-item-action border-0">
+                    <i class="bi bi-arrow-return-left text-warning me-3"></i>
+                    Return Policy
+                  </a>
+                  <a href="#payment" class="list-group-item list-group-item-action border-0">
+                    <i class="bi bi-credit-card text-success me-3"></i>
+                    Payment Issues
+                  </a>
+                  <%= link_to customer_subscriptions_path, class: "list-group-item list-group-item-action border-0" do %>
+                    <i class="bi bi-arrow-repeat text-info me-3"></i>
+                    Subscription Help
+                  <% end %>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Quick Help -->
-      <div class="col-lg-6">
-        <div class="card h-100 border-0 shadow-sm hover-lift">
-          <div class="card-header bg-light">
-            <h5 class="mb-0 text-primary">
-              <i class="bi bi-question-circle me-2"></i>
-              Quick Help
-            </h5>
-          </div>
-          <div class="card-body">
-            <div class="list-group list-group-flush">
-              <%= link_to customer_orders_path, class: "list-group-item list-group-item-action border-0" do %>
-                <i class="bi bi-truck text-primary me-3"></i>
-                Track Your Order
-              <% end %>
-              <a href="#returns" class="list-group-item list-group-item-action border-0">
-                <i class="bi bi-arrow-return-left text-warning me-3"></i>
-                Return Policy
-              </a>
-              <a href="#payment" class="list-group-item list-group-item-action border-0">
-                <i class="bi bi-credit-card text-success me-3"></i>
-                Payment Issues
-              </a>
-              <%= link_to customer_subscriptions_path, class: "list-group-item list-group-item-action border-0" do %>
-                <i class="bi bi-arrow-repeat text-info me-3"></i>
-                Subscription Help
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
+  </div>
 
   <!-- FAQ Section -->
-  <div class="row mt-5">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">
-            <i class="fas fa-question me-2"></i>
-            Frequently Asked Questions
-          </h5>
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-transparent border-0">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-question-circle me-2 text-primary"></i>
+        Frequently Asked Questions
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+              How do I track my order?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              You can track your order by visiting the "My Orders" section in your dashboard. Each order will show its current status and tracking information.
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div class="accordion" id="faqAccordion">
-            <div class="accordion-item">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                  How do I track my order?
-                </button>
-              </h2>
-              <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">
-                  You can track your order by visiting the "My Orders" section in your dashboard. Each order will show its current status and tracking information.
-                </div>
-              </div>
-            </div>
 
-            <div class="accordion-item">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                  How do I cancel or modify my subscription?
-                </button>
-              </h2>
-              <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">
-                  Go to the "Subscriptions" section in your dashboard where you can pause, resume, or cancel your subscriptions as needed.
-                </div>
-              </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+              How do I cancel or modify my subscription?
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Go to the "Subscriptions" section in your dashboard where you can pause, resume, or cancel your subscriptions as needed.
             </div>
+          </div>
+        </div>
 
-            <div class="accordion-item">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                  What is your return policy?
-                </button>
-              </h2>
-              <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">
-                  We accept returns within 7 days of delivery for non-perishable items. Please contact our support team to initiate a return.
-                </div>
-              </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+              What is your return policy?
+            </button>
+          </h2>
+          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              We accept returns within 7 days of delivery for non-perishable items. Please contact our support team to initiate a return.
             </div>
           </div>
         </div>

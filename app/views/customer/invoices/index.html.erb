@@ -1,0 +1,397 @@
+<% content_for :title, "My Invoices - Atma Nirbhar Farm" %>
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">My Invoices</h2>
+    <p class="text-muted mb-0">View and manage all your invoices and billing</p>
+  </div>
+  <div class="d-flex gap-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Invoices</h6>
+            <h5 class="mb-0"><%= @invoices_for_stats.count %></h5>
+          </div>
+          <div class="text-primary">
+            <i class="bi bi-receipt fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Paid</h6>
+            <h4 class="mb-0"><%= @invoices_for_stats.where(payment_status: :paid).count %></h4>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-check-circle fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Unpaid</h6>
+            <h4 class="mb-0"><%= @invoices_for_stats.where(payment_status: [:unpaid, nil]).count %></h4>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-exclamation-triangle fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Overdue</h6>
+            <h4 class="mb-0"><%= @invoices_for_stats.where(payment_status: :overdue).count %></h4>
+          </div>
+          <div class="text-danger">
+            <i class="bi bi-x-circle fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Total Amount</h6>
+            <h4 class="mb-0">₹<%= @invoices_for_stats.sum(:total_amount).to_f %></h4>
+          </div>
+          <div class="text-info">
+            <i class="bi bi-currency-rupee fs-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Controls -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <%= form_with url: customer_invoices_path, method: :get, local: true, class: "row g-3" do |f| %>
+      <div class="col-md-3">
+        <label for="search" class="form-label fw-semibold">
+          <i class="bi bi-search me-1 text-primary"></i>
+          Search Invoices
+        </label>
+        <%= f.text_field :search,
+            placeholder: "Search by invoice number, order number...",
+            value: params[:search],
+            class: "form-control",
+            id: "search" %>
+      </div>
+      <div class="col-md-3">
+        <label for="payment_status" class="form-label fw-semibold">
+          <i class="bi bi-credit-card me-1 text-success"></i>
+          Payment Status
+        </label>
+        <%= f.select :payment_status,
+            options_for_select([
+              ['All Payments', ''],
+              ['Paid', 'paid'],
+              ['Unpaid', 'unpaid'],
+              ['Overdue', 'overdue'],
+              ['Partially Paid', 'partially_paid']
+            ], params[:payment_status]),
+            { include_blank: false },
+            { class: "form-select", id: "payment_status" } %>
+      </div>
+      <div class="col-md-3">
+        <label for="date_from" class="form-label fw-semibold">
+          <i class="bi bi-calendar me-1 text-info"></i>
+          From Date
+        </label>
+        <%= f.date_field :date_from,
+            placeholder: "From Date",
+            value: params[:date_from],
+            class: "form-control",
+            id: "date_from" %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" style="opacity: 0;">Actions</label>
+        <div class="d-grid gap-2">
+          <%= f.submit "Filter", class: "btn btn-outline-primary btn-sm" %>
+          <%= link_to "Clear", customer_invoices_path, class: "btn btn-outline-secondary btn-sm" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Invoices Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Invoice History</h5>
+      <div class="d-flex gap-2">
+        <div class="position-relative">
+          <input type="text" class="form-control" placeholder="Search in table..." id="searchInput">
+          <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <% if @invoices.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0 fw-semibold">Invoice</th>
+              <th class="border-0 fw-semibold">Order</th>
+              <th class="border-0 fw-semibold">Date</th>
+              <th class="border-0 fw-semibold">Amount</th>
+              <th class="border-0 fw-semibold">Payment Status</th>
+              <th class="border-0 fw-semibold">Order Status</th>
+              <th class="border-0 fw-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @invoices.each do |invoice| %>
+              <tr>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-info-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
+                      <i class="bi bi-receipt text-info"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0">#<%= invoice.invoice_number %></h6>
+                      <small class="text-muted">
+                        Generated: <%= invoice.created_at.strftime("%d %b %Y") %>
+                      </small>
+                    </div>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <div class="fw-semibold">#<%= invoice.booking_number %></div>
+                    <small class="text-muted"><%= invoice.booking_items.count %> item<%= 's' if invoice.booking_items.count != 1 %></small>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <div class="fw-semibold"><%= invoice.booking_date.strftime("%d %b %Y") %></div>
+                    <small class="text-muted"><%= invoice.booking_date.strftime("%I:%M %p") %></small>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div>
+                    <div class="fw-semibold">₹<%= invoice.total_amount.to_f %></div>
+                    <small class="text-muted">
+                      <% if invoice.subtotal != invoice.total_amount %>
+                        Subtotal: ₹<%= invoice.subtotal.to_f %>
+                      <% end %>
+                    </small>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <% case invoice.payment_status&.to_s %>
+                  <% when 'paid' %>
+                    <span class="badge bg-success-subtle text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Paid
+                    </span>
+                  <% when 'overdue' %>
+                    <span class="badge bg-danger-subtle text-danger">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      Overdue
+                    </span>
+                  <% when 'partially_paid' %>
+                    <span class="badge bg-warning-subtle text-warning">
+                      <i class="bi bi-clock me-1"></i>
+                      Partial
+                    </span>
+                  <% else %>
+                    <span class="badge bg-warning-subtle text-warning">
+                      <i class="bi bi-hourglass me-1"></i>
+                      Unpaid
+                    </span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <% case invoice.status.to_s %>
+                  <% when 'confirmed', 'processing', 'packed' %>
+                    <span class="badge bg-info-subtle text-info">
+                      <i class="bi bi-arrow-clockwise me-1"></i>
+                      <%= invoice.status.humanize %>
+                    </span>
+                  <% when 'shipped', 'out_for_delivery' %>
+                    <span class="badge bg-warning-subtle text-warning">
+                      <i class="bi bi-truck me-1"></i>
+                      <%= invoice.status.humanize %>
+                    </span>
+                  <% when 'completed', 'delivered' %>
+                    <span class="badge bg-success-subtle text-success">
+                      <i class="bi bi-check-circle me-1"></i>
+                      <%= invoice.status.humanize %>
+                    </span>
+                  <% when 'cancelled', 'returned' %>
+                    <span class="badge bg-danger-subtle text-danger">
+                      <i class="bi bi-x-circle me-1"></i>
+                      <%= invoice.status.humanize %>
+                    </span>
+                  <% else %>
+                    <span class="badge bg-secondary-subtle text-secondary">
+                      <i class="bi bi-clock me-1"></i>
+                      <%= invoice.status.humanize %>
+                    </span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <div class="d-flex gap-1">
+                    <%= link_to customer_invoice_path(invoice),
+                        class: "btn btn-sm btn-outline-info",
+                        title: "View Invoice" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    <%= link_to download_customer_invoice_path(invoice, format: :pdf),
+                        class: "btn btn-sm btn-outline-danger",
+                        title: "Download Invoice PDF",
+                        target: "_blank" do %>
+                      <i class="bi bi-file-earmark-pdf"></i>
+                    <% end %>
+                    <%= link_to customer_order_path(invoice),
+                        class: "btn btn-sm btn-outline-primary",
+                        title: "View Order Details" do %>
+                      <i class="bi bi-bag"></i>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if respond_to?(:paginate) && @invoices.respond_to?(:total_pages) && @invoices.total_pages > 1 %>
+        <div class="card-footer bg-transparent border-0">
+          <%= paginate @invoices %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="bi bi-receipt fs-1 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-3">No Invoices Found</h5>
+        <p class="text-muted mb-4">You don't have any invoices yet. Complete an order to generate an invoice.</p>
+        <%= link_to "View Orders", customer_orders_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Search functionality in table
+  const searchInput = document.getElementById('searchInput');
+  const tableRows = document.querySelectorAll('tbody tr');
+
+  searchInput?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+
+    tableRows.forEach(row => {
+      const invoiceText = row.cells[0]?.textContent.toLowerCase() || '';
+      const orderText = row.cells[1]?.textContent.toLowerCase() || '';
+      const dateText = row.cells[2]?.textContent.toLowerCase() || '';
+      const paymentStatusText = row.cells[4]?.textContent.toLowerCase() || '';
+
+      if (invoiceText.includes(searchTerm) ||
+          orderText.includes(searchTerm) ||
+          dateText.includes(searchTerm) ||
+          paymentStatusText.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+});
+</script>
+
+<style>
+/* Avatar styling */
+.avatar-sm {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* Enhanced table styling */
+.table td {
+  padding: 1rem 0.75rem;
+}
+
+.table th {
+  padding: 1rem 0.75rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Badge enhancements */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Button styling */
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.btn-outline-info:hover {
+  background-color: #0dcaf0;
+  border-color: #0dcaf0;
+  color: white;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+/* Form styling */
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-select:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+</style>

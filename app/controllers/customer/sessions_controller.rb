@@ -28,6 +28,11 @@ class Customer::SessionsController < Customer::BaseController
     redirect_to customer_login_path, notice: 'Successfully logged out!'
   end
 
+  def logout_redirect
+    sign_out_customer
+    redirect_to customer_login_path, notice: 'Successfully logged out!'
+  end
+
   private
 
   def find_customer_by_credentials

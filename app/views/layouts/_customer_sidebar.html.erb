@@ -382,6 +382,22 @@
           <% end %>
         </li>
 
+        <!-- My Invoices -->
+        <li class="customer-nav-item">
+          <%= link_to customer_invoices_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_invoices_path) || request.path.include?('/customer/invoices')}" do %>
+            <div class="nav-icon-modern">
+              <div class="customer-icon-bg customer-gradient-blue">
+                <i class="bi bi-receipt-cutoff"></i>
+              </div>
+            </div>
+            <span class="customer-nav-text">My Invoices</span>
+            <% if current_customer && current_customer.bookings.where.not(invoice_number: [nil, '']).where(payment_status: [:unpaid, nil]).count > 0 %>
+              <span class="customer-nav-badge"><%= current_customer.bookings.where.not(invoice_number: [nil, '']).where(payment_status: [:unpaid, nil]).count %></span>
+            <% end %>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+
         <!-- Subscriptions -->
         <li class="customer-nav-item">
           <%= link_to customer_subscriptions_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_subscriptions_path) || request.path.include?('/customer/subscriptions')}" do %>
@@ -441,12 +457,12 @@
           <% end %>
         </li>
 
-        <!-- Support Requests -->
+        <!-- Support -->
         <li class="customer-nav-item">
-          <%= link_to customer_client_requests_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_client_requests_path) || request.path.include?('/customer/client_requests')}" do %>
+          <%= link_to customer_support_path, class: "customer-nav-link-modern #{'active' if current_page?(customer_support_path) || request.path.include?('/customer/support')}" do %>
             <div class="nav-icon-modern">
               <div class="customer-icon-bg customer-gradient-cyan">
-                <i class="bi bi-life-preserver"></i>
+                <i class="bi bi-headset"></i>
               </div>
             </div>
             <span class="customer-nav-text">Support</span>
@@ -463,7 +479,7 @@
   <% if current_customer %>
   <!-- Logout Section -->
   <div class="customer-sidebar-footer">
-    <%= link_to customer_logout_path, method: :delete, class: "customer-logout-btn-modern" do %>
+    <%= button_to customer_logout_path, method: :delete, class: "customer-logout-btn-modern", style: "border: none; background: none; padding: 0; width: 100%;" do %>
       <div class="nav-icon-modern">
         <div class="customer-icon-bg customer-gradient-red">
           <i class="bi bi-box-arrow-right"></i>
