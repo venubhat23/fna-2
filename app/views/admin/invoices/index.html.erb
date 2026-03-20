@@ -50,41 +50,45 @@
   </div>
 
   <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="flex-shrink-0">
-            <div class="bg-success bg-opacity-10 rounded-circle p-3">
-              <i class="bi bi-check-circle text-success fs-4"></i>
+    <%= link_to admin_invoices_path(status: 'fully_paid'), class: "text-decoration-none" do %>
+      <div class="card border-0 shadow-sm h-100 clickable-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                <i class="bi bi-check-circle text-success fs-4"></i>
+              </div>
             </div>
-          </div>
-          <div class="flex-grow-1 ms-3">
-            <div class="text-muted small">Paid Amount</div>
-            <div class="fs-4 fw-bold text-success">₹<%= number_with_delimiter(@stats[:paid_amount].to_i) %></div>
-            <div class="small text-muted"><%= @stats[:paid_count] %> invoices</div>
+            <div class="flex-grow-1 ms-3">
+              <div class="text-muted small">Paid Amount</div>
+              <div class="fs-4 fw-bold text-success">₹<%= number_with_delimiter(@stats[:paid_amount].to_i) %></div>
+              <div class="small text-muted"><%= @stats[:paid_count] %> invoices</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    <% end %>
   </div>
 
   <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="flex-shrink-0">
-            <div class="bg-warning bg-opacity-10 rounded-circle p-3">
-              <i class="bi bi-clock text-warning fs-4"></i>
+    <%= link_to admin_invoices_path(status: 'pending'), class: "text-decoration-none" do %>
+      <div class="card border-0 shadow-sm h-100 clickable-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                <i class="bi bi-clock text-warning fs-4"></i>
+              </div>
             </div>
-          </div>
-          <div class="flex-grow-1 ms-3">
-            <div class="text-muted small">Pending Amount</div>
-            <div class="fs-4 fw-bold text-warning">₹<%= number_with_delimiter(@stats[:pending_amount].to_i) %></div>
-            <div class="small text-muted"><%= @stats[:pending_count] %> invoices</div>
+            <div class="flex-grow-1 ms-3">
+              <div class="text-muted small">Pending Amount</div>
+              <div class="fs-4 fw-bold text-warning">₹<%= number_with_delimiter(@stats[:pending_amount].to_i) %></div>
+              <div class="small text-muted"><%= @stats[:pending_count] %> invoices</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    <% end %>
   </div>
 </div>
 
@@ -102,6 +106,7 @@
           <%= f.select :status, options_for_select([
                 ['All Status', 'all'],
                 ['Paid', 'fully_paid'],
+                ['Pending', 'pending'],
                 ['Unpaid', 'unpaid'],
                 ['Partially Paid', 'partially_paid']
               ], params[:status] || 'all'), {}, { class: "form-select" } %>
@@ -153,9 +158,9 @@
         <h6 class="mb-0 text-dark">Invoice List</h6>
         <small class="text-muted">
           <% if params[:search].present? || params[:status].present? || params[:date_from].present? || params[:date_to].present? %>
-            Showing filtered results
+            Showing filtered results (Page <%= @paginated_invoices.current_page %> of <%= @paginated_invoices.total_pages %>)
           <% else %>
-            Showing latest <%= @invoices.count %> invoices
+            Showing page <%= @paginated_invoices.current_page %> of <%= @paginated_invoices.total_pages %>
           <% end %>
         </small>
       </div>
@@ -172,7 +177,7 @@
           </button>
         </div>
         <small class="text-muted">
-          Total: <%= number_with_delimiter(@stats[:total_invoices]) %> invoices
+          Total: <%= number_with_delimiter(@paginated_invoices.total_count) %> invoices
         </small>
       </div>
     </div>
@@ -362,17 +367,14 @@
         </table>
       </div>
 
-      <!-- Pagination Info -->
+      <!-- Pagination Info and Controls -->
       <div class="card-footer bg-light border-0">
         <div class="d-flex justify-content-between align-items-center">
           <div class="text-muted small">
-            Showing <%= @invoices.count %> of <%= number_with_delimiter(@stats[:total_invoices]) %> invoices
+            Showing <%= @paginated_invoices.offset_value + 1 %>-<%= [@paginated_invoices.offset_value + @paginated_invoices.limit_value, @paginated_invoices.total_count].min %> of <%= number_with_delimiter(@paginated_invoices.total_count) %> invoices
           </div>
           <div>
-            <% if @invoices.count >= 50 %>
-              <%= link_to "Load More", admin_invoices_path(params.permit!.merge(limit: 100)),
-                         class: "btn btn-sm btn-outline-primary" %>
-            <% end %>
+            <%= paginate @paginated_invoices, outer_window: 2, inner_window: 2 %>
           </div>
         </div>
       </div>
@@ -1724,5 +1726,20 @@ function markSelectedAsPaid() {
 
 .d-flex.gap-1 {
   gap: 0.25rem !important;
+}
+
+/* Clickable card styles */
+.clickable-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
+}
+
+.clickable-card:active {
+  transform: translateY(-1px);
 }
 </style>

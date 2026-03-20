@@ -118,6 +118,8 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
   def import_from_master
     month = params[:month].to_i
     year = params[:year].to_i
+    batch_size = params[:batch_size].present? ? params[:batch_size].to_i : nil
+    batch_number = params[:batch_number].present? ? params[:batch_number].to_i : 1
 
     # Validate parameters
     if month < 1 || month > 12 || year < Date.current.year || year > Date.current.year + 5
@@ -127,8 +129,17 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
       return
     end
 
+    # Validate batch parameters
+    if batch_size.present? && (batch_size < 1 || batch_size > 100)
+      respond_to do |format|
+        format.json { render json: { success: false, message: 'Batch size must be between 1 and 100.' }, status: :bad_request }
+      end
+      return
+    end
+
     begin
       Rails.logger.info "Starting master subscription import for #{month}/#{year}"
+      Rails.logger.info "Batch processing: #{batch_size.present? ? "#{batch_size} customers per batch, processing batch #{batch_number}" : "all customers at once"}"
 
       start_date = Date.new(year, month, 1)
       end_date = start_date.end_of_month
@@ -137,8 +148,29 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
       subscription_count = 0
       task_count = 0
 
-      # Process only active customer formats
-      CustomerFormat.active.includes(:customer, :product, :delivery_person).find_each do |customer_format|
+      # Get base query for active customer formats
+      base_query = CustomerFormat.active.includes(:customer, :product, :delivery_person)
+
+      # Apply batch processing if requested
+      if batch_size.present?
+        total_formats = base_query.count
+        offset = (batch_number - 1) * batch_size
+        formats_to_process = base_query.limit(batch_size).offset(offset)
+        total_batches = (total_formats.to_f / batch_size).ceil
+
+        if offset >= total_formats
+          respond_to do |format|
+            format.json { render json: { success: false, message: "Batch #{batch_number} is out of range. Total batches available: #{total_batches}" }, status: :bad_request }
+          end
+          return
+        end
+      else
+        formats_to_process = base_query
+        total_batches = 1
+      end
+
+      # Process customer formats
+      formats_to_process.find_each do |customer_format|
         Rails.logger.info "Processing customer format #{customer_format.id} for customer #{customer_format.customer.id}"
 
         # Step 1: Create Subscription (avoid duplicates)
@@ -155,11 +187,31 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
         end
       end
 
-      message = "Import process completed successfully. #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created."
+      # Prepare response message
+      if batch_size.present?
+        message = "Batch #{batch_number} completed successfully. #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created. (Batch #{batch_number} of #{total_batches})"
+        next_batch_available = batch_number < total_batches
+      else
+        message = "Import process completed successfully. #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created."
+        next_batch_available = false
+      end
+
       Rails.logger.info message
 
       respond_to do |format|
-        format.json { render json: { success: true, message: message } }
+        format.json {
+          render json: {
+            success: true,
+            message: message,
+            batch_info: batch_size.present? ? {
+              current_batch: batch_number,
+              total_batches: total_batches,
+              batch_size: batch_size,
+              next_batch_available: next_batch_available,
+              processed_in_batch: processed_count
+            } : nil
+          }
+        }
       end
     rescue => e
       Rails.logger.error "Error in master subscription import: #{e.message}"

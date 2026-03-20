@@ -7,20 +7,18 @@ class Admin::InvoicesController < Admin::ApplicationController
     # Show only regular invoices by default (exclude booking invoices)
     invoice_type = params[:type] || 'regular'  # Default to 'regular' only
 
-    # Build invoices collection - only regular invoices
-    @all_invoices = []
+    # Get pagination settings from system settings
+    per_page = SystemSetting.default_pagination_per_page
+    page = params[:page] || 1
 
-    # Get only regular invoices
-    regular_invoices = build_regular_invoices_query
-    @all_invoices.concat(regular_invoices.map { |inv| prepare_invoice_data(inv, 'regular') })
+    # Build base query with pagination
+    regular_invoices = build_regular_invoices_query.page(page).per(per_page)
 
-    # Sort invoices by created_at descending
-    @all_invoices.sort_by! { |inv| inv[:created_at] }.reverse!
+    # Convert to hash format for the view
+    @invoices = regular_invoices.map { |inv| prepare_invoice_data(inv, 'regular') }
 
-    # Apply pagination
-    limit = params[:limit]&.to_i || 50
-    offset = params[:offset]&.to_i || 0
-    @invoices = @all_invoices[offset, limit] || []
+    # Store pagination object for view helpers
+    @paginated_invoices = regular_invoices
 
     # Calculate summary statistics for regular invoices only
     @stats = calculate_regular_invoice_stats_only
@@ -472,7 +470,11 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     # Apply status filter
     if params[:status].present? && params[:status] != 'all'
-      base_query = base_query.where(payment_status: params[:status])
+      if params[:status] == 'pending'
+        base_query = base_query.where(payment_status: ['unpaid', 'partially_paid'])
+      else
+        base_query = base_query.where(payment_status: params[:status])
+      end
     end
 
     # Apply date range filter
@@ -486,7 +488,7 @@ class Admin::InvoicesController < Admin::ApplicationController
       base_query = base_query.where("#{table_name}.#{date_column} <= ?", Date.parse(params[:date_to]))
     end
 
-    base_query.order(created_at: :desc).limit(200) # Limit to prevent memory issues
+    base_query.order(created_at: :desc) # Pagination handled by Kaminari
   end
 
   def apply_search_filters_for_stats(base_query, table_name)
@@ -534,7 +536,11 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     # Apply status filter
     if params[:status].present? && params[:status] != 'all'
-      base_query = base_query.where(payment_status: params[:status])
+      if params[:status] == 'pending'
+        base_query = base_query.where(payment_status: ['unpaid', 'partially_paid'])
+      else
+        base_query = base_query.where(payment_status: params[:status])
+      end
     end
 
     # Apply date range filter

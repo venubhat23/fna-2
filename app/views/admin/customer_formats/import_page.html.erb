@@ -55,6 +55,62 @@
               </div>
             </div>
 
+            <!-- Batch Processing Options -->
+            <div class="card border-primary mb-4">
+              <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-layers me-2"></i>Processing Options</h6>
+              </div>
+              <div class="card-body">
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="radio" name="processing_mode" id="processingModeAll" value="all" checked>
+                  <label class="form-check-label" for="processingModeAll">
+                    <strong>Process All Customers at Once</strong>
+                    <div class="text-muted small">Process all active customer formats in one operation (faster but may timeout for large datasets)</div>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="processing_mode" id="processingModeBatch" value="batch">
+                  <label class="form-check-label" for="processingModeBatch">
+                    <strong>Process in Batches</strong>
+                    <div class="text-muted small">Process customers in smaller batches (recommended for better control and large datasets)</div>
+                  </label>
+                </div>
+
+                <!-- Batch Options (Hidden initially) -->
+                <div id="batchOptions" class="mt-3 d-none">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <%= form.label :batch_size, "Customers per Batch", class: "form-label" %>
+                        <%= form.select :batch_size,
+                            options_for_select([
+                              ['5 customers', 5],
+                              ['10 customers (recommended)', 10],
+                              ['15 customers', 15],
+                              ['20 customers', 20],
+                              ['25 customers', 25]
+                            ], 10),
+                            {},
+                            { class: "form-select" } %>
+                        <div class="form-text">Number of customer formats to process per batch</div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <%= form.hidden_field :batch_number, value: 1 %>
+                        <label class="form-label">Current Batch</label>
+                        <div class="input-group">
+                          <input type="number" class="form-control" id="batchNumberDisplay" value="1" min="1" readonly>
+                          <div class="input-group-text">of <span id="totalBatches">?</span></div>
+                        </div>
+                        <div class="form-text">Current batch being processed</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Import Process Information -->
             <div class="alert alert-info">
               <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Import Process Information</h6>
@@ -85,6 +141,16 @@
                 <span id="importBtnText">Start Import Process</span>
                 <span class="spinner-border spinner-border-sm ms-2 d-none" id="importSpinner" role="status"></span>
               </button>
+              <div id="batchControls" class="d-none mt-3">
+                <button type="button" class="btn btn-primary me-2" id="nextBatchBtn" disabled>
+                  <i class="bi bi-arrow-right me-2"></i>
+                  Process Next Batch
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="resetBatchBtn">
+                  <i class="bi bi-arrow-clockwise me-2"></i>
+                  Reset to Batch 1
+                </button>
+              </div>
             </div>
 
           <% end %>
@@ -181,10 +247,75 @@ document.addEventListener('DOMContentLoaded', function() {
   const importResults = document.getElementById('importResults');
   const importResultsContent = document.getElementById('importResultsContent');
 
+  // Batch processing elements
+  const processingModeAll = document.getElementById('processingModeAll');
+  const processingModeBatch = document.getElementById('processingModeBatch');
+  const batchOptions = document.getElementById('batchOptions');
+  const batchControls = document.getElementById('batchControls');
+  const nextBatchBtn = document.getElementById('nextBatchBtn');
+  const resetBatchBtn = document.getElementById('resetBatchBtn');
+  const batchNumberDisplay = document.getElementById('batchNumberDisplay');
+  const totalBatchesSpan = document.getElementById('totalBatches');
+
+  let currentBatchInfo = null;
+
+  // Handle processing mode changes
+  if (processingModeAll && processingModeBatch) {
+    [processingModeAll, processingModeBatch].forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (processingModeBatch.checked) {
+          batchOptions.classList.remove('d-none');
+          updateTotalBatches();
+        } else {
+          batchOptions.classList.add('d-none');
+          batchControls.classList.add('d-none');
+        }
+      });
+    });
+  }
+
+  // Handle batch size changes
+  const batchSizeSelect = document.querySelector('[name="batch_size"]');
+  if (batchSizeSelect) {
+    batchSizeSelect.addEventListener('change', updateTotalBatches);
+  }
+
+  // Update total batches calculation
+  function updateTotalBatches() {
+    if (processingModeBatch.checked) {
+      const batchSize = parseInt(batchSizeSelect.value);
+      const activeFormats = <%= @stats[:active] %>;
+      const totalBatches = Math.ceil(activeFormats / batchSize);
+      totalBatchesSpan.textContent = totalBatches;
+    }
+  }
+
   if (importForm) {
     importForm.addEventListener('submit', function(e) {
       e.preventDefault();
       processImport();
+    });
+  }
+
+  // Handle next batch button
+  if (nextBatchBtn) {
+    nextBatchBtn.addEventListener('click', function() {
+      const currentBatch = parseInt(document.querySelector('[name="batch_number"]').value);
+      document.querySelector('[name="batch_number"]').value = currentBatch + 1;
+      batchNumberDisplay.value = currentBatch + 1;
+      processImport();
+    });
+  }
+
+  // Handle reset batch button
+  if (resetBatchBtn) {
+    resetBatchBtn.addEventListener('click', function() {
+      document.querySelector('[name="batch_number"]').value = 1;
+      batchNumberDisplay.value = 1;
+      currentBatchInfo = null;
+      batchControls.classList.add('d-none');
+      nextBatchBtn.disabled = false;
+      importResults.classList.add('d-none');
     });
   }
 
@@ -195,10 +326,21 @@ document.addEventListener('DOMContentLoaded', function() {
     importBtn.disabled = true;
     importBtnText.textContent = 'Processing...';
     importSpinner.classList.remove('d-none');
+    nextBatchBtn.disabled = true;
 
     // Prepare form data
     const formData = new FormData(importForm);
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    // Add batch processing parameters if batch mode is selected
+    if (processingModeBatch.checked) {
+      // Batch size is already in the form
+      // Batch number is already in the form
+    } else {
+      // Remove batch parameters for "all at once" mode
+      formData.delete('batch_size');
+      formData.delete('batch_number');
+    }
 
     // Submit request
     fetch(importForm.action, {
@@ -223,25 +365,85 @@ document.addEventListener('DOMContentLoaded', function() {
       importResults.classList.remove('d-none');
 
       if (data.success) {
-        importResultsContent.innerHTML = `
+        currentBatchInfo = data.batch_info;
+
+        let resultContent = `
           <div class="alert alert-success">
             <h5 class="alert-heading"><i class="bi bi-check-circle me-2"></i>Import Successful!</h5>
             <p class="mb-0">${data.message}</p>
           </div>
-          <div class="text-center mt-3">
-            <a href="${window.location.pathname.replace('/import_page', '')}" class="btn btn-primary">
-              <i class="bi bi-arrow-left me-2"></i>Back to Customer Formats
-            </a>
-          </div>
         `;
 
-        // Show success alert
-        showAlert('success', data.message);
+        // Handle batch processing results
+        if (currentBatchInfo) {
+          resultContent += `
+            <div class="card mt-3">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Batch Progress</h6>
+              </div>
+              <div class="card-body">
+                <div class="row text-center">
+                  <div class="col-md-3">
+                    <h5 class="text-primary">${currentBatchInfo.current_batch}</h5>
+                    <small class="text-muted">Current Batch</small>
+                  </div>
+                  <div class="col-md-3">
+                    <h5 class="text-info">${currentBatchInfo.total_batches}</h5>
+                    <small class="text-muted">Total Batches</small>
+                  </div>
+                  <div class="col-md-3">
+                    <h5 class="text-success">${currentBatchInfo.processed_in_batch}</h5>
+                    <small class="text-muted">Processed in Batch</small>
+                  </div>
+                  <div class="col-md-3">
+                    <h5 class="text-warning">${currentBatchInfo.batch_size}</h5>
+                    <small class="text-muted">Batch Size</small>
+                  </div>
+                </div>
+                <div class="progress mt-3" style="height: 20px;">
+                  <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                       role="progressbar"
+                       style="width: ${(currentBatchInfo.current_batch / currentBatchInfo.total_batches) * 100}%">
+                    ${Math.round((currentBatchInfo.current_batch / currentBatchInfo.total_batches) * 100)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
 
-        // Auto-redirect after 5 seconds
-        setTimeout(() => {
-          window.location.href = window.location.pathname.replace('/import_page', '');
-        }, 5000);
+          // Show batch controls and update next batch button
+          batchControls.classList.remove('d-none');
+          if (currentBatchInfo.next_batch_available) {
+            nextBatchBtn.disabled = false;
+            nextBatchBtn.innerHTML = '<i class="bi bi-arrow-right me-2"></i>Process Next Batch (' + (currentBatchInfo.current_batch + 1) + ' of ' + currentBatchInfo.total_batches + ')';
+          } else {
+            nextBatchBtn.disabled = true;
+            nextBatchBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>All Batches Complete';
+            resultContent += `
+              <div class="alert alert-info mt-3">
+                <h6 class="alert-heading"><i class="bi bi-star me-2"></i>All Batches Completed!</h6>
+                <p class="mb-0">Successfully processed all ${currentBatchInfo.total_batches} batches.</p>
+              </div>
+            `;
+          }
+        } else {
+          // Non-batch processing - show back button and auto-redirect
+          resultContent += `
+            <div class="text-center mt-3">
+              <a href="${window.location.pathname.replace('/import_page', '')}" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Customer Formats
+              </a>
+            </div>
+          `;
+
+          // Auto-redirect after 5 seconds for non-batch processing
+          setTimeout(() => {
+            window.location.href = window.location.pathname.replace('/import_page', '');
+          }, 5000);
+        }
+
+        importResultsContent.innerHTML = resultContent;
+        showAlert('success', data.message);
       } else {
         throw new Error(data.message || 'Import failed');
       }
@@ -298,5 +500,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }, 8000);
   }
+
+  // Initial call to set up batch information
+  updateTotalBatches();
 });
 </script>
