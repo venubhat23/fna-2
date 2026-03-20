@@ -161,11 +161,7 @@
             <table class="table table-hover align-middle mb-0 notes-data-table">
               <thead class="table-light sticky-top">
                 <tr>
-                  <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Title</th>
-                  <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Paid To</th>
-                  <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Amount</th>
-                  <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Payment</th>
-                  <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Paid From</th>
+                  <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d; width: 35%;">Payment Details</th>
                   <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Category</th>
                   <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Status</th>
                   <th class="border-0 fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px; color: #6c757d;">Date</th>
@@ -177,37 +173,53 @@
                 <% @notes.each do |note| %>
                   <tr class="border-bottom notes-table-row">
                     <td class="py-3 border-0">
-                      <div class="fw-semibold text-dark mb-1"><%= note.title %></div>
-                      <% if note.description.present? %>
-                        <small class="text-muted d-block"><%= truncate(note.description, length: 50) %></small>
-                      <% end %>
-                    </td>
-                    <td class="py-3 border-0">
-                      <div class="text-dark fw-medium"><%= note.paid_to %></div>
-                    </td>
-                    <td class="py-3 border-0">
-                      <div class="fw-bold text-success fs-6"><%= note.display_amount %></div>
-                    </td>
-                    <td class="py-3 border-0">
-                      <div class="d-flex align-items-center gap-2">
-                        <div class="payment-method-icon">
-                          <i class="<%= note.payment_method_icon %> text-primary fs-5"></i>
-                        </div>
-                        <span class="small fw-medium"><%= note.payment_method.gsub('_', ' ') %></span>
-                      </div>
-                    </td>
-                    <td class="py-3 border-0">
-                      <% if note.paid_from.present? %>
-                        <span class="badge bg-light text-dark border small fw-medium px-2 py-1 rounded-pill">
-                          <% if note.paid_from == 'Atma Nirbhar Farm Account' %>
-                            🏢 Farm Account
-                          <% else %>
-                            👤 Personal
+                      <div class="d-flex flex-column gap-2">
+                        <!-- Title and Description -->
+                        <div>
+                          <div class="fw-bold text-dark mb-1 fs-6"><%= note.title %></div>
+                          <% if note.description.present? %>
+                            <small class="text-muted d-block"><%= truncate(note.description, length: 50) %></small>
                           <% end %>
-                        </span>
-                      <% else %>
-                        <span class="text-muted small">-</span>
-                      <% end %>
+                        </div>
+
+                        <!-- Payment Details Row -->
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                          <!-- Paid To -->
+                          <div class="d-flex align-items-center gap-1">
+                            <span class="text-muted small fw-medium">To:</span>
+                            <span class="text-dark fw-medium small"><%= note.paid_to %></span>
+                          </div>
+
+                          <!-- Amount -->
+                          <div class="d-flex align-items-center gap-1">
+                            <span class="text-muted small fw-medium">Amount:</span>
+                            <span class="fw-bold text-success"><%= note.display_amount %></span>
+                          </div>
+
+                          <!-- Payment Method -->
+                          <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small fw-medium">via</span>
+                            <div class="d-flex align-items-center gap-1">
+                              <i class="<%= note.payment_method_icon %> text-primary"></i>
+                              <span class="small fw-medium"><%= note.payment_method.gsub('_', ' ') %></span>
+                            </div>
+                          </div>
+
+                          <!-- Paid From -->
+                          <% if note.paid_from.present? %>
+                            <div class="d-flex align-items-center gap-1">
+                              <span class="text-muted small fw-medium">from</span>
+                              <span class="badge bg-light text-dark border small fw-medium px-2 py-1 rounded-pill">
+                                <% if note.paid_from == 'Atma Nirbhar Farm Account' %>
+                                  🏢 Farm Account
+                                <% else %>
+                                  👤 Personal
+                                <% end %>
+                              </span>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
                     </td>
                     <td class="py-3 border-0">
                       <% if note.paid_to_category.present? %>
@@ -333,7 +345,7 @@
 
 .notes-data-table {
   width: 100% !important;
-  min-width: 1200px;
+  min-width: 900px;
   display: table !important; /* Force table display */
   border-collapse: separate !important;
   border-spacing: 0 !important;
@@ -363,9 +375,16 @@
 .notes-data-table td {
   display: table-cell !important; /* Force table cell display */
   vertical-align: middle !important;
-  white-space: nowrap;
   padding: 16px 12px !important;
   border: none !important;
+}
+
+.notes-data-table td:first-child {
+  white-space: normal; /* Allow wrapping for payment details column */
+}
+
+.notes-data-table td:not(:first-child) {
+  white-space: nowrap; /* Keep other columns compact */
 }
 
 .notes-data-table th {
@@ -393,7 +412,7 @@
   }
 
   .notes-data-table {
-    min-width: 1200px; /* Ensure horizontal scroll on mobile */
+    min-width: 800px; /* Ensure horizontal scroll on mobile */
     font-size: 14px;
   }
 

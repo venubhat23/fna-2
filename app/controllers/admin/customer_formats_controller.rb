@@ -114,6 +114,36 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
     end
   end
 
+  # Progress tracking endpoint
+  def progress_import
+    job_id = params[:job_id]
+    progress = ImportProgress.find_by(job_id: job_id)
+
+    if progress.nil?
+      respond_to do |format|
+        format.json { render json: { success: false, message: 'Progress tracking not found.' }, status: :not_found }
+      end
+      return
+    end
+
+    respond_to do |format|
+      format.json {
+        render json: {
+          success: true,
+          job_id: progress.job_id,
+          status: progress.status,
+          percentage: progress.percentage_complete,
+          processed_items: progress.processed_items,
+          total_items: progress.total_items,
+          message: progress.message,
+          estimated_time_remaining: progress.estimated_time_remaining&.to_i,
+          started_at: progress.started_at,
+          completed_at: progress.completed_at
+        }
+      }
+    end
+  end
+
   # Import from Master Subscription action
   def import_from_master
     month = params[:month].to_i
@@ -138,21 +168,22 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
     end
 
     begin
-      Rails.logger.info "Starting master subscription import for #{month}/#{year}"
+      # Generate unique job ID for progress tracking
+      job_id = SecureRandom.uuid
+      Rails.logger.info "Starting master subscription import for #{month}/#{year} with job_id: #{job_id}"
       Rails.logger.info "Batch processing: #{batch_size.present? ? "#{batch_size} customers per batch, processing batch #{batch_number}" : "all customers at once"}"
 
-      start_date = Date.new(year, month, 1)
-      end_date = start_date.end_of_month
-
-      processed_count = 0
-      subscription_count = 0
-      task_count = 0
-
-      # Get base query for active customer formats
-      base_query = CustomerFormat.active.includes(:customer, :product, :delivery_person)
-
-      # Apply batch processing if requested
       if batch_size.present?
+        # Handle batch processing synchronously (as before)
+        start_date = Date.new(year, month, 1)
+        end_date = start_date.end_of_month
+
+        processed_count = 0
+        subscription_count = 0
+        task_count = 0
+
+        # Get base query for active customer formats
+        base_query = CustomerFormat.active.includes(:customer, :product, :delivery_person)
         total_formats = base_query.count
         offset = (batch_number - 1) * batch_size
         formats_to_process = base_query.limit(batch_size).offset(offset)
@@ -164,54 +195,60 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
           end
           return
         end
-      else
-        formats_to_process = base_query
-        total_batches = 1
-      end
 
-      # Process customer formats
-      formats_to_process.find_each do |customer_format|
-        Rails.logger.info "Processing customer format #{customer_format.id} for customer #{customer_format.customer.id}"
+        # Process customer formats
+        formats_to_process.find_each do |customer_format|
+          Rails.logger.info "Processing customer format #{customer_format.id} for customer #{customer_format.customer.id}"
 
-        # Step 1: Create Subscription (avoid duplicates)
-        subscription = find_or_create_subscription(customer_format, start_date, end_date)
+          # Step 1: Create Subscription (avoid duplicates)
+          subscription = find_or_create_subscription(customer_format, start_date, end_date)
 
-        if subscription
-          subscription_count += 1 if subscription.persisted?
+          if subscription
+            subscription_count += 1 if subscription.persisted?
 
-          # Step 2: Create Daily Tasks based on pattern
-          tasks_created = create_daily_tasks(customer_format, subscription, start_date, end_date)
-          task_count += tasks_created
+            # Step 2: Create Daily Tasks based on pattern
+            tasks_created = create_daily_tasks(customer_format, subscription, start_date, end_date)
+            task_count += tasks_created
 
-          processed_count += 1
+            processed_count += 1
+          end
         end
-      end
 
-      # Prepare response message
-      if batch_size.present?
+        # Prepare response message
         message = "Batch #{batch_number} completed successfully. #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created. (Batch #{batch_number} of #{total_batches})"
         next_batch_available = batch_number < total_batches
-      else
-        message = "Import process completed successfully. #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created."
-        next_batch_available = false
-      end
 
-      Rails.logger.info message
+        Rails.logger.info message
 
-      respond_to do |format|
-        format.json {
-          render json: {
-            success: true,
-            message: message,
-            batch_info: batch_size.present? ? {
-              current_batch: batch_number,
-              total_batches: total_batches,
-              batch_size: batch_size,
-              next_batch_available: next_batch_available,
-              processed_in_batch: processed_count
-            } : nil
+        respond_to do |format|
+          format.json {
+            render json: {
+              success: true,
+              message: message,
+              batch_info: {
+                current_batch: batch_number,
+                total_batches: total_batches,
+                batch_size: batch_size,
+                next_batch_available: next_batch_available,
+                processed_in_batch: processed_count
+              }
+            }
           }
-        }
+        end
+      else
+        # Use background job for full import with progress tracking
+        ImportMasterSubscriptionJob.perform_later(month, year, job_id)
+
+        respond_to do |format|
+          format.json {
+            render json: {
+              success: true,
+              message: "Import process started in background. You can monitor progress.",
+              job_id: job_id,
+              progress_url: progress_import_admin_customer_formats_path(job_id: job_id)
+            }
+          }
+        end
       end
     rescue => e
       Rails.logger.error "Error in master subscription import: #{e.message}"

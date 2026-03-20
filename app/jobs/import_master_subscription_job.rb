@@ -1,8 +1,20 @@
 class ImportMasterSubscriptionJob < ApplicationJob
   queue_as :default
 
-  def perform(month, year)
-    Rails.logger.info "Starting master subscription import for #{month}/#{year}"
+  def perform(month, year, job_id = nil)
+    job_id ||= SecureRandom.uuid
+    Rails.logger.info "Starting master subscription import for #{month}/#{year} with job_id: #{job_id}"
+
+    # Get total count for progress tracking
+    total_formats = CustomerFormat.active.count
+    progress = ImportProgress.create!(
+      job_id: job_id,
+      total_items: total_formats,
+      processed_items: 0,
+      status: 'started',
+      message: 'Starting import process...',
+      started_at: Time.current
+    )
 
     begin
       start_date = Date.new(year, month, 1)
@@ -13,8 +25,15 @@ class ImportMasterSubscriptionJob < ApplicationJob
       task_count = 0
 
       # Process only active customer formats
-      CustomerFormat.active.includes(:customer, :product, :delivery_person).find_each do |customer_format|
-        Rails.logger.info "Processing customer format #{customer_format.id} for customer #{customer_format.customer.id}"
+      CustomerFormat.active.includes(:customer, :product, :delivery_person).find_each.with_index do |customer_format, index|
+        Rails.logger.info "Processing customer format #{customer_format.id} for customer #{customer_format.customer.id} (#{index + 1}/#{total_formats})"
+
+        # Update progress
+        progress.update_progress!(
+          processed: index + 1,
+          status: 'processing',
+          message: "Processing customer format #{index + 1} of #{total_formats}: #{customer_format.customer.first_name} #{customer_format.customer.last_name}"
+        )
 
         # Step 1: Create Subscription (avoid duplicates)
         subscription = find_or_create_subscription(customer_format, start_date, end_date)
@@ -30,9 +49,24 @@ class ImportMasterSubscriptionJob < ApplicationJob
         end
       end
 
+      # Mark as completed
+      progress.update!(
+        processed_items: total_formats,
+        status: 'completed',
+        message: "Import completed successfully: #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created",
+        completed_at: Time.current
+      )
+
       Rails.logger.info "Master subscription import completed: #{processed_count} formats processed, #{subscription_count} subscriptions, #{task_count} tasks created"
 
     rescue => e
+      # Mark as failed
+      progress.update!(
+        status: 'failed',
+        message: "Import failed: #{e.message}",
+        completed_at: Time.current
+      )
+
       Rails.logger.error "Error in master subscription import: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       raise e

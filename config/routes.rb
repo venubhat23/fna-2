@@ -331,6 +331,7 @@ Rails.application.routes.draw do
         get :search_delivery_people
         get :import_page
         post :import_from_master
+        get :progress_import
       end
     end
 
