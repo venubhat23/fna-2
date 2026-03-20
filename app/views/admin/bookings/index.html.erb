@@ -315,9 +315,7 @@
             <tr>
               <th class="border-0 fw-semibold">Booking Details</th>
               <th class="border-0 fw-semibold">Customer</th>
-              <th class="border-0 fw-semibold">Items & Amount</th>
-              <th class="border-0 fw-semibold">Payment</th>
-              <th class="border-0 fw-semibold">Invoiced</th>
+              <th class="border-0 fw-semibold">Financial Overview</th>
               <th class="border-0 fw-semibold text-dark">Current Stage</th>
               <th class="border-0 fw-semibold">Progress</th>
               <th class="border-0 fw-semibold">Actions</th>
@@ -357,51 +355,64 @@
                   </div>
                 </td>
                 <td class="align-middle">
-                  <div>
-                    <span class="badge bg-info-subtle text-info">
-                      <%= pluralize(booking.booking_items.size, 'item') %>
-                    </span>
-                    <div class="fw-medium text-success mt-1">
-                      ₹<%= number_with_delimiter(booking.total_amount || 0) %>
+                  <div class="financial-overview">
+                    <!-- Items & Amount Row -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-info-subtle text-info">
+                          <i class="bi bi-box me-1"></i>
+                          <%= pluralize(booking.booking_items.size, 'item') %>
+                        </span>
+                        <div class="fw-bold text-success">
+                          ₹<%= number_with_delimiter(booking.total_amount || 0) %>
+                        </div>
+                      </div>
+                      <!-- Invoice Status (right side) -->
+                      <div class="invoice-status">
+                        <% if booking.has_invoice? %>
+                          <% if booking.invoice_link_path %>
+                            <%= link_to booking.invoice_link_path, class: "badge bg-success-subtle text-success text-decoration-none", target: "_blank", title: "View Invoice ##{booking.display_invoice_number}" do %>
+                              <i class="bi bi-receipt me-1"></i>
+                              #<%= booking.display_invoice_number %>
+                            <% end %>
+                          <% else %>
+                            <span class="badge bg-warning-subtle text-warning" title="Invoice generated but link unavailable">
+                              <i class="bi bi-receipt-cutoff me-1"></i>
+                              Generated
+                            </span>
+                          <% end %>
+                        <% else %>
+                          <span class="badge bg-secondary-subtle text-secondary" title="No invoice generated">
+                            <i class="bi bi-receipt me-1"></i>
+                            Pending
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <!-- Payment Status Row -->
+                    <div class="payment-info">
+                      <% payment_class = case booking.payment_status
+                                        when 'paid' then 'bg-success-subtle text-success'
+                                        when 'unpaid' then 'bg-danger-subtle text-danger'
+                                        when 'partially_paid' then 'bg-warning-subtle text-warning'
+                                        else 'bg-secondary-subtle text-secondary'
+                                        end %>
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge <%= payment_class %>">
+                          <i class="bi bi-credit-card me-1"></i>
+                          <%= booking.payment_status_display %>
+                        </span>
+                        <% if booking.payment_method.present? %>
+                          <small class="text-muted">
+                            <%= booking.payment_method_display %>
+                          </small>
+                        <% else %>
+                          <small class="text-muted">Method: TBD</small>
+                        <% end %>
+                      </div>
                     </div>
                   </div>
-                </td>
-                <td class="align-middle">
-                  <% payment_class = case booking.payment_status
-                                    when 'paid' then 'bg-success-subtle text-success'
-                                    when 'unpaid' then 'bg-danger-subtle text-danger'
-                                    when 'partially_paid' then 'bg-warning-subtle text-warning'
-                                    else 'bg-secondary-subtle text-secondary'
-                                    end %>
-                  <span class="badge <%= payment_class %>">
-                    <%= booking.payment_status_display %>
-                  </span>
-                  <% if booking.payment_method.present? %>
-                    <div class="small text-muted mt-1">
-                      <i class="bi bi-credit-card me-1"></i>
-                      <%= booking.payment_method_display %>
-                    </div>
-                  <% end %>
-                </td>
-                <td class="align-middle">
-                  <% if booking.has_invoice? %>
-                    <% if booking.invoice_link_path %>
-                      <%= link_to booking.invoice_link_path, class: "badge bg-success-subtle text-success text-decoration-none", target: "_blank", title: "View Invoice ##{booking.display_invoice_number}" do %>
-                        <i class="bi bi-check-circle me-1"></i>
-                        <%= booking.display_invoice_number %>
-                      <% end %>
-                    <% else %>
-                      <span class="badge bg-warning-subtle text-warning">
-                        <i class="bi bi-exclamation-triangle me-1"></i>
-                        Generated
-                      </span>
-                    <% end %>
-                  <% else %>
-                    <span class="badge bg-secondary-subtle text-secondary">
-                      <i class="bi bi-x-circle me-1"></i>
-                      No
-                    </span>
-                  <% end %>
                 </td>
                 <td class="align-middle">
                   <div class="d-flex align-items-center gap-2">
@@ -2122,6 +2133,86 @@ td .d-flex.gap-2 {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Financial Overview Column Styling */
+.financial-overview {
+  min-width: 280px;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 1px solid #e3f2fd;
+  transition: all 0.3s ease;
+}
+
+.financial-overview:hover {
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1);
+  transform: translateY(-1px);
+  border-color: #bbdefb;
+}
+
+.financial-overview .badge {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.financial-overview .badge:hover {
+  transform: scale(1.05);
+}
+
+/* Invoice badge hover effects */
+.financial-overview .invoice-status .badge.text-decoration-none:hover {
+  box-shadow: 0 2px 8px rgba(25, 135, 84, 0.2);
+  transform: translateY(-1px) scale(1.05);
+}
+
+/* Amount styling */
+.financial-overview .fw-bold.text-success {
+  font-size: 1.1rem;
+  text-shadow: 0 1px 2px rgba(25, 135, 84, 0.1);
+}
+
+/* Payment info section */
+.financial-overview .payment-info {
+  padding-top: 0.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Responsive adjustments for financial overview */
+@media (max-width: 768px) {
+  .financial-overview {
+    min-width: auto;
+    padding: 0.5rem;
+  }
+
+  .financial-overview .d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .financial-overview .badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+}
+
+/* Enhanced table column width for financial overview */
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  width: 25%;
+  min-width: 280px;
+}
+
+@media (max-width: 768px) {
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    min-width: auto;
+    width: auto;
   }
 }
 </style>
