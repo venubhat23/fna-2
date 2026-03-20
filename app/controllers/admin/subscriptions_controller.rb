@@ -155,8 +155,35 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def destroy
-    @subscription.destroy
-    redirect_to admin_subscriptions_path, notice: 'Subscription deleted successfully!'
+    # Count associated tasks before deletion for reporting
+    tasks_count = @subscription.milk_delivery_tasks.count
+    customer_name = "#{@subscription.customer.first_name} #{@subscription.customer.last_name}".strip
+    product_name = @subscription.product.name
+
+    begin
+      MilkSubscription.transaction do
+        # Delete all associated daily delivery tasks first
+        @subscription.milk_delivery_tasks.destroy_all
+
+        # Then delete the subscription
+        @subscription.destroy!
+      end
+
+      success_message = "Subscription deleted successfully! Removed subscription for #{customer_name} (#{product_name}) and #{tasks_count} associated daily tasks."
+
+      respond_to do |format|
+        format.html { redirect_to admin_subscriptions_path, notice: success_message }
+        format.json { render json: { success: true, message: success_message } }
+      end
+    rescue => e
+      Rails.logger.error "Error deleting subscription #{@subscription.id}: #{e.message}"
+      error_message = "Failed to delete subscription: #{e.message}"
+
+      respond_to do |format|
+        format.html { redirect_to admin_subscriptions_path, alert: error_message }
+        format.json { render json: { success: false, message: error_message } }
+      end
+    end
   end
 
   def toggle_status
