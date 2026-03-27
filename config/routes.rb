@@ -434,6 +434,7 @@ Rails.application.routes.draw do
         post :complete_purchase
         post :generate_invoice
         get :show_invoice
+        get :mark_as_paid
         patch :mark_as_paid
       end
       collection do

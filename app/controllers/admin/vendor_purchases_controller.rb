@@ -94,7 +94,7 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
 
   def mark_as_paid
     # Check if purchase can be marked as paid
-    if @vendor_purchase.payment_status == 'paid'
+    if @vendor_purchase.paid_amount >= @vendor_purchase.total_amount
       respond_to do |format|
         format.html { redirect_to admin_vendor_purchases_path, alert: 'Purchase is already fully paid.' }
         format.json { render json: { success: false, message: 'Purchase is already fully paid.' } }
@@ -126,7 +126,7 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
 
     # Find purchases that are not already paid
     purchases_to_update = VendorPurchase.where(id: purchase_ids)
-                                       .where.not(payment_status: 'paid')
+                                       .where('paid_amount < total_amount OR paid_amount IS NULL')
 
     if purchases_to_update.empty?
       render json: { success: false, error: 'No unpaid purchases found to update' }, status: :bad_request
