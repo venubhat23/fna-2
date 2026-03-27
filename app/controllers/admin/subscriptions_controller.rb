@@ -362,6 +362,90 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     end
   end
 
+  # Bulk complete subscriptions and their pending daily tasks
+  def bulk_complete
+    subscription_ids = params[:subscription_ids]
+
+    if subscription_ids.blank? || !subscription_ids.is_a?(Array)
+      render json: { success: false, message: 'No subscription IDs provided' }, status: :bad_request
+      return
+    end
+
+    begin
+      # Find the selected subscriptions
+      subscriptions = MilkSubscription.where(id: subscription_ids)
+
+      if subscriptions.empty?
+        render json: { success: false, message: 'No subscriptions found' }, status: :bad_request
+        return
+      end
+
+      total_tasks_completed = 0
+      subscriptions_processed = 0
+      failed_subscriptions = []
+
+      MilkSubscription.transaction do
+        subscriptions.find_each do |subscription|
+          begin
+            # Find all pending daily tasks for this subscription
+            pending_tasks = subscription.milk_delivery_tasks.where(status: ['pending', 'assigned'])
+
+            # Mark all pending tasks as completed
+            completed_tasks = pending_tasks.update_all(
+              status: 'completed',
+              completed_at: Time.current
+            )
+
+            total_tasks_completed += completed_tasks
+            subscriptions_processed += 1
+
+            Rails.logger.info "Bulk complete: Subscription #{subscription.id} - #{completed_tasks} tasks completed"
+
+          rescue => e
+            failed_subscriptions << {
+              subscription_id: subscription.id,
+              customer_name: "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip,
+              error: e.message
+            }
+            Rails.logger.error "Bulk complete failed for subscription #{subscription.id}: #{e.message}"
+          end
+        end
+
+        # If any subscriptions failed, we could optionally rollback, but let's continue with partial success
+      end
+
+      if failed_subscriptions.any?
+        render json: {
+          success: false,
+          message: "Partially completed. #{total_tasks_completed} tasks completed for #{subscriptions_processed} subscriptions. #{failed_subscriptions.count} subscriptions failed.",
+          details: {
+            total_tasks_completed: total_tasks_completed,
+            processed: subscriptions_processed,
+            failed: failed_subscriptions.count,
+            failed_details: failed_subscriptions
+          }
+        }
+      else
+        render json: {
+          success: true,
+          message: "Successfully completed #{total_tasks_completed} daily tasks for #{subscriptions_processed} subscription(s)!",
+          details: {
+            total_tasks_completed: total_tasks_completed,
+            subscriptions_processed: subscriptions_processed
+          }
+        }
+      end
+
+    rescue => e
+      Rails.logger.error "Bulk complete error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      render json: {
+        success: false,
+        message: "Error completing subscriptions: #{e.message}"
+      }, status: :internal_server_error
+    end
+  end
+
   private
 
   def set_subscription

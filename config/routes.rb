@@ -350,6 +350,7 @@ Rails.application.routes.draw do
         get :paused
         get :expired
         post :generate_all_daily_tasks
+        post :bulk_complete
       end
     end
 

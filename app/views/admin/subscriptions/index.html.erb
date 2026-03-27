@@ -7,6 +7,15 @@
     <p class="text-muted mb-0">Manage all customer subscriptions and delivery schedules</p>
   </div>
   <div class="d-flex gap-2 align-items-center">
+    <!-- Bulk Actions -->
+    <div class="btn-group" id="bulkActionsGroup" style="display: none;">
+      <button type="button" class="btn btn-success" id="bulkCompleteBtn" onclick="bulkCompleteSubscriptions()">
+        <i class="bi bi-check-all me-1"></i>
+        <span class="spinner-border spinner-border-sm me-1 d-none" id="bulkCompleteSpinner"></span>
+        Complete Selected (<span id="selectedCount">0</span>)
+      </button>
+    </div>
+
     <!-- Real-time Status -->
     <div class="d-flex align-items-center gap-2">
       <div class="real-time-indicator">
@@ -264,6 +273,14 @@
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
+              <th class="border-0" width="40">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="selectAllSubscriptions" onchange="toggleAllSubscriptions()">
+                  <label class="form-check-label fw-semibold" for="selectAllSubscriptions">
+                    All
+                  </label>
+                </div>
+              </th>
               <th class="border-0 fw-semibold">Customer</th>
               <th class="border-0 fw-semibold">Product & Quantity</th>
               <th class="border-0 fw-semibold">Duration & Pattern</th>
@@ -276,6 +293,11 @@
           <tbody>
             <% @subscriptions.each do |subscription| %>
               <tr>
+                <td class="align-middle">
+                  <div class="form-check">
+                    <input class="form-check-input subscription-checkbox" type="checkbox" value="<%= subscription.id %>" onchange="updateSelectedSubscriptionCount()">
+                  </div>
+                </td>
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
                     <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -2027,5 +2049,110 @@ function showErrorAlert(title, message) {
       }, 300);
     }
   }, 8000);
+}
+
+// Subscription Bulk Operations
+
+function toggleAllSubscriptions() {
+  const selectAll = document.getElementById('selectAllSubscriptions');
+  const checkboxes = document.querySelectorAll('.subscription-checkbox');
+
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAll.checked;
+  });
+
+  updateSelectedSubscriptionCount();
+}
+
+function updateSelectedSubscriptionCount() {
+  const selectedCount = document.querySelectorAll('.subscription-checkbox:checked').length;
+  const selectedCountElement = document.getElementById('selectedCount');
+  const bulkActionsGroup = document.getElementById('bulkActionsGroup');
+
+  // Update the count display
+  if (selectedCountElement) {
+    selectedCountElement.textContent = selectedCount;
+  }
+
+  // Show/hide bulk action buttons
+  if (bulkActionsGroup) {
+    bulkActionsGroup.style.display = selectedCount > 0 ? 'block' : 'none';
+  }
+
+  // Update select all checkbox state
+  const selectAll = document.getElementById('selectAllSubscriptions');
+  const checkboxes = document.querySelectorAll('.subscription-checkbox');
+  const checkedBoxes = document.querySelectorAll('.subscription-checkbox:checked');
+
+  if (checkedBoxes.length === 0) {
+    selectAll.indeterminate = false;
+    selectAll.checked = false;
+  } else if (checkedBoxes.length === checkboxes.length) {
+    selectAll.indeterminate = false;
+    selectAll.checked = true;
+  } else {
+    selectAll.indeterminate = true;
+  }
+}
+
+function getSelectedSubscriptionIds() {
+  const checkboxes = document.querySelectorAll('.subscription-checkbox:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function bulkCompleteSubscriptions() {
+  const subscriptionIds = getSelectedSubscriptionIds();
+  if (subscriptionIds.length === 0) {
+    showAlert('Please select subscriptions to complete', 'warning');
+    return;
+  }
+
+  if (!confirm(`Complete ${subscriptionIds.length} selected subscription(s) and all their pending daily tasks?\\n\\nThis will mark all pending daily delivery tasks as completed.`)) {
+    return;
+  }
+
+  // Show loading state
+  const btn = document.getElementById('bulkCompleteBtn');
+  const spinner = document.getElementById('bulkCompleteSpinner');
+  const originalText = btn.innerHTML;
+
+  btn.disabled = true;
+  spinner.classList.remove('d-none');
+
+  fetch('/admin/subscriptions/bulk_complete', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ subscription_ids: subscriptionIds })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showSuccessAlert('✅ Bulk Complete Successful!', data.message);
+
+      // Clear selections
+      document.getElementById('selectAllSubscriptions').checked = false;
+      document.querySelectorAll('.subscription-checkbox:checked').forEach(cb => cb.checked = false);
+      updateSelectedSubscriptionCount();
+
+      // Refresh page after 2 seconds to show updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      showErrorAlert('❌ Bulk Complete Failed', data.message || 'Failed to complete subscriptions');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showErrorAlert('❌ Network Error', 'Failed to complete subscriptions. Please try again.');
+  })
+  .finally(() => {
+    btn.disabled = false;
+    spinner.classList.add('d-none');
+  });
 }
 </script>

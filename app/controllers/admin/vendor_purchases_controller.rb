@@ -166,10 +166,10 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
         status: :sent,
         notes: "Invoice generated for vendor purchase ##{@vendor_purchase.purchase_number}"
       )
-
-      # Mark invoice as generated
-      @vendor_purchase.update!(invoice_generated: true)
     end
+
+    # Always mark invoice as generated (in case flag wasn't set previously)
+    @vendor_purchase.update!(invoice_generated: true)
 
     # Generate the public URL
     invoice_url = vendor_invoice.public_url
