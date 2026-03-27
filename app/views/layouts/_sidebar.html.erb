@@ -629,6 +629,12 @@
                 <% end %>
               </li>
               <li>
+                <%= link_to bulk_new_admin_vendor_purchases_path, class: "submenu-link #{'active' if current_page?(bulk_new_admin_vendor_purchases_path)}" do %>
+                  <span class="submenu-bullet">•</span>
+                  <span>Bulk Purchase</span>
+                <% end %>
+              </li>
+              <li>
                 <%= link_to admin_vendor_purchases_path, class: "submenu-link #{'active' if current_page?(admin_vendor_purchases_path)}" do %>
                   <span class="submenu-bullet">•</span>
                   <span>Purchase History</span>

@@ -175,6 +175,7 @@
           <%= form.hidden_field :search, value: params[:search] if params[:search].present? %>
           <%= form.hidden_field :start_date, value: params[:start_date] if params[:start_date].present? %>
           <%= form.hidden_field :end_date, value: params[:end_date] if params[:end_date].present? %>
+          <%= form.hidden_field :month, value: params[:month] if params[:month].present? %>
 
           <!-- Status Filter -->
           <%= form.select :status,
@@ -189,6 +190,29 @@
               {
                 class: "form-select select2",
                 style: "width: 180px;"
+              } %>
+
+          <!-- Month Filter -->
+          <%= form.select :month,
+              options_for_select([
+                ['All Months', ''],
+                ["January #{Date.current.year}", '1'],
+                ["February #{Date.current.year}", '2'],
+                ["March #{Date.current.year}", '3'],
+                ["April #{Date.current.year}", '4'],
+                ["May #{Date.current.year}", '5'],
+                ["June #{Date.current.year}", '6'],
+                ["July #{Date.current.year}", '7'],
+                ["August #{Date.current.year}", '8'],
+                ["September #{Date.current.year}", '9'],
+                ["October #{Date.current.year}", '10'],
+                ["November #{Date.current.year}", '11'],
+                ["December #{Date.current.year}", '12']
+              ], params[:month]),
+              {},
+              {
+                class: "form-select select2",
+                style: "width: 170px;"
               } %>
 
           <!-- Customer Filter -->
@@ -225,7 +249,7 @@
         <% end %>
 
         <!-- Clear Filters Button -->
-        <% if params[:status].present? || params[:customer_id].present? || params[:delivery_person_id].present? || params[:search].present? %>
+        <% if params[:status].present? || params[:customer_id].present? || params[:delivery_person_id].present? || params[:search].present? || params[:month].present? %>
           <%= link_to admin_subscriptions_path, class: "btn btn-outline-secondary", title: "Clear all filters" do %>
             <i class="bi bi-x-circle me-1"></i>
             Clear Filters
@@ -1035,6 +1059,15 @@ document.addEventListener('DOMContentLoaded', function() {
       allowClear: true,
       minimumResultsForSearch: Infinity, // Disable search for small lists
       width: '180px'
+    });
+
+    // Month dropdown
+    $('select[name="month"]').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'All Months',
+      allowClear: true,
+      minimumResultsForSearch: Infinity, // Disable search for small lists
+      width: '170px'
     });
 
     // Customer dropdown with search

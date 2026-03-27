@@ -438,6 +438,8 @@ Rails.application.routes.draw do
       collection do
         get :batch_inventory
         post :bulk_mark_as_paid
+        get :bulk_new
+        post :bulk_create
       end
     end
 

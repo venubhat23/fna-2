@@ -1,0 +1,631 @@
+<%= form_with url: bulk_create_admin_vendor_purchases_path, local: true, id: "bulk-vendor-purchase-form" do |f| %>
+  <% if @vendor_purchase&.errors&.any? %>
+    <div class="alert alert-danger mb-4">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <div>
+          <h6 class="mb-1">Please fix the following errors:</h6>
+          <ul class="mb-0 small">
+            <% @vendor_purchase.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Date Range Information Card -->
+  <div class="date-range-info mb-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="date-range-icon me-3">
+        <i class="bi bi-calendar-week"></i>
+      </div>
+      <div>
+        <h6 class="mb-1 fw-bold">Bulk Purchase Date Range</h6>
+        <p class="mb-0 text-muted small">Select the date range for creating multiple vendor purchase records. Each day in the range will create a separate purchase record.</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label for="from_date" class="form-label fw-semibold">From Date <span class="text-danger">*</span></label>
+        <%= date_field_tag :from_date, params[:from_date] || Date.current,
+            class: "form-control", required: true, id: "from_date" %>
+      </div>
+      <div class="col-md-4">
+        <label for="to_date" class="form-label fw-semibold">To Date <span class="text-danger">*</span></label>
+        <%= date_field_tag :to_date, params[:to_date] || Date.current,
+            class: "form-control", required: true, id: "to_date" %>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Total Days</label>
+        <div class="d-flex align-items-center">
+          <div class="badge bg-info-subtle text-info px-3 py-2">
+            <i class="bi bi-calendar-check me-1"></i>
+            <strong id="total-days">1</strong> day(s)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Purchase Details Card -->
+  <div class="card border-0 shadow-sm sticky-top mb-4" style="z-index: 1020;">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle me-2 text-primary"></i>
+        <h6 class="mb-0 fw-semibold">Purchase Information</h6>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="vendor_id" class="form-label">Vendor</label>
+          <span class="text-danger">*</span>
+          <%= select_tag 'vendor_purchase[vendor_id]',
+              options_from_collection_for_select(@vendors, :id, :name, @vendor_purchase&.vendor_id || params.dig(:vendor_purchase, :vendor_id)),
+              { prompt: 'Select Vendor', class: "form-select", required: true, id: "vendor_select" } %>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Estimated Total Amount</label>
+          <div class="d-flex align-items-center">
+            <div class="badge bg-primary-subtle text-primary px-3 py-2">
+              <i class="bi bi-currency-rupee me-1"></i>
+              <strong id="estimated-total">₹0.00</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden field for paid_amount (defaults to 0 for new records) -->
+      <%= hidden_field_tag 'vendor_purchase[paid_amount]', 0 %>
+    </div>
+  </div>
+
+  <!-- Products Section -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-cart me-2 text-primary"></i>
+          <h5 class="mb-0 fw-semibold">Purchase Items</h5>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="add-product-btn">
+          <i class="bi bi-plus-lg me-1"></i>
+          Add Product
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div id="products-container" class="p-3">
+        <% if @vendor_purchase&.vendor_purchase_items&.any? %>
+          <% @vendor_purchase.vendor_purchase_items.each_with_index do |item, index| %>
+            <%= render 'vendor_purchase_item_fields_bulk', f: f, item: item, index: index %>
+          <% end %>
+        <% else %>
+          <%= render 'vendor_purchase_item_fields_bulk', f: f, item: nil, index: 0 %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes Section -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-chat-text me-2 text-primary"></i>
+        <h5 class="mb-0 fw-semibold">Additional Information</h5>
+      </div>
+    </div>
+    <div class="card-body">
+      <label for="notes" class="form-label">Notes</label>
+      <%= text_area_tag 'vendor_purchase[notes]', @vendor_purchase&.notes || params.dig(:vendor_purchase, :notes),
+          class: "form-control", rows: 3, placeholder: "Add any notes or comments about these purchases...", id: "notes" %>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-check-circle me-2 text-success"></i>
+        <h5 class="mb-0 fw-semibold">Bulk Purchase Summary</h5>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="d-flex align-items-center mb-2">
+            <span class="text-muted me-2">Total Purchase Amount per Day:</span>
+            <span class="badge bg-success-subtle text-success px-3 py-2 fs-6">
+              <i class="bi bi-currency-rupee me-1"></i>
+              <strong id="final-total">₹0.00</strong>
+            </span>
+          </div>
+          <div class="d-flex align-items-center mb-2">
+            <span class="text-muted me-2">Grand Total for All Days:</span>
+            <span class="badge bg-warning-subtle text-warning px-3 py-2 fs-6">
+              <i class="bi bi-currency-rupee me-1"></i>
+              <strong id="grand-total">₹0.00</strong>
+            </span>
+          </div>
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Stock batches will be automatically created for each purchase date
+          </small>
+        </div>
+        <div class="d-flex gap-2">
+          <%= link_to admin_vendor_purchases_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-x-lg me-1"></i>
+            Cancel
+          <% end %>
+          <%= submit_tag "Create Bulk Purchases",
+              class: "btn btn-primary", id: "submit-btn" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% end %>
+
+<style>
+/* Custom Select2 styling for vendor purchases */
+.select2-container--bootstrap-5 .select2-selection--single {
+  height: 38px !important;
+  padding: 0.375rem 2.25rem 0.375rem 0.75rem !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  line-height: 1.5 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+  height: 36px !important;
+}
+
+.select2-dropdown {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.375rem !important;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.select2-results__option {
+  padding: 0.5rem 0.75rem !important;
+}
+
+.select2-results__option--highlighted[aria-selected] {
+  background-color: #0d6efd !important;
+}
+
+.select2-search__field {
+  padding: 0.375rem 0.75rem !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.25rem !important;
+}
+
+.select2-search__field:focus {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+  outline: 0 !important;
+}
+
+/* Ensure proper width in grid columns */
+.col-md-3 .select2-container,
+.col-md-4 .select2-container,
+.col-md-6 .select2-container {
+  width: 100% !important;
+}
+</style>
+
+<script>
+// Store product data for JavaScript template
+window.productData = <%= raw @products.map { |p| {
+  id: p.id,
+  name: p.name,
+  unit_type: p.unit_type || 'units',
+  default_selling_price: p.default_selling_price || 0
+}}.to_json %>;
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('bulk-vendor-purchase-form');
+  const container = document.getElementById('products-container');
+  const addBtn = document.getElementById('add-product-btn');
+  const fromDateInput = document.getElementById('from_date');
+  const toDateInput = document.getElementById('to_date');
+  const totalDaysSpan = document.getElementById('total-days');
+
+  let itemIndex = <%= @vendor_purchase&.vendor_purchase_items&.length || 0 %>;
+
+  // Date calculation
+  function calculateDays() {
+    const fromDate = new Date(fromDateInput.value);
+    const toDate = new Date(toDateInput.value);
+
+    if (fromDate && toDate && fromDate <= toDate) {
+      const timeDiff = toDate.getTime() - fromDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+      totalDaysSpan.textContent = daysDiff;
+      calculateGrandTotal();
+      return daysDiff;
+    } else {
+      totalDaysSpan.textContent = '0';
+      calculateGrandTotal();
+      return 0;
+    }
+  }
+
+  // Listen for date changes
+  [fromDateInput, toDateInput].forEach(input => {
+    if (input) {
+      input.addEventListener('change', calculateDays);
+    }
+  });
+
+  // Custom formatting for Select2 dropdown options
+  function formatProductOption(product) {
+    if (!product.id) {
+      return product.text;
+    }
+
+    const $option = $(product.element);
+    const unitType = $option.data('unit-type') || 'units';
+    const defaultPrice = $option.data('default-price');
+
+    const $result = $('<div class="d-flex justify-content-between align-items-center">');
+    $result.append($('<span>').text(product.text));
+
+    const $meta = $('<small class="text-muted ms-2">');
+    if (defaultPrice) {
+      $meta.append($('<span class="me-2">').html('₹' + parseFloat(defaultPrice).toFixed(2)));
+    }
+    $meta.append($('<span class="badge bg-secondary">').text(unitType));
+    $result.append($meta);
+
+    return $result;
+  }
+
+  // Custom formatting for selected option
+  function formatProductSelection(product) {
+    return product.text;
+  }
+
+  // Create product options HTML
+  function createProductOptionsHtml(selectedId = '') {
+    let html = '<option value="">Select Product</option>';
+    window.productData.forEach(product => {
+      const selected = product.id == selectedId ? 'selected' : '';
+      html += `<option value="${product.id}"
+                      data-unit-type="${product.unit_type}"
+                      data-default-price="${product.default_selling_price}"
+                      ${selected}>
+                 ${product.name}
+               </option>`;
+    });
+    return html;
+  }
+
+  // Create new product item HTML
+  function createProductItemHtml(index) {
+    return `
+      <div class="product-item border rounded p-3 mb-3 shadow-sm" style="background: #f8f9fa; border-radius: 8px !important;">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
+            <select name="vendor_purchase[vendor_purchase_items_attributes][${index}][product_id]"
+                    class="form-select product-select" required>
+              ${createProductOptionsHtml()}
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][quantity]"
+                     class="form-control quantity-input" placeholder="0" step="0.01" min="0.01" required>
+              <span class="input-group-text unit-type">units</span>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Purchase Price (₹) <span class="text-danger">*</span></label>
+            <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][purchase_price]"
+                   class="form-control purchase-price-input" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Selling Price (₹) <span class="text-danger">*</span></label>
+            <input type="number" name="vendor_purchase[vendor_purchase_items_attributes][${index}][selling_price]"
+                   class="form-control selling-price-input" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Line Total</label>
+            <div class="d-flex align-items-center">
+              <span class="badge bg-info-subtle text-info px-3 py-2">
+                <strong class="line-total">₹0.00</strong>
+              </span>
+            </div>
+          </div>
+
+          <div class="col-md-1">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-12">
+            <div class="d-flex align-items-center gap-3">
+              <small class="text-muted">
+                <i class="bi bi-graph-up me-1"></i>
+                Profit Margin: <span class="profit-margin fw-medium">-</span>
+              </small>
+              <small class="text-muted">
+                <i class="bi bi-currency-rupee me-1"></i>
+                Profit per unit: <span class="profit-per-unit fw-medium">-</span>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Add product row
+  addBtn.addEventListener('click', function() {
+    const newIndex = new Date().getTime(); // Unique index
+    const newItemHtml = createProductItemHtml(newIndex);
+
+    container.insertAdjacentHTML('beforeend', newItemHtml);
+    itemIndex++;
+
+    // Initialize the new row
+    const newRow = container.lastElementChild;
+    initializeProductRow(newRow);
+  });
+
+  // Initialize existing rows
+  document.querySelectorAll('.product-item').forEach(initializeProductRow);
+
+  function initializeProductRow(row) {
+    const productSelect = row.querySelector('.product-select');
+    const quantityInput = row.querySelector('.quantity-input');
+    const purchasePriceInput = row.querySelector('.purchase-price-input');
+    const sellingPriceInput = row.querySelector('.selling-price-input');
+    const lineTotalSpan = row.querySelector('.line-total');
+    const removeBtn = row.querySelector('.remove-item-btn');
+    const unitTypeSpan = row.querySelector('.unit-type');
+
+    // Initialize Select2 on product select
+    if (productSelect && !productSelect.classList.contains('select2-initialized')) {
+      $(productSelect).select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Search and select a product...',
+        allowClear: true,
+        width: '100%',
+        minimumInputLength: 0,
+        templateResult: formatProductOption,
+        templateSelection: formatProductSelection
+      });
+
+      // Mark as initialized to avoid re-initialization
+      productSelect.classList.add('select2-initialized');
+    }
+
+    // Product selection change (works with Select2)
+    if (productSelect) {
+      $(productSelect).on('select2:select', function(e) {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+          const unitType = selectedOption.dataset.unitType || 'units';
+          if (unitTypeSpan) {
+            unitTypeSpan.textContent = unitType;
+          }
+
+          // Set default selling price if available
+          const defaultPrice = selectedOption.dataset.defaultPrice;
+          if (defaultPrice && sellingPriceInput) {
+            sellingPriceInput.value = defaultPrice;
+          }
+        }
+        calculateLineTotal();
+        updateProfitCalculation();
+      });
+    }
+
+    // Calculate line total and profit when inputs change
+    [quantityInput, purchasePriceInput, sellingPriceInput].forEach(input => {
+      if (input) {
+        input.addEventListener('input', function() {
+          calculateLineTotal();
+          updateProfitCalculation();
+        });
+      }
+    });
+
+    // Remove row
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        // Destroy Select2 instance before removing row
+        const select2Instance = $(productSelect).data('select2');
+        if (select2Instance) {
+          $(productSelect).select2('destroy');
+        }
+        row.remove();
+        calculateDailyTotal();
+      });
+    }
+
+    function calculateLineTotal() {
+      const quantity = parseFloat(quantityInput?.value) || 0;
+      const purchasePrice = parseFloat(purchasePriceInput?.value) || 0;
+      const lineTotal = quantity * purchasePrice;
+
+      if (lineTotalSpan) {
+        lineTotalSpan.textContent = formatCurrency(lineTotal);
+      }
+
+      calculateDailyTotal();
+    }
+
+    function updateProfitCalculation() {
+      const purchasePrice = parseFloat(purchasePriceInput?.value) || 0;
+      const sellingPrice = parseFloat(sellingPriceInput?.value) || 0;
+      const profitMarginSpan = row.querySelector('.profit-margin');
+      const profitPerUnitSpan = row.querySelector('.profit-per-unit');
+
+      if (purchasePrice > 0 && sellingPrice > 0) {
+        const profitPerUnit = sellingPrice - purchasePrice;
+        const profitMargin = ((profitPerUnit / purchasePrice) * 100).toFixed(1);
+
+        if (profitMarginSpan) {
+          profitMarginSpan.textContent = `${profitMargin}%`;
+          profitMarginSpan.className = 'profit-margin fw-medium ' + (profitPerUnit >= 0 ? 'text-success' : 'text-danger');
+        }
+
+        if (profitPerUnitSpan) {
+          profitPerUnitSpan.textContent = `₹${profitPerUnit.toFixed(2)}`;
+          profitPerUnitSpan.className = 'profit-per-unit fw-medium ' + (profitPerUnit >= 0 ? 'text-success' : 'text-danger');
+        }
+      } else {
+        if (profitMarginSpan) {
+          profitMarginSpan.textContent = '-';
+          profitMarginSpan.className = 'profit-margin fw-medium';
+        }
+        if (profitPerUnitSpan) {
+          profitPerUnitSpan.textContent = '-';
+          profitPerUnitSpan.className = 'profit-per-unit fw-medium';
+        }
+      }
+    }
+
+    // Initial calculations
+    calculateLineTotal();
+    updateProfitCalculation();
+  }
+
+  function calculateDailyTotal() {
+    let total = 0;
+    const productItems = document.querySelectorAll('.product-item:not([style*="display: none"])');
+
+    productItems.forEach(row => {
+      const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+      const price = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
+      total += quantity * price;
+    });
+
+    document.getElementById('estimated-total').textContent = formatCurrency(total);
+    document.getElementById('final-total').textContent = formatCurrency(total);
+
+    calculateGrandTotal();
+
+    // Enable/disable submit button
+    const submitBtn = document.getElementById('submit-btn');
+    const vendorSelect = document.getElementById('vendor_select');
+
+    if (submitBtn) {
+      const hasItems = productItems.length > 0;
+      const vendorSelected = vendorSelect ? vendorSelect.value : true; // Default to true if vendor select not found
+      const hasValidItems = Array.from(productItems).some(row => {
+        const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+        const price = parseFloat(row.querySelector('.purchase-price-input')?.value) || 0;
+        const productId = row.querySelector('.product-select')?.value;
+        return quantity > 0 && price > 0 && productId;
+      });
+
+      const daysValid = calculateDays() > 0;
+
+      submitBtn.disabled = !(hasItems && vendorSelected && hasValidItems && total > 0 && daysValid);
+    }
+  }
+
+  function calculateGrandTotal() {
+    const dailyTotal = parseFloat(document.getElementById('final-total').textContent.replace(/[₹,]/g, '') || '0');
+    const totalDays = parseInt(totalDaysSpan.textContent || '0');
+    const grandTotal = dailyTotal * totalDays;
+
+    document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
+  }
+
+  function formatCurrency(amount) {
+    return '₹' + amount.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  // Initialize Select2 for vendor selection
+  const vendorSelect = document.getElementById('vendor_select');
+  if (vendorSelect) {
+    $(vendorSelect).select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Search and select a vendor...',
+      allowClear: true,
+      width: '100%'
+    });
+
+    $(vendorSelect).on('select2:select select2:clear', function() {
+      calculateDailyTotal();
+    });
+  }
+
+  // Initial calculations
+  calculateDays();
+  calculateDailyTotal();
+
+  // Form validation
+  form.addEventListener('submit', function(e) {
+    const hasItems = document.querySelectorAll('.product-item:not([style*="display: none"])').length > 0;
+    if (!hasItems) {
+      e.preventDefault();
+      alert('Please add at least one product to the purchase.');
+      return;
+    }
+
+    const daysValid = calculateDays() > 0;
+    if (!daysValid) {
+      e.preventDefault();
+      alert('Please provide valid from and to dates.');
+      return;
+    }
+
+    // Show confirmation dialog
+    const totalDays = parseInt(totalDaysSpan.textContent || '0');
+    const grandTotal = document.getElementById('grand-total').textContent;
+
+    if (!confirm(`You are about to create ${totalDays} vendor purchase records with a grand total of ${grandTotal}. Continue?`)) {
+      e.preventDefault();
+      return;
+    }
+
+    // Validate all product rows
+    let hasErrors = false;
+    document.querySelectorAll('.product-item:not([style*="display: none"])').forEach(row => {
+      const productSelect = row.querySelector('.product-select');
+      const quantity = row.querySelector('.quantity-input');
+      const purchasePrice = row.querySelector('.purchase-price-input');
+      const sellingPrice = row.querySelector('.selling-price-input');
+
+      if (!productSelect?.value || !quantity?.value || !purchasePrice?.value || !sellingPrice?.value) {
+        hasErrors = true;
+        row.style.border = '2px solid #dc3545';
+        setTimeout(() => row.style.border = '', 3000);
+      }
+    });
+
+    if (hasErrors) {
+      e.preventDefault();
+      alert('Please fill in all required fields for each product.');
+    }
+  });
+});
+</script>

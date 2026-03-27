@@ -6,20 +6,23 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @subscriptions = MilkSubscription.includes(:customer, :product, milk_delivery_tasks: :delivery_person)
 
     # Apply filters
-    @subscriptions = filter_by_status(@subscriptions)
-    @subscriptions = filter_by_date_range(@subscriptions)
-    @subscriptions = filter_by_customer(@subscriptions)
-    @subscriptions = filter_by_delivery_person(@subscriptions)
+    @filtered_subscriptions = @subscriptions
+    @filtered_subscriptions = filter_by_status(@filtered_subscriptions)
+    @filtered_subscriptions = filter_by_date_range(@filtered_subscriptions)
+    @filtered_subscriptions = filter_by_month(@filtered_subscriptions)
+    @filtered_subscriptions = filter_by_customer(@filtered_subscriptions)
+    @filtered_subscriptions = filter_by_delivery_person(@filtered_subscriptions)
 
-    @subscriptions = @subscriptions.order(created_at: :desc).page(params[:page]).per(20)
+    # Calculate stats based on filtered data
+    @stats = calculate_filtered_subscription_stats(@filtered_subscriptions)
+
+    # Paginate the filtered subscriptions
+    @subscriptions = @filtered_subscriptions.order(created_at: :desc).page(params[:page]).per(20)
 
     # For filter options
     @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     @products = Product.where(product_type: 'milk').pluck(:name, :id)
     @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
-
-    # Summary statistics
-    @stats = calculate_subscription_stats
 
     respond_to do |format|
       format.html
@@ -397,6 +400,21 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     end
   end
 
+  def filter_by_month(subscriptions)
+    if params[:month].present?
+      month_number = params[:month].to_i
+      current_year = Date.current.year
+
+      # Get subscriptions that have delivery tasks in the specified month
+      subscriptions.joins(:milk_delivery_tasks)
+                  .where('EXTRACT(month FROM milk_delivery_tasks.delivery_date) = ? AND EXTRACT(year FROM milk_delivery_tasks.delivery_date) = ?',
+                         month_number, current_year)
+                  .distinct
+    else
+      subscriptions
+    end
+  end
+
   def filter_by_customer(subscriptions)
     if params[:customer_id].present?
       subscriptions.where(customer_id: params[:customer_id])
@@ -434,6 +452,61 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       .select(:delivery_person_id)
       .distinct
       .count
+
+    {
+      total: total,
+      active: active,
+      paused: paused,
+      expired: expired,
+      today_deliveries: today_deliveries,
+      pending_today: pending_today,
+      total_delivery_people: total_delivery_people,
+      assigned_delivery_people: assigned_delivery_people
+    }
+  end
+
+  def calculate_filtered_subscription_stats(filtered_subscriptions)
+    # Get subscription IDs from filtered results
+    subscription_ids = filtered_subscriptions.pluck(:id)
+
+    # Calculate filtered statistics
+    total = filtered_subscriptions.count
+    active = filtered_subscriptions.where(status: 'active').count
+    paused = filtered_subscriptions.where(status: 'paused').count
+    expired = filtered_subscriptions.where(status: 'expired').count
+
+    # Calculate delivery tasks based on filtered subscriptions
+    if subscription_ids.any?
+      # Today's deliveries from filtered subscriptions
+      today_deliveries = MilkDeliveryTask
+        .where(subscription_id: subscription_ids)
+        .for_today
+        .count
+
+      # Pending today's deliveries from filtered subscriptions
+      pending_today = MilkDeliveryTask
+        .where(subscription_id: subscription_ids)
+        .for_today
+        .pending
+        .count
+
+      # Count delivery people assigned to filtered subscriptions
+      assigned_delivery_people = MilkDeliveryTask
+        .joins(:delivery_person)
+        .where(subscription_id: subscription_ids)
+        .where(status: ['pending', 'assigned'])
+        .where(delivery_people: { status: true })
+        .select(:delivery_person_id)
+        .distinct
+        .count
+    else
+      today_deliveries = 0
+      pending_today = 0
+      assigned_delivery_people = 0
+    end
+
+    # Total delivery people remains global
+    total_delivery_people = DeliveryPerson.where(status: true).count
 
     {
       total: total,

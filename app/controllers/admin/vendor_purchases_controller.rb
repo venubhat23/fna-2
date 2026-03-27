@@ -1,7 +1,7 @@
 class Admin::VendorPurchasesController < Admin::ApplicationController
   before_action :authenticate_user!
   before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid]
-  before_action :set_vendors_and_products, only: [:new, :edit, :create, :update]
+  before_action :set_vendors_and_products, only: [:new, :edit, :create, :update, :bulk_new, :bulk_create]
   layout 'application'
 
   def index
@@ -250,6 +250,89 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
         batches: batches.sort_by(&:batch_date)
       }
     end
+  end
+
+  def bulk_new
+    @vendor_purchase = VendorPurchase.new
+    @vendor_purchase.vendor_purchase_items.build
+    @vendors = Vendor.active.order(:name)
+    @products = Product.active.order(:name)
+  end
+
+  def bulk_create
+    @vendors = Vendor.active.order(:name)
+    @products = Product.active.order(:name)
+
+    # Validate date range
+    from_date = Date.parse(params[:from_date]) rescue nil
+    to_date = Date.parse(params[:to_date]) rescue nil
+
+    if from_date.nil? || to_date.nil?
+      flash[:alert] = 'Please provide valid from and to dates.'
+      @vendor_purchase = VendorPurchase.new(vendor_purchase_params.except(:purchase_date))
+      @vendor_purchase.vendor_purchase_items.build if @vendor_purchase.vendor_purchase_items.empty?
+      render :bulk_new, status: :unprocessable_entity
+      return
+    end
+
+    if from_date > to_date
+      flash[:alert] = 'From date cannot be later than to date.'
+      @vendor_purchase = VendorPurchase.new(vendor_purchase_params.except(:purchase_date))
+      @vendor_purchase.vendor_purchase_items.build if @vendor_purchase.vendor_purchase_items.empty?
+      render :bulk_new, status: :unprocessable_entity
+      return
+    end
+
+    # Calculate date range (max 366 days to prevent abuse)
+    date_range = (from_date..to_date).to_a
+    if date_range.length > 366
+      flash[:alert] = 'Date range cannot exceed 366 days.'
+      @vendor_purchase = VendorPurchase.new(vendor_purchase_params.except(:purchase_date))
+      @vendor_purchase.vendor_purchase_items.build if @vendor_purchase.vendor_purchase_items.empty?
+      render :bulk_new, status: :unprocessable_entity
+      return
+    end
+
+    created_purchases = []
+    failed_purchases = []
+
+    VendorPurchase.transaction do
+      date_range.each do |purchase_date|
+        vendor_purchase = VendorPurchase.new(vendor_purchase_params.except(:purchase_date))
+        vendor_purchase.purchase_date = purchase_date
+        vendor_purchase.status = 'pending'
+
+        if vendor_purchase.save
+          created_purchases << vendor_purchase
+        else
+          failed_purchases << {
+            date: purchase_date,
+            errors: vendor_purchase.errors.full_messages
+          }
+        end
+      end
+
+      # If any purchases failed, rollback the transaction
+      if failed_purchases.any?
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    if failed_purchases.any?
+      flash[:alert] = "Failed to create purchases. First error on #{failed_purchases.first[:date]}: #{failed_purchases.first[:errors].join(', ')}"
+      @vendor_purchase = VendorPurchase.new(vendor_purchase_params.except(:purchase_date))
+      @vendor_purchase.vendor_purchase_items.build if @vendor_purchase.vendor_purchase_items.empty?
+      render :bulk_new, status: :unprocessable_entity
+    else
+      flash[:notice] = "Successfully created #{created_purchases.length} vendor purchases from #{from_date.strftime('%B %d, %Y')} to #{to_date.strftime('%B %d, %Y')}."
+      redirect_to admin_vendor_purchases_path
+    end
+  rescue => e
+    Rails.logger.error "Bulk purchase creation error: #{e.message}"
+    flash[:alert] = "Error creating bulk purchases: #{e.message}"
+    @vendor_purchase = VendorPurchase.new(vendor_purchase_params.except(:purchase_date))
+    @vendor_purchase.vendor_purchase_items.build if @vendor_purchase.vendor_purchase_items.empty?
+    render :bulk_new, status: :unprocessable_entity
   end
 
   private
