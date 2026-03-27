@@ -163,6 +163,11 @@ class MilkSubscription < ApplicationRecord
     current_average_quantity != quantity
   end
 
+  def daily_tasks_status
+    return 'Ct' if milk_delivery_tasks.where(status: ['pending', 'assigned']).count == 0
+    'PD'
+  end
+
   private
 
   def end_date_after_start_date

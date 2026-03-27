@@ -351,10 +351,17 @@
                                        when 'specific_dates' then 'bg-info'
                                        else 'bg-secondary'
                                        end %>
-                    <span class="badge <%= pattern_class %> px-3 py-2">
-                      <i class="bi bi-calendar me-1"></i>
-                      <%= subscription.delivery_pattern.humanize %>
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge <%= pattern_class %> px-3 py-2">
+                        <i class="bi bi-calendar me-1"></i>
+                        <%= subscription.delivery_pattern.humanize %>
+                      </span>
+                      <% task_status = subscription.daily_tasks_status %>
+                      <% status_class = task_status == 'Ct' ? 'bg-success text-white' : 'bg-warning text-dark' %>
+                      <span class="badge <%= status_class %> px-2 py-1" title="<%= task_status == 'Ct' ? 'All daily tasks completed' : 'Some daily tasks pending' %>">
+                        <%= task_status %>
+                      </span>
+                    </div>
                   </div>
                 </td>
                 <td class="align-middle">
