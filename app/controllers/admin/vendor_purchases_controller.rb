@@ -1,6 +1,6 @@
 class Admin::VendorPurchasesController < Admin::ApplicationController
   before_action :authenticate_user!
-  before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid]
+  before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid, :show_invoice]
   before_action :set_vendors_and_products, only: [:new, :edit, :create, :update, :bulk_new, :bulk_create]
   layout 'application'
 
@@ -166,6 +166,9 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
         status: :sent,
         notes: "Invoice generated for vendor purchase ##{@vendor_purchase.purchase_number}"
       )
+
+      # Mark invoice as generated
+      @vendor_purchase.update!(invoice_generated: true)
     end
 
     # Generate the public URL
@@ -200,6 +203,16 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
         redirect_to admin_vendor_purchase_path(@vendor_purchase),
                     alert: "Error generating invoice: #{e.message}"
       }
+    end
+  end
+
+  def show_invoice
+    # Show simple invoice view
+    @vendor_invoice = @vendor_purchase.vendor_invoice
+
+    if @vendor_invoice.nil?
+      redirect_to admin_vendor_purchases_path, alert: 'Invoice not found. Please generate invoice first.'
+      return
     end
   end
 

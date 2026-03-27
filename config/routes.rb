@@ -433,6 +433,7 @@ Rails.application.routes.draw do
         patch :complete_purchase
         post :complete_purchase
         post :generate_invoice
+        get :show_invoice
         patch :mark_as_paid
       end
       collection do
