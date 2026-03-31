@@ -138,6 +138,17 @@
                 {}, { class: "form-select" } %>
         </div>
         <div class="col-lg-3 col-md-6">
+          <select name="customer_id" class="form-select" id="customerSelect">
+            <option value="">All Customers</option>
+            <% if params[:customer_id].present? %>
+              <% selected_customer = Customer.find_by(id: params[:customer_id]) %>
+              <% if selected_customer %>
+                <option value="<%= selected_customer.id %>" selected><%= selected_customer.display_name %></option>
+              <% end %>
+            <% end %>
+          </select>
+        </div>
+        <div class="col-lg-3 col-md-6">
           <%= f.date_field :date_from, value: params[:date_from],
                           class: "form-control", placeholder: "From Date" %>
         </div>
@@ -1562,6 +1573,55 @@ function markSelectedAsPaid() {
     bulkMarkPaidBtn.innerHTML = originalText;
   });
 }
+
+// Initialize Select2 for customer search
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize customer select2 if element exists
+  const customerSelect = document.getElementById('customerSelect');
+  if (customerSelect && typeof $ !== 'undefined' && $.fn.select2) {
+    $(customerSelect).select2({
+      placeholder: 'Search customers...',
+      allowClear: true,
+      ajax: {
+        url: '/admin/invoices/customers',
+        dataType: 'json',
+        delay: 250,
+        processResults: function (data) {
+          return {
+            results: data.map(function(customer) {
+              return {
+                id: customer.id,
+                text: customer.display_name + (customer.mobile ? ' (' + customer.mobile + ')' : '')
+              };
+            })
+          };
+        },
+        cache: true
+      },
+      minimumInputLength: 2,
+      theme: 'bootstrap-5'
+    });
+
+    // Handle selection change
+    $(customerSelect).on('change', function() {
+      // Auto-submit form when customer is selected/cleared
+      $(this).closest('form').submit();
+    });
+  } else {
+    // Fallback: Load all customers if Select2 not available
+    fetch('/admin/invoices/customers')
+      .then(response => response.json())
+      .then(customers => {
+        customers.forEach(customer => {
+          const option = document.createElement('option');
+          option.value = customer.id;
+          option.textContent = customer.display_name + (customer.mobile ? ' (' + customer.mobile + ')' : '');
+          customerSelect.appendChild(option);
+        });
+      })
+      .catch(error => console.error('Error loading customers:', error));
+  }
+});
 </script>
 
 <style>

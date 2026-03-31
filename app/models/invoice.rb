@@ -5,7 +5,7 @@ class Invoice < ApplicationRecord
 
   accepts_nested_attributes_for :invoice_items, allow_destroy: true, reject_if: :all_blank
 
-  enum :status, { draft: 'draft', sent: 'sent', paid: 'paid', overdue: 'overdue', cancelled: 'cancelled' }
+  enum :status, { draft: 'draft', sent: 'sent', paid: 'paid', overdue: 'overdue', cancelled: 'cancelled', moved_to_next_month: 'moved_to_next_month' }
   enum :payment_status, { unpaid: 0, partially_paid: 1, fully_paid: 2 }
 
   validates :invoice_number, presence: true, uniqueness: true
@@ -17,6 +17,7 @@ class Invoice < ApplicationRecord
   before_create :generate_share_token
 
   scope :for_month, ->(month, year) { where(invoice_date: Date.new(year, month).beginning_of_month..Date.new(year, month).end_of_month) }
+  scope :unpaid_or_partially_paid, -> { where.not(status: ['paid', 'cancelled', 'moved_to_next_month']).or(where(payment_status: ['unpaid', 'partially_paid'])) }
 
   # Get customer display name (customer or walk-in from booking)
   def customer_display_name
@@ -54,6 +55,16 @@ class Invoice < ApplicationRecord
   def generate_share_token!
     self.share_token = SecureRandom.urlsafe_base64(32)
     save!
+  end
+
+  # Calculate remaining amount for unpaid/partially paid invoices
+  def remaining_amount
+    total_amount - (paid_amount || 0)
+  end
+
+  # Check if invoice has pending amount
+  def has_pending_amount?
+    remaining_amount > 0
   end
 
   def formatted_number

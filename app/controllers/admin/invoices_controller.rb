@@ -434,8 +434,15 @@ class Admin::InvoicesController < Admin::ApplicationController
                                     customers.first_name ILIKE ? OR
                                     customers.last_name ILIKE ? OR
                                     customers.email ILIKE ? OR
-                                    customers.mobile ILIKE ?",
-                                   search_term, search_term, search_term, search_term, search_term)
+                                    customers.mobile ILIKE ? OR
+                                    CONCAT(customers.first_name, ' ', customers.last_name) ILIKE ? OR
+                                    CONCAT(customers.first_name, ' ', COALESCE(customers.middle_name, ''), ' ', customers.last_name) ILIKE ?",
+                                   search_term, search_term, search_term, search_term, search_term, search_term, search_term)
+    end
+
+    # Apply customer filter
+    if params[:customer_id].present?
+      base_query = base_query.where(customer_id: params[:customer_id])
     end
 
     # Apply delivery person filter based on milk subscriptions
@@ -782,6 +789,32 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     invoice_items_data = []
 
+    # STEP 1: Handle previous unpaid/partially paid invoices
+    previous_invoices = customer.invoices
+                               .where('invoice_date < ?', start_date)
+                               .unpaid_or_partially_paid
+
+    total_pending_from_previous = 0
+
+    previous_invoices.each do |prev_invoice|
+      pending_amount = prev_invoice.remaining_amount
+      if pending_amount > 0
+        total_pending_from_previous += pending_amount
+
+        # Mark the old invoice as moved to next month
+        prev_invoice.update!(status: 'moved_to_next_month')
+
+        # Add pending amount as a line item
+        invoice_items_data << {
+          product: nil,
+          quantity: 1,
+          unit_price: pending_amount,
+          description: "Pending from previous invoice ##{prev_invoice.invoice_number} (#{prev_invoice.invoice_date.strftime('%b %Y')})",
+          is_pending_amount: true
+        }
+      end
+    end
+
     # 1. Find unpaid, not invoiced, completed bookings for the customer in the specified month
     # Check only amount after discount as requested
     unpaid_bookings = customer.bookings
@@ -876,7 +909,8 @@ class Admin::InvoicesController < Admin::ApplicationController
       end
     end
 
-    return nil if invoice_items_data.empty?
+    # Don't return nil if we have pending amounts from previous invoices
+    return nil if invoice_items_data.empty? && total_pending_from_previous == 0
 
     # Create new invoice
     invoice = Invoice.new(
