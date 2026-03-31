@@ -1586,6 +1586,11 @@ document.addEventListener('DOMContentLoaded', function() {
         url: '/admin/invoices/customers',
         dataType: 'json',
         delay: 250,
+        data: function (params) {
+          return {
+            term: params.term || '' // Send empty term to load all customers
+          };
+        },
         processResults: function (data) {
           return {
             results: data.map(function(customer) {
@@ -1598,7 +1603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         cache: true
       },
-      minimumInputLength: 2,
+      minimumInputLength: 0, // Allow loading without typing
       theme: 'bootstrap-5'
     });
 
@@ -1609,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   } else {
     // Fallback: Load all customers if Select2 not available
-    fetch('/admin/invoices/customers')
+    fetch('/admin/invoices/customers?term=')
       .then(response => response.json())
       .then(customers => {
         customers.forEach(customer => {

@@ -31,9 +31,33 @@ class Admin::InvoicesController < Admin::ApplicationController
   end
 
   def customers
-    @customers = Customer.order(:first_name, :last_name)
-                        .select(:id, :first_name, :middle_name, :last_name)
-                        .map { |c| { id: c.id, display_name: c.display_name } }
+    # Handle search term for filtering
+    customers_query = Customer.active.order(:first_name, :last_name)
+                             .select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
+
+    # Apply search filter if term is provided
+    if params[:term].present?
+      search_term = "%#{params[:term]}%"
+      customers_query = customers_query.where(
+        "CONCAT(customers.first_name, ' ', customers.last_name) ILIKE ? OR
+         CONCAT(customers.first_name, ' ', COALESCE(customers.middle_name, ''), ' ', customers.last_name) ILIKE ? OR
+         customers.first_name ILIKE ? OR
+         customers.last_name ILIKE ? OR
+         customers.email ILIKE ? OR
+         customers.mobile ILIKE ?",
+        search_term, search_term, search_term, search_term, search_term, search_term
+      )
+    end
+
+    @customers = customers_query.limit(50).map do |c|
+      {
+        id: c.id,
+        display_name: c.display_name,
+        email: c.email,
+        mobile: c.mobile
+      }
+    end
+
     render json: @customers
   end
 
