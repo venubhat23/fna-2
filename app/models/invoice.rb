@@ -14,10 +14,12 @@ class Invoice < ApplicationRecord
 
   before_validation :generate_invoice_number, on: :create
   before_validation :calculate_total_from_items
+  before_validation :set_month_and_year
   before_create :generate_share_token
 
-  scope :for_month, ->(month, year) { where(invoice_date: Date.new(year, month).beginning_of_month..Date.new(year, month).end_of_month) }
-  scope :unpaid_or_partially_paid, -> { where.not(status: ['paid', 'cancelled', 'moved_to_next_month']).or(where(payment_status: ['unpaid', 'partially_paid'])) }
+  scope :for_month, ->(month, year) { where(month: month, year: year) }
+  scope :for_month_date, ->(month, year) { where(invoice_date: Date.new(year, month).beginning_of_month..Date.new(year, month).end_of_month) }
+  scope :unpaid_or_partially_paid, -> { where.not(status: ['paid', 'cancelled', 'moved_to_next_month']).where(payment_status: [payment_statuses['unpaid'], payment_statuses['partially_paid']]) }
 
   # Get customer display name (customer or walk-in from booking)
   def customer_display_name
@@ -154,6 +156,13 @@ class Invoice < ApplicationRecord
   end
 
   private
+
+  def set_month_and_year
+    return unless invoice_date.present?
+
+    self.month = invoice_date.month
+    self.year = invoice_date.year
+  end
 
   def calculate_total_from_items
     # Only recalculate if invoice_items are present and changed

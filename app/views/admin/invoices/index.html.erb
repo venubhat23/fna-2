@@ -500,6 +500,7 @@
     <div class="modal-header bg-primary text-white">
       <h5 class="modal-title" id="bulkInvoiceModalLabel">
         <i class="bi bi-receipt"></i> Generate Bulk Invoices
+        <span id="header_selected_count" class="badge bg-light text-primary ms-2" style="display: none;">0 Selected</span>
       </h5>
       <button type="button" class="btn-close btn-close-white" onclick="closeBulkInvoiceModal()" aria-label="Close">&times;</button>
     </div>
@@ -582,7 +583,13 @@
           </div>
 
           <div id="customer_dropdown_section" class="mb-4" style="display: none;">
-            <label class="form-label">Select Customers</label>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">Select Customers</label>
+              <span id="total_customer_count" class="badge bg-primary fs-6" style="display: none;">
+                <i class="bi bi-people me-1"></i>
+                <span id="total_count_text">0 available</span>
+              </span>
+            </div>
             <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
@@ -592,6 +599,10 @@
                   <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllCustomers()">
                     <i class="bi bi-x-circle me-1"></i>Deselect All
                   </button>
+                  <span id="selection_summary" class="badge bg-info ms-3 fs-6" style="display: none;">
+                    <i class="bi bi-people-fill me-1"></i>
+                    <span id="selected_count_text">0 customers selected</span>
+                  </span>
                 </div>
                 <div>
                   <input type="text" class="form-control form-control-sm" placeholder="Search customers..."
@@ -615,13 +626,92 @@
             <div id="selected_customer_inputs"></div>
           </div>
 
+          <!-- Invoice Generation Summary -->
+          <div id="invoiceGenerationSummary" class="card border-info mb-4" style="display: none;">
+            <div class="card-header bg-info text-white">
+              <h6 class="mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Invoice Generation Summary for <span id="summaryMonthYear"></span>
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="text-center p-3 border-end">
+                    <div class="fs-2 fw-bold text-primary" id="totalPotentialCustomers">0</div>
+                    <div class="small text-muted">Total Customers</div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="text-center p-3 border-end">
+                    <div class="fs-2 fw-bold text-success" id="existingInvoicesCount">0</div>
+                    <div class="small text-muted">Already Have Invoices</div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="text-center p-3">
+                    <div class="fs-2 fw-bold text-warning" id="availableCustomersCount">0</div>
+                    <div class="small text-muted">Will Generate New</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Existing Customers Section -->
+              <div id="existingCustomersSection" style="display: none;" class="mt-4">
+                <h6 class="text-success">
+                  <i class="bi bi-check-circle me-2"></i>
+                  Customers with Existing Invoices
+                </h6>
+                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Invoice #</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody id="existingCustomersList">
+                      <!-- Will be populated by JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Available Customers Section -->
+              <div id="availableCustomersSection" style="display: none;" class="mt-4">
+                <h6 class="text-warning">
+                  <i class="bi bi-person-plus me-2"></i>
+                  Customers Ready for New Invoices (Sample)
+                </h6>
+                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Mobile</th>
+                      </tr>
+                    </thead>
+                    <tbody id="availableCustomersList">
+                      <!-- Will be populated by JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="text-end">
+            <button type="button" class="btn btn-outline-info me-2" onclick="checkInvoiceSummary()">
+              <i class="bi bi-search me-1"></i>
+              Preview Invoice Summary
+            </button>
             <button type="button" class="btn btn-secondary me-2" onclick="closeBulkInvoiceModal()">
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary" id="generateInvoiceBtn">
+            <button type="submit" class="btn btn-primary" id="generateInvoiceBtn" disabled>
               <i class="bi bi-receipt me-1"></i>
-              Generate Invoice
+              Generate Invoices
             </button>
           </div>
         </form>
@@ -737,6 +827,22 @@ document.addEventListener('DOMContentLoaded', function() {
 function openBulkInvoiceModal() {
   console.log('Opening bulk invoice modal');
 
+  // Reset any previous summary
+  const summaryDiv = document.getElementById('invoiceGenerationSummary');
+  if (summaryDiv) {
+    summaryDiv.style.display = 'none';
+  }
+
+  // Reset generate button
+  const generateBtn = document.getElementById('generateInvoiceBtn');
+  if (generateBtn) {
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoice';
+  }
+
+  // Reset all selection counters
+  resetSelectionCounters();
+
   // Load form content
   loadBulkInvoiceForm();
 
@@ -754,6 +860,30 @@ function closeBulkInvoiceModal() {
   if (modal) {
     modal.style.display = 'none';
     document.body.style.overflow = 'auto'; // Restore background scrolling
+  }
+  // Reset selection counters when closing modal
+  resetSelectionCounters();
+}
+
+// Reset all selection counters
+function resetSelectionCounters() {
+  // Reset header counter
+  const headerCounter = document.getElementById('header_selected_count');
+  if (headerCounter) {
+    headerCounter.style.display = 'none';
+  }
+
+  // Reset selection summary
+  const selectionSummary = document.getElementById('selection_summary');
+  if (selectionSummary) {
+    selectionSummary.style.display = 'none';
+  }
+
+  // Reset original count badge
+  const countBadge = document.getElementById('selected_count');
+  if (countBadge) {
+    countBadge.textContent = '0 selected';
+    countBadge.className = 'badge bg-secondary ms-2';
   }
 }
 
@@ -867,17 +997,53 @@ function initializeFormListeners() {
   customerRadios.forEach(radio => {
     radio.addEventListener('change', function() {
       if (customerDropdownSection) {
-        customerDropdownSection.style.display = this.value === 'specific' ? 'block' : 'none';
+        customerDropdownSection.style.display = (this.value === 'specific' || this.value === 'delivery_person') ? 'block' : 'none';
       }
       if (deliveryPersonSection) {
         deliveryPersonSection.style.display = this.value === 'delivery_person' ? 'block' : 'none';
       }
+
+      // Reset selection counters when switching modes
+      resetSelectionCounters();
+
+      // Reset total customer count when switching modes
+      if (this.value === 'all') {
+        updateTotalCustomerCount(0);
+      }
+
+      // Update generate button state when customer selection changes
+      updateGenerateButtonState();
 
       // Clear delivery person selection when switching away from delivery person mode
       if (this.value !== 'delivery_person') {
         const deliveryPersonSelect = document.getElementById('delivery_person_select');
         if (deliveryPersonSelect) {
           deliveryPersonSelect.value = '';
+        }
+      }
+
+      // Reload customers when customer selection changes (for specific customers or delivery person)
+      if (this.value === 'specific') {
+        reloadCustomersBasedOnMonthYear();
+      } else if (this.value === 'delivery_person') {
+        // Load customers for delivery person if one is already selected
+        const deliveryPersonSelect = document.getElementById('delivery_person_select');
+        if (deliveryPersonSelect && deliveryPersonSelect.value) {
+          reloadCustomersBasedOnMonthYear();
+        } else {
+          // Show empty customer list with message to select delivery person
+          const customerCheckboxList = document.getElementById('customers_checkbox_list');
+          if (customerCheckboxList) {
+            customerCheckboxList.innerHTML = `
+              <div class="text-muted text-center py-3">
+                <i class="bi bi-person-gear fs-3 d-block mb-2"></i>
+                <p>Please select a delivery person above to see their customers.</p>
+              </div>
+            `;
+
+            // Hide total count when no delivery person selected
+            updateTotalCustomerCount(0);
+          }
         }
       }
     });
@@ -891,8 +1057,33 @@ function initializeFormListeners() {
       const deliveryPersonCustomersRadio = document.getElementById('delivery_person_customers');
 
       if (deliveryPersonId && deliveryPersonCustomersRadio && deliveryPersonCustomersRadio.checked) {
-        loadCustomersForDeliveryPerson(deliveryPersonId);
+        reloadCustomersBasedOnMonthYear();
       }
+      updateGenerateButtonState();
+    });
+  }
+
+  // Add month/year change listeners to reload customers
+  const monthSelect = document.getElementById('invoice_month');
+  const yearSelect = document.getElementById('invoice_year');
+
+  if (monthSelect) {
+    monthSelect.addEventListener('change', function() {
+      const customerSelection = document.querySelector('input[name="customer_selection"]:checked');
+      if (customerSelection && (customerSelection.value === 'specific' || customerSelection.value === 'delivery_person')) {
+        reloadCustomersBasedOnMonthYear();
+      }
+      updateGenerateButtonState();
+    });
+  }
+
+  if (yearSelect) {
+    yearSelect.addEventListener('change', function() {
+      const customerSelection = document.querySelector('input[name="customer_selection"]:checked');
+      if (customerSelection && (customerSelection.value === 'specific' || customerSelection.value === 'delivery_person')) {
+        reloadCustomersBasedOnMonthYear();
+      }
+      updateGenerateButtonState();
     });
   }
 
@@ -903,6 +1094,133 @@ function initializeFormListeners() {
       e.preventDefault();
       generateInvoices();
     });
+  }
+}
+
+// Reload customers based on month/year and customer selection
+function reloadCustomersBasedOnMonthYear() {
+  const monthSelect = document.getElementById('invoice_month');
+  const yearSelect = document.getElementById('invoice_year');
+  const customerSelection = document.querySelector('input[name="customer_selection"]:checked');
+  const deliveryPersonSelect = document.getElementById('delivery_person_select');
+  const customerCheckboxList = document.getElementById('customers_checkbox_list');
+
+  // Only reload if month and year are selected
+  if (!monthSelect.value || !yearSelect.value || !customerSelection) {
+    return;
+  }
+
+  if (!customerCheckboxList) return;
+
+  // Show loading in customer list
+  customerCheckboxList.innerHTML = `
+    <div class="text-center py-3">
+      <div class="spinner-border spinner-border-sm text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-muted small">Loading available customers...</p>
+    </div>
+  `;
+
+  // Build query parameters
+  const params = new URLSearchParams({
+    month: monthSelect.value,
+    year: yearSelect.value,
+    customer_selection: customerSelection.value
+  });
+
+  if (customerSelection.value === 'delivery_person' && deliveryPersonSelect.value) {
+    params.append('delivery_person_id', deliveryPersonSelect.value);
+  }
+
+  // Fetch available customers (excluding those with existing invoices)
+  fetch(`/admin/invoices/available_customers?${params}`, {
+    method: 'GET',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(customers => {
+    customerCheckboxList.innerHTML = '';
+
+    if (customers.length === 0) {
+      customerCheckboxList.innerHTML = `
+        <div class="text-warning text-center py-3">
+          <i class="bi bi-person-check fs-3 d-block mb-2"></i>
+          <strong>No customers available</strong><br>
+          <small>All customers already have invoices for ${Date.prototype.constructor.name !== 'Date' ? 'this period' : `${monthSelect.options[monthSelect.selectedIndex].text} ${yearSelect.value}`}</small>
+        </div>
+      `;
+    } else {
+      customers.forEach(customer => {
+        const checkboxDiv = document.createElement('div');
+        checkboxDiv.className = 'form-check customer-checkbox-item';
+        checkboxDiv.innerHTML = `
+          <input class="form-check-input customer-checkbox" type="checkbox"
+                 name="customer_ids" value="${customer.id}" id="customer_${customer.id}"
+                 onchange="updateSelectedCustomers()">
+          <label class="form-check-label" for="customer_${customer.id}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">${customer.display_name}</div>
+                <div class="text-muted small">
+                  ${customer.mobile ? `📞 ${customer.mobile}` : ''}
+                  ${customer.email ? ` | ✉️ ${customer.email}` : ''}
+                </div>
+              </div>
+            </div>
+          </label>
+        `;
+        customerCheckboxList.appendChild(checkboxDiv);
+      });
+    }
+
+    // Update total customer count
+    updateTotalCustomerCount(customers.length);
+
+    // Update the selected count
+    updateSelectedCustomers();
+
+    // Update generate button state after customers are loaded
+    updateGenerateButtonState();
+  })
+  .catch(error => {
+    console.error('Error loading available customers:', error);
+    customerCheckboxList.innerHTML = `
+      <div class="text-danger text-center py-3">
+        <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+        Error loading customers. Please try again.
+      </div>
+    `;
+
+    // Hide total count on error
+    updateTotalCustomerCount(0);
+  });
+}
+
+// Update total customer count display
+function updateTotalCustomerCount(count) {
+  const totalCountBadge = document.getElementById('total_customer_count');
+  const totalCountText = document.getElementById('total_count_text');
+
+  if (totalCountBadge && totalCountText) {
+    if (count > 0) {
+      totalCountText.textContent = `${count} available`;
+      totalCountBadge.style.display = 'inline-block';
+
+      // Change color based on count
+      if (count > 50) {
+        totalCountBadge.className = 'badge bg-success fs-6';
+      } else if (count > 10) {
+        totalCountBadge.className = 'badge bg-primary fs-6';
+      } else {
+        totalCountBadge.className = 'badge bg-warning fs-6';
+      }
+    } else {
+      totalCountBadge.style.display = 'none';
+    }
   }
 }
 
@@ -917,6 +1235,9 @@ function selectAllCustomers() {
     checkbox.checked = true;
   });
   updateSelectedCustomers();
+
+  // Show quick feedback
+  showSelectionFeedback(`Selected ${visibleCheckboxes.length} visible customers`);
 }
 
 function deselectAllCustomers() {
@@ -925,6 +1246,29 @@ function deselectAllCustomers() {
     checkbox.checked = false;
   });
   updateSelectedCustomers();
+
+  // Show quick feedback
+  showSelectionFeedback('All customers deselected');
+}
+
+// Show quick selection feedback
+function showSelectionFeedback(message) {
+  const selectionSummary = document.getElementById('selection_summary');
+  if (selectionSummary) {
+    const originalClass = selectionSummary.className;
+    const originalContent = selectionSummary.innerHTML;
+
+    selectionSummary.className = 'badge bg-success ms-3 fs-6';
+    selectionSummary.innerHTML = `<i class="bi bi-check-circle me-1"></i>${message}`;
+    selectionSummary.style.display = 'inline-block';
+
+    // Restore original content after 1.5 seconds
+    setTimeout(() => {
+      selectionSummary.className = originalClass;
+      selectionSummary.innerHTML = originalContent;
+      updateSelectedCustomers(); // Refresh the actual count
+    }, 1500);
+  }
 }
 
 function filterCustomers() {
@@ -957,6 +1301,31 @@ function updateSelectedCustomers() {
     countBadge.className = selectedCount > 0 ? 'badge bg-primary ms-2' : 'badge bg-secondary ms-2';
   }
 
+  // Update header counter
+  const headerCounter = document.getElementById('header_selected_count');
+  if (headerCounter) {
+    if (selectedCount > 0) {
+      headerCounter.textContent = `${selectedCount} Selected`;
+      headerCounter.style.display = 'inline-block';
+      headerCounter.className = 'badge bg-light text-primary ms-2';
+    } else {
+      headerCounter.style.display = 'none';
+    }
+  }
+
+  // Update selection summary in customer area
+  const selectionSummary = document.getElementById('selection_summary');
+  const selectedCountText = document.getElementById('selected_count_text');
+  if (selectionSummary && selectedCountText) {
+    if (selectedCount > 0) {
+      selectedCountText.textContent = `${selectedCount} ${selectedCount === 1 ? 'customer' : 'customers'} selected`;
+      selectionSummary.style.display = 'inline-block';
+      selectionSummary.className = selectedCount > 10 ? 'badge bg-warning ms-3 fs-6' : 'badge bg-info ms-3 fs-6';
+    } else {
+      selectionSummary.style.display = 'none';
+    }
+  }
+
   // Update hidden inputs for form submission
   const selectedInputsContainer = document.getElementById('selected_customer_inputs');
   if (selectedInputsContainer) {
@@ -969,6 +1338,63 @@ function updateSelectedCustomers() {
       hiddenInput.value = checkbox.value;
       selectedInputsContainer.appendChild(hiddenInput);
     });
+  }
+
+  // Enable/disable generate button based on form validity
+  updateGenerateButtonState();
+}
+
+// Update generate button state based on form validity
+function updateGenerateButtonState() {
+  const generateBtn = document.getElementById('generateInvoiceBtn');
+  const monthSelect = document.getElementById('invoice_month');
+  const yearSelect = document.getElementById('invoice_year');
+  const customerSelection = document.querySelector('input[name="customer_selection"]:checked');
+
+  if (!generateBtn) return;
+
+  // Check if basic form requirements are met
+  const hasMonthYear = monthSelect && monthSelect.value && yearSelect && yearSelect.value;
+  const hasCustomerSelection = customerSelection;
+
+  if (!hasMonthYear || !hasCustomerSelection) {
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';
+    return;
+  }
+
+  // Check specific requirements based on customer selection type
+  let canGenerate = false;
+
+  if (customerSelection.value === 'all') {
+    // All customers mode - always allow if month/year selected
+    canGenerate = true;
+  } else if (customerSelection.value === 'specific') {
+    // Specific customers mode - need at least one customer selected
+    const selectedCustomers = document.querySelectorAll('.customer-checkbox:checked');
+    canGenerate = selectedCustomers.length > 0;
+  } else if (customerSelection.value === 'delivery_person') {
+    // Delivery person mode - need delivery person selected and customers available
+    const deliveryPersonSelect = document.getElementById('delivery_person_select');
+    const hasDeliveryPerson = deliveryPersonSelect && deliveryPersonSelect.value;
+
+    if (!hasDeliveryPerson) {
+      canGenerate = false;
+    } else {
+      // If delivery person selected, check if any customers are available
+      const customerList = document.getElementById('customers_checkbox_list');
+      const hasCustomers = customerList && customerList.innerHTML.includes('customer-checkbox');
+      canGenerate = hasCustomers;
+    }
+  }
+
+  // Update button state
+  if (canGenerate) {
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';
+  } else {
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';
   }
 }
 
@@ -1043,6 +1469,200 @@ function loadCustomersForDeliveryPerson(deliveryPersonId) {
     });
 }
 
+// Check invoice generation summary
+function checkInvoiceSummary() {
+  console.log('checkInvoiceSummary called');
+
+  const monthSelect = document.getElementById('invoice_month');
+  const yearSelect = document.getElementById('invoice_year');
+  const customerSelection = document.querySelector('input[name="customer_selection"]:checked');
+  const deliveryPersonSelect = document.getElementById('delivery_person_select');
+
+  console.log('Elements found:', {
+    monthSelect: !!monthSelect,
+    yearSelect: !!yearSelect,
+    customerSelection: !!customerSelection,
+    deliveryPersonSelect: !!deliveryPersonSelect
+  });
+
+  // Validate required fields
+  if (!monthSelect || !monthSelect.value || !yearSelect || !yearSelect.value) {
+    alert('Please select both month and year first.');
+    return;
+  }
+
+  if (!customerSelection) {
+    alert('Please select customer selection option.');
+    return;
+  }
+
+  console.log('Form values:', {
+    month: monthSelect.value,
+    year: yearSelect.value,
+    customerSelection: customerSelection.value
+  });
+
+  // Show loading state
+  const summaryDiv = document.getElementById('invoiceGenerationSummary');
+  summaryDiv.style.display = 'block';
+  summaryDiv.innerHTML = `
+    <div class="card-body text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3 text-muted">Loading invoice summary...</p>
+    </div>
+  `;
+
+  // Prepare form data
+  const formData = new FormData();
+  formData.append('month', monthSelect.value);
+  formData.append('year', yearSelect.value);
+  formData.append('customer_selection', customerSelection.value);
+
+  if (customerSelection.value === 'delivery_person' && deliveryPersonSelect.value) {
+    formData.append('delivery_person_id', deliveryPersonSelect.value);
+  }
+
+  if (customerSelection.value === 'specific') {
+    const selectedCustomers = Array.from(document.querySelectorAll('input[name="customer_ids"]:checked'))
+      .map(cb => cb.value);
+    selectedCustomers.forEach(id => formData.append('customer_ids[]', id));
+  }
+
+  // Fetch invoice summary
+  fetch('/admin/invoices/invoice_generation_summary?' + new URLSearchParams(formData), {
+    method: 'GET',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    displayInvoiceSummary(data);
+
+    // Note: Generate button state is now managed by updateGenerateButtonState()
+    // This provides a preview of what will be generated
+  })
+  .catch(error => {
+    console.error('Error fetching invoice summary:', error);
+    summaryDiv.innerHTML = `
+      <div class="card-body text-center py-4">
+        <div class="text-danger">
+          <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+          Error loading summary. Please try again.
+        </div>
+      </div>
+    `;
+  });
+}
+
+// Display invoice generation summary
+function displayInvoiceSummary(data) {
+  const summaryDiv = document.getElementById('invoiceGenerationSummary');
+
+  summaryDiv.innerHTML = `
+    <div class="card-header bg-info text-white">
+      <h6 class="mb-0">
+        <i class="bi bi-info-circle me-2"></i>
+        Invoice Generation Summary for ${data.month_name} ${data.year}
+      </h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="text-center p-3 border-end">
+            <div class="fs-2 fw-bold text-primary">${data.total_potential_customers}</div>
+            <div class="small text-muted">Total Customers</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center p-3 border-end">
+            <div class="fs-2 fw-bold text-success">${data.existing_invoices_count}</div>
+            <div class="small text-muted">Already Have Invoices</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center p-3">
+            <div class="fs-2 fw-bold text-warning">${data.available_customers_count}</div>
+            <div class="small text-muted">Will Generate New</div>
+          </div>
+        </div>
+      </div>
+
+      ${data.existing_invoices_count > 0 ? `
+        <div class="mt-4">
+          <h6 class="text-success">
+            <i class="bi bi-check-circle me-2"></i>
+            Customers with Existing Invoices
+          </h6>
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.existing_customers.map(customer => `
+                  <tr>
+                    <td>${customer.name}</td>
+                    <td>${customer.invoice_number}</td>
+                    <td>₹${customer.amount}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : ''}
+
+      ${data.available_customers_count > 0 ? `
+        <div class="mt-4">
+          <h6 class="text-warning">
+            <i class="bi bi-person-plus me-2"></i>
+            Customers Ready for New Invoices (Sample)
+          </h6>
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Mobile</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.available_customers.map(customer => `
+                  <tr>
+                    <td>${customer.name}</td>
+                    <td>${customer.mobile || 'N/A'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ${data.available_customers_count > 10 ? `
+            <div class="text-muted small mt-2">
+              <i class="bi bi-info-circle me-1"></i>
+              Showing first 10 customers. ${data.available_customers_count - 10} more will be processed.
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
+
+      ${data.available_customers_count === 0 ? `
+        <div class="alert alert-warning mt-4">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>No new invoices to generate!</strong> All selected customers already have invoices for ${data.month_name} ${data.year}.
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 function generateInvoices() {
   const form = document.getElementById('generateInvoiceForm');
   const generateBtn = document.getElementById('generateInvoiceBtn');
@@ -1101,16 +1721,16 @@ function generateInvoices() {
   .then(response => response.json())
   .then(result => {
     if (result.success) {
-      alert(`Successfully generated ${result.invoices_created} invoices!`);
+      showInvoiceGenerationResult(result);
       closeBulkInvoiceModal();
-      location.reload(); // Refresh the page to show new invoices
+      setTimeout(() => location.reload(), 2000); // Refresh after showing results
     } else {
-      alert('Error generating invoices: ' + (result.error || 'Unknown error'));
+      showInvoiceGenerationError(result);
     }
   })
   .catch(error => {
     console.error('Error:', error);
-    alert('Error generating invoices. Please try again.');
+    showInvoiceGenerationError({ error: 'Network error. Please try again.' });
   })
   .finally(() => {
     resetGenerateButton();
@@ -1123,6 +1743,229 @@ function resetGenerateButton() {
     generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoice';
     generateBtn.disabled = false;
   }
+}
+
+// Enhanced result display for batch processing
+function showInvoiceGenerationResult(result) {
+  const isBatchMode = result.total_customers > 5;
+  let message = '';
+  let alertClass = 'alert-success';
+  let icon = 'bi-check-circle';
+
+  if (result.warnings && result.warnings.length > 0) {
+    // Partial success
+    alertClass = 'alert-warning';
+    icon = 'bi-exclamation-triangle';
+    message = `
+      <div class="d-flex align-items-center mb-2">
+        <i class="${icon} fs-4 me-2"></i>
+        <strong>Partially Successful Invoice Generation</strong>
+      </div>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="card border-success">
+            <div class="card-body text-center">
+              <div class="fs-3 fw-bold text-success">${result.invoices_created}</div>
+              <div class="small text-muted">Invoices Created</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-warning">
+            <div class="card-body text-center">
+              <div class="fs-3 fw-bold text-warning">${result.total_customers - result.invoices_created}</div>
+              <div class="small text-muted">Failed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-2">
+        <strong>Success Rate:</strong> ${result.success_rate}%
+        <span class="badge bg-secondary">${result.processing_type}</span>
+      </div>
+    `;
+
+    if (isBatchMode && result.batch_info) {
+      message += `
+        <div class="row mb-2">
+          <div class="col-4">
+            <div class="text-center">
+              <div class="fs-6 fw-bold text-success">${result.batch_info.successful_batches}</div>
+              <div class="small text-muted">Successful Batches</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center">
+              <div class="fs-6 fw-bold text-danger">${result.batch_info.failed_batches}</div>
+              <div class="small text-muted">Failed Batches</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center">
+              <div class="fs-6 fw-bold text-info">${result.batch_info.batch_size}</div>
+              <div class="small text-muted">Batch Size</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (result.warnings.length > 0) {
+      message += `
+        <details class="mt-3">
+          <summary class="text-warning fw-semibold">Show Error Details (${result.warnings.length})</summary>
+          <div class="mt-2 p-2 bg-light rounded">
+            ${result.warnings.map(warning => `<div class="small text-danger">• ${warning}</div>`).join('')}
+          </div>
+        </details>
+      `;
+    }
+  } else {
+    // Full success
+    message = `
+      <div class="d-flex align-items-center mb-2">
+        <i class="${icon} fs-4 me-2"></i>
+        <strong>Invoice Generation Completed Successfully!</strong>
+      </div>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="card border-success">
+            <div class="card-body text-center">
+              <div class="fs-2 fw-bold text-success">${result.invoices_created}</div>
+              <div class="small text-muted">Invoices Created</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-info">
+            <div class="card-body text-center">
+              <div class="fs-2 fw-bold text-info">${result.success_rate}%</div>
+              <div class="small text-muted">Success Rate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-2">
+        <strong>Processing:</strong>
+        <span class="badge bg-primary">${result.processing_type}</span>
+      </div>
+    `;
+
+    if (isBatchMode && result.batch_info) {
+      message += `
+        <div class="alert alert-info mb-2">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>Batch Processing Details:</strong><br>
+          Successfully processed ${result.batch_info.successful_batches}/${result.batch_info.total_batches} batches
+          (${result.batch_info.batch_size} customers per batch)
+        </div>
+      `;
+    }
+  }
+
+  // Show detailed invoice list if available
+  if (result.invoices && result.invoices.length > 0) {
+    const maxDisplayInvoices = 10;
+    const displayInvoices = result.invoices.slice(0, maxDisplayInvoices);
+    message += `
+      <details class="mt-3">
+        <summary class="text-primary fw-semibold">Show Generated Invoices (${result.invoices.length})</summary>
+        <div class="mt-2">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${displayInvoices.map(inv => `
+                  <tr>
+                    <td><code>${inv.number}</code></td>
+                    <td>${inv.customer}</td>
+                    <td>₹${inv.amount}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            ${result.invoices.length > maxDisplayInvoices ?
+              `<div class="text-muted small">... and ${result.invoices.length - maxDisplayInvoices} more</div>` : ''}
+          </div>
+        </div>
+      </details>
+    `;
+  }
+
+  showCustomAlert(message, alertClass, 8000); // Show for 8 seconds
+}
+
+function showInvoiceGenerationError(result) {
+  let message = `
+    <div class="d-flex align-items-center mb-2">
+      <i class="bi bi-x-circle fs-4 me-2"></i>
+      <strong>Invoice Generation Failed</strong>
+    </div>
+    <div class="mb-2">${result.message || result.error || 'Unknown error occurred'}</div>
+  `;
+
+  // Show batch info if available
+  if (result.batch_info) {
+    message += `
+      <div class="alert alert-light mb-2">
+        <strong>Batch Processing Summary:</strong><br>
+        ${result.batch_info.successful_batches}/${result.batch_info.total_batches} batches succeeded<br>
+        Batch size: ${result.batch_info.batch_size} customers
+      </div>
+    `;
+  }
+
+  // Show detailed errors if available
+  if (result.detailed_errors && result.detailed_errors.length > 0) {
+    message += `
+      <details class="mt-2">
+        <summary class="text-danger fw-semibold">Show Error Details (${result.detailed_errors.length})</summary>
+        <div class="mt-2 p-2 bg-light rounded">
+          ${result.detailed_errors.map(error => `<div class="small text-danger">• ${error}</div>`).join('')}
+        </div>
+      </details>
+    `;
+  }
+
+  showCustomAlert(message, 'alert-danger', 10000); // Show for 10 seconds
+}
+
+// Custom alert function for rich content
+function showCustomAlert(message, alertClass = 'alert-success', duration = 5000) {
+  // Remove any existing alerts
+  const existingAlerts = document.querySelectorAll('.invoice-generation-alert');
+  existingAlerts.forEach(alert => alert.remove());
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed invoice-generation-alert`;
+  alertDiv.style.cssText = `
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    min-width: 400px;
+    max-width: 600px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  `;
+
+  alertDiv.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close"></button>
+  `;
+
+  document.body.appendChild(alertDiv);
+
+  // Auto-remove after specified duration
+  setTimeout(() => {
+    if (alertDiv.parentNode) {
+      alertDiv.remove();
+    }
+  }, duration);
 }
 
 // Close modal when clicking outside

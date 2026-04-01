@@ -222,6 +222,8 @@ Rails.application.routes.draw do
         get :customers
         get :delivery_persons
         get :customers_by_delivery_person
+        get :available_customers
+        get :invoice_generation_summary
         post :generate
       end
     end

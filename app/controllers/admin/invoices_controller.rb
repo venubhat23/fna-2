@@ -111,82 +111,295 @@ class Admin::InvoicesController < Admin::ApplicationController
     render json: @customers
   end
 
+  def available_customers
+    month = params[:month].to_i
+    year = params[:year].to_i
+    customer_selection = params[:customer_selection]
+    delivery_person_id = params[:delivery_person_id]
+
+    # Get potential customers
+    potential_customers = case customer_selection
+    when 'all'
+      Customer.active.order(:first_name, :last_name)
+    when 'delivery_person'
+      if delivery_person_id.present?
+        # Get customers from bookings and subscriptions for delivery person
+        booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id)
+                                     .distinct.pluck(:customer_id).compact.uniq
+        subscription_customer_ids = []
+        subscription_customer_ids += MilkSubscription.where(delivery_person_id: delivery_person_id)
+                                                    .distinct.pluck(:customer_id).compact if defined?(MilkSubscription)
+        subscription_customer_ids += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
+                                                         .distinct.pluck(:customer_id).compact if defined?(SubscriptionTemplate)
+
+        all_customer_ids = (booking_customer_ids + subscription_customer_ids).uniq
+        Customer.where(id: all_customer_ids).order(:first_name, :last_name)
+      else
+        Customer.none
+      end
+    else
+      Customer.active.order(:first_name, :last_name)
+    end
+
+    # Filter out customers who already have invoices for this month/year
+    if month > 0 && year > 0
+      existing_customer_ids = Invoice.where(month: month, year: year)
+                                    .where(customer_id: potential_customers.pluck(:id))
+                                    .pluck(:customer_id)
+
+      available_customers = potential_customers.where.not(id: existing_customer_ids)
+    else
+      available_customers = potential_customers
+    end
+
+    # Format response
+    @customers = available_customers.limit(200).map do |c|
+      {
+        id: c.id,
+        display_name: c.display_name,
+        email: c.email,
+        mobile: c.mobile
+      }
+    end
+
+    render json: @customers
+  end
+
+  def invoice_generation_summary
+    month = params[:month].to_i
+    year = params[:year].to_i
+    customer_selection = params[:customer_selection]
+    customer_ids = params[:customer_ids]&.map(&:to_i)
+    delivery_person_id = params[:delivery_person_id]
+
+    # Get all potential customers based on selection
+    potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id)
+
+    # Find customers who already have invoices for this month/year
+    existing_invoices = Invoice.where(month: month, year: year)
+                              .where(customer_id: potential_customers.pluck(:id))
+                              .includes(:customer)
+
+    existing_customer_ids = existing_invoices.pluck(:customer_id)
+
+    # Get customers who don't have invoices yet
+    available_customers = potential_customers.where.not(id: existing_customer_ids)
+
+    summary = {
+      month: month,
+      year: year,
+      month_name: Date::MONTHNAMES[month],
+      total_potential_customers: potential_customers.count,
+      existing_invoices_count: existing_invoices.count,
+      available_customers_count: available_customers.count,
+      existing_customers: existing_invoices.map { |inv|
+        {
+          id: inv.customer.id,
+          name: inv.customer.display_name,
+          invoice_number: inv.invoice_number,
+          amount: inv.total_amount
+        }
+      },
+      available_customers: available_customers.limit(10).map { |c|
+        {
+          id: c.id,
+          name: c.display_name,
+          mobile: c.mobile
+        }
+      }
+    }
+
+    render json: summary
+  end
+
   def generate
     month = params[:month].to_i
     year = params[:year].to_i
     customer_selection = params[:customer_selection]
-    customer_ids = params[:customer_ids]
+    customer_ids = params[:customer_ids]&.map(&:to_i)
     delivery_person_id = params[:delivery_person_id]
 
     # Get pending items summary before generation
     pending_summary = get_pending_items_summary(customer_selection, customer_ids, delivery_person_id)
 
-    if customer_selection == 'all'
-      customers = Customer.all
-    elsif customer_selection == 'delivery_person' && delivery_person_id.present?
-      # Get customers who have bookings with the selected delivery person
-      customer_ids_from_bookings = Booking.where(delivery_person_id: delivery_person_id)
-                                         .distinct
-                                         .pluck(:customer_id)
-                                         .compact
+    # Get potential customers using the helper method
+    potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id)
 
-      # Get customers who have subscriptions with the selected delivery person
-      customer_ids_from_subscriptions = []
-      if defined?(MilkSubscription)
-        customer_ids_from_subscriptions += MilkSubscription.where(delivery_person_id: delivery_person_id)
-                                                          .distinct
-                                                          .pluck(:customer_id)
-                                                          .compact
-      end
+    # Filter out customers who already have invoices for this month/year
+    existing_customer_ids = Invoice.where(month: month, year: year)
+                                  .where(customer_id: potential_customers.pluck(:id))
+                                  .pluck(:customer_id)
 
-      if defined?(SubscriptionTemplate)
-        customer_ids_from_subscriptions += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
-                                                               .distinct
-                                                               .pluck(:customer_id)
-                                                               .compact
-      end
-
-      # Combine all customer IDs from bookings and subscriptions
-      all_customer_ids_from_delivery_person = (customer_ids_from_bookings + customer_ids_from_subscriptions).uniq
-
-      # If specific customers were also selected, use the intersection
-      if customer_ids.present?
-        final_customer_ids = all_customer_ids_from_delivery_person & customer_ids.map(&:to_i)
-        customers = Customer.where(id: final_customer_ids)
-      else
-        customers = Customer.where(id: all_customer_ids_from_delivery_person)
-      end
-    else
-      customers = Customer.where(id: customer_ids)
-    end
+    customers = potential_customers.where.not(id: existing_customer_ids)
+    customer_count = customers.count
 
     generated_invoices = []
     errors = []
 
-    customers.find_each do |customer|
-      begin
-        invoice = generate_customer_invoice(customer, month, year)
-        generated_invoices << invoice if invoice
-      rescue => e
-        errors << "#{customer.display_name}: #{e.message}"
+    # Define batch size based on customer count
+    batch_size = customer_count <= 5 ? customer_count : 10
+
+    Rails.logger.info("Processing #{customer_count} customers in batches of #{batch_size}")
+
+    if customer_count <= 5
+      # For 5 or fewer customers, process in a single transaction
+      Rails.logger.info("Processing #{customer_count} customers in single transaction")
+
+      Invoice.transaction do
+        customers.find_each do |customer|
+          begin
+            invoice = generate_customer_invoice(customer, month, year)
+            generated_invoices << invoice if invoice
+          rescue => e
+            error_message = "#{customer.display_name}: #{e.message}"
+            errors << error_message
+
+            # If any customer fails, rollback the entire transaction
+            Rails.logger.error("Invoice generation failed for customer #{customer.id}: #{e.message}")
+            Rails.logger.error(e.backtrace.join("\n"))
+            raise ActiveRecord::Rollback, "Failed to generate invoice for #{customer.display_name}: #{e.message}"
+          end
+        end
+
+        Rails.logger.info("Successfully generated #{generated_invoices.count} invoices in single transaction")
       end
+    else
+      # For more than 5 customers, process in batches with individual transactions
+      Rails.logger.info("Processing #{customer_count} customers in batches of #{batch_size}")
+
+      batch_number = 0
+      successful_batches = 0
+      failed_batches = 0
+
+      customers.in_batches(of: batch_size) do |batch|
+        batch_number += 1
+        batch_customers = batch.to_a
+        batch_generated = []
+        batch_errors = []
+
+        Rails.logger.info("Processing batch #{batch_number} with #{batch_customers.count} customers")
+
+        # Process each batch in its own transaction
+        Invoice.transaction do
+          batch_customers.each do |customer|
+            begin
+              invoice = generate_customer_invoice(customer, month, year)
+              batch_generated << invoice if invoice
+            rescue => e
+              error_message = "#{customer.display_name}: #{e.message}"
+              batch_errors << error_message
+
+              Rails.logger.error("Invoice generation failed for customer #{customer.id} in batch #{batch_number}: #{e.message}")
+              raise ActiveRecord::Rollback, "Failed to generate invoice for #{customer.display_name} in batch #{batch_number}: #{e.message}"
+            end
+          end
+
+          # If we reach here, the entire batch succeeded
+          Rails.logger.info("Batch #{batch_number} completed successfully with #{batch_generated.count} invoices")
+          successful_batches += 1
+        end
+
+        # Add batch results to overall results (only if batch transaction succeeded)
+        if batch_errors.empty?
+          generated_invoices.concat(batch_generated)
+        else
+          failed_batches += 1
+          errors.concat(batch_errors)
+          Rails.logger.error("Batch #{batch_number} failed and was rolled back")
+        end
+      end
+
+      Rails.logger.info("Batch processing completed: #{successful_batches} successful batches, #{failed_batches} failed batches")
     end
 
+    # Determine processing type for response message
+    processing_type = customer_count <= 5 ? "single transaction" : "#{batch_size}-customer batches"
+
+    # Generate response based on results
     if generated_invoices.any?
-      render json: {
-        success: true,
-        invoices_created: generated_invoices.count,
-        message: "Generated #{generated_invoices.count} invoices successfully",
-        errors: errors,
-        pending_items_summary: pending_summary,
-        invoices: generated_invoices.map { |inv| { id: inv.id, number: inv.invoice_number, customer: inv.customer.display_name, amount: inv.total_amount } }
-      }
-    else
+      success_rate = (generated_invoices.count.to_f / customer_count * 100).round(1)
+
+      if errors.empty?
+        # All invoices generated successfully
+        render json: {
+          success: true,
+          invoices_created: generated_invoices.count,
+          total_customers: customer_count,
+          success_rate: success_rate,
+          processing_type: processing_type,
+          message: customer_count <= 5 ?
+            "Successfully generated #{generated_invoices.count} invoices in a single transaction" :
+            "Successfully generated #{generated_invoices.count}/#{customer_count} invoices using batch processing (#{success_rate}% success rate)",
+          batch_info: customer_count > 5 ? {
+            batch_size: batch_size,
+            successful_batches: successful_batches,
+            failed_batches: failed_batches,
+            total_batches: successful_batches + failed_batches
+          } : nil,
+          errors: [],
+          pending_items_summary: pending_summary,
+          invoices: generated_invoices.map { |inv| {
+            id: inv.id,
+            number: inv.invoice_number,
+            customer: inv.customer.display_name,
+            amount: inv.total_amount
+          } }
+        }
+      else
+        # Some invoices generated, some failed (batch mode only)
+        render json: {
+          success: true,
+          invoices_created: generated_invoices.count,
+          total_customers: customer_count,
+          success_rate: success_rate,
+          processing_type: processing_type,
+          message: "Partially successful: Generated #{generated_invoices.count}/#{customer_count} invoices using batch processing. Some batches failed.",
+          batch_info: {
+            batch_size: batch_size,
+            successful_batches: successful_batches,
+            failed_batches: failed_batches,
+            total_batches: successful_batches + failed_batches
+          },
+          warnings: errors,
+          pending_items_summary: pending_summary,
+          invoices: generated_invoices.map { |inv| {
+            id: inv.id,
+            number: inv.invoice_number,
+            customer: inv.customer.display_name,
+            amount: inv.total_amount
+          } }
+        }
+      end
+    elsif errors.any?
+      # Complete failure
       render json: {
         success: false,
         invoices_created: 0,
-        error: "No invoices could be generated. " + (errors.any? ? errors.join(', ') : 'No completed deliveries found for the selected period.'),
-        errors: errors,
+        total_customers: customer_count,
+        processing_type: processing_type,
+        error: customer_count <= 5 ?
+          "Invoice generation failed. Transaction was rolled back to maintain data integrity." :
+          "All batches failed during invoice generation. No invoices were created.",
+        detailed_errors: errors,
+        message: customer_count <= 5 ?
+          "All or nothing approach: No invoices were created because one or more customers had errors." :
+          "Batch processing failed: All #{batch_size}-customer batches encountered errors and were rolled back.",
+        batch_info: customer_count > 5 ? {
+          batch_size: batch_size,
+          successful_batches: successful_batches,
+          failed_batches: failed_batches,
+          total_batches: successful_batches + failed_batches
+        } : nil,
+        pending_items_summary: pending_summary
+      }
+    else
+      # No customers to process
+      render json: {
+        success: false,
+        invoices_created: 0,
+        total_customers: 0,
+        error: "No customers available for invoice generation.",
+        message: "All selected customers already have invoices for this period or no completed deliveries found.",
         pending_items_summary: pending_summary
       }
     end
@@ -428,6 +641,55 @@ class Admin::InvoicesController < Admin::ApplicationController
   end
 
   private
+
+  def get_potential_customers(customer_selection, customer_ids, delivery_person_id)
+    case customer_selection
+    when 'all'
+      Customer.active.distinct
+    when 'delivery_person'
+      if delivery_person_id.present?
+        # Get customers from bookings
+        booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id)
+                                     .distinct
+                                     .pluck(:customer_id)
+                                     .compact
+                                     .uniq
+
+        # Get customers from subscriptions
+        subscription_customer_ids = []
+        if defined?(MilkSubscription)
+          subscription_customer_ids += MilkSubscription.where(delivery_person_id: delivery_person_id)
+                                                      .distinct
+                                                      .pluck(:customer_id)
+                                                      .compact
+        end
+
+        if defined?(SubscriptionTemplate)
+          subscription_customer_ids += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
+                                                           .distinct
+                                                           .pluck(:customer_id)
+                                                           .compact
+        end
+
+        # Combine and ensure unique customer IDs
+        all_customer_ids = (booking_customer_ids + subscription_customer_ids).uniq
+
+        # If specific customers selected, use intersection
+        if customer_ids.present?
+          final_customer_ids = (all_customer_ids & customer_ids).uniq
+          Customer.where(id: final_customer_ids).distinct
+        else
+          Customer.where(id: all_customer_ids).distinct
+        end
+      else
+        Customer.none
+      end
+    else
+      # Direct customer selection
+      unique_customer_ids = customer_ids.present? ? customer_ids.uniq : []
+      Customer.where(id: unique_customer_ids).distinct
+    end
+  end
 
   def build_regular_invoices_query
     base_query = Invoice.includes(:customer, :invoice_items)
@@ -804,10 +1066,8 @@ class Admin::InvoicesController < Admin::ApplicationController
     start_date = Date.new(year, month).beginning_of_month
     end_date = Date.new(year, month).end_of_month
 
-    # Check if invoice already exists for this month
-    existing_invoice = Invoice.where(customer: customer)
-                             .where(invoice_date: start_date..end_date)
-                             .first
+    # Check if invoice already exists for this month (using new month/year columns for better performance)
+    existing_invoice = Invoice.where(customer: customer, month: month, year: year).first
 
     return existing_invoice if existing_invoice
 
@@ -816,10 +1076,12 @@ class Admin::InvoicesController < Admin::ApplicationController
     # STEP 1: Handle previous unpaid/partially paid invoices
     previous_invoices = customer.invoices
                                .where('invoice_date < ?', start_date)
-                               .unpaid_or_partially_paid
+                               .where(
+                                 "(paid_amount < total_amount OR paid_amount IS NULL) AND status IN (?, ?, ?)",
+                                 'draft', 'partially_paid', 'moved_to_next_month'
+                               )
 
     total_pending_from_previous = 0
-
     previous_invoices.each do |prev_invoice|
       pending_amount = prev_invoice.remaining_amount
       if pending_amount > 0
