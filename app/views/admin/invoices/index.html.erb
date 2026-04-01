@@ -1370,9 +1370,22 @@ function updateGenerateButtonState() {
     // All customers mode - always allow if month/year selected
     canGenerate = true;
   } else if (customerSelection.value === 'specific') {
-    // Specific customers mode - need at least one customer selected
+    // Specific customers mode - enable if customers are available for selection
+    const customerList = document.getElementById('customers_checkbox_list');
+    const hasCustomers = customerList && customerList.innerHTML.includes('customer-checkbox');
     const selectedCustomers = document.querySelectorAll('.customer-checkbox:checked');
-    canGenerate = selectedCustomers.length > 0;
+
+    // Enable button if customers are available (user can still select them)
+    canGenerate = hasCustomers;
+
+    // Update button text based on selection status
+    if (hasCustomers && generateBtn) {
+      if (selectedCustomers.length === 0) {
+        generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices (Select customers first)';
+      } else {
+        generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';
+      }
+    }
   } else if (customerSelection.value === 'delivery_person') {
     // Delivery person mode - need delivery person selected and customers available
     const deliveryPersonSelect = document.getElementById('delivery_person_select');
@@ -1391,7 +1404,10 @@ function updateGenerateButtonState() {
   // Update button state
   if (canGenerate) {
     generateBtn.disabled = false;
-    generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';
+    // Only set default text for non-specific modes (specific mode handles its own text above)
+    if (customerSelection.value !== 'specific') {
+      generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';
+    }
   } else {
     generateBtn.disabled = true;
     generateBtn.innerHTML = '<i class="bi bi-receipt me-1"></i>Generate Invoices';

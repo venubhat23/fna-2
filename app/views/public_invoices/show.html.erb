@@ -688,9 +688,11 @@
       business_settings = @business_settings || SystemSetting.business_settings
     %>
 
-    <div class="page-controls">
-      <a href="<%= request.url %>.pdf" class="download-btn" target="_blank">Download PDF</a>
-    </div>
+    <% unless local_assigns[:pdf_mode] %>
+      <div class="page-controls">
+        <a href="<%= request.url %>.pdf" class="download-btn" target="_blank">Download PDF</a>
+      </div>
+    <% end %>
 
     <!-- Invoice Wrapper for A4 Format -->
     <div class="invoice-wrapper">
