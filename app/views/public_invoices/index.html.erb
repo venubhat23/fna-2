@@ -1207,7 +1207,7 @@
                       <% if invoice.overdue? %>
                         <span class="status-badge status-overdue">Overdue</span>
                       <% else %>
-                        <span class="status-badge status-pending"><%= invoice.status.humanize %></span>
+                        <span class="status-badge status-pending"><%= invoice.status&.humanize || 'Unknown' %></span>
                       <% end %>
                     <% end %>
                   </span>
