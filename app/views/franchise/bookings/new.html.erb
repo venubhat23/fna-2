@@ -134,16 +134,16 @@
 
                     <% if product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price %>
                       <div class="d-flex align-items-center gap-2">
-                        <span class="h6 text-success mb-0">₹<%= number_with_delimiter(final_price.round(2)) %></span>
+                        <span class="h6 text-success mb-0">₹<%= number_with_delimiter(final_price.round) %></span>
                         <small class="text-muted text-decoration-line-through">₹<%= number_with_delimiter(product.price) %></small>
                       </div>
                     <% else %>
-                      <span class="h6 text-primary mb-0">₹<%= number_with_delimiter(final_price.round(2)) %></span>
+                      <span class="h6 text-primary mb-0">₹<%= number_with_delimiter(final_price.round) %></span>
                     <% end %>
 
                     <% if product.gst_enabled && gst_rate > 0 %>
                       <small class="text-muted d-block">
-                        Base: ₹<%= number_with_delimiter(base_price.round(2)) %> + GST: ₹<%= number_with_delimiter(gst_amount.round(2)) %> (<%= gst_rate %>%) = ₹<%= number_with_delimiter(final_price.round(2)) %>
+                        Base: ₹<%= number_with_delimiter(base_price.round) %> + GST: ₹<%= number_with_delimiter(gst_amount.round) %> (<%= gst_rate %>%) = ₹<%= number_with_delimiter(final_price.round) %>
                       </small>
                     <% end %>
                   </div>

@@ -789,7 +789,7 @@
             <table class="subtotal-values-table">
               <tr>
                 <td></td>
-                <td>₹ <%= number_with_delimiter(subtotal_amount.round(2), delimiter: ',') %></td>
+                <td>₹ <%= number_with_delimiter(subtotal_amount.round, delimiter: ',') %></td>
               </tr>
             </table>
           </td>
@@ -914,7 +914,7 @@
               <div class="total">
                 <div class="tax-line">
                   <span class="tax-label">TOTAL AMOUNT</span>
-                  <span class="tax-amount">₹ <%= number_with_delimiter(subtotal_amount.round(2), delimiter: ',') %></span>
+                  <span class="tax-amount">₹ <%= number_with_delimiter(subtotal_amount.round, delimiter: ',') %></span>
                 </div>
                 <div class="tax-line" style="font-weight: normal; font-size: 10px;">
                   <span class="tax-label">Received Amount</span>

@@ -743,7 +743,7 @@
           </div>
           <div class="meta-luxury-card">
             <div class="meta-label">Amount</div>
-            <div class="meta-value">₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></div>
+            <div class="meta-value">₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></div>
           </div>
         </div>
 
@@ -806,8 +806,8 @@
                 </td>
                 <td><%= @invoice.payout_type.humanize %> Service</td>
                 <td>1 Premium Payout</td>
-                <td class="amount-luxury-cell">₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></td>
-                <td class="amount-luxury-cell">₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></td>
+                <td class="amount-luxury-cell">₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></td>
+                <td class="amount-luxury-cell">₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></td>
               </tr>
             </tbody>
           </table>
@@ -854,7 +854,7 @@
           <div class="total-luxury-summary">
             <div class="summary-luxury-row">
               <span>Service Subtotal:</span>
-              <span>₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></span>
+              <span>₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></span>
             </div>
             <div class="summary-luxury-row">
               <span>Premium Charges:</span>
@@ -866,7 +866,7 @@
             </div>
             <div class="summary-luxury-row">
               <span>Total Premium Amount:</span>
-              <span>₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></span>
+              <span>₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></span>
             </div>
 
             <div class="amount-luxury-words">

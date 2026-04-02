@@ -772,8 +772,8 @@
                 </td>
                 <td><%= @invoice.payout_type.humanize %></td>
                 <td>1 Payout</td>
-                <td class="amount-cell">₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></td>
-                <td class="amount-cell">₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></td>
+                <td class="amount-cell">₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></td>
+                <td class="amount-cell">₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></td>
               </tr>
             </tbody>
           </table>
@@ -788,7 +788,7 @@
           <div class="total-summary">
             <div class="summary-row">
               <span>Subtotal:</span>
-              <span>₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></span>
+              <span>₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></span>
             </div>
             <div class="summary-row">
               <span>Tax (N/A):</span>
@@ -796,7 +796,7 @@
             </div>
             <div class="summary-row">
               <span>Total Amount:</span>
-              <span>₹<%= number_with_delimiter(@invoice.total_amount, delimiter: ',') %></span>
+              <span>₹<%= number_with_delimiter(@invoice.total_amount.round, delimiter: ',') %></span>
             </div>
 
             <div class="amount-words">

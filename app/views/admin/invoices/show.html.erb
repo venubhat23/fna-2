@@ -717,7 +717,7 @@
                     unit_price_with_gst = item.unit_price || 0
                   end
                 %>
-                ₹<%= number_with_delimiter(sprintf('%.2f', unit_price_with_gst), delimiter: ',') %>
+                ₹<%= number_with_delimiter(unit_price_with_gst.round, delimiter: ',') %>
               </td>
               <td class="right-align">
                 <%
@@ -736,7 +736,7 @@
                     tax_amount = 0
                   end
                 %>
-                ₹<%= number_with_delimiter(tax_amount.round(2), delimiter: ',') %><br />
+                ₹<%= number_with_delimiter(tax_amount.round, delimiter: ',') %><br />
                 <span class="tax-rate">(<%= total_gst_rate.to_i == total_gst_rate ? total_gst_rate.to_i : total_gst_rate %>%)</span>
               </td>
               <td class="right-align">
@@ -750,7 +750,7 @@
                     final_amount = item.quantity * (item.unit_price || 0)
                   end
                 %>
-                ₹<%= number_with_delimiter(final_amount.round(2), delimiter: ',') %>
+                ₹<%= number_with_delimiter(final_amount.round, delimiter: ',') %>
               </td>
             </tr>
           <% end %>
@@ -766,7 +766,7 @@
             <table class="subtotal-values-table">
               <tr>
                 <td></td>
-                <td>₹ <%= number_with_delimiter(subtotal_amount.round(2), delimiter: ',') %></td>
+                <td>₹ <%= number_with_delimiter(subtotal_amount.round, delimiter: ',') %></td>
               </tr>
             </table>
           </td>
@@ -821,7 +821,7 @@
             <div class="tax-summary">
               <div class="tax-line">
                 <span class="tax-label">TAXABLE AMOUNT</span>
-                <span class="tax-amount">₹ <%= number_with_delimiter(taxable_amount.round(2), delimiter: ',') %></span>
+                <span class="tax-amount">₹ <%= number_with_delimiter(taxable_amount.round, delimiter: ',') %></span>
               </div>
               <%
                 # Group tax amounts by individual tax rates
@@ -867,7 +867,7 @@
               %>
                 <div class="tax-line">
                   <span class="tax-label">CGST @<%= rate.to_i == rate ? rate.to_i : rate %>%</span>
-                  <span class="tax-amount">₹ <%= number_with_delimiter(cgst_groups[rate].round(2), delimiter: ',') %></span>
+                  <span class="tax-amount">₹ <%= number_with_delimiter(cgst_groups[rate].round, delimiter: ',') %></span>
                 </div>
               <%
                   end
@@ -875,7 +875,7 @@
               %>
                 <div class="tax-line">
                   <span class="tax-label">SGST @<%= rate.to_i == rate ? rate.to_i : rate %>%</span>
-                  <span class="tax-amount">₹ <%= number_with_delimiter(sgst_groups[rate].round(2), delimiter: ',') %></span>
+                  <span class="tax-amount">₹ <%= number_with_delimiter(sgst_groups[rate].round, delimiter: ',') %></span>
                 </div>
               <%
                   end
@@ -885,13 +885,13 @@
                 <% igst_rate = invoice_items.sum { |item| item.product&.gst_enabled ? (item.product.igst_percentage || 0) : 0 } / invoice_items.select { |item| item.product&.gst_enabled }.count rescue 0 %>
                 <div class="tax-line">
                   <span class="tax-label">IGST @<%= igst_rate %>%</span>
-                  <span class="tax-amount">₹ <%= number_with_delimiter(total_igst.round(2), delimiter: ',') %></span>
+                  <span class="tax-amount">₹ <%= number_with_delimiter(total_igst.round, delimiter: ',') %></span>
                 </div>
               <% end %>
               <div class="total">
                 <div class="tax-line">
                   <span class="tax-label">TOTAL AMOUNT</span>
-                  <span class="tax-amount">₹ <%= number_with_delimiter(subtotal_amount.round(2), delimiter: ',') %></span>
+                  <span class="tax-amount">₹ <%= number_with_delimiter(subtotal_amount.round, delimiter: ',') %></span>
                 </div>
                 <div class="tax-line" style="font-weight: normal; font-size: 10px;">
                   <span class="tax-label">Received Amount</span>

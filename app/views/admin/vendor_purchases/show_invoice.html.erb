@@ -248,12 +248,12 @@
             <div class="col-md-6">
               <div class="total-row">
                 <span>Subtotal:</span>
-                <span>₹<%= number_with_precision(@vendor_purchase.total_amount, precision: 2) %></span>
+                <span>₹<%= number_with_delimiter(@vendor_purchase.total_amount.round) %></span>
               </div>
 
               <div class="total-row grand-total">
                 <span>Grand Total:</span>
-                <span>₹<%= number_with_precision(@vendor_purchase.total_amount, precision: 2) %></span>
+                <span>₹<%= number_with_delimiter(@vendor_purchase.total_amount.round) %></span>
               </div>
 
               <% if @vendor_purchase.paid_amount > 0 %>
