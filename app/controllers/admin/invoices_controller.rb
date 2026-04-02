@@ -1116,12 +1116,8 @@ class Admin::InvoicesController < Admin::ApplicationController
         product = item.product
         next unless product
 
-        # Calculate proper unit price (base price excluding GST for GST products)
-        unit_price = if product.gst_enabled? && product.gst_percentage.present?
-          product.calculate_base_price || item.price
-        else
-          item.price || product.selling_price
-        end
+        # Use full selling price including GST
+        unit_price = item.price || product.selling_price
 
         # Apply any booking-level discount proportionally
         if booking.discount_amount.to_f > 0 && booking.total_amount.to_f > 0
@@ -1170,12 +1166,8 @@ class Admin::InvoicesController < Admin::ApplicationController
       grouped_pending_tasks.each do |product, tasks|
         total_quantity = tasks.sum(&:quantity)
 
-        # Calculate proper unit price (base price excluding GST for GST products)
-        unit_price = if product.gst_enabled? && product.gst_percentage.present?
-          product.calculate_base_price
-        else
-          product.selling_price
-        end
+        # Use full selling price including GST
+        unit_price = product.selling_price
 
         # Get date range for description
         dates = tasks.map(&:delivery_date).sort
