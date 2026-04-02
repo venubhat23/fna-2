@@ -268,7 +268,7 @@
 
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="text-muted">Subtotal</span>
-            <span class="fw-medium" id="subtotal-display">₹<%= number_with_delimiter(@invoice.total_amount.to_i) %></span>
+            <span class="fw-medium" id="subtotal-display">₹<%= number_with_delimiter(@invoice.total_amount.round) %></span>
           </div>
 
           <div class="d-flex justify-content-between align-items-center mb-3">
@@ -280,7 +280,7 @@
 
           <div class="d-flex justify-content-between align-items-center mb-3">
             <span class="fw-bold text-dark">Total Amount</span>
-            <span class="fw-bold text-primary fs-5" id="total-display">₹<%= number_with_delimiter(@invoice.total_amount.to_i) %></span>
+            <span class="fw-bold text-primary fs-5" id="total-display">₹<%= number_with_delimiter(@invoice.total_amount.round) %></span>
           </div>
 
           <!-- Hidden field for total amount -->
@@ -454,21 +454,24 @@ function updateInvoiceTotal() {
     subtotal += value;
   });
 
+  // Round subtotal to nearest rupee
+  subtotal = Math.round(subtotal);
+
   // Update display
   const subtotalDisplay = document.getElementById('subtotal-display');
   const totalDisplay = document.getElementById('total-display');
   const totalField = document.getElementById('total_amount_field');
 
   if (subtotalDisplay) {
-    subtotalDisplay.textContent = `₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    subtotalDisplay.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
   }
 
   if (totalDisplay) {
-    totalDisplay.textContent = `₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    totalDisplay.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
   }
 
   if (totalField) {
-    totalField.value = subtotal.toFixed(2);
+    totalField.value = subtotal;
   }
 }
 

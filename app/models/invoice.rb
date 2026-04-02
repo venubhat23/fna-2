@@ -187,7 +187,8 @@ class Invoice < ApplicationRecord
         end
       end
 
-      self.total_amount = new_total if new_total > 0
+      # Round the total to nearest rupee
+      self.total_amount = new_total.round if new_total > 0
     end
   end
 end

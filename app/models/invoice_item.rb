@@ -13,6 +13,6 @@ class InvoiceItem < ApplicationRecord
   private
 
   def calculate_total_amount
-    self.total_amount = (quantity || 0) * (unit_price || 0)
+    self.total_amount = ((quantity || 0) * (unit_price || 0)).round(2)
   end
 end
