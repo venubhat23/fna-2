@@ -15,6 +15,7 @@ class Invoice < ApplicationRecord
   before_validation :generate_invoice_number, on: :create
   before_validation :calculate_total_from_items
   before_validation :set_month_and_year
+  before_validation :set_default_due_date
   before_create :generate_share_token
 
   scope :for_month, ->(month, year) { where(month: month, year: year) }
@@ -190,5 +191,10 @@ class Invoice < ApplicationRecord
       # Round the total to nearest rupee
       self.total_amount = new_total.round if new_total > 0
     end
+  end
+
+  def set_default_due_date
+    return if due_date.present?
+    self.due_date = Date.current + 5.days
   end
 end
