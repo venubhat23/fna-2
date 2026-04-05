@@ -141,13 +141,35 @@ class Admin::InvoicesController < Admin::ApplicationController
       Customer.active.order(:first_name, :last_name)
     end
 
-    # Filter out customers who already have invoices for this month/year
+    # Filter customers based on invoice status and uninvoiced MilkDeliveryTasks
     if month > 0 && year > 0
+      # Get customers who already have invoices for this month/year
       existing_customer_ids = Invoice.where(month: month, year: year)
                                     .where(customer_id: potential_customers.pluck(:id))
                                     .pluck(:customer_id)
 
-      available_customers = potential_customers.where.not(id: existing_customer_ids)
+      # Get customers who don't have invoices for this month
+      customers_without_invoices = potential_customers.where.not(id: existing_customer_ids).pluck(:id)
+
+      # Get customers who have uninvoiced MilkDeliveryTasks for this month
+      customers_with_uninvoiced_tasks = []
+      if defined?(MilkDeliveryTask)
+        start_date = Date.new(year, month, 1)
+        end_date = Date.new(year, month, -1)
+
+        customers_with_uninvoiced_tasks = Customer.joins(:milk_delivery_tasks)
+                                                 .where(id: potential_customers.pluck(:id))
+                                                 .where(milk_delivery_tasks: {
+                                                   delivery_date: start_date..end_date,
+                                                   invoiced: [false, nil]
+                                                 })
+                                                 .distinct
+                                                 .pluck(:id)
+      end
+
+      # Combine both groups: customers without invoices OR customers with uninvoiced tasks
+      final_customer_ids = (customers_without_invoices + customers_with_uninvoiced_tasks).uniq
+      available_customers = potential_customers.where(id: final_customer_ids)
     else
       available_customers = potential_customers
     end
@@ -182,8 +204,28 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     existing_customer_ids = existing_invoices.pluck(:customer_id)
 
-    # Get customers who don't have invoices yet
-    available_customers = potential_customers.where.not(id: existing_customer_ids)
+    # Get customers who don't have invoices for this month
+    customers_without_invoices = potential_customers.where.not(id: existing_customer_ids).pluck(:id)
+
+    # Get customers who have uninvoiced MilkDeliveryTasks for this month
+    customers_with_uninvoiced_tasks = []
+    if defined?(MilkDeliveryTask)
+      start_date = Date.new(year, month, 1)
+      end_date = Date.new(year, month, -1)
+
+      customers_with_uninvoiced_tasks = Customer.joins(:milk_delivery_tasks)
+                                               .where(id: potential_customers.pluck(:id))
+                                               .where(milk_delivery_tasks: {
+                                                 delivery_date: start_date..end_date,
+                                                 invoiced: [false, nil]
+                                               })
+                                               .distinct
+                                               .pluck(:id)
+    end
+
+    # Combine both groups: customers without invoices OR customers with uninvoiced tasks
+    final_customer_ids = (customers_without_invoices + customers_with_uninvoiced_tasks).uniq
+    available_customers = potential_customers.where(id: final_customer_ids)
 
     summary = {
       month: month,
@@ -192,6 +234,7 @@ class Admin::InvoicesController < Admin::ApplicationController
       total_potential_customers: potential_customers.count,
       existing_invoices_count: existing_invoices.count,
       available_customers_count: available_customers.count,
+      customers_with_uninvoiced_tasks: customers_with_uninvoiced_tasks.count,
       existing_customers: existing_invoices.map { |inv|
         {
           id: inv.customer.id,
@@ -225,12 +268,33 @@ class Admin::InvoicesController < Admin::ApplicationController
     # Get potential customers using the helper method
     potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id)
 
-    # Filter out customers who already have invoices for this month/year
+    # Filter customers based on invoice status and uninvoiced MilkDeliveryTasks
     existing_customer_ids = Invoice.where(month: month, year: year)
                                   .where(customer_id: potential_customers.pluck(:id))
                                   .pluck(:customer_id)
 
-    customers = potential_customers.where.not(id: existing_customer_ids)
+    # Get customers who don't have invoices for this month
+    customers_without_invoices = potential_customers.where.not(id: existing_customer_ids).pluck(:id)
+
+    # Get customers who have uninvoiced MilkDeliveryTasks for this month
+    customers_with_uninvoiced_tasks = []
+    if defined?(MilkDeliveryTask)
+      start_date = Date.new(year, month, 1)
+      end_date = Date.new(year, month, -1)
+
+      customers_with_uninvoiced_tasks = Customer.joins(:milk_delivery_tasks)
+                                               .where(id: potential_customers.pluck(:id))
+                                               .where(milk_delivery_tasks: {
+                                                 delivery_date: start_date..end_date,
+                                                 invoiced: [false, nil]
+                                               })
+                                               .distinct
+                                               .pluck(:id)
+    end
+
+    # Combine both groups: customers without invoices OR customers with uninvoiced tasks
+    final_customer_ids = (customers_without_invoices + customers_with_uninvoiced_tasks).uniq
+    customers = potential_customers.where(id: final_customer_ids)
     customer_count = customers.count
 
     generated_invoices = []
