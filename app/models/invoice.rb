@@ -62,7 +62,7 @@ class Invoice < ApplicationRecord
 
   # Calculate remaining amount for unpaid/partially paid invoices
   def remaining_amount
-    total_amount - (paid_amount || 0)
+    (total_amount - (paid_amount || 0)).round(2)
   end
 
   # Check if invoice has pending amount
@@ -90,9 +90,6 @@ class Invoice < ApplicationRecord
     due_date && due_date < Date.current && payment_status != 'fully_paid'
   end
 
-  def remaining_amount
-    total_amount - (paid_amount || 0)
-  end
 
   def paid_percentage
     return 0 if total_amount.zero?
@@ -188,8 +185,8 @@ class Invoice < ApplicationRecord
         end
       end
 
-      # Round the total to nearest rupee
-      self.total_amount = new_total.round if new_total > 0
+      # Round the total to 2 decimal places
+      self.total_amount = new_total.round(2) if new_total > 0
     end
   end
 

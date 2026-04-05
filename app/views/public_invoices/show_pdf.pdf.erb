@@ -521,49 +521,50 @@
       # Calculate if any product has GST
       has_gst = invoice_items.any? { |item| item.product&.gst_enabled }
 
-      # Calculate totals with proper GST breakdown (same logic as HTML template)
+      # Use stored invoice totals instead of recalculating everything
+      final_total = @invoice.total_amount || 0
+
+      # Calculate subtotal from stored line totals
       subtotal_amount = 0
+      invoice_items.each do |item|
+        if item.respond_to?(:total_amount) && item.total_amount.present?
+          subtotal_amount += item.total_amount
+        else
+          subtotal_amount += (item.quantity * (item.unit_price || 0)).round(2)
+        end
+      end
+
+      # For tax breakdown, calculate based on products but use conservative estimates
       taxable_amount = 0
       total_cgst = 0
       total_sgst = 0
       total_igst = 0
 
       invoice_items.each do |item|
-        # Base amount (quantity × unit_price) - rounded to 2 decimal places
-        base_amount = (item.quantity * (item.unit_price || 0)).round(2)
-
-        # Add to subtotal
-        subtotal_amount += base_amount
-
         if item.product&.gst_enabled
-          # For GST applicable items, add to taxable amount and calculate GST
-          taxable_amount += base_amount
+          # Get the line total from database
+          line_total = item.respond_to?(:total_amount) ? item.total_amount : (item.quantity * item.unit_price).round(2)
 
-          # Calculate individual tax components based on base amount
-          cgst_rate = item.product.cgst_percentage || 0
-          sgst_rate = item.product.sgst_percentage || 0
-          igst_rate = item.product.igst_percentage || 0
+          # Calculate base amount (excluding tax) from line total
+          gst_rate = item.product.gst_percentage || 0
+          if gst_rate > 0
+            base_amount = line_total / (1 + gst_rate / 100)
+            tax_amount = line_total - base_amount
 
-          # If individual rates are not set, use main gst_percentage split evenly between CGST and SGST
-          if cgst_rate == 0 && sgst_rate == 0 && igst_rate == 0 && item.product.gst_percentage.present?
-            main_gst_rate = item.product.gst_percentage
-            cgst_rate = main_gst_rate / 2
-            sgst_rate = main_gst_rate / 2
+            taxable_amount += base_amount
+            # Split tax evenly between CGST and SGST for simplicity
+            total_cgst += (tax_amount / 2).round(2)
+            total_sgst += (tax_amount / 2).round(2)
+          else
+            taxable_amount += line_total
           end
-
-          cgst_amount = (base_amount * cgst_rate / 100).round(2)
-          sgst_amount = (base_amount * sgst_rate / 100).round(2)
-          igst_amount = (base_amount * igst_rate / 100).round(2)
-
-          total_cgst += cgst_amount
-          total_sgst += sgst_amount
-          total_igst += igst_amount
+        else
+          # Non-taxable items
+          line_total = item.respond_to?(:total_amount) ? item.total_amount : (item.quantity * item.unit_price).round(2)
         end
       end
 
-      total_tax = total_cgst + total_sgst + total_igst
       discount_amount = @invoice.respond_to?(:discount_amount) ? (@invoice.discount_amount || 0) : 0
-      final_total = subtotal_amount + total_tax - discount_amount
     %>
 
     <%
@@ -692,18 +693,12 @@
                   </td>
                   <td class="right-align">
                     <%
-                      # The item.unit_price already includes GST, so this is the gross amount
-                      gross_amount = item.quantity * (item.unit_price || 0)
-
-                      # Apply proportional discount directly to the gross amount
-                      if discount_amount > 0 && invoice_items.length > 0
-                        # For single item invoices, apply full discount. For multiple items, apply proportionally
-                        total_gross = invoice_items.sum { |i| i.quantity * (i.unit_price || 0) }
-                        item_proportion = gross_amount / total_gross
-                        item_discount = discount_amount * item_proportion
-                        final_amount = gross_amount - item_discount
+                      # Use the stored line total from the database instead of recalculating
+                      if item.respond_to?(:total_amount) && item.total_amount.present?
+                        final_amount = item.total_amount
                       else
-                        final_amount = gross_amount
+                        # Fallback calculation for items without stored total
+                        final_amount = item.quantity * (item.unit_price || 0)
                       end
                     %>
                     ₹<%= number_with_delimiter(final_amount.round(2), delimiter: ',') %>
@@ -837,7 +832,7 @@
                 </div>
                 <div class="tax-line" style="font-weight: normal; font-size: 10px;">
                   <span class="tax-label">Received Amount</span>
-                  <span class="tax-amount">₹ <%= @invoice.payment_status == 'paid' ? number_with_delimiter(@invoice.total_amount, delimiter: ',') : '0' %></span>
+                  <span class="tax-amount">₹ <%= number_with_delimiter(@invoice.paid_amount || 0, delimiter: ',') %></span>
                 </div>
               </div>
               <div class="amount-words">
