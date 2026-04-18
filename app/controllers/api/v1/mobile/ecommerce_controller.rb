@@ -384,8 +384,17 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @bookings = customer.bookings.recent.includes(:booking_items => :product)
     user_type = 'customer'
 
-    # Filter by status if provided
-    @bookings = @bookings.where(status: params[:status]) if params[:status].present?
+    # Filter by status if provided, otherwise show all bookings
+    if params[:status].present?
+      # When filtering by 'confirmed', include both 'confirmed' and 'ordered_and_delivery_pending' statuses
+      # since 'ordered_and_delivery_pending' represents confirmed orders awaiting delivery processing
+      if params[:status] == 'confirmed'
+        @bookings = @bookings.where(status: ['confirmed', 'ordered_and_delivery_pending'])
+      else
+        @bookings = @bookings.where(status: params[:status])
+      end
+    end
+    # If no status filter is provided, show all bookings (no additional filtering needed)
 
     total_count = @bookings.count
     @bookings = @bookings.offset((page - 1) * per_page).limit(per_page)
@@ -638,9 +647,6 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       @products = @products.where('price >= ?', params[:min_price]) if params[:min_price].present?
       @products = @products.where('price <= ?', params[:max_price]) if params[:max_price].present?
 
-      # Handle count for queries with GROUP BY
-      has_grouping = false
-
       # Apply sorting
       case params[:sort_by]
       when 'price_low' then @products = @products.order(:price)
@@ -651,17 +657,13 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         @products = @products.joins(:product_reviews)
                              .group('products.id')
                              .order('AVG(product_reviews.rating) DESC NULLS LAST')
-        has_grouping = true
       else
         @products = @products.order(:name)
       end
 
-      # Get count properly based on whether we have grouping
-      if has_grouping
-        total_count = @products.count.is_a?(Hash) ? @products.count.keys.count : @products.count
-      else
-        total_count = @products.count
-      end
+      # Get count properly - in_stock scope already adds GROUP BY
+      count_result = @products.count
+      total_count = count_result.is_a?(Hash) ? count_result.keys.count : count_result
 
       @products = @products.offset((page - 1) * per_page).limit(per_page)
       products_data = @products.map { |product| format_product_data(product) }

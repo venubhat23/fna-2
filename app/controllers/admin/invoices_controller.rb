@@ -156,7 +156,6 @@ class Admin::InvoicesController < Admin::ApplicationController
       if defined?(MilkDeliveryTask)
         start_date = Date.new(year, month, 1)
         end_date = Date.new(year, month, -1)
-
         customers_with_uninvoiced_tasks = Customer.joins(:milk_delivery_tasks)
                                                  .where(id: potential_customers.pluck(:id))
                                                  .where(milk_delivery_tasks: {
@@ -1131,37 +1130,74 @@ class Admin::InvoicesController < Admin::ApplicationController
     end_date = Date.new(year, month).end_of_month
 
     # Check if invoice already exists for this month (using new month/year columns for better performance)
-    existing_invoice = Invoice.where(customer: customer, month: month, year: year).first
+    existing_invoice = Invoice.where(customer: customer, month: month, year: year).last
 
-    return existing_invoice if existing_invoice
+    # If invoice exists, only proceed if there are uninvoiced items for this month
+    if existing_invoice
+      # Check for uninvoiced MilkDeliveryTasks
+      has_uninvoiced_tasks = false
+      if defined?(MilkDeliveryTask)
+        has_uninvoiced_tasks = MilkDeliveryTask.where(
+          customer: customer,
+          delivery_date: start_date..end_date,
+          invoiced: [false, nil]
+        ).exists?
+      end
+
+      # Check for uninvoiced bookings
+      has_uninvoiced_bookings = customer.bookings
+                                       .where(booking_date: start_date..end_date)
+                                       .where(status: ['completed', 'delivered'])
+                                       .where(payment_status: [nil, '', 'unpaid'])
+                                       .where(invoice_generated: [false, nil])
+                                       .where.not(id: BookingInvoice.select(:booking_id).where.not(booking_id: nil))
+                                       .exists?
+
+      # Check for uninvoiced pending amounts
+      has_pending_amounts = PendingAmount.where(customer: customer)
+                                         .where(pending_date: start_date..end_date)
+                                         .current_pending
+                                         .exists?
+
+      # If no uninvoiced items, return existing invoice
+      unless has_uninvoiced_tasks || has_uninvoiced_bookings || has_pending_amounts
+        return existing_invoice
+      end
+
+      # If there are uninvoiced items, we'll create a NEW invoice for them
+      # Don't modify the existing invoice - just continue to create a new one
+    end
 
     invoice_items_data = []
+    total_pending_from_previous = 0
 
     # STEP 1: Handle previous unpaid/partially paid invoices
-    previous_invoices = customer.invoices
-                               .where('invoice_date < ?', start_date)
-                               .where(
-                                 "(paid_amount < total_amount OR paid_amount IS NULL) AND status IN (?, ?, ?)",
-                                 'draft', 'partially_paid', 'moved_to_next_month'
-                               )
+    # Only include previous invoice amounts if this is the FIRST invoice for this month
+    unless existing_invoice
+      previous_invoices = customer.invoices
+                                 .where('invoice_date < ?', start_date)
+                                 .where(
+                                   "(paid_amount < total_amount OR paid_amount IS NULL) AND status IN (?, ?, ?)",
+                                   'draft', 'partially_paid', 'moved_to_next_month'
+                                 )
 
-    total_pending_from_previous = 0
-    previous_invoices.each do |prev_invoice|
-      pending_amount = prev_invoice.remaining_amount
-      if pending_amount > 0
-        total_pending_from_previous += pending_amount
+      previous_invoices.each do |prev_invoice|
+        pending_amount = prev_invoice.remaining_amount
+        if pending_amount > 0
+          total_pending_from_previous += pending_amount
 
-        # Mark the old invoice as moved to next month
-        prev_invoice.update!(status: 'moved_to_next_month')
+          # Mark the old invoice as moved to next month
+          prev_invoice.update!(status: 'moved_to_next_month')
 
-        # Add pending amount as a line item
-        invoice_items_data << {
-          product: nil,
-          quantity: 1,
-          unit_price: pending_amount,
-          description: "Pending from previous invoice ##{prev_invoice.invoice_number} (#{prev_invoice.invoice_date.strftime('%b %Y')})",
-          is_pending_amount: true
-        }
+          # Add pending amount as a line item
+          invoice_items_data << {
+            product: nil,
+            quantity: 1,
+            unit_price: pending_amount,
+            description: "Pending from previous invoice ##{prev_invoice.invoice_number} (#{prev_invoice.invoice_date.strftime('%b %Y')})",
+            is_pending_amount: true
+          }
+        end
       end
     end
 
@@ -1254,13 +1290,15 @@ class Admin::InvoicesController < Admin::ApplicationController
     # Don't return nil if we have pending amounts from previous invoices
     return nil if invoice_items_data.empty? && total_pending_from_previous == 0
 
-    # Create new invoice
+    # Always create a NEW invoice (don't modify existing ones)
     invoice = Invoice.new(
       customer: customer,
       invoice_date: end_date,
       due_date: Date.current + 5.days,
       status: :draft,
-      payment_status: :unpaid
+      payment_status: :unpaid,
+      month: month,
+      year: year
     )
 
     total_amount = 0

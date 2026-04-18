@@ -33,7 +33,7 @@ class Api::V1::Mobile::BannersController < Api::V1::Mobile::BaseController
         }
       end
 
-      render_success(banner_data, "Banners fetched successfully")
+      render_success({ banners: banner_data, total_count: banner_data.length }, "Banners fetched successfully")
 
     rescue => e
       Rails.logger.error "Error fetching banners: #{e.message}"
