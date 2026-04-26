@@ -1,5 +1,5 @@
 class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
-  before_action :authenticate_customer!, except: [:products, :banners, :featured_products]
+  before_action :authenticate_customer!, except: [:products, :banners, :featured_products, :check_delivery_pincode]
   before_action :set_category, only: [:category_details, :category_products]
   before_action :set_product, only: [:product_details, :check_delivery]
 
@@ -834,6 +834,43 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     })
   rescue ActiveRecord::RecordNotFound
     json_response({ success: false, message: 'Product not found' }, :not_found)
+  end
+
+  # POST /api/v1/mobile/ecommerce/check_delivery
+  def check_delivery_pincode
+    pincode = params[:pincode]
+
+    return json_response({ success: false, message: 'Pincode is required' }, :bad_request) if pincode.blank?
+
+    pincode_validation = validate_pincode(pincode)
+
+    if pincode_validation[:valid]
+      json_response({
+        success: true,
+        data: {
+          pincode: pincode,
+          deliverable: pincode_validation[:serviceable],
+          location_info: {
+            district: pincode_validation[:district],
+            state: pincode_validation[:state],
+            country: pincode_validation[:country],
+            post_offices: pincode_validation[:post_offices]
+          },
+          estimated_days: 3,
+          delivery_charge: 0,
+          message: pincode_validation[:serviceable] ?
+            "Delivery available to #{pincode_validation[:district]}, #{pincode_validation[:state]}" :
+            "Delivery not available in this area"
+        },
+        message: pincode_validation[:serviceable] ? 'Delivery available' : 'Delivery not available'
+      })
+    else
+      json_response({
+        success: false,
+        data: { pincode: pincode, deliverable: false, error: pincode_validation[:error] },
+        message: 'Invalid pincode or delivery not available'
+      }, :unprocessable_entity)
+    end
   end
 
   # POST /api/v1/mobile/ecommerce/products/:id/check_delivery

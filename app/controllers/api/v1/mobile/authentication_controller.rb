@@ -51,7 +51,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
           end
         end
         if customer
-          token = generate_token(user, 'customer')
+          token = generate_token(user, 'customer', customer_id: customer.id)
           portfolio_stats = get_customer_portfolio_stats(customer)
 
           json_response({
@@ -627,19 +627,18 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
 
   private
 
-  def generate_token(user, role)
+  def generate_token(user, role, customer_id: nil)
     payload = {
       user_id: user.id,
       role: role,
       exp: 30.days.from_now.to_i
     }
 
-    # Add specific ID fields based on role
     case role
     when 'delivery_person'
       payload[:delivery_person_id] = user.id
     when 'customer'
-      payload[:customer_id] = user.id
+      payload[:customer_id] = customer_id || user.id
     when 'sub_agent'
       payload[:sub_agent_id] = user.id
     end

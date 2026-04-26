@@ -752,6 +752,7 @@ Rails.application.routes.draw do
         get 'ecommerce/products/:id', to: 'ecommerce#product_details'
         get 'ecommerce/featured_products', to: 'ecommerce#featured_products'
         get 'ecommerce/search', to: 'ecommerce#search'
+        post 'ecommerce/check_delivery', to: 'ecommerce#check_delivery_pincode'
         post 'ecommerce/products/:id/check_delivery', to: 'ecommerce#check_delivery'
         get 'ecommerce/filters', to: 'ecommerce#filters'
         get 'ecommerce/banners', to: 'ecommerce#banners'
