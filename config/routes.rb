@@ -802,8 +802,6 @@ Rails.application.routes.draw do
         get 'settings/terms', to: 'settings#terms_and_conditions'
         get 'settings/contact', to: 'settings#contact_us'
         post 'settings/helpdesk', to: 'settings#helpdesk'
-        get 'settings/notifications', to: 'settings#notification_settings'
-        put 'settings/notifications', to: 'settings#update_notification_settings'
 
         # Agent Dashboard APIs
         get 'agent/dashboard', to: 'agent#dashboard'
@@ -1038,9 +1036,6 @@ Rails.application.routes.draw do
 
     # Wishlist
     resources :wishlists, only: [:index, :create, :destroy]
-
-    # Notifications
-    resources :notifications, only: [:index, :show, :update]
 
     # Shop functionality
     get 'shop', to: 'shop#index'

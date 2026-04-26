@@ -417,70 +417,47 @@ class Admin::CustomersController < Admin::ApplicationController
           #   end
           # end
 
-          # Always create User account for consistency with mobile API
-          # Create User account - auto-generate password if not provided
-          should_create_user = @customer.email.present? # Always create user if email exists
+          # Always create User account for mobile API login
+          # Use mobile-based default email if customer has none
+          effective_email = @customer.email.presence || "#{@customer.mobile}@noemail.local"
 
-          if should_create_user
-            if password.present? && password_confirmation.present?
-              # Use provided password
-              if password == password_confirmation
-                generated_password = password
-                User.create!(
-                  first_name: @customer.first_name,
-                  last_name: @customer.last_name,
-                  middle_name: @customer.middle_name,
-                  email: @customer.email,
-                  mobile: @customer.mobile,
-                  password: generated_password,
-                  password_confirmation: generated_password,
-                  user_type: 'customer',
-                  address: @customer.address,
-                  city: params[:customer][:city] || 'Unknown',
-                  state: params[:customer][:state] || 'Unknown',
-                  pincode: params[:customer][:pincode] || '000000',
-                  country: 'India',  # Match mobile API default
-                  status: true,
-                  is_active: true,
-                  is_verified: false
-                )
-                redirect_to admin_customer_path(@customer), notice: 'Customer and login account created successfully.'
-              else
-                @customer.destroy
-                @customer.errors.add(:password_confirmation, "doesn't match Password")
-                @sub_agents = SubAgent.active.order(:first_name, :last_name)
-                render :new, status: :unprocessable_entity
-                return
-              end
+          if password.present? && password_confirmation.present?
+            if password == password_confirmation
+              generated_password = password
             else
-              # Auto-generate password if no password provided but user account creation requested
-              generated_password = generate_secure_password
-              User.create!(
-                first_name: @customer.first_name,
-                last_name: @customer.last_name,
-                middle_name: @customer.middle_name,
-                email: @customer.email,
-                mobile: @customer.mobile,
-                password: generated_password,
-                password_confirmation: generated_password,
-                user_type: 'customer',
-                address: @customer.address,
-                city: params[:customer][:city] || 'Unknown',
-                state: params[:customer][:state] || 'Unknown',
-                pincode: params[:customer][:pincode] || '000000',
-                country: 'India',  # Match mobile API default
-                status: true,
-                is_active: true,
-                is_verified: false
-              )
-              # Store generated password in flash for display (in production, send via email/SMS)
-              flash[:generated_password] = generated_password
-              redirect_to admin_customer_path(@customer),
-                         notice: "Customer created successfully. Auto-generated password: #{generated_password}"
+              @customer.destroy
+              @customer.errors.add(:password_confirmation, "doesn't match Password")
+              @sub_agents = SubAgent.active.order(:first_name, :last_name)
+              render :new, status: :unprocessable_entity
+              return
             end
           else
-            redirect_to admin_customer_path(@customer), notice: 'Customer was successfully created.'
+            generated_password = generate_secure_password
           end
+
+          User.create!(
+            first_name: @customer.first_name,
+            last_name: @customer.last_name,
+            middle_name: @customer.middle_name,
+            email: effective_email,
+            mobile: @customer.mobile,
+            password: generated_password,
+            password_confirmation: generated_password,
+            user_type: 'customer',
+            address: @customer.address,
+            city: params[:customer][:city] || 'Unknown',
+            state: params[:customer][:state] || 'Unknown',
+            pincode: params[:customer][:pincode] || '000000',
+            country: 'India',
+            status: true,
+            is_active: true,
+            is_verified: false
+          )
+
+          flash[:generated_password] = generated_password unless password.present?
+          redirect_to admin_customer_path(@customer),
+                     notice: password.present? ? 'Customer and login account created successfully.' :
+                             "Customer created successfully. Auto-generated password: #{generated_password}"
         else
           @sub_agents = SubAgent.active.order(:first_name, :last_name)
           render :new, status: :unprocessable_entity
@@ -610,25 +587,7 @@ class Admin::CustomersController < Admin::ApplicationController
           end
         end
 
-        # 12. Delete notifications
-        if ActiveRecord::Base.connection.table_exists?('notifications')
-          notifications_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM notifications WHERE customer_id = #{@customer.id}").first['count'].to_i
-          if notifications_count > 0
-            ActiveRecord::Base.connection.execute("DELETE FROM notifications WHERE customer_id = #{@customer.id}")
-            deleted_items << "#{notifications_count} notification(s)"
-          end
-        end
-
-        # 13. Delete device tokens
-        if ActiveRecord::Base.connection.table_exists?('device_tokens')
-          device_tokens_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM device_tokens WHERE customer_id = #{@customer.id}").first['count'].to_i
-          if device_tokens_count > 0
-            ActiveRecord::Base.connection.execute("DELETE FROM device_tokens WHERE customer_id = #{@customer.id}")
-            deleted_items << "#{device_tokens_count} device token(s)"
-          end
-        end
-
-        # 14. Delete wishlists
+        # 12. Delete wishlists
         if ActiveRecord::Base.connection.table_exists?('wishlists')
           wishlists_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM wishlists WHERE customer_id = #{@customer.id}").first['count'].to_i
           if wishlists_count > 0
@@ -758,8 +717,12 @@ class Admin::CustomersController < Admin::ApplicationController
         # Store password in customer record
         @customer.update!(auto_generated_password: generated_password)
 
-        # Find or create User account
-        user = User.find_by(email: @customer.email, user_type: 'customer')
+        # Use mobile-based default email if customer has none
+        effective_email = @customer.email.presence || "#{@customer.mobile}@noemail.local"
+
+        # Find or create User account (search by mobile too for email-less customers)
+        user = User.find_by(email: effective_email, user_type: 'customer') ||
+               User.find_by(mobile: @customer.mobile, user_type: 'customer')
 
         if user
           # Update existing user password
@@ -769,30 +732,25 @@ class Admin::CustomersController < Admin::ApplicationController
           )
           message = "Password generated and updated for existing user account."
         else
-          # Create new User account
-          if @customer.email.present?
-            User.create!(
-              first_name: @customer.first_name,
-              last_name: @customer.last_name,
-              middle_name: @customer.middle_name,
-              email: @customer.email,
-              mobile: @customer.mobile,
-              password: generated_password,
-              password_confirmation: generated_password,
-              user_type: 'customer',
-              address: @customer.address,
-              city: 'Unknown',
-              state: 'Unknown',
-              pincode: '000000',
-              country: 'India',
-              status: true,
-              is_active: true,
-              is_verified: false
-            )
-            message = "User account created with generated password."
-          else
-            message = "Cannot create user account: email is required."
-          end
+          User.create!(
+            first_name: @customer.first_name,
+            last_name: @customer.last_name,
+            middle_name: @customer.middle_name,
+            email: effective_email,
+            mobile: @customer.mobile,
+            password: generated_password,
+            password_confirmation: generated_password,
+            user_type: 'customer',
+            address: @customer.address,
+            city: 'Unknown',
+            state: 'Unknown',
+            pincode: '000000',
+            country: 'India',
+            status: true,
+            is_active: true,
+            is_verified: false
+          )
+          message = "User account created with generated password."
         end
 
         respond_to do |format|

@@ -38,9 +38,19 @@ class Api::V1::Mobile::BaseController < ApplicationController
 
       case role
       when 'customer'
-        # For customers, user_id is the User record ID, need to find associated Customer
-        user_record = User.find(user_id)
-        @current_user = Customer.find_by(email: user_record.email)
+        # Try direct customer lookup via customer_id in token first
+        customer_id = decoded_token['customer_id']
+        @current_user = Customer.find_by(id: customer_id) if customer_id
+
+        # Fall back to User record → find customer by email or mobile
+        if @current_user.nil?
+          user_record = User.find_by(id: user_id)
+          if user_record
+            @current_user = Customer.find_by(email: user_record.email) if user_record.email.present? && !user_record.email.end_with?('@noemail.local')
+            @current_user ||= Customer.find_by(mobile: user_record.mobile)
+          end
+        end
+
         if @current_user.nil?
           return render json: {
             success: false,

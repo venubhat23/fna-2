@@ -127,7 +127,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       @products = @products.order(:name)
     end
 
-    total_count = @products.count
+    count_result = @products.count
+    total_count = count_result.is_a?(Hash) ? count_result.keys.count : count_result
     @products = @products.offset((page - 1) * per_page).limit(per_page)
 
     products_data = @products.map { |product| format_product_data(product) }
@@ -298,7 +299,6 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       Rails.logger.info "Current user: #{@current_user&.id}"
 
       ActiveRecord::Base.transaction do
-        debugger
         @booking = Booking.new(booking_params.except(:pincode, :latitude, :longitude))
 
         # Ensure customer association is properly set
@@ -326,14 +326,12 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         @booking.save!
 
         # Update product stock
-        debugger
         @booking.booking_items.each do |item|
-          debugger
           product = item.product
           new_stock = product.stock - item.quantity
           product.update!(stock: new_stock)
         end
-      debugger
+
         booking_response_data = format_booking_data(@booking).merge({
           location_saved: {
             latitude: latitude,
@@ -1305,10 +1303,24 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       selling_price: product.selling_price.to_f,
       final_price: product.final_price_after_discount.to_f,
       discount_percentage: product.discount_percentage,
+      discount_type: product.discount_type,
+      discount_value: product.discount_value&.to_f,
+      original_price: product.original_price&.to_f,
+      savings_amount: product.savings_amount.to_f,
       stock: product.stock,
       sku: product.sku,
+      unit: product.unit_type,
       weight: product.weight&.to_f,
       dimensions: product.dimensions,
+      product_type: product.product_type,
+      barcode: product.respond_to?(:barcode) ? product.barcode : nil,
+      hsn_code: product.hsn_code,
+      tags: product.tags,
+      display_order: product.display_order,
+      is_subscription_enabled: product.is_subscription_enabled,
+      is_occasional_product: product.is_occasional_product,
+      gst_enabled: product.gst_enabled,
+      gst_percentage: product.gst_percentage&.to_f,
       category: {
         id: product.category_id,
         name: product.category&.name
@@ -1321,6 +1333,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       },
       is_in_stock: product.in_stock?,
       is_discounted: product.discounted?,
+      is_low_stock: product.low_stock?,
       stock_status: product.stock_status,
       created_at: product.created_at,
       updated_at: product.updated_at
