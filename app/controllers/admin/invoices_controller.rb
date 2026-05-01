@@ -4,29 +4,29 @@ class Admin::InvoicesController < Admin::ApplicationController
   before_action :set_invoice, only: [:show, :edit, :update, :destroy, :mark_as_paid]
 
   def index
-    # Show only regular invoices by default (exclude booking invoices)
-    invoice_type = params[:type] || 'regular'  # Default to 'regular' only
-
-    # Get pagination settings from system settings
+    invoice_type = params[:type] || 'regular'
     per_page = SystemSetting.default_pagination_per_page
-    page = params[:page] || 1
+    page = (params[:page] || 1).to_i
 
-    # Build base query with pagination
-    regular_invoices = build_regular_invoices_query.page(page).per(per_page)
+    # Fetch all regular invoices (no pagination yet)
+    all_regular = build_regular_invoices_query.map { |inv| prepare_invoice_data(inv, 'regular') }
 
-    # Convert to hash format for the view
-    @invoices = regular_invoices.map { |inv| prepare_invoice_data(inv, 'regular') }
+    # Fetch booking-only invoices
+    all_booking = build_booking_only_invoices_query.map { |b| prepare_booking_invoice_data(b) }
 
-    # Store pagination object for view helpers
-    @paginated_invoices = regular_invoices
+    # Combine and sort by created_at descending (newest first)
+    combined = (all_regular + all_booking).sort_by { |inv| inv[:created_at] || Time.at(0) }.reverse
 
-    # Calculate summary statistics for regular invoices only
+    # Manual pagination
+    total = combined.size
+    offset = (page - 1) * per_page
+    @invoices = combined[offset, per_page] || []
+
+    # Build a simple pagination wrapper for view helpers
+    @paginated_invoices = Kaminari.paginate_array(combined).page(page).per(per_page)
+
     @stats = calculate_regular_invoice_stats_only
-
-    # Get delivery persons for filter dropdown
     @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
-
-    # Set invoice type for the view
     @invoice_type = invoice_type
   end
 
@@ -754,6 +754,43 @@ class Admin::InvoicesController < Admin::ApplicationController
     end
   end
 
+  def build_booking_only_invoices_query
+    invoiced_numbers = Invoice.pluck(:invoice_number).compact
+    query = Booking.includes(:customer)
+                   .where(invoice_generated: true)
+                   .where.not(invoice_number: [nil, ''])
+                   .where.not(invoice_number: invoiced_numbers)
+
+    query = query.where(customer_id: params[:customer_id]) if params[:customer_id].present?
+
+    if params[:search].present?
+      s = "%#{params[:search]}%"
+      query = query.joins(:customer)
+                   .where("bookings.invoice_number ILIKE ? OR bookings.booking_number ILIKE ? OR customers.first_name ILIKE ? OR customers.last_name ILIKE ?", s, s, s, s)
+    end
+
+    query.order(created_at: :desc)
+  end
+
+  def prepare_booking_invoice_data(booking)
+    {
+      id: booking.id,
+      invoice_number: booking.invoice_number,
+      customer_name: booking.customer&.display_name || booking.customer_name || 'N/A',
+      customer_mobile: booking.customer&.mobile || booking.customer_phone,
+      total_amount: booking.total_amount,
+      paid_amount: 0,
+      payment_status: booking.payment_status || 'unpaid',
+      status: 'draft',
+      invoice_date: booking.booking_date&.to_date || booking.created_at&.to_date,
+      created_at: booking.created_at,
+      type: 'booking_only',
+      model_object: booking,
+      booking_number: booking.booking_number,
+      from_booking: true
+    }
+  end
+
   def build_regular_invoices_query
     base_query = Invoice.includes(:customer, :invoice_items)
     apply_search_filters(base_query, 'invoices')
@@ -928,7 +965,8 @@ class Admin::InvoicesController < Admin::ApplicationController
       created_at: invoice.created_at,
       type: type,
       model_object: invoice,
-      booking_number: type == 'booking' ? invoice.booking&.booking_number : nil
+      booking_number: type == 'booking' ? invoice.booking&.booking_number : invoice.related_booking&.booking_number,
+      from_booking: type == 'booking' || invoice.from_booking?
     }
   end
 

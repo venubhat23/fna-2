@@ -368,23 +368,23 @@
                         </div>
                       </div>
                       <!-- Invoice Status (right side) -->
-                      <div class="invoice-status">
+                      <div class="invoice-status d-flex flex-column gap-1 align-items-end">
                         <% if booking.has_invoice? %>
                           <% if booking.invoice_link_path %>
-                            <%= link_to booking.invoice_link_path, class: "badge bg-success-subtle text-success text-decoration-none", target: "_blank", title: "View Invoice ##{booking.display_invoice_number}" do %>
+                            <%= link_to booking.invoice_link_path, class: "badge text-decoration-none", style: "background-color: #6f42c1; color: white;", target: "_blank", title: "View Invoice ##{booking.display_invoice_number}" do %>
                               <i class="bi bi-receipt me-1"></i>
-                              #<%= booking.display_invoice_number %>
+                              Invoice: #<%= booking.display_invoice_number %>
                             <% end %>
                           <% else %>
-                            <span class="badge bg-warning-subtle text-warning" title="Invoice generated but link unavailable">
+                            <span class="badge" style="background-color: #6f42c1; color: white;" title="Invoice generated but link unavailable">
                               <i class="bi bi-receipt-cutoff me-1"></i>
-                              Generated
+                              Invoice Generated
                             </span>
                           <% end %>
                         <% else %>
-                          <span class="badge bg-secondary-subtle text-secondary" title="No invoice generated">
+                          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" title="No invoice generated">
                             <i class="bi bi-receipt me-1"></i>
-                            Pending
+                            No Invoice
                           </span>
                         <% end %>
                       </div>
@@ -526,16 +526,16 @@
                       </a>
                       <% if booking.has_invoice? %>
                         <% if booking.invoice_link_path %>
-                          <%= link_to booking.invoice_link_path, class: "action-icon invoice", title: "View Invoice", target: "_blank" do %>
-                            <i class="bi bi-receipt"></i>
+                          <%= link_to booking.invoice_link_path, class: "action-icon", style: "color: #6f42c1;", title: "View Invoice ##{booking.display_invoice_number}", target: "_blank" do %>
+                            <i class="bi bi-receipt-fill"></i>
                           <% end %>
                         <% else %>
-                          <%= link_to "#", class: "action-icon invoice", title: "Invoice Generated", onclick: "alert('Invoice generated but link not available')" do %>
-                            <i class="bi bi-receipt-cutoff"></i>
+                          <%= link_to "#", class: "action-icon", style: "color: #6f42c1;", title: "Invoice Generated (link unavailable)" do %>
+                            <i class="bi bi-receipt-fill"></i>
                           <% end %>
                         <% end %>
                       <% else %>
-                        <%= link_to "#", class: "action-icon invoice", title: "Generate Invoice", onclick: "alert('Invoice not generated yet')" do %>
+                        <%= link_to "#", class: "action-icon text-muted", title: "No Invoice Generated" do %>
                           <i class="bi bi-receipt-cutoff"></i>
                         <% end %>
                       <% end %>

@@ -104,6 +104,22 @@ class Invoice < ApplicationRecord
     payment_status == 'partially_paid' || (paid_amount && paid_amount > 0 && paid_amount < total_amount)
   end
 
+  def related_booking
+    @related_booking ||= begin
+      (invoice_number.present? && Booking.find_by(invoice_number: invoice_number)) ||
+        begin
+          item = invoice_items.find { |i| i.description.to_s.match?(/Booking #/) }
+          if item && (m = item.description.match(/Booking #(\w+)/))
+            Booking.find_by(booking_number: m[1])
+          end
+        end
+    end
+  end
+
+  def from_booking?
+    related_booking.present?
+  end
+
   private
 
   def generate_invoice_number

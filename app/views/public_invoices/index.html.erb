@@ -1177,7 +1177,14 @@
             <div class="invoice-content">
               <!-- Invoice Header -->
               <div class="invoice-header">
-                <h3 class="invoice-number">#<%= invoice.formatted_number %></h3>
+                <div class="d-flex flex-column gap-1">
+                  <h3 class="invoice-number">#<%= invoice.formatted_number %></h3>
+                  <% if invoice.from_booking? %>
+                    <span class="badge" style="background-color: #6f42c1; color: white; font-size: 0.7rem; width: fit-content;">
+                      <i class="bi bi-bookmark-fill me-1"></i>Booking Invoice
+                    </span>
+                  <% end %>
+                </div>
                 <h3 class="invoice-amount">₹<%= number_with_delimiter(sprintf('%.2f', invoice.total_amount), delimiter: ',') %></h3>
               </div>
 
@@ -1223,13 +1230,13 @@
               <!-- Action Buttons -->
               <div class="action-buttons">
                 <%
-                  # Generate share token if not exists
-                  invoice.generate_share_token if invoice.share_token.blank?
-                  invoice.save! if invoice.changed?
-
-                  # Generate public URL
-                  host = request.host_with_port
-                  public_url = "#{request.protocol}#{host}/invoices_public/#{invoice.share_token}"
+                  if invoice.respond_to?(:is_booking_proxy?) && invoice.is_booking_proxy?
+                    public_url = "#{request.protocol}#{request.host_with_port}/admin/bookings/#{invoice.booking.id}/invoice"
+                  else
+                    invoice.generate_share_token if invoice.share_token.blank?
+                    invoice.save! if invoice.changed?
+                    public_url = "#{request.protocol}#{request.host_with_port}/invoices_public/#{invoice.share_token}"
+                  end
                 %>
                 <a href="<%= public_url %>" class="btn-view" target="_blank">
                   <i class="fas fa-eye"></i>

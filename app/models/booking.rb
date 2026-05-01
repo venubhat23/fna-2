@@ -351,7 +351,13 @@ class Booking < ApplicationRecord
   def associated_invoice
     return @associated_invoice if defined?(@associated_invoice)
 
-    # Look for invoice items that reference this booking by booking number in the description
+    # First try to find by invoice_number stored on the booking
+    if invoice_number.present?
+      found = Invoice.find_by(invoice_number: invoice_number)
+      return (@associated_invoice = found) if found
+    end
+
+    # Fall back: look for invoice items that reference this booking by booking number in the description
     invoice_item = InvoiceItem.joins(:invoice)
                              .where('description LIKE ?', "%#{booking_number}%")
                              .first
@@ -370,8 +376,8 @@ class Booking < ApplicationRecord
       "/admin/invoices/#{associated_invoice.id}"
     elsif booking_invoices.any?
       "/admin/booking_invoices/#{booking_invoices.first.id}"
-    else
-      nil
+    elsif invoice_generated?
+      "/admin/bookings/#{id}/invoice"
     end
   end
 

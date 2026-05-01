@@ -229,6 +229,7 @@
                   created_at = invoice_data[:created_at]
                   invoice_type = invoice_data[:type]
                   booking_number = invoice_data[:booking_number]
+                  from_booking = invoice_data[:from_booking]
                   model_object = invoice_data[:model_object]
                 else
                   # Legacy ActiveRecord object
@@ -242,7 +243,8 @@
                   invoice_date = invoice_data.invoice_date
                   created_at = invoice_data.created_at
                   invoice_type = 'regular'
-                  booking_number = nil
+                  booking_number = invoice_data.related_booking&.booking_number rescue nil
+                  from_booking = invoice_data.from_booking? rescue false
                   model_object = invoice_data
                 end
               %>
@@ -261,9 +263,16 @@
                   <% end %>
                 </td>
                 <td class="fw-medium text-primary">
-                  <%= link_to invoice_number,
-                      invoice_type == 'booking' ? "#" : admin_invoice_path(model_object),
-                      class: "text-decoration-none fw-medium" %>
+                  <div class="d-flex flex-column gap-1">
+                    <%= link_to invoice_number,
+                        invoice_type == 'booking_only' ? invoice_admin_booking_path(model_object) : (invoice_type == 'booking' ? "#" : admin_invoice_path(model_object)),
+                        class: "text-decoration-none fw-medium" %>
+                    <% if from_booking %>
+                      <span class="badge" style="background-color: #6f42c1; color: white; font-size: 0.7rem; width: fit-content;">
+                        <i class="bi bi-bookmark-fill me-1"></i>Booking Invoice
+                      </span>
+                    <% end %>
+                  </div>
                 </td>
                 <td>
                   <div class="d-flex flex-column">

@@ -13,7 +13,12 @@
   <div class="d-flex gap-2">
     <!-- Invoice Actions -->
     <% if @booking.invoice_generated? %>
-      <!-- PDF button removed as requested -->
+      <% if (invoice_path = @booking.invoice_link_path) %>
+        <%= link_to invoice_path, class: "btn btn-primary" do %>
+          <i class="bi bi-receipt me-1"></i>
+          View Invoice
+        <% end %>
+      <% end %>
     <% else %>
       <%= link_to generate_invoice_admin_booking_path(@booking), class: "btn btn-success", method: :patch do %>
         <i class="bi bi-receipt me-1"></i>
@@ -172,7 +177,13 @@
           <% if @booking.invoice_generated? %>
             <div class="col-md-6">
               <strong class="text-muted d-block">Invoice Number</strong>
-              <span class="text-primary fw-medium"><%= @booking.invoice_number %></span>
+              <% if (inv_path = @booking.invoice_link_path) %>
+                <%= link_to inv_path, class: "text-primary fw-medium text-decoration-none" do %>
+                  <i class="bi bi-receipt me-1"></i><%= @booking.display_invoice_number %>
+                <% end %>
+              <% else %>
+                <span class="text-primary fw-medium"><%= @booking.display_invoice_number %></span>
+              <% end %>
             </div>
           <% end %>
         </div>

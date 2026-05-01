@@ -49,12 +49,9 @@ class PublicInvoicesController < ApplicationController
   end
 
   def index
-    # Start with optimized base query for regular invoices - include all needed associations
     @invoices = Invoice.includes(:customer)
 
-    # Apply filters
     if params[:customer_name].present?
-      # Use case-insensitive search that works across databases
       search_term = "%#{params[:customer_name].downcase}%"
       @invoices = @invoices.joins(:customer)
                           .where("LOWER(customers.first_name) LIKE ? OR LOWER(customers.last_name) LIKE ? OR LOWER(CONCAT(customers.first_name, ' ', customers.last_name)) LIKE ?", search_term, search_term, search_term)
@@ -68,7 +65,6 @@ class PublicInvoicesController < ApplicationController
       @invoices = @invoices.where(status: params[:status])
     end
 
-    # Apply sorting
     case params[:sort_by]
     when 'amount_high_to_low'
       @invoices = @invoices.order(total_amount: :desc, created_at: :desc)
@@ -79,24 +75,35 @@ class PublicInvoicesController < ApplicationController
     when 'date_oldest'
       @invoices = @invoices.order(created_at: :asc)
     else
-      # Default: sort by highest amount first
       @invoices = @invoices.order(total_amount: :desc, created_at: :desc)
     end
 
-    # Execute query and get results
     @invoices = @invoices.to_a
 
-    # Batch update share tokens for invoices that don't have them
     invoices_without_tokens = @invoices.select { |invoice| invoice.share_token.blank? }
     if invoices_without_tokens.any?
       Invoice.transaction do
-        invoices_without_tokens.each do |invoice|
-          invoice.generate_share_token!
-        end
+        invoices_without_tokens.each { |inv| inv.generate_share_token! }
       end
     end
 
-    # Cache total count to avoid repeated queries
+    # Append booking-only invoices (invoice_generated: true, no Invoice record)
+    invoiced_numbers = Invoice.pluck(:invoice_number).compact
+    booking_invoices_query = Booking.includes(:customer)
+                                    .where(invoice_generated: true)
+                                    .where.not(invoice_number: [nil, ''])
+                                    .where.not(invoice_number: invoiced_numbers)
+
+    if params[:customer_name].present?
+      s = "%#{params[:customer_name].downcase}%"
+      booking_invoices_query = booking_invoices_query.joins(:customer)
+        .where("LOWER(customers.first_name) LIKE ? OR LOWER(customers.last_name) LIKE ?", s, s)
+    end
+
+    booking_invoices_query.each do |booking|
+      @invoices << BookingInvoiceProxy.new(booking, request)
+    end
+
     @total_invoice_count = @invoices.size
   end
 
