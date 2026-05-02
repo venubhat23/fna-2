@@ -1215,17 +1215,14 @@ class Admin::InvoicesController < Admin::ApplicationController
       previous_invoices = customer.invoices
                                  .where('invoice_date < ?', start_date)
                                  .where(
-                                   "(paid_amount < total_amount OR paid_amount IS NULL) AND status IN (?, ?, ?)",
-                                   'draft', 'partially_paid', 'moved_to_next_month'
+                                   "(paid_amount < total_amount OR paid_amount IS NULL) AND status IN (?, ?, ?, ?)",
+                                   'draft', 'sent', 'overdue', 'partially_paid'
                                  )
 
       previous_invoices.each do |prev_invoice|
         pending_amount = prev_invoice.remaining_amount
         if pending_amount > 0
           total_pending_from_previous += pending_amount
-
-          # Mark the old invoice as moved to next month
-          prev_invoice.update!(status: 'moved_to_next_month')
 
           # Add pending amount as a line item
           invoice_items_data << {
