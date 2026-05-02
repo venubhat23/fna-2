@@ -865,6 +865,8 @@ class Admin::InvoicesController < Admin::ApplicationController
     if params[:status].present? && params[:status] != 'all'
       if params[:status] == 'pending'
         base_query = base_query.where(payment_status: ['unpaid', 'partially_paid'])
+      elsif params[:status] == 'moved_to_next_month'
+        base_query = base_query.where(status: 'moved_to_next_month')
       else
         base_query = base_query.where(payment_status: params[:status])
       end
@@ -931,6 +933,8 @@ class Admin::InvoicesController < Admin::ApplicationController
     if params[:status].present? && params[:status] != 'all'
       if params[:status] == 'pending'
         base_query = base_query.where(payment_status: ['unpaid', 'partially_paid'])
+      elsif params[:status] == 'moved_to_next_month'
+        base_query = base_query.where(status: 'moved_to_next_month')
       else
         base_query = base_query.where(payment_status: params[:status])
       end

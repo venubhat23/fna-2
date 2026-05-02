@@ -15,6 +15,18 @@ class Admin::NotesController < ApplicationController
       @notes = @notes.by_date_range(Date.parse(params[:start_date]), Date.parse(params[:end_date]))
     end
 
+    # Month/year filter
+    if params[:filter_month].present? && params[:filter_year].present?
+      @notes = @notes.where(
+        "EXTRACT(MONTH FROM note_date) = ? AND EXTRACT(YEAR FROM note_date) = ?",
+        params[:filter_month].to_i, params[:filter_year].to_i
+      )
+    elsif params[:filter_month].present?
+      @notes = @notes.where("EXTRACT(MONTH FROM note_date) = ?", params[:filter_month].to_i)
+    elsif params[:filter_year].present?
+      @notes = @notes.where("EXTRACT(YEAR FROM note_date) = ?", params[:filter_year].to_i)
+    end
+
     # Search filter
     if params[:search].present?
       search_term = "%#{params[:search]}%"

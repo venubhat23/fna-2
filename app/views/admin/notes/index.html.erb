@@ -145,6 +145,20 @@
         </div>
 
         <div class="form-group">
+          <%= form.label :filter_month, "Month", class: "form-label small text-muted" %>
+          <%= form.select :filter_month,
+              options_for_select([['All', '']] + Date::MONTHNAMES.compact.each_with_index.map { |name, i| [name, i + 1] }, params[:filter_month]),
+              {}, { class: "form-select", style: "min-width: 130px;" } %>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :filter_year, "Year", class: "form-label small text-muted" %>
+          <%= form.select :filter_year,
+              options_for_select([['All', '']] + (2025..2035).map { |y| [y, y] }, params[:filter_year]),
+              {}, { class: "form-select", style: "min-width: 100px;" } %>
+        </div>
+
+        <div class="form-group">
           <%= form.submit "Filter", class: "btn btn-outline-primary" %>
           <%= link_to "Clear", admin_notes_path, class: "btn btn-outline-secondary" %>
         </div>
