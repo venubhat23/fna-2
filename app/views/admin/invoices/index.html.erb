@@ -231,6 +231,7 @@
                   booking_number = invoice_data[:booking_number]
                   from_booking = invoice_data[:from_booking]
                   model_object = invoice_data[:model_object]
+                  invoice_status = invoice_data[:status]
                 else
                   # Legacy ActiveRecord object
                   invoice_id = invoice_data.id
@@ -246,6 +247,7 @@
                   booking_number = invoice_data.related_booking&.booking_number rescue nil
                   from_booking = invoice_data.from_booking? rescue false
                   model_object = invoice_data
+                  invoice_status = invoice_data.status
                 end
               %>
               <tr>
@@ -287,23 +289,31 @@
                 </td>
                 <td class="fw-medium">₹<%= number_with_delimiter((total_amount || 0).to_i) %></td>
                 <td>
-                  <% case payment_status.to_s %>
-                  <% when 'fully_paid', 'paid' %>
-                    <span class="badge bg-success bg-opacity-10 text-success border border-success">
-                      <i class="bi bi-check-circle me-1"></i>
-                      Paid
-                    </span>
-                  <% when 'partially_paid' %>
-                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">
-                      <i class="bi bi-clock me-1"></i>
-                      Partial
-                    </span>
-                  <% else %>
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
-                      <i class="bi bi-x-circle me-1"></i>
-                      Unpaid
-                    </span>
-                  <% end %>
+                  <div class="d-flex flex-column gap-1">
+                    <% case payment_status.to_s %>
+                    <% when 'fully_paid', 'paid' %>
+                      <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Paid
+                      </span>
+                    <% when 'partially_paid' %>
+                      <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">
+                        <i class="bi bi-clock me-1"></i>
+                        Partial
+                      </span>
+                    <% else %>
+                      <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Unpaid
+                      </span>
+                    <% end %>
+                    <% if invoice_status.to_s == 'moved_to_next_month' %>
+                      <span class="badge bg-info bg-opacity-10 text-info border border-info" style="font-size: 0.65rem; width: fit-content;">
+                        <i class="bi bi-arrow-right-circle me-1"></i>
+                        Moved to Next Month
+                      </span>
+                    <% end %>
+                  </div>
                 </td>
                 <td class="text-muted">
                   <div class="d-flex flex-column">
