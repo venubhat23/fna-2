@@ -1,3 +1,5 @@
+require 'open-uri'
+
 module Api
   module V1
     module Mobile
@@ -168,6 +170,203 @@ module Api
               error: Rails.env.development? ? e.message : nil
             }, status: :internal_server_error
           end
+        end
+
+        # GET /api/v1/mobile/delivery/my_customers
+        def my_customers
+          booking_customer_ids = Booking
+            .where(delivery_person_id: current_delivery_person_id)
+            .where.not(customer_id: nil)
+            .distinct
+            .pluck(:customer_id)
+
+          task_customer_ids = MilkDeliveryTask
+            .where(delivery_person_id: current_delivery_person_id)
+            .where.not(customer_id: nil)
+            .distinct
+            .pluck(:customer_id)
+
+          all_customer_ids = (booking_customer_ids + task_customer_ids).uniq
+
+          customers = Customer.where(id: all_customer_ids).order(:first_name)
+
+          render json: {
+            success: true,
+            data: {
+              customers: customers.map { |c| format_customer(c) },
+              total: customers.count
+            }
+          }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # PUT /api/v1/mobile/delivery/customers/:id/location
+        def update_customer_location
+          customer = Customer.find_by(id: params[:id])
+          return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
+
+          lat = params[:latitude]
+          lng = params[:longitude]
+
+          if lat.blank? || lng.blank?
+            return render json: { success: false, message: "latitude and longitude are required" }, status: :unprocessable_entity
+          end
+
+          if customer.update(latitude: lat, longitude: lng, location_obtained_at: Time.current)
+            render json: {
+              success: true,
+              message: "Customer location updated",
+              data: { customer_id: customer.id, latitude: customer.latitude, longitude: customer.longitude }
+            }
+          else
+            render json: { success: false, message: customer.errors.full_messages.join(", ") }, status: :unprocessable_entity
+          end
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # POST /api/v1/mobile/delivery/customers/:id/upload_image
+        def upload_customer_image
+          customer = Customer.find_by(id: params[:id])
+          return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
+
+          image_file = params[:image]
+          return render json: { success: false, message: "image is required" }, status: :unprocessable_entity unless image_file
+
+          image_type = params[:image_type].presence_in(%w[profile house personal]) || "profile"
+
+          begin
+            result = Cloudinary::Uploader.upload(
+              image_file.tempfile,
+              folder: "customers/#{image_type}",
+              public_id: "customers/#{image_type}/#{customer.id}-#{SecureRandom.hex(6)}",
+              overwrite: true,
+              resource_type: :image,
+              transformation: [{ width: 1200, height: 1200, crop: :limit, quality: :auto, fetch_format: :auto }]
+            )
+            public_url = result["secure_url"]
+
+            attachment_name = { "profile" => :profile_image, "house" => :house_image, "personal" => :personal_image }[image_type]
+            customer.send(attachment_name).attach(
+              io: URI.open(public_url),
+              filename: "#{image_type}_#{customer.id}.jpg",
+              content_type: "image/jpeg"
+            ) if attachment_name
+
+            render json: {
+              success: true,
+              message: "Image uploaded successfully",
+              data: { customer_id: customer.id, image_type: image_type, image_url: public_url }
+            }
+          rescue => e
+            Rails.logger.error "Customer image upload failed: #{e.message}"
+            render json: { success: false, message: "Image upload failed: #{e.message}" }, status: :unprocessable_entity
+          end
+        end
+
+        # GET /api/v1/mobile/delivery/products
+        def products
+          @products = Product.active.in_stock.order(:name)
+
+          render json: {
+            success: true,
+            data: {
+              products: @products.map { |p| format_delivery_product(p) },
+              total: @products.count
+            }
+          }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # POST /api/v1/mobile/delivery/bookings
+        def create_booking
+          customer_id     = params[:customer_id]
+          delivery_address = params[:delivery_address]
+          items           = params[:items]
+          notes           = params[:notes]
+
+          if customer_id.blank? || delivery_address.blank? || items.blank? || !items.is_a?(Array)
+            return render json: {
+              success: false,
+              message: "customer_id, delivery_address, and items (array) are required"
+            }, status: :unprocessable_entity
+          end
+
+          customer = Customer.find_by(id: customer_id)
+          return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
+
+          # Validate items
+          booking_items_data = []
+          total_amount = 0
+
+          items.each do |item|
+            product = Product.find_by(id: item[:product_id])
+            unless product
+              return render json: { success: false, message: "Product ##{item[:product_id]} not found" }, status: :unprocessable_entity
+            end
+
+            qty = [item[:quantity].to_i, 1].max
+            price = product.discount_price.present? && product.discount_price > 0 ? product.discount_price : product.price
+
+            booking_items_data << { product: product, quantity: qty, price: price }
+            total_amount += qty * price
+          end
+
+          booking = nil
+          ActiveRecord::Base.transaction do
+            booking = Booking.new(
+              customer_id:      customer.id,
+              customer_name:    customer.display_name,
+              customer_phone:   customer.mobile,
+              customer_email:   customer.email,
+              delivery_address: delivery_address,
+              payment_method:   :cod,
+              payment_status:   :unpaid,
+              status:           :ordered_and_delivery_pending,
+              delivery_person_id: current_delivery_person_id,
+              total_amount:     total_amount,
+              subtotal:         total_amount,
+              notes:            notes,
+              booking_date:     Date.current
+            )
+            booking.save!
+
+            booking_items_data.each do |item_data|
+              booking.booking_items.create!(
+                product_id: item_data[:product].id,
+                quantity:   item_data[:quantity],
+                price:      item_data[:price]
+              )
+            end
+          end
+
+          render json: {
+            success: true,
+            message: "Booking created successfully",
+            data: {
+              booking_id:      booking.id,
+              booking_number:  booking.booking_number,
+              customer_name:   booking.customer_name,
+              total_amount:    booking.total_amount,
+              payment_method:  "Cash on Delivery",
+              payment_status:  "Unpaid",
+              status:          booking.status,
+              items:           booking.booking_items.map { |bi|
+                {
+                  product_name: bi.product&.name,
+                  quantity:     bi.quantity,
+                  price:        bi.price,
+                  subtotal:     bi.quantity * bi.price
+                }
+              }
+            }
+          }
+        rescue ActiveRecord::RecordInvalid => e
+          render json: { success: false, message: e.message }, status: :unprocessable_entity
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
         end
 
         # POST /api/v1/mobile/delivery/bulk_update
@@ -496,8 +695,35 @@ module Api
         end
 
         def estimate_arrival_time
-          # Estimate arrival time based on current location and traffic
           (Time.current + 15.minutes).strftime("%I:%M %p")
+        end
+
+        def format_customer(customer)
+          {
+            id:          customer.id,
+            name:        customer.display_name,
+            mobile:      customer.mobile,
+            email:       customer.email,
+            address:     customer.address,
+            latitude:    customer.latitude,
+            longitude:   customer.longitude,
+            whatsapp:    customer.whatsapp_number
+          }
+        end
+
+        def format_delivery_product(product)
+          price = product.discount_price.present? && product.discount_price > 0 ? product.discount_price : product.price
+          {
+            id:             product.id,
+            name:           product.name,
+            sku:            product.sku,
+            price:          price,
+            original_price: product.price,
+            unit:           product.unit_type,
+            stock:          product.stock,
+            min_quantity:   1,
+            image_url:      product.image_url.presence || (product.image.attached? ? product.image.url : nil)
+          }
         end
 
         def process_bulk_delivery_update(delivery_ids, delivery_person_id, completed_at)

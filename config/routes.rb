@@ -353,6 +353,7 @@ Rails.application.routes.draw do
         get :expired
         post :generate_all_daily_tasks
         post :bulk_complete
+        delete :delete_all
       end
     end
 
@@ -786,6 +787,13 @@ Rails.application.routes.draw do
         post 'delivery/tasks/:id/update_location', to: 'delivery#update_location'
         post 'delivery/bulk_mark_done', to: 'delivery#bulk_mark_done'
         post 'delivery/bulk_update', to: 'delivery#bulk_update'
+
+        # Delivery Person - Customers & Products & Bookings
+        get  'delivery/my_customers',                    to: 'delivery#my_customers'
+        put  'delivery/customers/:id/location',          to: 'delivery#update_customer_location'
+        post 'delivery/customers/:id/upload_image',      to: 'delivery#upload_customer_image'
+        get  'delivery/products',                        to: 'delivery#products'
+        post 'delivery/bookings',                        to: 'delivery#create_booking'
 
         # Customer Profile APIs
         get 'ecommerce/profile', to: 'ecommerce#customer_profile'

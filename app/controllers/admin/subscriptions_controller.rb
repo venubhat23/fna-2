@@ -189,6 +189,20 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     end
   end
 
+  def delete_all
+    ActiveRecord::Base.transaction do
+      tasks_count = MilkDeliveryTask.count
+      subs_count  = MilkSubscription.count
+      MilkDeliveryTask.delete_all
+      MilkSubscription.delete_all
+      flash[:notice] = "Deleted #{subs_count} subscriptions and #{tasks_count} milk delivery tasks."
+    end
+    redirect_to admin_subscriptions_path
+  rescue => e
+    flash[:alert] = "Failed to delete: #{e.message}"
+    redirect_to admin_subscriptions_path
+  end
+
   def toggle_status
     new_status = @subscription.is_active? ? false : true
     @subscription.update(is_active: new_status)
