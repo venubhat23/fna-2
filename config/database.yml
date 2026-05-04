@@ -32,8 +32,8 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    url: <%= ENV['DATABASE_URL'] || 'postgresql://atmanirbhar_farm_user:jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1@dpg-d6g3ivv5r7bs73f87p1g-a/atmanirbhar_farm' %>
-    host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a' %>
+    url: <%= ENV['DATABASE_URL'] || 'postgresql://atmanirbhar_farm_user:jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1@dpg-d6g3ivv5r7bs73f87p1g-a.virginia-postgres.render.com/atmanirbhar_farm' %>
+    host: <%= ENV['DB_HOST'] || 'dpg-d6g3ivv5r7bs73f87p1g-a.virginia-postgres.render.com' %>
     database: <%= ENV['DB_NAME'] || 'atmanirbhar_farm' %>
     username: <%= ENV['DB_USERNAME'] || 'atmanirbhar_farm_user' %>
     password: <%= ENV['DB_PASSWORD'] || 'jpp5Jf7vOzFm2ZA8ML2ThEbZIttRxNS1' %>
