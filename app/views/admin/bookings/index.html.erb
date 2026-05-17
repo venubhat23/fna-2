@@ -86,6 +86,16 @@
 .franchise-booking:hover {
   background-color: #d1ecf1 !important;
 }
+
+/* Delivery person booking highlighting */
+.delivery-person-booking {
+  background-color: #fff8e1 !important;
+  border-left: 4px solid #ff9800 !important;
+}
+
+.delivery-person-booking:hover {
+  background-color: #ffecb3 !important;
+}
 </style>
 
 
@@ -323,7 +333,7 @@
           </thead>
           <tbody>
             <% @bookings.each do |booking| %>
-              <tr class="<%= 'franchise-booking' if booking.user&.franchise? %>">
+              <tr class="<%= 'franchise-booking' if booking.user&.franchise? %> <%= 'delivery-person-booking' if booking.booked_by == 'delivery_person' %>">
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
                     <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -337,6 +347,14 @@
                           <span class="badge bg-info-subtle text-info">
                             <i class="bi bi-building me-1"></i>
                             <%= booking.user.franchise.name %>
+                          </span>
+                        </div>
+                      <% end %>
+                      <% if booking.booked_by == 'delivery_person' && booking.delivery_person.present? %>
+                        <div class="mt-1">
+                          <span class="badge" style="background-color: #fff3cd; color: #856404; border: 1px solid #ffc107;">
+                            <i class="bi bi-person-badge me-1"></i>
+                            &#9733; Booked by: <%= booking.delivery_person.full_name %>
                           </span>
                         </div>
                       <% end %>

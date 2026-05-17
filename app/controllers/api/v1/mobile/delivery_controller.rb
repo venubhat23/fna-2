@@ -321,6 +321,7 @@ module Api
               payment_status:          :unpaid,
               status:                  :ordered_and_delivery_pending,
               delivery_person_id:      current_delivery_person_id,
+              booked_by:               'delivery_person',
               notes:                   notes,
               booking_date:            Date.current,
               booking_items_attributes: nested_items
