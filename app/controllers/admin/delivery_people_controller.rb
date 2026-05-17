@@ -106,8 +106,14 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
   def update
     begin
       ActiveRecord::Base.transaction do
-        # Update delivery person
+        # Update delivery person (including password if provided)
+        if delivery_person_params[:password].present?
+          @delivery_person.password = delivery_person_params[:password]
+          @delivery_person.password_confirmation = delivery_person_params[:password_confirmation] || delivery_person_params[:password]
+          @delivery_person.auto_generated_password = delivery_person_params[:password]
+        end
         @delivery_person.update!(delivery_person_params.except(:password, :password_confirmation))
+        @delivery_person.save! if delivery_person_params[:password].present?
 
         # Find and update associated User record
         user = User.find_by(email: @delivery_person.email, user_type: 'delivery_person')
@@ -117,10 +123,6 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
             last_name: @delivery_person.last_name,
             email: @delivery_person.email,
             mobile: @delivery_person.mobile,
-            address: @delivery_person.address,
-            city: @delivery_person.city,
-            state: @delivery_person.state,
-            pincode: @delivery_person.pincode,
             status: @delivery_person.status
           )
 

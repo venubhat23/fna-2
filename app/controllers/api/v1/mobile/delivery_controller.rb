@@ -282,10 +282,10 @@ module Api
 
         # POST /api/v1/mobile/delivery/bookings
         def create_booking
-          customer_id     = params[:customer_id]
+          customer_id      = params[:customer_id]
           delivery_address = params[:delivery_address]
-          items           = params[:items]
-          notes           = params[:notes]
+          items            = params[:items]
+          notes            = params[:notes]
 
           if customer_id.blank? || delivery_address.blank? || items.blank? || !items.is_a?(Array)
             return render json: {
@@ -297,63 +297,49 @@ module Api
           customer = Customer.find_by(id: customer_id)
           return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
 
-          # Validate items
-          booking_items_data = []
-          total_amount = 0
-
+          # Resolve products and build nested attributes
+          nested_items = []
           items.each do |item|
             product = Product.find_by(id: item[:product_id])
             unless product
               return render json: { success: false, message: "Product ##{item[:product_id]} not found" }, status: :unprocessable_entity
             end
-
-            qty = [item[:quantity].to_i, 1].max
-            price = product.discount_price.present? && product.discount_price > 0 ? product.discount_price : product.price
-
-            booking_items_data << { product: product, quantity: qty, price: price }
-            total_amount += qty * price
+            qty   = [item[:quantity].to_i, 1].max
+            price = (product.discount_price.to_f > 0 ? product.discount_price : product.price).to_f
+            nested_items << { product_id: product.id, quantity: qty, price: price }
           end
 
           booking = nil
           ActiveRecord::Base.transaction do
             booking = Booking.new(
-              customer_id:      customer.id,
-              customer_name:    customer.display_name,
-              customer_phone:   customer.mobile,
-              customer_email:   customer.email,
-              delivery_address: delivery_address,
-              payment_method:   :cod,
-              payment_status:   :unpaid,
-              status:           :ordered_and_delivery_pending,
-              delivery_person_id: current_delivery_person_id,
-              total_amount:     total_amount,
-              subtotal:         total_amount,
-              notes:            notes,
-              booking_date:     Date.current
+              customer_id:             customer.id,
+              customer_name:           customer.display_name,
+              customer_phone:          customer.mobile,
+              customer_email:          customer.email,
+              delivery_address:        delivery_address,
+              payment_method:          :cod,
+              payment_status:          :unpaid,
+              status:                  :ordered_and_delivery_pending,
+              delivery_person_id:      current_delivery_person_id,
+              notes:                   notes,
+              booking_date:            Date.current,
+              booking_items_attributes: nested_items
             )
             booking.save!
-
-            booking_items_data.each do |item_data|
-              booking.booking_items.create!(
-                product_id: item_data[:product].id,
-                quantity:   item_data[:quantity],
-                price:      item_data[:price]
-              )
-            end
           end
 
           render json: {
             success: true,
             message: "Booking created successfully",
             data: {
-              booking_id:      booking.id,
-              booking_number:  booking.booking_number,
-              customer_name:   booking.customer_name,
-              total_amount:    booking.total_amount,
-              payment_method:  "Cash on Delivery",
-              payment_status:  "Unpaid",
-              status:          booking.status,
-              items:           booking.booking_items.map { |bi|
+              booking_id:     booking.id,
+              booking_number: booking.booking_number,
+              customer_name:  booking.customer_name,
+              total_amount:   booking.total_amount,
+              payment_method: "Cash on Delivery",
+              payment_status: "Unpaid",
+              status:         booking.status,
+              items:          booking.booking_items.map { |bi|
                 {
                   product_name: bi.product&.name,
                   quantity:     bi.quantity,

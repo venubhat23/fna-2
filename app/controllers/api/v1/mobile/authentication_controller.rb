@@ -140,10 +140,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
             middle_name: customer.middle_name,
             gender: customer.gender,
             birth_date: customer.birth_date,
-            address: customer.address,
-            city: customer.city,
-            state: customer.state,
-            pincode: customer.pincode
+            address: customer.address
           },
           portfolio_summary: {
             total_policies: portfolio_stats[:total_policies],
