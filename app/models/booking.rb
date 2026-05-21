@@ -367,7 +367,7 @@ class Booking < ApplicationRecord
 
   # Check if this booking has an associated invoice (either BookingInvoice or regular Invoice)
   def has_invoice?
-    booking_invoices.any? || associated_invoice.present?
+    booking_invoices.any? || associated_invoice.present? || invoice_generated?
   end
 
   # Get the invoice link for this booking (prioritize regular Invoice over BookingInvoice)

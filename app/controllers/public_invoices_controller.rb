@@ -52,7 +52,7 @@ class PublicInvoicesController < ApplicationController
     @invoices = Invoice.includes(:customer)
 
     if params[:customer_name].present?
-      search_term = "%#{params[:customer_name].downcase}%"
+      search_term = "%#{params[:customer_name].strip.downcase}%"
       @invoices = @invoices.joins(:customer)
                           .where("LOWER(customers.first_name) LIKE ? OR LOWER(customers.last_name) LIKE ? OR LOWER(CONCAT(customers.first_name, ' ', customers.last_name)) LIKE ?", search_term, search_term, search_term)
     end
@@ -95,13 +95,27 @@ class PublicInvoicesController < ApplicationController
                                     .where.not(invoice_number: invoiced_numbers)
 
     if params[:customer_name].present?
-      s = "%#{params[:customer_name].downcase}%"
+      s = "%#{params[:customer_name].strip.downcase}%"
       booking_invoices_query = booking_invoices_query.joins(:customer)
-        .where("LOWER(customers.first_name) LIKE ? OR LOWER(customers.last_name) LIKE ?", s, s)
+        .where("LOWER(customers.first_name) LIKE ? OR LOWER(customers.last_name) LIKE ? OR LOWER(CONCAT(customers.first_name, ' ', customers.last_name)) LIKE ?", s, s, s)
     end
 
     booking_invoices_query.each do |booking|
       @invoices << BookingInvoiceProxy.new(booking, request)
+    end
+
+    # Re-sort the combined list (regular + booking proxies) so booking proxies
+    # appear in the correct position rather than always at the end.
+    @invoices = case params[:sort_by]
+    when 'amount_low_to_high'
+      @invoices.sort_by { |inv| [inv.total_amount.to_f, inv.created_at.to_i] }
+    when 'date_newest'
+      @invoices.sort_by { |inv| -inv.created_at.to_i }
+    when 'date_oldest'
+      @invoices.sort_by { |inv| inv.created_at.to_i }
+    else
+      # Default: amount_high_to_low
+      @invoices.sort_by { |inv| [-inv.total_amount.to_f, -inv.created_at.to_i] }
     end
 
     @total_invoice_count = @invoices.size

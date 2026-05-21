@@ -389,9 +389,9 @@
                       <div class="invoice-status d-flex flex-column gap-1 align-items-end">
                         <% if booking.has_invoice? %>
                           <% if booking.invoice_link_path %>
-                            <%= link_to booking.invoice_link_path, class: "badge text-decoration-none", style: "background-color: #6f42c1; color: white;", target: "_blank", title: "View Invoice ##{booking.display_invoice_number}" do %>
+                            <%= link_to booking.invoice_link_path, class: "badge text-decoration-none", style: "background-color: #6f42c1; color: white;", target: "_blank", title: "View Invoice" do %>
                               <i class="bi bi-receipt me-1"></i>
-                              Invoice: #<%= booking.display_invoice_number %>
+                              Invoiced
                             <% end %>
                           <% else %>
                             <span class="badge" style="background-color: #6f42c1; color: white;" title="Invoice generated but link unavailable">
