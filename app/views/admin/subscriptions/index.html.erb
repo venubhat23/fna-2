@@ -455,18 +455,16 @@
                     <!-- Pause/Resume Subscription -->
                     <% if subscription.status == 'active' %>
                       <%= link_to pause_subscription_admin_subscription_path(subscription),
-                          method: :patch,
+                          data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to pause this subscription?" },
                           class: "btn btn-sm btn-outline-warning",
-                          title: "Pause Subscription",
-                          confirm: "Are you sure you want to pause this subscription?" do %>
+                          title: "Pause Subscription" do %>
                         <i class="bi bi-pause"></i>
                       <% end %>
                     <% elsif subscription.status == 'paused' %>
                       <%= link_to resume_subscription_admin_subscription_path(subscription),
-                          method: :patch,
+                          data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to resume this subscription?" },
                           class: "btn btn-sm btn-outline-success",
-                          title: "Resume Subscription",
-                          confirm: "Are you sure you want to resume this subscription?" do %>
+                          title: "Resume Subscription" do %>
                         <i class="bi bi-play"></i>
                       <% end %>
                     <% end %>

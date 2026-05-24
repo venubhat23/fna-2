@@ -145,7 +145,10 @@ class ApplicationController < ActionController::Base
       'sessions', 'devise/sessions', 'registrations', 'devise/registrations',
       'public_pages', 'api/cities', 'booking_invoices', 'public_invoices'
     ]
-    public_controllers.any? { |controller| self.class.name.downcase.include?(controller) }
+    return true if public_controllers.any? { |controller| self.class.name.downcase.include?(controller) }
+    # Public invoice view on admin bookings
+    return true if self.class.name == 'Admin::BookingsController' && action_name == 'invoice'
+    false
   end
 
   def handle_session_security_breach

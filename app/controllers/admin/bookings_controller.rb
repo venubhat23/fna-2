@@ -1,5 +1,7 @@
 class Admin::BookingsController < Admin::ApplicationController
   before_action :authenticate_user!
+  skip_before_action :authenticate_user!, only: [:invoice]
+  skip_before_action :ensure_admin, only: [:invoice]
   before_action :set_booking, only: [:show, :edit, :update, :destroy, :generate_invoice, :invoice, :convert_to_order, :update_status, :cancel_order, :mark_delivered, :mark_completed, :manage_stage, :update_stage]
 
   def index
