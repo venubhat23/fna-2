@@ -862,21 +862,30 @@ tbody tr:nth-last-child(2) .dropdown-menu {
 </style>
 
 <script>
-// Modal search for subscribed customers
-document.getElementById('subscribedSearch')?.addEventListener('input', function() {
-  const term = this.value.toLowerCase();
-  document.querySelectorAll('#subscribedTable .subscribed-row').forEach(function(row) {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(term) ? '' : 'none';
+// Move modals to body to escape .main-content stacking context
+// (.main-content is position:fixed + overflow:auto which traps Bootstrap modals)
+document.addEventListener('DOMContentLoaded', function() {
+  ['subscribedModal', 'notSubscribedModal'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.parentElement !== document.body) {
+      document.body.appendChild(el);
+    }
   });
-});
 
-// Modal search for not-subscribed customers
-document.getElementById('notSubscribedSearch')?.addEventListener('input', function() {
-  const term = this.value.toLowerCase();
-  document.querySelectorAll('#notSubscribedTable .not-subscribed-row').forEach(function(row) {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(term) ? '' : 'none';
+  // Modal search for subscribed customers
+  document.getElementById('subscribedSearch')?.addEventListener('input', function() {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('#subscribedTable .subscribed-row').forEach(function(row) {
+      row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  });
+
+  // Modal search for not-subscribed customers
+  document.getElementById('notSubscribedSearch')?.addEventListener('input', function() {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('#notSubscribedTable .not-subscribed-row').forEach(function(row) {
+      row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
   });
 });
 </script>

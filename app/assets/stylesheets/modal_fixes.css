@@ -1,14 +1,14 @@
 /* Modal Fix - Add to application.css or admin.css */
 .modal {
-  z-index: 1050 !important;
+  z-index: 9050 !important;
 }
 
 .modal-backdrop {
-  z-index: 1040 !important;
+  z-index: 9040 !important;
 }
 
 .modal-dialog {
-  z-index: 1060 !important;
+  z-index: 9060 !important;
   margin: 30px auto !important;
 }
 
@@ -19,6 +19,13 @@
 
 .modal.show .modal-dialog {
   transform: translate(0, 0) !important;
+}
+
+/* Ensure modal content is always interactive */
+.modal-content {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 /* Custom modal classes for better compatibility */
