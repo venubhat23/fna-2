@@ -128,18 +128,35 @@ class Admin::CustomersController < Admin::ApplicationController
       end
     end
 
+    # Calculate subscription stats
+    subscribed_customer_ids = []
+    if ActiveRecord::Base.connection.table_exists?('milk_subscriptions')
+      subscribed_customer_ids = MilkSubscription.where(status: 'active', is_active: true).distinct.pluck(:customer_id).compact
+    end
+
     # Calculate filtered stats
     @stats = {
       total_customers: stats_scope.count,
       active_customers: stats_scope.where(status: true).count,
       new_this_month: stats_scope.where(created_at: Time.current.beginning_of_month..Time.current.end_of_month).count,
-      customers_with_orders: stats_scope.joins(:orders).distinct.count
+      customers_with_orders: stats_scope.joins(:orders).distinct.count,
+      subscribed_customers: stats_scope.where(id: subscribed_customer_ids).count,
+      not_subscribed_customers: stats_scope.where.not(id: subscribed_customer_ids).count
     }
 
     @total_customers = @stats[:total_customers]
     @active_customers = @stats[:active_customers]
     @new_this_month = @stats[:new_this_month]
     @customers_with_orders = @stats[:customers_with_orders]
+    @subscribed_count = @stats[:subscribed_customers]
+    @not_subscribed_count = @stats[:not_subscribed_customers]
+
+    @subscribed_customers_list = Customer.where(id: subscribed_customer_ids)
+                                         .select(:id, :first_name, :last_name, :middle_name, :mobile)
+                                         .order(:first_name, :last_name)
+    @not_subscribed_customers_list = Customer.where.not(id: subscribed_customer_ids)
+                                             .select(:id, :first_name, :last_name, :middle_name, :mobile)
+                                             .order(:first_name, :last_name)
 
     # Handle AJAX requests
     respond_to do |format|

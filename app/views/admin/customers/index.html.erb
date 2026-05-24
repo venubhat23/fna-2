@@ -16,9 +16,9 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm">
+<div class="row mb-4 g-3">
+  <div class="col">
+    <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
@@ -32,8 +32,8 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm">
+  <div class="col">
+    <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
@@ -47,8 +47,8 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm">
+  <div class="col">
+    <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
@@ -59,6 +59,166 @@
             <i class="bi bi-person-plus fs-2"></i>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card border-0 shadow-sm h-100 stat-card-clickable"
+         data-bs-toggle="modal" data-bs-target="#subscribedModal"
+         role="button" style="cursor:pointer;">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Subscribed</h6>
+            <h4 class="mb-0 text-success"><%= @subscribed_count || 0 %></h4>
+          </div>
+          <div class="text-success">
+            <i class="bi bi-patch-check fs-2"></i>
+          </div>
+        </div>
+        <small class="text-muted">Click to view list</small>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card border-0 shadow-sm h-100 stat-card-clickable"
+         data-bs-toggle="modal" data-bs-target="#notSubscribedModal"
+         role="button" style="cursor:pointer;">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <h6 class="text-muted mb-1">Not Subscribed</h6>
+            <h4 class="mb-0 text-warning"><%= @not_subscribed_count || 0 %></h4>
+          </div>
+          <div class="text-warning">
+            <i class="bi bi-person-x fs-2"></i>
+          </div>
+        </div>
+        <small class="text-muted">Click to view list</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subscribed Customers Modal -->
+<div class="modal fade" id="subscribedModal" tabindex="-1" aria-labelledby="subscribedModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="subscribedModalLabel">
+          <i class="bi bi-patch-check me-2"></i>Subscribed Customers
+          <span class="badge bg-white text-success ms-2"><%= @subscribed_count || 0 %></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="p-3 border-bottom">
+          <input type="text" class="form-control form-control-sm" id="subscribedSearch" placeholder="Search by name, ID or phone...">
+        </div>
+        <% if @subscribed_customers_list.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="subscribedTable">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th class="border-0">#</th>
+                  <th class="border-0">Customer ID</th>
+                  <th class="border-0">Name</th>
+                  <th class="border-0">Phone</th>
+                  <th class="border-0">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @subscribed_customers_list.each_with_index do |customer, idx| %>
+                  <tr class="subscribed-row">
+                    <td class="align-middle text-muted small"><%= idx + 1 %></td>
+                    <td class="align-middle"><span class="badge bg-success-subtle text-success">#<%= customer.id %></span></td>
+                    <td class="align-middle fw-semibold">
+                      <%= [customer.first_name, customer.middle_name.presence, customer.last_name].compact.join(' ') %>
+                    </td>
+                    <td class="align-middle">
+                      <i class="bi bi-telephone text-muted me-1"></i><%= customer.mobile %>
+                    </td>
+                    <td class="align-middle">
+                      <%= link_to admin_customer_path(customer.id), class: "btn btn-sm btn-outline-success", target: "_blank" do %>
+                        <i class="bi bi-eye"></i>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-patch-check fs-1 mb-3 d-block"></i>
+            No subscribed customers found.
+          </div>
+        <% end %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Not Subscribed Customers Modal -->
+<div class="modal fade" id="notSubscribedModal" tabindex="-1" aria-labelledby="notSubscribedModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="notSubscribedModalLabel">
+          <i class="bi bi-person-x me-2"></i>Not Subscribed Customers
+          <span class="badge bg-dark text-white ms-2"><%= @not_subscribed_count || 0 %></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="p-3 border-bottom">
+          <input type="text" class="form-control form-control-sm" id="notSubscribedSearch" placeholder="Search by name, ID or phone...">
+        </div>
+        <% if @not_subscribed_customers_list.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="notSubscribedTable">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th class="border-0">#</th>
+                  <th class="border-0">Customer ID</th>
+                  <th class="border-0">Name</th>
+                  <th class="border-0">Phone</th>
+                  <th class="border-0">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @not_subscribed_customers_list.each_with_index do |customer, idx| %>
+                  <tr class="not-subscribed-row">
+                    <td class="align-middle text-muted small"><%= idx + 1 %></td>
+                    <td class="align-middle"><span class="badge bg-warning-subtle text-warning">#<%= customer.id %></span></td>
+                    <td class="align-middle fw-semibold">
+                      <%= [customer.first_name, customer.middle_name.presence, customer.last_name].compact.join(' ') %>
+                    </td>
+                    <td class="align-middle">
+                      <i class="bi bi-telephone text-muted me-1"></i><%= customer.mobile %>
+                    </td>
+                    <td class="align-middle">
+                      <%= link_to admin_customer_path(customer.id), class: "btn btn-sm btn-outline-warning", target: "_blank" do %>
+                        <i class="bi bi-eye"></i>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-person-x fs-1 mb-3 d-block"></i>
+            All customers are subscribed!
+          </div>
+        <% end %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -689,4 +849,34 @@ tbody tr:nth-last-child(2) .dropdown-menu {
     width: 100% !important;
   }
 }
+
+/* Clickable stat cards */
+.stat-card-clickable {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card-clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}
 </style>
+
+<script>
+// Modal search for subscribed customers
+document.getElementById('subscribedSearch')?.addEventListener('input', function() {
+  const term = this.value.toLowerCase();
+  document.querySelectorAll('#subscribedTable .subscribed-row').forEach(function(row) {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(term) ? '' : 'none';
+  });
+});
+
+// Modal search for not-subscribed customers
+document.getElementById('notSubscribedSearch')?.addEventListener('input', function() {
+  const term = this.value.toLowerCase();
+  document.querySelectorAll('#notSubscribedTable .not-subscribed-row').forEach(function(row) {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(term) ? '' : 'none';
+  });
+});
+</script>
