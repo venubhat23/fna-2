@@ -41,7 +41,11 @@ has_many :pending_amounts, dependent: :destroy
   has_secure_password validations: false
 
   # Virtual attribute for status if column doesn't exist yet
-  attr_accessor :status unless column_names.include?('status')
+  begin
+    attr_accessor :status unless column_names.include?('status')
+  rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::ConnectionBad
+    attr_accessor :status
+  end
 
   # Validate password presence and confirmation only when password is set
   validates :password, presence: true, length: { minimum: 6 }, if: :password_required?
