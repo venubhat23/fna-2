@@ -580,7 +580,140 @@ class Admin::ReportsController < Admin::ApplicationController
     redirect_to admin_reports_enhanced_sales_path
   end
 
+  # GET /admin/reports/product_selling
+  def product_selling
+    # Filter params
+    @filter_type   = params[:filter_type] || 'date_range'
+    @date_range    = params[:date_range]  || '30_days'
+    @month         = params[:month].present? ? params[:month].to_i : Date.current.month
+    @year          = params[:year].present?  ? params[:year].to_i  : Date.current.year
+    @from_date     = params[:from_date].present? ? Date.parse(params[:from_date]) : Date.current.beginning_of_month
+    @to_date       = params[:to_date].present?   ? Date.parse(params[:to_date])   : Date.current.end_of_month
+    @category_id   = params[:category_id]
+    @product_type  = params[:product_type]
+    @sort_by       = params[:sort_by] || 'revenue'
+
+    # Resolve start/end from chosen filter
+    case @filter_type
+    when 'quick'
+      case @date_range
+      when 'today'        then @from_date = Date.current;                  @to_date = Date.current
+      when '7_days'       then @from_date = 7.days.ago.to_date;            @to_date = Date.current
+      when '30_days'      then @from_date = 30.days.ago.to_date;           @to_date = Date.current
+      when '3_months'     then @from_date = 3.months.ago.to_date;          @to_date = Date.current
+      when '6_months'     then @from_date = 6.months.ago.to_date;          @to_date = Date.current
+      when '1_year'       then @from_date = 1.year.ago.to_date;            @to_date = Date.current
+      when 'all'          then @from_date = Date.new(2000, 1, 1);          @to_date = Date.current
+      else                     @from_date = 30.days.ago.to_date;           @to_date = Date.current
+      end
+    when 'month'
+      @from_date = Date.new(@year, @month, 1).beginning_of_month
+      @to_date   = Date.new(@year, @month, 1).end_of_month
+    else
+      # custom date_range already parsed above
+    end
+
+    @categories = Category.order(:name) rescue []
+
+    # Build product scope with optional filters
+    product_scope = Product.all
+    product_scope = product_scope.where(category_id: @category_id) if @category_id.present?
+    product_scope = product_scope.where(product_type: @product_type) if @product_type.present?
+    product_ids = product_scope.pluck(:id)
+
+    # Aggregate from booking_items
+    booking_data = BookingItem
+      .joins(:booking)
+      .where(product_id: product_ids)
+      .where(bookings: { created_at: @from_date.beginning_of_day..@to_date.end_of_day })
+      .group(:product_id)
+      .select('product_id, SUM(quantity) AS total_qty, SUM(total) AS total_revenue, COUNT(DISTINCT booking_id) AS order_count')
+      .each_with_object({}) do |row, h|
+        h[row.product_id] = {
+          qty: row.total_qty.to_f,
+          revenue: row.total_revenue.to_f,
+          orders: row.order_count.to_i
+        }
+      end rescue {}
+
+    # Aggregate from invoice_items (product-linked items only)
+    invoice_data = InvoiceItem
+      .joins(:invoice)
+      .where.not(product_id: nil)
+      .where(product_id: product_ids)
+      .where(invoices: { invoice_date: @from_date..@to_date })
+      .group(:product_id)
+      .select('product_id, SUM(quantity) AS total_qty, SUM(total_amount) AS total_revenue, COUNT(DISTINCT invoice_id) AS order_count')
+      .each_with_object({}) do |row, h|
+        h[row.product_id] = {
+          qty: row.total_qty.to_f,
+          revenue: row.total_revenue.to_f,
+          orders: row.order_count.to_i
+        }
+      end rescue {}
+
+    # Merge and attach product info
+    all_product_ids = (booking_data.keys + invoice_data.keys).uniq
+    products_map = Product.includes(:category).where(id: all_product_ids).index_by(&:id)
+
+    @product_selling_data = all_product_ids.map do |pid|
+      product  = products_map[pid]
+      next unless product
+      b = booking_data[pid] || { qty: 0, revenue: 0, orders: 0 }
+      i = invoice_data[pid] || { qty: 0, revenue: 0, orders: 0 }
+      {
+        product_id:   pid,
+        name:         product.name,
+        product_type: product.product_type,
+        category:     product.category&.name || 'N/A',
+        unit:         product.unit,
+        qty:          b[:qty] + i[:qty],
+        revenue:      b[:revenue] + i[:revenue],
+        orders:       b[:orders] + i[:orders]
+      }
+    end.compact
+
+    # Sort
+    @product_selling_data = case @sort_by
+    when 'qty'     then @product_selling_data.sort_by { |r| -r[:qty] }
+    when 'orders'  then @product_selling_data.sort_by { |r| -r[:orders] }
+    when 'name'    then @product_selling_data.sort_by { |r| r[:name] }
+    else                @product_selling_data.sort_by { |r| -r[:revenue] }
+    end
+
+    @total_qty     = @product_selling_data.sum { |r| r[:qty] }
+    @total_revenue = @product_selling_data.sum { |r| r[:revenue] }
+    @total_orders  = @product_selling_data.sum { |r| r[:orders] }
+
+    respond_to do |format|
+      format.html
+      format.csv do
+        send_data product_selling_csv(@product_selling_data),
+                  filename: "product_selling_report_#{@from_date.strftime('%Y%m%d')}_#{@to_date.strftime('%Y%m%d')}.csv",
+                  type: 'text/csv'
+      end
+    end
+  rescue => e
+    Rails.logger.error "Error in product_selling: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+    @product_selling_data = []
+    @total_qty = @total_revenue = @total_orders = 0
+    @categories = []
+    flash.now[:alert] = "Error loading report: #{e.message}"
+  end
+
   private
+
+  def product_selling_csv(data)
+    require 'csv'
+    CSV.generate(headers: true) do |csv|
+      csv << ['#', 'Product Name', 'Type', 'Category', 'Unit', 'Qty Sold', 'Revenue (₹)', 'Orders/Invoices']
+      data.each_with_index do |row, idx|
+        csv << [idx + 1, row[:name], row[:product_type], row[:category], row[:unit],
+                row[:qty].round(2), row[:revenue].round(2), row[:orders]]
+      end
+      csv << ['', '', '', '', 'TOTAL', @total_qty.round(2), @total_revenue.round(2), @total_orders]
+    end
+  end
 
   def build_enhanced_sales_data
     # Get all invoices in the date range (both regular and booking invoices)

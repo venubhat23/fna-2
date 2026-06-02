@@ -599,6 +599,7 @@ Rails.application.routes.draw do
     get 'reports/financial', to: 'reports#financial'
     get 'reports/performance', to: 'reports#performance'
     get 'reports/enhanced_sales', to: 'reports#enhanced_sales'
+    get 'reports/product_selling', to: 'reports#product_selling'
 
     # Import Section
     resources :imports, only: [:index] do

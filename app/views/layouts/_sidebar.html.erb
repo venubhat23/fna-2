@@ -886,6 +886,17 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <li class="nav-item">
+          <%= link_to admin_reports_product_selling_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/reports/product_selling')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-purple">
+                <i class="bi bi-bar-chart-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Product Selling Report</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
         <% end %>
       </ul>
     </div>

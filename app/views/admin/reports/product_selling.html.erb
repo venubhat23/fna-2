@@ -1,0 +1,302 @@
+<style>
+  .ps-report-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: 1px solid #e8ecf0;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .ps-filter-bar {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    border-radius: 16px;
+    border: 1px solid #e0e7ff;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .ps-filter-bar .form-label { font-weight: 600; font-size: 0.82rem; color: #475569; margin-bottom: 4px; }
+  .ps-filter-bar .form-control, .ps-filter-bar .form-select {
+    border-radius: 10px; border-color: #cbd5e1; font-size: 0.88rem;
+  }
+  .ps-stat-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf0;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .ps-stat-value { font-size: 1.8rem; font-weight: 700; }
+  .ps-stat-label { font-size: 0.82rem; color: #64748b; margin-top: 4px; }
+  .ps-table thead th {
+    background: #f1f5f9; font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: #475569;
+    border-bottom: 2px solid #e2e8f0; padding: 10px 14px;
+  }
+  .ps-table tbody td { padding: 10px 14px; font-size: 0.88rem; vertical-align: middle; }
+  .ps-table tbody tr:hover { background: #f8faff; }
+  .ps-rank-badge {
+    width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;
+  }
+  .rank-1 { background: #fef9c3; color: #92400e; }
+  .rank-2 { background: #f1f5f9; color: #475569; }
+  .rank-3 { background: #fef3c7; color: #b45309; }
+  .rank-other { background: #f8fafc; color: #94a3b8; }
+  .badge-type-milk    { background: #dbeafe; color: #1d4ed8; }
+  .badge-type-grocery { background: #f3e8ff; color: #6d28d9; }
+  .badge-type-fv      { background: #d1fae5; color: #065f46; }
+  .filter-tab-btn {
+    border-radius: 10px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;
+    border: 2px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-tab-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+  .progress-bar-custom {
+    height: 6px; border-radius: 4px; background: #e2e8f0; overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #6366f1, #a5b4fc); }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="fw-bold mb-1" style="color:#1e293b;">
+      <i class="bi bi-bar-chart-fill me-2" style="color:#6366f1;"></i>Product-wise Selling Report
+    </h3>
+    <div class="text-muted" style="font-size:0.85rem;">
+      Showing data from <strong><%= @from_date.strftime('%d %b %Y') %></strong>
+      to <strong><%= @to_date.strftime('%d %b %Y') %></strong>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_reports_product_selling_path(request.query_parameters.merge(format: 'csv')),
+          class: "btn btn-sm btn-outline-success" do %>
+      <i class="bi bi-download me-1"></i> Export CSV
+    <% end %>
+    <%= link_to admin_reports_enhanced_sales_path, class: "btn btn-sm btn-outline-secondary" do %>
+      <i class="bi bi-arrow-left me-1"></i> Back
+    <% end %>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="ps-filter-bar">
+  <%= form_with url: admin_reports_product_selling_path, method: :get, local: true, id: "ps-filter-form" do |f| %>
+
+    <!-- Filter type tabs -->
+    <div class="d-flex gap-2 mb-3 flex-wrap">
+      <button type="button" class="filter-tab-btn <%= @filter_type == 'quick' ? 'active' : '' %>"
+              onclick="setFilterType('quick')">Quick Range</button>
+      <button type="button" class="filter-tab-btn <%= @filter_type == 'month' ? 'active' : '' %>"
+              onclick="setFilterType('month')">By Month</button>
+      <button type="button" class="filter-tab-btn <%= @filter_type == 'date_range' ? 'active' : '' %>"
+              onclick="setFilterType('date_range')">Custom Range</button>
+    </div>
+    <%= f.hidden_field :filter_type, value: @filter_type, id: 'filter_type_input' %>
+
+    <div class="row g-3">
+
+      <!-- Quick range -->
+      <div id="quick_range_block" class="col-md-3 <%= @filter_type != 'quick' ? 'd-none' : '' %>">
+        <label class="form-label">Quick Range</label>
+        <%= f.select :date_range, [
+              ['Today', 'today'],
+              ['Last 7 Days', '7_days'],
+              ['Last 30 Days', '30_days'],
+              ['Last 3 Months', '3_months'],
+              ['Last 6 Months', '6_months'],
+              ['Last 1 Year', '1_year'],
+              ['All Time', 'all']
+            ], { selected: @date_range }, { class: 'form-select', id: 'date_range_select' } %>
+      </div>
+
+      <!-- Month filter -->
+      <div id="month_block" class="<%= @filter_type != 'month' ? 'd-none' : '' %> d-flex gap-2 col-md-4">
+        <div>
+          <label class="form-label">Month</label>
+          <%= f.select :month, (1..12).map { |m| [Date::MONTHNAMES[m], m] },
+                { selected: @month }, { class: 'form-select' } %>
+        </div>
+        <div>
+          <label class="form-label">Year</label>
+          <%= f.select :year, (Date.current.year - 4..Date.current.year).to_a.reverse.map { |y| [y, y] },
+                { selected: @year }, { class: 'form-select' } %>
+        </div>
+      </div>
+
+      <!-- Custom date range -->
+      <div id="custom_range_block" class="<%= @filter_type != 'date_range' ? 'd-none' : '' %> d-flex gap-2 col-md-5">
+        <div>
+          <label class="form-label">From Date</label>
+          <%= f.date_field :from_date, value: @from_date, class: 'form-control' %>
+        </div>
+        <div>
+          <label class="form-label">To Date</label>
+          <%= f.date_field :to_date, value: @to_date, class: 'form-control' %>
+        </div>
+      </div>
+
+      <!-- Category -->
+      <div class="col-md-2">
+        <label class="form-label">Category</label>
+        <%= f.select :category_id,
+              options_from_collection_for_select(@categories, :id, :name, @category_id.to_i),
+              { include_blank: 'All Categories' },
+              { class: 'form-select' } %>
+      </div>
+
+      <!-- Product Type -->
+      <div class="col-md-2">
+        <label class="form-label">Product Type</label>
+        <%= f.select :product_type, [
+              ['Milk', 'Milk'],
+              ['Grocery', 'Grocery'],
+              ['Fruit & Vegetable', 'Fruit & Vegetable']
+            ], { include_blank: 'All Types', selected: @product_type },
+            { class: 'form-select' } %>
+      </div>
+
+      <!-- Sort by -->
+      <div class="col-md-2">
+        <label class="form-label">Sort By</label>
+        <%= f.select :sort_by, [
+              ['Revenue (High-Low)', 'revenue'],
+              ['Qty Sold (High-Low)', 'qty'],
+              ['Orders (High-Low)', 'orders'],
+              ['Product Name (A-Z)', 'name']
+            ], { selected: @sort_by }, { class: 'form-select' } %>
+      </div>
+
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="submit" class="btn w-100" style="background:#6366f1;color:#fff;border-radius:10px;font-weight:600;">
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+
+    </div>
+  <% end %>
+</div>
+
+<!-- SUMMARY STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="ps-stat-card">
+      <div class="ps-stat-value" style="color:#6366f1;"><%= @product_selling_data.size %></div>
+      <div class="ps-stat-label"><i class="bi bi-box-seam me-1"></i>Products Sold</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="ps-stat-card">
+      <div class="ps-stat-value" style="color:#0ea5e9;"><%= number_with_precision(@total_qty, precision: 1) %></div>
+      <div class="ps-stat-label"><i class="bi bi-stack me-1"></i>Total Qty Sold</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="ps-stat-card">
+      <div class="ps-stat-value" style="color:#10b981;">₹<%= number_with_delimiter(number_with_precision(@total_revenue, precision: 2)) %></div>
+      <div class="ps-stat-label"><i class="bi bi-currency-rupee me-1"></i>Total Revenue</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="ps-stat-card">
+      <div class="ps-stat-value" style="color:#f59e0b;"><%= @total_orders %></div>
+      <div class="ps-stat-label"><i class="bi bi-receipt me-1"></i>Total Orders/Invoices</div>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT TABLE -->
+<div class="ps-report-card">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0" style="color:#1e293b;">Product-wise Breakdown</h5>
+    <span class="badge bg-light text-secondary" style="font-size:0.82rem;">
+      <%= @product_selling_data.size %> products
+    </span>
+  </div>
+
+  <% if @product_selling_data.any? %>
+    <% max_revenue = @product_selling_data.first[:revenue].to_f %>
+    <% max_revenue = 1 if max_revenue == 0 %>
+    <div class="table-responsive">
+      <table class="table ps-table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product Name</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th class="text-end">Qty Sold</th>
+            <th class="text-end">Revenue</th>
+            <th class="text-end">Orders</th>
+            <th style="min-width:120px;">Revenue Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @product_selling_data.each_with_index do |row, idx| %>
+            <tr>
+              <td>
+                <span class="ps-rank-badge <%= idx == 0 ? 'rank-1' : (idx == 1 ? 'rank-2' : (idx == 2 ? 'rank-3' : 'rank-other')) %>">
+                  <%= idx + 1 %>
+                </span>
+              </td>
+              <td class="fw-semibold" style="color:#1e293b;"><%= row[:name] %></td>
+              <td>
+                <% type_class = case row[:product_type]
+                   when 'Milk' then 'badge-type-milk'
+                   when 'Grocery' then 'badge-type-grocery'
+                   else 'badge-type-fv'
+                   end %>
+                <span class="badge <%= type_class %>" style="font-size:0.75rem;border-radius:8px;padding:4px 8px;">
+                  <%= row[:product_type] || 'N/A' %>
+                </span>
+              </td>
+              <td style="color:#64748b;"><%= row[:category] %></td>
+              <td style="color:#94a3b8;"><%= row[:unit] %></td>
+              <td class="text-end fw-semibold"><%= number_with_precision(row[:qty], precision: 2) %></td>
+              <td class="text-end fw-bold" style="color:#10b981;">
+                ₹<%= number_with_delimiter(number_with_precision(row[:revenue], precision: 2)) %>
+              </td>
+              <td class="text-end" style="color:#6366f1;font-weight:600;"><%= row[:orders] %></td>
+              <td>
+                <% pct = @total_revenue > 0 ? (row[:revenue] / @total_revenue * 100).round(1) : 0 %>
+                <div class="progress-bar-custom">
+                  <div class="progress-fill" style="width:<%= pct %>%;"></div>
+                </div>
+                <span style="font-size:0.75rem;color:#94a3b8;"><%= pct %>%</span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9;font-weight:700;border-top:2px solid #e2e8f0;">
+            <td colspan="5" class="text-end pe-3">TOTAL</td>
+            <td class="text-end"><%= number_with_precision(@total_qty, precision: 2) %></td>
+            <td class="text-end" style="color:#10b981;">
+              ₹<%= number_with_delimiter(number_with_precision(@total_revenue, precision: 2)) %>
+            </td>
+            <td class="text-end"><%= @total_orders %></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  <% else %>
+    <div class="text-center py-5" style="color:#94a3b8;">
+      <i class="bi bi-bar-chart" style="font-size:3rem;"></i>
+      <div class="mt-2 fw-semibold">No sales data found for the selected filters.</div>
+      <div style="font-size:0.85rem;">Try changing the date range or removing filters.</div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  function setFilterType(type) {
+    document.getElementById('filter_type_input').value = type;
+    document.querySelectorAll('.filter-tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('quick_range_block').classList.toggle('d-none', type !== 'quick');
+    document.getElementById('month_block').classList.toggle('d-none', type !== 'month');
+    document.getElementById('custom_range_block').classList.toggle('d-none', type !== 'date_range');
+  }
+</script>
