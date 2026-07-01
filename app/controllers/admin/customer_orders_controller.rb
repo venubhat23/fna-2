@@ -1,6 +1,13 @@
 class Admin::CustomerOrdersController < Admin::ApplicationController
   def index
     @customers = Customer.all.order(:row_number, :first_name, :last_name)
+                          .includes(milk_subscriptions: :delivery_person)
+
+    grouped = @customers.group_by(&:assigned_delivery_person)
+    unassigned = grouped.delete(nil) || []
+    assigned_groups = grouped.sort_by { |delivery_person, _| delivery_person.full_name }
+
+    @delivery_groups = assigned_groups + [[nil, unassigned]]
   end
 
   def update

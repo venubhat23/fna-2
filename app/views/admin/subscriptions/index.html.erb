@@ -292,11 +292,11 @@
                 </div>
               </th>
               <th class="border-0 fw-semibold">Customer</th>
+              <th class="border-0 fw-semibold" style="width:110px">Row Number</th>
               <th class="border-0 fw-semibold">Product & Quantity</th>
               <th class="border-0 fw-semibold">Duration & Pattern</th>
               <th class="border-0 fw-semibold">Delivery Person</th>
-              <th class="border-0 fw-semibold">Progress</th>
-              <th class="border-0 fw-semibold">Status</th>
+              <th class="border-0 fw-semibold">Progress & Status</th>
               <th class="border-0 fw-semibold">Actions</th>
             </tr>
           </thead>
@@ -324,6 +324,13 @@
                       </div>
                     </div>
                   </div>
+                </td>
+                <td class="align-middle">
+                  <% if subscription.customer.row_number.present? %>
+                    <span class="badge bg-primary-subtle text-primary"><%= subscription.customer.row_number %></span>
+                  <% else %>
+                    <span class="text-muted small">—</span>
+                  <% end %>
                 </td>
                 <td class="align-middle">
                   <div>
@@ -400,7 +407,7 @@
                   <div class="progress mb-1" style="height: 8px;">
                     <div class="progress-bar bg-success" style="width: <%= summary[:completion_rate] %>%"></div>
                   </div>
-                  <div class="d-flex justify-content-between">
+                  <div class="d-flex justify-content-between mb-2">
                     <small class="text-muted">
                       <%= summary[:completed] %>/<%= summary[:total_deliveries] %> tasks
                     </small>
@@ -408,8 +415,6 @@
                       <%= summary[:completion_rate].round(1) %>%
                     </small>
                   </div>
-                </td>
-                <td class="align-middle">
                   <% status_class = case subscription.status
                                     when 'active' then 'bg-success'
                                     when 'paused' then 'bg-warning'

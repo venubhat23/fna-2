@@ -53,51 +53,67 @@
           </tr>
         </thead>
         <tbody id="coTableBody">
-          <% @customers.each_with_index do |customer, idx| %>
-            <tr data-customer-id="<%= customer.id %>"
-                data-row-number="<%= customer.row_number.to_s %>"
-                data-name="<%= customer.display_name.downcase %>"
-                data-mobile="<%= customer.mobile.to_s.downcase %>">
-              <td class="align-middle text-muted"><%= idx + 1 %></td>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-2" style="width:34px;height:34px;min-width:34px;">
-                    <i class="bi bi-person text-primary small"></i>
-                  </div>
-                  <div>
-                    <div class="fw-semibold"><%= customer.display_name %></div>
-                  </div>
-                </div>
-              </td>
-              <td class="align-middle">
-                <span class="badge bg-primary-subtle text-primary">#<%= customer.id %></span>
-              </td>
-              <td class="align-middle">
-                <% if customer.mobile.present? %>
-                  <i class="bi bi-telephone text-muted me-1"></i><%= customer.mobile %>
+          <% row_counter = 0 %>
+          <% @delivery_groups.each do |delivery_person, customers| %>
+            <% next if customers.empty? %>
+            <tr class="table-light">
+              <td colspan="6" class="fw-semibold py-2">
+                <% if delivery_person %>
+                  <i class="bi bi-truck text-primary me-1"></i><%= delivery_person.full_name %>
+                  <span class="text-muted fw-normal">(<%= customers.size %> customer<%= 's' if customers.size != 1 %>)</span>
                 <% else %>
-                  <span class="text-muted small">—</span>
+                  <i class="bi bi-exclamation-circle text-muted me-1"></i>Unassigned
+                  <span class="text-muted fw-normal">(<%= customers.size %> customer<%= 's' if customers.size != 1 %>)</span>
                 <% end %>
               </td>
-              <td class="align-middle">
-                <input type="number" min="1"
-                       class="form-control form-control-sm row-number-input"
-                       value="<%= customer.row_number %>"
-                       placeholder="Enter number"
-                       data-original="<%= customer.row_number.to_s %>"
-                       style="width:120px">
-              </td>
-              <td class="align-middle">
-                <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-primary save-btn" title="Save row number">
-                    <i class="bi bi-check-lg"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger clear-btn" title="Clear row number">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
-                </div>
-              </td>
             </tr>
+            <% customers.each do |customer| %>
+              <% row_counter += 1 %>
+              <tr data-customer-id="<%= customer.id %>"
+                  data-row-number="<%= customer.row_number.to_s %>"
+                  data-name="<%= customer.display_name.downcase %>"
+                  data-mobile="<%= customer.mobile.to_s.downcase %>">
+                <td class="align-middle text-muted"><%= row_counter %></td>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-2" style="width:34px;height:34px;min-width:34px;">
+                      <i class="bi bi-person text-primary small"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold"><%= customer.display_name %></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <span class="badge bg-primary-subtle text-primary">#<%= customer.id %></span>
+                </td>
+                <td class="align-middle">
+                  <% if customer.mobile.present? %>
+                    <i class="bi bi-telephone text-muted me-1"></i><%= customer.mobile %>
+                  <% else %>
+                    <span class="text-muted small">—</span>
+                  <% end %>
+                </td>
+                <td class="align-middle">
+                  <input type="number" min="1"
+                         class="form-control form-control-sm row-number-input"
+                         value="<%= customer.row_number %>"
+                         placeholder="Enter number"
+                         data-original="<%= customer.row_number.to_s %>"
+                         style="width:120px">
+                </td>
+                <td class="align-middle">
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary save-btn" title="Save row number">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger clear-btn" title="Clear row number">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
           <% end %>
         </tbody>
       </table>

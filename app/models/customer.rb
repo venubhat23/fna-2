@@ -114,6 +114,14 @@ has_many :pending_amounts, dependent: :destroy
     full_name
   end
 
+  def assigned_delivery_person
+    subs = milk_subscriptions.to_a
+    active_with_dp = subs.find { |s| s.status == 'active' && s.delivery_person_id.present? }
+    return active_with_dp.delivery_person if active_with_dp
+
+    subs.find { |s| s.delivery_person_id.present? }&.delivery_person
+  end
+
   def active?
     return status if respond_to?(:status) && !status.nil?
     true # Default to active if no status column

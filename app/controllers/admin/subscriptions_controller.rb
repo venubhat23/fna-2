@@ -3,7 +3,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   before_action :check_sidebar_permission
 
   def index
-    @subscriptions = MilkSubscription.includes(:customer, :product, milk_delivery_tasks: :delivery_person)
+    @subscriptions = MilkSubscription.joins(:customer).includes(:customer, :product, milk_delivery_tasks: :delivery_person)
 
     # Apply filters
     @filtered_subscriptions = @subscriptions
@@ -16,8 +16,10 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     # Calculate stats based on filtered data
     @stats = calculate_filtered_subscription_stats(@filtered_subscriptions)
 
-    # Paginate the filtered subscriptions
-    @subscriptions = @filtered_subscriptions.order(created_at: :desc).page(params[:page]).per(20)
+    # Paginate the filtered subscriptions, ordered by the customer's row number
+    @subscriptions = @filtered_subscriptions
+                        .order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc)
+                        .page(params[:page]).per(20)
 
     # For filter options
     @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
