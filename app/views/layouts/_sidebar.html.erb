@@ -662,13 +662,28 @@
         <!-- Customers -->
         <% if current_user.has_sidebar_permission?('customers') %>
           <li class="nav-item">
-            <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/customers')}" do %>
+            <%= link_to admin_customers_path, class: "nav-link-modern #{'active' if request.path == '/admin/customers' || request.path.start_with?('/admin/customers/')}" do %>
               <div class="nav-icon-modern">
                 <div class="icon-bg gradient-green">
                   <i class="bi bi-people-fill"></i>
                 </div>
               </div>
               <span class="nav-text">Customers</span>
+              <div class="nav-indicator"></div>
+            <% end %>
+          </li>
+        <% end %>
+
+        <!-- Customer Order (Row Number Assignment) -->
+        <% if current_user.has_sidebar_permission?('customers') %>
+          <li class="nav-item">
+            <%= link_to admin_customer_orders_path, class: "nav-link-modern #{'active' if request.path.start_with?('/admin/customer_orders')}" do %>
+              <div class="nav-icon-modern">
+                <div class="icon-bg gradient-amber">
+                  <i class="bi bi-sort-numeric-down"></i>
+                </div>
+              </div>
+              <span class="nav-text">Customer Order</span>
               <div class="nav-indicator"></div>
             <% end %>
           </li>

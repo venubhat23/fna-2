@@ -312,6 +312,7 @@
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
+              <th class="border-0 fw-semibold text-muted" style="width:50px">#</th>
               <th class="border-0 fw-semibold">Customer</th>
               <th class="border-0 fw-semibold">Contact Info</th>
               <th class="border-0 fw-semibold">Status</th>
@@ -320,8 +321,9 @@
             </tr>
           </thead>
           <tbody>
-            <% @customers.each do |customer| %>
+            <% @customers.each_with_index do |customer, idx| %>
               <tr>
+                <td class="align-middle text-muted small"><%= idx + 1 %></td>
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
                     <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">

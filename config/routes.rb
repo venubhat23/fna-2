@@ -147,6 +147,16 @@ Rails.application.routes.draw do
     resources :customers do
       resources :documents, except: [:edit, :update]
     end
+
+    resources :customer_orders, only: [:index] do
+      collection do
+        post :bulk_update
+      end
+      member do
+        patch :update
+        delete :clear_row_number
+      end
+    end
     resources :payouts do
       member do
         patch :mark_as_paid
