@@ -2,6 +2,8 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :delivery_schedule, :generate_tasks, :daily_tasks]
   before_action :check_sidebar_permission
 
+  LIST_STATE_PARAMS = %i[page status start_date end_date month customer_id delivery_person_id].freeze
+
   def index
     @subscriptions = MilkSubscription.joins(:customer).includes(:customer, :product, milk_delivery_tasks: :delivery_person)
 
@@ -33,6 +35,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def show
+    @list_state = list_state_params
     @delivery_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(:delivery_date)
     @summary = @subscription.subscription_summary
 
@@ -119,12 +122,15 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def edit
+    @list_state = list_state_params
     @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
     @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
     @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
   end
 
   def update
+    @list_state = list_state_params
+
     # Check if delivery person is being changed
     delivery_person_changed = @subscription.delivery_person_id != subscription_params[:delivery_person_id].to_i
     old_delivery_person = @subscription.delivery_person
@@ -147,9 +153,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
           update_message += " No delivery tasks found to update."
         end
 
-        redirect_to admin_subscription_path(@subscription), notice: update_message
+        redirect_to admin_subscriptions_path(@list_state), notice: update_message
       else
-        redirect_to admin_subscription_path(@subscription), notice: 'Subscription updated successfully!'
+        redirect_to admin_subscriptions_path(@list_state), notice: 'Subscription updated successfully!'
       end
     else
       @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
@@ -209,7 +215,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     new_status = @subscription.is_active? ? false : true
     @subscription.update(is_active: new_status)
     status_text = new_status ? 'activated' : 'deactivated'
-    redirect_to admin_subscriptions_path, notice: "Subscription #{status_text} successfully!"
+    redirect_to admin_subscriptions_path(list_state_params), notice: "Subscription #{status_text} successfully!"
   end
 
   def pause_subscription
@@ -218,7 +224,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @subscription.milk_delivery_tasks.where(status: 'pending', delivery_date: Date.current..).update_all(status: 'paused')
 
     paused_tasks_count = @subscription.milk_delivery_tasks.where(status: 'paused').count
-    redirect_to admin_subscription_path(@subscription),
+    redirect_to admin_subscriptions_path(list_state_params),
                 notice: "Subscription paused successfully! #{paused_tasks_count} pending delivery tasks have been paused."
   end
 
@@ -227,7 +233,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     # Resume all paused delivery tasks
     resumed_tasks_count = @subscription.milk_delivery_tasks.where(status: 'paused').update_all(status: 'pending')
 
-    redirect_to admin_subscription_path(@subscription),
+    redirect_to admin_subscriptions_path(list_state_params),
                 notice: "Subscription resumed successfully! #{resumed_tasks_count} delivery tasks have been resumed."
   end
 
@@ -472,6 +478,10 @@ class Admin::SubscriptionsController < Admin::ApplicationController
         format.json { render json: { error: 'Subscription not found' }, status: :not_found }
       end
     end
+  end
+
+  def list_state_params
+    params.permit(*LIST_STATE_PARAMS).to_h
   end
 
   def subscription_params

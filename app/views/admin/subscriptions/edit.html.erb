@@ -8,7 +8,7 @@
       Edit Subscription #<%= @subscription.id %>
     </h1>
     <div class="btn-group">
-      <%= link_to admin_subscription_path(@subscription), class: "btn btn-secondary" do %>
+      <%= link_to admin_subscription_path(@subscription, @list_state), class: "btn btn-secondary" do %>
         <i class="bi bi-arrow-left"></i> Back to Details
       <% end %>
     </div>
@@ -21,7 +21,7 @@
       </h6>
     </div>
     <div class="card-body">
-      <%= form_with model: @subscription, url: admin_subscription_path(@subscription), method: :patch, local: true, html: { class: "needs-validation", novalidate: true } do |form| %>
+      <%= form_with model: @subscription, url: admin_subscription_path(@subscription, @list_state), method: :patch, local: true, html: { class: "needs-validation", novalidate: true } do |form| %>
 
         <!-- Error Messages -->
         <% if @subscription.errors.any? %>
@@ -313,7 +313,7 @@
               <div class="card-body text-center">
                 <%= form.submit "Update Subscription",
                     class: "btn btn-warning btn-lg me-3" %>
-                <%= link_to "Cancel", admin_subscription_path(@subscription),
+                <%= link_to "Cancel", admin_subscription_path(@subscription, @list_state),
                     class: "btn btn-secondary btn-lg me-3" %>
                 <%= link_to "Regenerate Tasks After Update",
                     generate_tasks_admin_subscription_path(@subscription),

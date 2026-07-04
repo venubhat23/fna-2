@@ -1,4 +1,5 @@
 <% content_for :title, "Subscriptions Management" %>
+<% list_state = params.permit(:page, :status, :start_date, :end_date, :month, :customer_id, :delivery_person_id).to_h %>
 
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -434,7 +435,7 @@
                 <td class="align-middle">
                   <div class="d-flex gap-2 align-items-center">
                     <!-- Primary Action - View Details -->
-                    <%= link_to admin_subscription_path(subscription),
+                    <%= link_to admin_subscription_path(subscription, list_state),
                         class: "btn btn-sm btn-outline-primary",
                         title: "View Details" do %>
                       <i class="bi bi-eye"></i>
@@ -451,7 +452,7 @@
                     </button>
 
                     <!-- Edit Subscription -->
-                    <%= link_to edit_admin_subscription_path(subscription),
+                    <%= link_to edit_admin_subscription_path(subscription, list_state),
                         class: "btn btn-sm btn-outline-primary",
                         title: "Edit Subscription" do %>
                       <i class="bi bi-pencil"></i>
@@ -459,14 +460,14 @@
 
                     <!-- Pause/Resume Subscription -->
                     <% if subscription.status == 'active' %>
-                      <%= link_to pause_subscription_admin_subscription_path(subscription),
+                      <%= link_to pause_subscription_admin_subscription_path(subscription, list_state),
                           data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to pause this subscription?" },
                           class: "btn btn-sm btn-outline-warning",
                           title: "Pause Subscription" do %>
                         <i class="bi bi-pause"></i>
                       <% end %>
                     <% elsif subscription.status == 'paused' %>
-                      <%= link_to resume_subscription_admin_subscription_path(subscription),
+                      <%= link_to resume_subscription_admin_subscription_path(subscription, list_state),
                           data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to resume this subscription?" },
                           class: "btn btn-sm btn-outline-success",
                           title: "Resume Subscription" do %>
