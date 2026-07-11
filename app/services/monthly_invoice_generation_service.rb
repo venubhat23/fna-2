@@ -172,10 +172,11 @@ class MonthlyInvoiceGenerationService
 
   # Create invoice with line items
   def create_invoice_with_items(customer, grouped_items)
+    invoice_date = Date.new(year, month).end_of_month
     invoice = Invoice.new(
       customer: customer,
-      invoice_date: Date.new(year, month).end_of_month,
-      due_date: Date.current + 5.days,
+      invoice_date: invoice_date,
+      due_date: invoice_date + 5.days,
       status: 'sent'
     )
 

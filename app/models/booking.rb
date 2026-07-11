@@ -317,15 +317,11 @@ class Booking < ApplicationRecord
   end
 
   def payment_status_display
-    # Get the raw value directly from database using SQL to bypass any Rails caching issues
-    raw_value = self.class.connection.select_value("SELECT payment_status FROM bookings WHERE id = #{id}")
-    return 'Unpaid' if raw_value.blank?
-
-    case raw_value.to_s
-    when 'unpaid', '0' then 'Unpaid'
-    when 'paid', '1' then 'Paid'
-    when 'partially_paid', '2' then 'Partially Paid'
-    when 'refunded', '3' then 'Refunded'
+    case payment_status.to_s
+    when 'unpaid' then 'Unpaid'
+    when 'paid' then 'Paid'
+    when 'partially_paid' then 'Partially Paid'
+    when 'refunded' then 'Refunded'
     else 'Unpaid'
     end
   end

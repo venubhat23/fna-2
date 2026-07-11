@@ -32,7 +32,7 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    url: <%= ENV['DATABASE_URL'] || 'postgresql://atmanorbahe_user:vPlHyWMRbfdw0eP1mVyHycpCkWP9wdMZ@dpg-d8c5ce6q1p3s73fvu23g-a/atmanorbahe' %>
+    url: <%= ENV['DATABASE_URL'] || 'postgresql://atmanorbahe_user:vPlHyWMRbfdw0eP1mVyHycpCkWP9wdMZ@dpg-d8c5ce6q1p3s73fvu23g-a.oregon-postgres.render.com/atmanorbahe' %>
     host: <%= ENV['DB_HOST'] || 'dpg-d8c5ce6q1p3s73fvu23g-a.oregon-postgres.render.com' %>
     database: <%= ENV['DB_NAME'] || 'atmanorbahe' %>
     username: <%= ENV['DB_USERNAME'] || 'atmanorbahe_user' %>

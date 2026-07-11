@@ -1,5 +1,5 @@
 class BookingItem < ApplicationRecord
-  belongs_to :booking
+  belongs_to :booking, counter_cache: true
   belongs_to :product
 
   validates :quantity, presence: true, numericality: { greater_than: 0 }

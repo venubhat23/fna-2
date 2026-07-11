@@ -5,14 +5,9 @@ class Admin::BookingsController < Admin::ApplicationController
   before_action :set_booking, only: [:show, :edit, :update, :destroy, :generate_invoice, :invoice, :convert_to_order, :update_status, :cancel_order, :mark_delivered, :mark_completed, :manage_stage, :update_stage]
 
   def index
-    # Start with base query for statistics (before filtering)
-    @all_bookings = if current_user.franchise?
-                     # Franchise users see only their own bookings
-                     Booking.where(user_id: current_user.id).includes(:customer, :user, :booking_items, :store, :delivery_person)
-                   else
-                     # Admin sees all bookings
-                     Booking.includes(:customer, :user, :booking_items, :store, :franchise, :delivery_person)
-                   end
+    # Start with base query for statistics (before filtering) — no includes here,
+    # stats are computed via a single GROUP BY, not by loading records.
+    @all_bookings = current_user.franchise? ? Booking.where(user_id: current_user.id) : Booking.all
 
     # Apply filters
     @bookings = @all_bookings.recent
@@ -36,14 +31,29 @@ class Admin::BookingsController < Admin::ApplicationController
       @bookings = @bookings.where(customer_id: params[:customer_id])
     end
 
+    # Pre-compute stats with a single GROUP BY — replaces 6 separate COUNT queries
+    stats_counts = @all_bookings.group(:status).count
+    @booking_stats = {
+      draft: stats_counts['draft'].to_i,
+      pending: stats_counts['ordered_and_delivery_pending'].to_i,
+      processing: stats_counts.values_at('confirmed', 'processing', 'packed').compact.sum,
+      shipped: stats_counts.values_at('shipped', 'out_for_delivery').compact.sum,
+      completed: stats_counts['completed'].to_i,
+      issues: stats_counts.values_at('cancelled', 'returned').compact.sum
+    }
+
     # Get pagination settings from system settings
     @per_page = SystemSetting.default_pagination_per_page
 
-    # Paginate the filtered results
-    @bookings = @bookings.page(params[:page]).per(@per_page)
+    # Paginate the filtered results, eager-loading only what the page being displayed needs.
+    # booking_items dropped: the view calls booking.booking_items.size, which now reads
+    # the booking_items_count counter cache instead of preloading every item row.
+    @bookings = @bookings.includes(:customer, { user: :franchise }, :delivery_person)
+                         .page(params[:page]).per(@per_page)
 
-    # Use all_bookings for statistics cards to show complete picture
-    @bookings_for_stats = @all_bookings
+    # Batch-preload associated_invoice for the bookings on this page, replacing what would
+    # otherwise be 1-2 queries per row (has_invoice?/invoice_link_path/display_invoice_number).
+    preload_associated_invoices(@bookings)
 
     # Load customers for filter dropdown
     @customers = Customer.select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
@@ -418,26 +428,29 @@ class Admin::BookingsController < Admin::ApplicationController
     end
   end
 
-  # Real-time data endpoint
+  # Real-time data endpoint — polled every 30s from admin/bookings#index
   def realtime_data
-    # Get fresh data for statistics
-    all_bookings = Booking.includes(:customer, :user, :booking_items)
+    base_scope = Booking.all
+
+    # Single GROUP BY replaces 7 separate COUNT queries
+    status_counts = base_scope.group(:status).count
 
     stats = {
-      draft: all_bookings.draft.count,
-      pending: all_bookings.ordered_and_delivery_pending.count,
-      processing: all_bookings.where(status: [:confirmed, :processing, :packed]).count,
-      shipped: all_bookings.where(status: [:shipped, :out_for_delivery]).count,
-      delivered: all_bookings.where(status: [:delivered, :completed]).count,
-      issues: all_bookings.where(status: [:cancelled, :returned]).count,
-      total: all_bookings.count,
-      today_bookings: all_bookings.where(created_at: Date.current.all_day).count,
-      total_revenue: all_bookings.where(status: [:completed, :delivered]).sum(:total_amount),
+      draft: status_counts['draft'].to_i,
+      pending: status_counts['ordered_and_delivery_pending'].to_i,
+      processing: status_counts.values_at('confirmed', 'processing', 'packed').compact.sum,
+      shipped: status_counts.values_at('shipped', 'out_for_delivery').compact.sum,
+      delivered: status_counts.values_at('delivered', 'completed').compact.sum,
+      issues: status_counts.values_at('cancelled', 'returned').compact.sum,
+      total: status_counts.values.sum,
+      today_bookings: base_scope.where(created_at: Date.current.all_day).count,
+      total_revenue: base_scope.where(status: [:completed, :delivered]).sum(:total_amount),
       last_updated: Time.current.strftime('%I:%M:%S %p')
     }
 
-    # Get recent bookings (last 5)
-    recent_bookings = all_bookings.recent.limit(5).includes(:customer, :booking_items).map do |booking|
+    # Get recent bookings (last 5) — booking_items_count counter cache avoids
+    # a per-row COUNT query just to display an item count
+    recent_bookings = base_scope.recent.limit(5).includes(:customer).map do |booking|
       {
         id: booking.id,
         booking_number: booking.booking_number,
@@ -447,7 +460,7 @@ class Admin::BookingsController < Admin::ApplicationController
         status_icon: booking.status_icon,
         total_amount: booking.total_amount,
         created_at: booking.created_at.strftime('%d %b %Y %I:%M %p'),
-        items_count: booking.booking_items.count
+        items_count: booking.booking_items_count
       }
     end
 
@@ -539,6 +552,38 @@ class Admin::BookingsController < Admin::ApplicationController
 
   def set_booking
     @booking = Booking.find(params[:id])
+  end
+
+  # Batch version of Booking#associated_invoice — mirrors its two-step lookup
+  # (by invoice_number, then by booking_number LIKE match) but resolves it for
+  # a whole page of bookings in 2 queries instead of up to 2 queries per booking.
+  def preload_associated_invoices(bookings)
+    bookings = bookings.to_a
+    return if bookings.empty?
+
+    invoice_numbers = bookings.filter_map(&:invoice_number)
+    invoices_by_number = invoice_numbers.any? ? Invoice.where(invoice_number: invoice_numbers).index_by(&:invoice_number) : {}
+
+    bookings.each do |b|
+      found = invoices_by_number[b.invoice_number]
+      b.instance_variable_set(:@associated_invoice, found) if found
+    end
+
+    unmatched = bookings.reject { |b| b.instance_variable_defined?(:@associated_invoice) }
+    return if unmatched.empty?
+
+    numbers = unmatched.map(&:booking_number)
+    like_clauses = numbers.map { "invoice_items.description LIKE ?" }.join(" OR ")
+    matched_items = InvoiceItem.joins(:invoice).where(like_clauses, *numbers.map { |n| "%#{n}%" })
+
+    invoice_by_booking_number = {}
+    matched_items.each do |item|
+      numbers.each { |bn| invoice_by_booking_number[bn] ||= item.invoice if item.description.include?(bn) }
+    end
+
+    unmatched.each do |b|
+      b.instance_variable_set(:@associated_invoice, invoice_by_booking_number[b.booking_number])
+    end
   end
 
   # Build transition data from form parameters
@@ -943,7 +988,7 @@ class Admin::BookingsController < Admin::ApplicationController
     invoice = Invoice.new(
       customer: booking.customer, # Optional for walk-in customers
       invoice_date: Date.current,
-      due_date: Date.current + 30.days,
+      due_date: Date.current + 5.days,
       status: :sent,
       payment_status: :fully_paid,
       paid_at: Time.current,

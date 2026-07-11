@@ -208,6 +208,6 @@ class Invoice < ApplicationRecord
 
   def set_default_due_date
     return if due_date.present?
-    self.due_date = Date.current + 5.days
+    self.due_date = (invoice_date || Date.current) + 5.days
   end
 end

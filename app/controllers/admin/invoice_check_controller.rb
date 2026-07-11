@@ -173,7 +173,7 @@ class Admin::InvoiceCheckController < ApplicationController
       customer: customer,
       invoice_number: invoice_number,
       invoice_date: Date.new(year, month, -1), # Last day of the month
-      due_date: Date.new(year, month, -1) + 30.days,
+      due_date: Date.new(year, month, -1) + 5.days,
       total_amount: total_amount,
       subtotal: total_amount,
       tax_amount: 0,
