@@ -78,6 +78,24 @@ Rails.application.routes.draw do
 
   # Admin routes
   namespace :admin do
+    # Mobile UI — standalone, own session auth (admin/admin123)
+    get  'mobile-ui',                  to: 'mobile_ui#login',           as: 'mobile_ui_login'
+    post 'mobile-ui/login',            to: 'mobile_ui#do_login',        as: 'mobile_ui_do_login'
+    get  'mobile-ui/bookings',         to: 'mobile_ui#index',           as: 'mobile_ui_bookings'
+    get  'mobile-ui/logout',           to: 'mobile_ui#logout',          as: 'mobile_ui_logout'
+    get  'mobile-ui/new-booking',      to: 'mobile_ui#new_booking',     as: 'mobile_ui_new_booking'
+    post 'mobile-ui/create-booking',   to: 'mobile_ui#create_booking',  as: 'mobile_ui_create_booking'
+    get  'mobile-ui/new-customer',     to: 'mobile_ui#new_customer',    as: 'mobile_ui_new_customer'
+    post 'mobile-ui/create-customer',  to: 'mobile_ui#create_customer', as: 'mobile_ui_create_customer'
+    get  'mobile-ui/check-mobile',     to: 'mobile_ui#check_mobile',    as: 'mobile_ui_check_mobile'
+    get  'mobile-ui/search-by-name',   to: 'mobile_ui#search_by_name',  as: 'mobile_ui_search_by_name'
+    get  'mobile-ui/price-list',       to: 'mobile_ui#price_list',      as: 'mobile_ui_price_list'
+    get  'mobile-ui/booking/:id',      to: 'mobile_ui#show_booking',    as: 'mobile_ui_show_booking'
+    get  'mobile-ui/booking/:id/edit', to: 'mobile_ui#edit_booking',    as: 'mobile_ui_edit_booking'
+    patch 'mobile-ui/booking/:id',     to: 'mobile_ui#update_booking',  as: 'mobile_ui_update_booking'
+    get  'mobile-ui/invoice/:id',      to: 'mobile_ui#show_invoice',    as: 'mobile_ui_show_invoice'
+    get  'mobile-ui/invoice/:id/edit', to: 'mobile_ui#edit_invoice',    as: 'mobile_ui_edit_invoice'
+
     # Bookings Management (Now handles complete order workflow)
     resources :bookings do
       member do

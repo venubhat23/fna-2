@@ -1,0 +1,221 @@
+<style>
+  .form-card { background:white; border-radius:16px; padding:20px; margin:12px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+  .field-label { font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#666; margin-bottom:6px; }
+  .mob-input {
+    width:100%; border:2px solid #e9ecef; border-radius:12px;
+    padding:12px 14px; font-size:1rem; outline:none;
+    transition:border-color 0.2s; background:white;
+  }
+  .mob-input:focus { border-color:#2e7d32; }
+  .mob-input.is-invalid { border-color:#dc3545; }
+  .input-wrap { position:relative; }
+  .input-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#aaa; font-size:1rem; pointer-events:none; }
+  .input-wrap .mob-input { padding-left:38px; }
+  .submit-btn {
+    width:100%; background:linear-gradient(135deg,#2e7d32,#1b5e20);
+    color:white; border:none; border-radius:12px; padding:14px;
+    font-size:1rem; font-weight:700; letter-spacing:0.3px;
+    box-shadow:0 4px 15px rgba(46,125,50,0.35);
+    transition: opacity 0.2s;
+  }
+  .submit-btn:active { transform:scale(0.98); }
+  .submit-btn:disabled { opacity:0.75; cursor:not-allowed; transform:none; }
+  .page-top { padding:14px 12px 0; display:flex; align-items:center; gap:10px; }
+  .back-btn { width:36px;height:36px;border-radius:10px;background:white;border:2px solid #e9ecef;display:flex;align-items:center;justify-content:center;color:#2e7d32;text-decoration:none;flex-shrink:0; }
+  .match-alert { background:#fff8e1; border:1px solid #ffe082; border-radius:10px; padding:10px 12px; margin-bottom:14px; font-size:0.82rem; color:#7a5c00; }
+  .match-alert .match-title { font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .match-row { display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.6); border-radius:8px; padding:8px 10px; margin-bottom:6px; }
+  .match-row:last-child { margin-bottom:0; }
+  .match-btn { background:#ffb300; color:#3a2a00; border:none; border-radius:8px; padding:6px 10px; font-size:0.78rem; font-weight:700; text-decoration:none; white-space:nowrap; }
+</style>
+
+<div class="page-top">
+  <%= link_to admin_mobile_ui_bookings_path, class: 'back-btn', data: { no_loader: '' } do %>
+    <i class="bi bi-arrow-left"></i>
+  <% end %>
+  <div>
+    <div style="font-weight:700;font-size:1rem;color:#222;">New Customer</div>
+    <div style="font-size:0.78rem;color:#888;">Create customer then add booking</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <% if @customer.errors.any? %>
+    <div class="alert alert-danger rounded-3 mb-3 py-2 px-3" style="font-size:0.85rem;">
+      <i class="bi bi-exclamation-circle me-1"></i>
+      <%= @customer.errors.full_messages.join(' · ') %>
+    </div>
+  <% end %>
+
+  <%= form_with url: admin_mobile_ui_create_customer_path, method: :post, local: true do |f| %>
+    <div class="mb-3">
+      <div class="field-label">Customer Name *</div>
+      <div class="input-wrap">
+        <i class="bi bi-person input-icon"></i>
+        <input type="text" name="customer[first_name]" id="mob_name"
+               class="mob-input <%= @customer.errors[:first_name].any? ? 'is-invalid' : '' %>"
+               placeholder="Full name" required autofocus
+               autocomplete="off"
+               value="<%= @customer.first_name %>">
+      </div>
+    </div>
+
+    <div id="nameMatchAlert" class="match-alert" style="display:none;">
+      <div class="match-title"><i class="bi bi-people-fill"></i>Customer(s) with this name already exist</div>
+      <div id="nameMatchList"></div>
+    </div>
+
+    <div class="mb-3">
+      <div class="field-label">Mobile Number *</div>
+      <div class="input-wrap">
+        <i class="bi bi-telephone input-icon"></i>
+        <input type="tel" name="customer[mobile]" id="mob_mobile"
+               class="mob-input <%= @customer.errors[:mobile].any? ? 'is-invalid' : '' %>"
+               placeholder="10-digit mobile" required
+               value="<%= @customer.mobile %>">
+      </div>
+      <div style="font-size:0.75rem;color:#888;margin-top:4px;">
+        <i class="bi bi-key me-1 text-warning"></i>
+        App password: <strong id="pwdPreview">XXXX@123</strong>
+      </div>
+    </div>
+
+    <div id="existingCustomerAlert" class="match-alert" style="display:none;">
+      <div class="match-title"><i class="bi bi-person-check-fill"></i>This customer already exists</div>
+      <div class="match-row">
+        <span id="existingCustomerName"></span>
+        <a href="#" id="proceedWithExistingBtn" class="match-btn">Proceed to Booking</a>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="field-label">Email <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></div>
+      <div class="input-wrap">
+        <i class="bi bi-envelope input-icon"></i>
+        <input type="email" name="customer[email]"
+               class="mob-input"
+               placeholder="Email address (optional)"
+               value="<%= @customer.email %>">
+      </div>
+    </div>
+
+    <div style="background:#e6f4ea;border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:0.82rem;color:#2e7d32;">
+      <i class="bi bi-info-circle me-1"></i>
+      After creating customer you'll go directly to the booking page with customer pre-selected.
+    </div>
+
+    <button type="submit" class="submit-btn" id="createCustomerBtn">
+      <i class="bi bi-person-check me-2"></i>Create & Go to Booking
+    </button>
+  <% end %>
+</div>
+
+<script>
+  const mobMobileInput = document.getElementById('mob_mobile');
+  const existingAlert = document.getElementById('existingCustomerAlert');
+  const existingName = document.getElementById('existingCustomerName');
+  const proceedBtn = document.getElementById('proceedWithExistingBtn');
+  const createBtn = document.getElementById('createCustomerBtn');
+  let mobileCheckTimeout = null;
+
+  mobMobileInput.addEventListener('input', function() {
+    const d = this.value.replace(/\D/g,'');
+    document.getElementById('pwdPreview').textContent = d.length >= 4 ? d.substring(0,4)+'@123' : 'XXXX@123';
+
+    hideExistingCustomerMatch();
+    clearTimeout(mobileCheckTimeout);
+    if (d.length === 10) {
+      mobileCheckTimeout = setTimeout(() => checkExistingCustomer(d), 400);
+    }
+  });
+
+  function checkExistingCustomer(mobile) {
+    fetch(`<%= admin_mobile_ui_check_mobile_path %>?mobile=${mobile}`, {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.exists) {
+          showExistingCustomerMatch(data.customer);
+        } else {
+          hideExistingCustomerMatch();
+        }
+      })
+      .catch(() => hideExistingCustomerMatch());
+  }
+
+  function showExistingCustomerMatch(customer) {
+    existingName.textContent = `${customer.name} (${customer.mobile})`;
+    proceedBtn.href = `<%= admin_mobile_ui_new_booking_path %>?customer_id=${customer.id}`;
+    existingAlert.style.display = '';
+    createBtn.disabled = true;
+  }
+
+  function hideExistingCustomerMatch() {
+    existingAlert.style.display = 'none';
+    createBtn.disabled = false;
+  }
+
+  const mobNameInput = document.getElementById('mob_name');
+  const nameMatchAlert = document.getElementById('nameMatchAlert');
+  const nameMatchList = document.getElementById('nameMatchList');
+  let nameCheckTimeout = null;
+
+  mobNameInput.addEventListener('input', function() {
+    const name = this.value.trim();
+    hideNameMatches();
+    clearTimeout(nameCheckTimeout);
+    if (name.length >= 2) {
+      nameCheckTimeout = setTimeout(() => checkExistingName(name), 400);
+    }
+  });
+
+  function checkExistingName(name) {
+    fetch(`<%= admin_mobile_ui_search_by_name_path %>?name=${encodeURIComponent(name)}`, {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.customers && data.customers.length > 0) {
+          showNameMatches(data.customers);
+        } else {
+          hideNameMatches();
+        }
+      })
+      .catch(() => hideNameMatches());
+  }
+
+  function showNameMatches(customers) {
+    nameMatchList.innerHTML = '';
+    customers.forEach(function(customer) {
+      const row = document.createElement('div');
+      row.className = 'match-row';
+
+      const info = document.createElement('span');
+      info.textContent = `${customer.name} — ${customer.mobile}`;
+
+      const link = document.createElement('a');
+      link.className = 'match-btn';
+      link.href = `<%= admin_mobile_ui_new_booking_path %>?customer_id=${customer.id}`;
+      link.textContent = 'Use this';
+
+      row.appendChild(info);
+      row.appendChild(link);
+      nameMatchList.appendChild(row);
+    });
+    nameMatchAlert.style.display = '';
+  }
+
+  function hideNameMatches() {
+    nameMatchAlert.style.display = 'none';
+    nameMatchList.innerHTML = '';
+  }
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    if (!this.checkValidity()) return;
+    const btn = document.getElementById('createCustomerBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Creating…';
+    showLoader('Creating Customer…', 'Setting up booking page');
+  });
+</script>
