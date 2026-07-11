@@ -53,6 +53,28 @@ class Booking < ApplicationRecord
   before_validation :calculate_final_amount_after_discount
   after_validation :ensure_total_amount_present
   after_update :allocate_inventory, if: :saved_change_to_status?
+  after_update :sync_invoice_payment_status, if: :saved_change_to_payment_status?
+
+  # Keeps the already-generated Invoice's payment_status in step with the booking's,
+  # so a booking marked paid after invoice creation doesn't leave a stale "unpaid" invoice.
+  def sync_invoice_payment_status
+    return unless invoice_generated? && invoice_number.present?
+
+    invoice = Invoice.find_by(invoice_number: invoice_number)
+    return unless invoice
+
+    case payment_status
+    when 'paid'
+      return if invoice.payment_status == 'fully_paid'
+      invoice.update(payment_status: :fully_paid, paid_at: invoice.paid_at || Time.current, paid_amount: invoice.total_amount)
+    when 'partially_paid'
+      return if invoice.payment_status == 'partially_paid'
+      invoice.update(payment_status: :partially_paid)
+    else
+      return if invoice.payment_status == 'unpaid'
+      invoice.update(payment_status: :unpaid, paid_at: nil, paid_amount: 0)
+    end
+  end
 
   scope :recent, -> { order(created_at: :desc) }
   scope :today, -> { where(created_at: Date.current.all_day) }
@@ -362,8 +384,10 @@ class Booking < ApplicationRecord
   end
 
   # Check if this booking has an associated invoice (either BookingInvoice or regular Invoice)
+  # associated_invoice is checked first since it's memoized (often pre-populated by the
+  # controller's batch preload), avoiding a booking_invoices query per row when unnecessary.
   def has_invoice?
-    booking_invoices.any? || associated_invoice.present? || invoice_generated?
+    associated_invoice.present? || booking_invoices.any? || invoice_generated?
   end
 
   # Get the invoice link for this booking (prioritize regular Invoice over BookingInvoice)
@@ -399,6 +423,76 @@ class Booking < ApplicationRecord
     else
       self.final_amount_after_discount = base_amount
     end
+  end
+
+  def base_unit_price_for(product, charged_price)
+    return charged_price.to_f unless product&.gst_enabled? && product.gst_percentage.present?
+
+    charged_price.to_f / (1 + product.gst_percentage.to_f / 100)
+  end
+
+  # Base (pre-GST), discount-adjusted unit price for a booking_item, used when
+  # generating this booking's quick invoice. GST is extracted from the price
+  # actually charged on the item (not the product's current master price), so
+  # later product price changes don't retroactively alter old invoices.
+  def invoice_unit_price_for(booking_item)
+    unit_price = base_unit_price_for(booking_item.product, booking_item.price)
+
+    if discount_amount.to_f > 0 && total_amount.to_f > 0
+      unit_price = unit_price * (1 - discount_amount.to_f / total_amount.to_f)
+    end
+
+    unit_price.to_f
+  end
+
+  # Generate a proper Invoice record (with InvoiceItems) for this booking, used by
+  # the mobile admin UI's "mark as paid at checkout" flow. Sets invoice_generated=true
+  # and invoice_number on the booking so the admin UI recognises it as invoiced.
+  # Returns the Invoice on success, nil on failure.
+  def generate_quick_invoice!
+    return nil if invoice_generated?
+    return nil if booking_items.empty?
+
+    invoice = Invoice.new(
+      customer: customer,
+      invoice_date: Date.current,
+      status: :sent,
+      payment_status: payment_status_paid? ? :fully_paid : :unpaid,
+      paid_at: payment_status_paid? ? Time.current : nil,
+      quick_invoice: true
+    )
+
+    booking_items.includes(:product).each do |item|
+      product = item.product
+      next unless product
+
+      unit_price = invoice_unit_price_for(item)
+      item_total = item.quantity * unit_price
+
+      invoice.invoice_items.build(
+        description: "#{product.name} - Booking ##{booking_number} (#{booking_date.strftime('%d %b %Y')})",
+        quantity: item.quantity,
+        unit_price: unit_price,
+        total_amount: item_total,
+        product: product
+      )
+    end
+
+    if invoice.save
+      update_columns(
+        invoice_generated: true,
+        invoice_number: invoice.invoice_number,
+        quick_invoice: true
+      )
+      Rails.logger.info "Invoice ##{invoice.invoice_number} generated for booking ##{booking_number}"
+      invoice
+    else
+      Rails.logger.error "Failed to generate invoice for booking ##{booking_number}: #{invoice.errors.full_messages.join(', ')}"
+      nil
+    end
+  rescue => e
+    Rails.logger.error "Error generating invoice for booking ##{booking_number}: #{e.message}"
+    nil
   end
 
   private
