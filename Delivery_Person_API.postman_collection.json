@@ -1,0 +1,304 @@
+{
+  "info": {
+    "name": "Delivery Person API",
+    "_postman_id": "delivery-person-api-collection",
+    "description": "All APIs for the Delivery Person mobile app. Login first to get the token, then use it in the Authorization header for all other requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api/v1/mobile",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Set after login"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token saved:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"9876543210\",\n  \"password\": \"yourpassword\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with mobile number or email. On success, the token is auto-saved to the collection variable 'token'.\n\nResponse includes:\n- token\n- role: \"delivery_person\"\n- delivery_person_id\n- profile info\n- dashboard stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. My Customers",
+      "item": [
+        {
+          "name": "Get My Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/delivery/my_customers",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "my_customers"]
+            },
+            "description": "Get all customers assigned to the logged-in delivery person via bookings OR milk delivery tasks.\n\nReturns list with: id, name, mobile, email, address, latitude, longitude, whatsapp"
+          }
+        },
+        {
+          "name": "Update Customer Location",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": \"12.9716\",\n  \"longitude\": \"77.5946\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/customers/1/location",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "customers", "1", "location"]
+            },
+            "description": "Update the GPS location (latitude + longitude) of a customer.\n\nReplace '1' in the URL with the actual customer ID."
+          }
+        },
+        {
+          "name": "Upload Customer Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "The image file to upload (JPG/PNG)"
+                },
+                {
+                  "key": "image_type",
+                  "value": "profile",
+                  "type": "text",
+                  "description": "Options: profile | house | personal (default: profile)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/customers/1/upload_image",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "customers", "1", "upload_image"]
+            },
+            "description": "Upload an image for a customer. Uploads to Cloudinary and returns the public URL.\n\nimage_type options:\n- profile → profile photo\n- house   → house/delivery location photo\n- personal → personal ID photo\n\nResponse returns: image_url (Cloudinary public URL)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Products",
+      "item": [
+        {
+          "name": "Get Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/delivery/products",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "products"]
+            },
+            "description": "Get all active in-stock products.\n\nEach product includes:\n- id, name, sku\n- price (discounted if available)\n- original_price\n- unit (e.g. litre, kg, piece)\n- stock (available quantity)\n- min_quantity: 1\n- image_url"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Bookings (COD)",
+      "item": [
+        {
+          "name": "Create COD Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"delivery_address\": \"123 Main Street, Bangalore - 560001\",\n  \"notes\": \"Ring bell twice\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"product_id\": 3,\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "bookings"]
+            },
+            "description": "Create a new Cash on Delivery (COD) booking for a customer.\n\nRequired fields:\n- customer_id: ID of the customer\n- delivery_address: Full delivery address\n- items: Array of { product_id, quantity (min 1) }\n\nOptional:\n- notes: Special instructions\n\nPayment method is automatically set to 'Cash on Delivery'.\nMinimum quantity per item is 1 (enforced server-side).\n\nResponse includes: booking_id, booking_number, total_amount, items breakdown"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Delivery Tasks",
+      "item": [
+        {
+          "name": "Get Today's Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/delivery/tasks/today",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "tasks", "today"]
+            },
+            "description": "Get today's delivery tasks — includes both regular bookings and milk subscription deliveries.\n\nResponse includes:\n- summary: total, completed, pending counts\n- tasks: list of all tasks with customer info, items, payment\n- route_optimization: suggested delivery sequence"
+          }
+        },
+        {
+          "name": "Get Task Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/delivery/tasks/1",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "tasks", "1"]
+            },
+            "description": "Get full details of a single task (booking or subscription).\n\nReplace '1' with the task ID."
+          }
+        },
+        {
+          "name": "Start Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/tasks/1/start",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "tasks", "1", "start"]
+            },
+            "description": "Mark a task as started / out for delivery.\n\nReplace '1' with the task ID."
+          }
+        },
+        {
+          "name": "Complete Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Delivered successfully, customer was available\",\n  \"payment_collected\": {\n    \"amount\": 250.00,\n    \"method\": \"cash\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/tasks/1/complete",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "tasks", "1", "complete"]
+            },
+            "description": "Mark a task as delivered/completed.\n\nFor COD orders, include payment_collected.amount to mark payment as received.\n\nReplace '1' with the task ID."
+          }
+        },
+        {
+          "name": "Update My Location (While Delivering)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": \"12.9716\",\n  \"longitude\": \"77.5946\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/tasks/1/update_location",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "tasks", "1", "update_location"]
+            },
+            "description": "Send the delivery person's current GPS coordinates while delivering a task.\n\nReplace '1' with the task ID."
+          }
+        },
+        {
+          "name": "Bulk Mark Done",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_ids\": [1, 2, 3]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/bulk_mark_done",
+              "host": ["{{base_url}}"],
+              "path": ["delivery", "bulk_mark_done"]
+            },
+            "description": "Mark multiple deliveries as completed in one request.\n\nPass an array of booking or task IDs."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -48,7 +48,9 @@ class Admin::BookingsController < Admin::ApplicationController
     # Paginate the filtered results, eager-loading only what the page being displayed needs.
     # booking_items dropped: the view calls booking.booking_items.size, which now reads
     # the booking_items_count counter cache instead of preloading every item row.
-    @bookings = @bookings.includes(:customer, { user: :franchise }, :delivery_person)
+    # booking_invoices IS included: has_invoice?/invoice_link_path/display_invoice_number
+    # call booking_invoices.any?, which queries per row unless the association is preloaded.
+    @bookings = @bookings.includes(:customer, { user: :franchise }, :delivery_person, :booking_invoices)
                          .page(params[:page]).per(@per_page)
 
     # Batch-preload associated_invoice for the bookings on this page, replacing what would
@@ -64,11 +66,14 @@ class Admin::BookingsController < Admin::ApplicationController
     @booking = Booking.new
     @booking.booking_items.build
 
-    # Eager load all necessary associations and precompute stock data
+    # Eager load all necessary associations and precompute stock data.
+    # stock_batches is intentionally NOT included here: Product#cached_total_batch_stock
+    # (and out_of_stock?/low_stock?, used throughout the view) reads the cached_stock
+    # column computed by the SQL aggregate below, so preloading every batch row would
+    # just be extra query time and memory with nothing in the view to use it.
     @products = Product.active
                        .includes(
                          :category,
-                         :stock_batches,
                          image_attachment: :blob,
                          additional_images_attachments: :blob
                        )

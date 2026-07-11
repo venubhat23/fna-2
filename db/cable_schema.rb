@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_30_151947) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_11_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -207,6 +207,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_30_151947) do
     t.bigint "franchise_id"
     t.boolean "quick_invoice", default: false
     t.string "booked_by", default: "admin"
+    t.integer "booking_items_count", default: 0, null: false
     t.index ["booked_by"], name: "index_bookings_on_booked_by"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
