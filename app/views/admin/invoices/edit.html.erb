@@ -14,6 +14,9 @@
 </div>
 
 <%= form_with model: [:admin, @invoice], local: true, class: "invoice-edit-form" do |f| %>
+  <% if local_assigns[:mobile_ui] %>
+    <%= hidden_field_tag :mobile_ui, '1' %>
+  <% end %>
   <% if @invoice.errors.any? %>
     <div class="alert alert-danger" role="alert">
       <h6 class="alert-heading">Please correct the following errors:</h6>
@@ -304,7 +307,7 @@
       <div class="mt-4">
         <div class="d-grid gap-2">
           <%= f.submit "Update Invoice", class: "btn btn-primary btn-lg" %>
-          <%= link_to "Cancel", admin_invoice_path(@invoice), class: "btn btn-outline-secondary" %>
+          <%= link_to "Cancel", (local_assigns[:mobile_ui] ? admin_mobile_ui_show_invoice_path(@invoice) : admin_invoice_path(@invoice)), class: "btn btn-outline-secondary" %>
         </div>
       </div>
     </div>

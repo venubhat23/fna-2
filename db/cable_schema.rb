@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_11_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_11_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -209,16 +209,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_11_120000) do
     t.string "booked_by", default: "admin"
     t.integer "booking_items_count", default: 0, null: false
     t.index ["booked_by"], name: "index_bookings_on_booked_by"
+    t.index ["booking_number"], name: "index_bookings_on_booking_number"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
+    t.index ["created_at"], name: "index_bookings_on_created_at"
+    t.index ["customer_id"], name: "index_bookings_on_customer_id"
     t.index ["delivery_person_id"], name: "index_bookings_on_delivery_person_id"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
     t.index ["expected_delivery_date"], name: "index_bookings_on_expected_delivery_date"
     t.index ["franchise_id"], name: "index_bookings_on_franchise_id"
+    t.index ["invoice_number"], name: "index_bookings_on_invoice_number"
     t.index ["stage_updated_at"], name: "index_bookings_on_stage_updated_at"
     t.index ["stage_updated_by"], name: "index_bookings_on_stage_updated_by"
+    t.index ["status"], name: "index_bookings_on_status"
     t.index ["store_id"], name: "index_bookings_on_store_id"
     t.index ["tracking_number"], name: "index_bookings_on_tracking_number"
+    t.index ["user_id"], name: "index_bookings_on_user_id"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -1007,6 +1013,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_11_120000) do
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["product_id", "status"], name: "index_stock_batches_on_product_id_and_status"
     t.index ["product_id"], name: "index_stock_batches_on_product_id"
     t.index ["vendor_id"], name: "index_stock_batches_on_vendor_id"
     t.index ["vendor_purchase_id"], name: "index_stock_batches_on_vendor_purchase_id"

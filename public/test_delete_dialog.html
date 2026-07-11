@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Delete Dialog</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .test-button {
+      padding: 10px 20px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .test-button:hover { background: #c82333; }
+  </style>
+</head>
+<body>
+  <h1>Test Booking Delete Dialog</h1>
+  <p>Click the button below to test the delete confirmation dialog:</p>
+
+  <button class="test-button" onclick="confirmDelete(4, 'BK20260301BA5A9E', 'Murali')">
+    🗑️ Delete Test Booking
+  </button>
+
+  <script>
+    // Same function as in the actual booking page
+    function confirmDelete(bookingId, bookingNumber, customerName) {
+      const confirmation = confirm(
+        `⚠️ DELETE BOOKING CONFIRMATION ⚠️\n\n` +
+        `Booking: ${bookingNumber}\n` +
+        `Customer: ${customerName}\n\n` +
+        `This will permanently delete:\n` +
+        `• The booking record\n` +
+        `• All booking items\n` +
+        `• Any associated invoices\n` +
+        `• Sale items and inventory records\n\n` +
+        `❌ This action CANNOT be undone!\n\n` +
+        `Are you absolutely sure you want to delete this booking?`
+      );
+
+      if (confirmation) {
+        alert('✅ In the real page, this would submit a DELETE request to /admin/bookings/' + bookingId);
+        console.log('Would delete booking:', bookingId, bookingNumber, customerName);
+      } else {
+        alert('❌ Deletion cancelled');
+      }
+    }
+  </script>
+</body>
+</html>

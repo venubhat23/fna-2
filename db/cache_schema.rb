@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_11_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -207,17 +207,24 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
     t.bigint "franchise_id"
     t.boolean "quick_invoice", default: false
     t.string "booked_by", default: "admin"
+    t.integer "booking_items_count", default: 0, null: false
     t.index ["booked_by"], name: "index_bookings_on_booked_by"
+    t.index ["booking_number"], name: "index_bookings_on_booking_number"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
+    t.index ["created_at"], name: "index_bookings_on_created_at"
+    t.index ["customer_id"], name: "index_bookings_on_customer_id"
     t.index ["delivery_person_id"], name: "index_bookings_on_delivery_person_id"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
     t.index ["expected_delivery_date"], name: "index_bookings_on_expected_delivery_date"
     t.index ["franchise_id"], name: "index_bookings_on_franchise_id"
+    t.index ["invoice_number"], name: "index_bookings_on_invoice_number"
     t.index ["stage_updated_at"], name: "index_bookings_on_stage_updated_at"
     t.index ["stage_updated_by"], name: "index_bookings_on_stage_updated_by"
+    t.index ["status"], name: "index_bookings_on_status"
     t.index ["store_id"], name: "index_bookings_on_store_id"
     t.index ["tracking_number"], name: "index_bookings_on_tracking_number"
+    t.index ["user_id"], name: "index_bookings_on_user_id"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -358,6 +365,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
     t.text "notes"
     t.boolean "status", default: true, null: false
     t.boolean "is_registered_by_mobile"
+    t.integer "row_number"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
   end
@@ -452,6 +460,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
     t.index ["user_id"], name: "index_franchises_on_user_id"
   end
 
+  create_table "import_progresses", force: :cascade do |t|
+    t.string "job_id", null: false
+    t.integer "total_items", default: 0, null: false
+    t.integer "processed_items", default: 0, null: false
+    t.string "status", default: "started", null: false
+    t.text "message"
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_id"], name: "index_import_progresses_on_job_id", unique: true
+    t.index ["status"], name: "index_import_progresses_on_status"
+  end
+
   create_table "invoice_items", force: :cascade do |t|
     t.bigint "invoice_id", null: false
     t.bigint "milk_delivery_task_id"
@@ -483,8 +505,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
     t.string "share_token"
     t.boolean "quick_invoice", default: false
     t.decimal "paid_amount", precision: 10, scale: 2, default: "0.0"
+    t.integer "month"
+    t.integer "year"
     t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
+    t.index ["month", "year"], name: "index_invoices_on_month_and_year"
+    t.index ["month"], name: "index_invoices_on_month"
     t.index ["share_token"], name: "index_invoices_on_share_token", unique: true
+    t.index ["year"], name: "index_invoices_on_year"
   end
 
   create_table "leads", force: :cascade do |t|
@@ -986,6 +1013,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["product_id", "status"], name: "index_stock_batches_on_product_id_and_status"
     t.index ["product_id"], name: "index_stock_batches_on_product_id"
     t.index ["vendor_id"], name: "index_stock_batches_on_vendor_id"
     t.index ["vendor_purchase_id"], name: "index_stock_batches_on_vendor_purchase_id"
@@ -1259,6 +1287,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_07_032837) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "invoice_generated", default: false
     t.index ["vendor_id"], name: "index_vendor_purchases_on_vendor_id"
   end
 
