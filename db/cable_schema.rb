@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_11_130000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_12_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -507,9 +507,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_11_130000) do
     t.decimal "paid_amount", precision: 10, scale: 2, default: "0.0"
     t.integer "month"
     t.integer "year"
+    t.index ["created_at"], name: "index_invoices_on_created_at"
+    t.index ["customer_id"], name: "index_invoices_on_customer_id"
     t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
     t.index ["month", "year"], name: "index_invoices_on_month_and_year"
     t.index ["month"], name: "index_invoices_on_month"
+    t.index ["payment_status"], name: "index_invoices_on_payment_status"
     t.index ["share_token"], name: "index_invoices_on_share_token", unique: true
     t.index ["year"], name: "index_invoices_on_year"
   end

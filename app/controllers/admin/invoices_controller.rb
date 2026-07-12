@@ -5,25 +5,58 @@ class Admin::InvoicesController < Admin::ApplicationController
 
   def index
     invoice_type = params[:type] || 'regular'
-    per_page = SystemSetting.default_pagination_per_page
-    page = (params[:page] || 1).to_i
-
-    # Fetch all regular invoices (no pagination yet)
-    all_regular = build_regular_invoices_query.map { |inv| prepare_invoice_data(inv, 'regular') }
-
-    # Fetch booking-only invoices
-    all_booking = build_booking_only_invoices_query.map { |b| prepare_booking_invoice_data(b) }
-
-    # Combine and sort by created_at descending (newest first)
-    combined = (all_regular + all_booking).sort_by { |inv| inv[:created_at] || Time.at(0) }.reverse
-
-    # Manual pagination
-    total = combined.size
+    per_page = SystemSetting.default_pagination_per_page.to_i
+    per_page = 20 if per_page <= 0
+    page = [(params[:page] || 1).to_i, 1].max
     offset = (page - 1) * per_page
-    @invoices = combined[offset, per_page] || []
+    limit_needed = offset + per_page
 
-    # Build a simple pagination wrapper for view helpers
-    @paginated_invoices = Kaminari.paginate_array(combined).page(page).per(per_page)
+    regular_scope = apply_search_filters(Invoice.all, 'invoices')
+    booking_scope = build_booking_only_invoices_query
+
+    total_count = regular_scope.count + booking_scope.count
+
+    # Pull only bounded id/created_at pairs from each source (cheap, indexed, scalar-only)
+    # instead of loading every matching row, so cost scales with the requested page, not
+    # with table size.
+    regular_candidates = regular_scope.reorder(created_at: :desc).limit(limit_needed)
+                                       .pluck(:id, :created_at)
+                                       .map { |id, created_at| { id: id, created_at: created_at, kind: 'regular' } }
+    booking_candidates = booking_scope.reorder(created_at: :desc).limit(limit_needed)
+                                       .pluck(:id, :created_at)
+                                       .map { |id, created_at| { id: id, created_at: created_at, kind: 'booking_only' } }
+
+    page_refs = (regular_candidates + booking_candidates)
+                  .sort_by { |ref| ref[:created_at] || Time.at(0) }
+                  .reverse
+                  .slice(offset, per_page) || []
+
+    regular_ids = page_refs.select { |ref| ref[:kind] == 'regular' }.map { |ref| ref[:id] }
+    booking_ids = page_refs.select { |ref| ref[:kind] == 'booking_only' }.map { |ref| ref[:id] }
+
+    regular_invoices_by_id = Invoice.where(id: regular_ids).includes(:customer).index_by(&:id)
+    booking_invoices_by_id = Booking.where(id: booking_ids).includes(:customer).index_by(&:id)
+
+    # Batch-preload related bookings for this page's invoices in one query instead of
+    # one query per invoice (previously invoice.related_booking N+1'd across the whole table).
+    invoice_numbers = regular_invoices_by_id.values.map(&:invoice_number)
+    related_bookings_by_number = Booking.where(invoice_number: invoice_numbers).index_by(&:invoice_number)
+
+    @invoices = page_refs.filter_map do |ref|
+      if ref[:kind] == 'regular'
+        invoice = regular_invoices_by_id[ref[:id]]
+        next unless invoice
+
+        prepare_invoice_data(invoice, 'regular', related_bookings_by_number[invoice.invoice_number])
+      else
+        booking = booking_invoices_by_id[ref[:id]]
+        next unless booking
+
+        prepare_booking_invoice_data(booking)
+      end
+    end
+
+    @paginated_invoices = Kaminari.paginate_array([], total_count: total_count).page(page).per(per_page)
 
     @stats = calculate_regular_invoice_stats_only
     @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
@@ -763,11 +796,9 @@ class Admin::InvoicesController < Admin::ApplicationController
   end
 
   def build_booking_only_invoices_query
-    invoiced_numbers = Invoice.pluck(:invoice_number).compact
-    query = Booking.includes(:customer)
-                   .where(invoice_generated: true)
+    query = Booking.where(invoice_generated: true)
                    .where.not(invoice_number: [nil, ''])
-                   .where.not(invoice_number: invoiced_numbers)
+                   .where.not(invoice_number: Invoice.select(:invoice_number))
 
     query = query.where(customer_id: params[:customer_id]) if params[:customer_id].present?
 
@@ -797,11 +828,6 @@ class Admin::InvoicesController < Admin::ApplicationController
       booking_number: booking.booking_number,
       from_booking: true
     }
-  end
-
-  def build_regular_invoices_query
-    base_query = Invoice.includes(:customer, :invoice_items)
-    apply_search_filters(base_query, 'invoices')
   end
 
   def build_booking_invoices_query
@@ -963,7 +989,12 @@ class Admin::InvoicesController < Admin::ApplicationController
     base_query
   end
 
-  def prepare_invoice_data(invoice, type)
+  # preloaded_related_booking: pass the Booking (or nil) already resolved via a batch
+  # lookup so this doesn't trigger a per-row query (invoice.related_booking). Falls back
+  # to the per-row lookup only when the caller hasn't preloaded it.
+  def prepare_invoice_data(invoice, type, preloaded_related_booking = :not_preloaded)
+    related_booking = preloaded_related_booking == :not_preloaded ? invoice.related_booking : preloaded_related_booking
+
     {
       id: invoice.id,
       invoice_number: invoice.invoice_number,
@@ -977,22 +1008,26 @@ class Admin::InvoicesController < Admin::ApplicationController
       created_at: invoice.created_at,
       type: type,
       model_object: invoice,
-      booking_number: type == 'booking' ? invoice.booking&.booking_number : invoice.related_booking&.booking_number,
-      from_booking: type == 'booking' || invoice.from_booking?
+      booking_number: type == 'booking' ? invoice.booking&.booking_number : related_booking&.booking_number,
+      from_booking: type == 'booking' || related_booking.present?
     }
   end
 
   def calculate_regular_invoice_stats_only
-    # Calculate stats from regular invoices only (exclude booking invoices)
+    # Calculate stats from regular invoices only (exclude booking invoices).
+    # Two grouped queries instead of six separate count/sum queries.
     regular_query = build_regular_invoices_query_for_stats
 
+    counts_by_status = regular_query.group(:payment_status).count
+    sums_by_status = regular_query.group(:payment_status).sum(:total_amount)
+
     {
-      total_invoices: regular_query.count,
-      total_amount: regular_query.sum(:total_amount) || 0,
-      paid_amount: regular_query.where(payment_status: ['paid', 'fully_paid']).sum(:total_amount) || 0,
-      pending_amount: regular_query.where(payment_status: ['unpaid', 'partially_paid']).sum(:total_amount) || 0,
-      paid_count: regular_query.where(payment_status: ['paid', 'fully_paid']).count,
-      pending_count: regular_query.where(payment_status: ['unpaid', 'partially_paid']).count
+      total_invoices: counts_by_status.values.sum,
+      total_amount: sums_by_status.values.sum,
+      paid_amount: sums_by_status['fully_paid'] || 0,
+      pending_amount: (sums_by_status['unpaid'] || 0) + (sums_by_status['partially_paid'] || 0),
+      paid_count: counts_by_status['fully_paid'] || 0,
+      pending_count: (counts_by_status['unpaid'] || 0) + (counts_by_status['partially_paid'] || 0)
     }
   end
 
