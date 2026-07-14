@@ -82,17 +82,20 @@ class PublicInvoicesController < ApplicationController
 
     invoices_without_tokens = @invoices.select { |invoice| invoice.share_token.blank? }
     if invoices_without_tokens.any?
-      Invoice.transaction do
-        invoices_without_tokens.each { |inv| inv.generate_share_token! }
-      end
+      now = Time.current
+      tokens_by_id = invoices_without_tokens.index_by(&:id).transform_values { SecureRandom.urlsafe_base64(32) }
+      Invoice.upsert_all(
+        tokens_by_id.map { |id, token| { id: id, share_token: token, updated_at: now } },
+        update_only: [:share_token, :updated_at]
+      )
+      invoices_without_tokens.each { |inv| inv.share_token = tokens_by_id[inv.id] }
     end
 
     # Append booking-only invoices (invoice_generated: true, no Invoice record)
-    invoiced_numbers = Invoice.pluck(:invoice_number).compact
     booking_invoices_query = Booking.includes(:customer)
                                     .where(invoice_generated: true)
                                     .where.not(invoice_number: [nil, ''])
-                                    .where.not(invoice_number: invoiced_numbers)
+                                    .where.not(invoice_number: Invoice.where.not(invoice_number: nil).select(:invoice_number))
 
     if params[:customer_name].present?
       s = "%#{params[:customer_name].strip.downcase}%"
@@ -119,6 +122,7 @@ class PublicInvoicesController < ApplicationController
     end
 
     @total_invoice_count = @invoices.size
+    @invoices = Kaminari.paginate_array(@invoices).page(params[:page]).per(25)
   end
 
   def complete

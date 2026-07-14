@@ -684,17 +684,13 @@ class DashboardController < ApplicationController
   end
 
   def calculate_category_performance
-    # Revenue by category
-    performance = {}
-    Category.joins(:products).includes(:products).each do |category|
-      category_revenue = 0
-      category.products.each do |product|
-        bookings = BookingItem.joins(:booking).where(product: product)
-        category_revenue += bookings.sum('booking_items.quantity * booking_items.price') || 0
-      end
-      performance[category.name] = category_revenue if category_revenue > 0
-    end
-    performance.sort_by { |k, v| -v }.to_h
+    # Revenue by category in a single grouped query instead of per-product lookups
+    BookingItem.joins(:booking, product: :category)
+               .group('categories.name')
+               .sum('booking_items.quantity * booking_items.price')
+               .select { |_name, revenue| revenue > 0 }
+               .sort_by { |_name, revenue| -revenue }
+               .to_h
   end
 
   def calculate_order_status_distribution
