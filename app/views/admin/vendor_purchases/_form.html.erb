@@ -260,7 +260,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <label class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
             <select name="vendor_purchase[vendor_purchase_items_attributes][${index}][product_id]"
                     class="form-select product-select" required>
-              ${createProductOptionsHtml()}
             </select>
           </div>
 
@@ -346,6 +345,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const lineTotalSpan = row.querySelector('.line-total');
     const removeBtn = row.querySelector('.remove-item-btn');
     const unitTypeSpan = row.querySelector('.unit-type');
+
+    // Populate the product dropdown from window.productData (sent once) instead of
+    // relying on server-rendered <option> tags for every row.
+    if (productSelect && !productSelect.dataset.populated) {
+      const currentValue = productSelect.value;
+      productSelect.innerHTML = createProductOptionsHtml(currentValue);
+      productSelect.dataset.populated = 'true';
+
+      const selectedOption = productSelect.options[productSelect.selectedIndex];
+      if (selectedOption && selectedOption.value && unitTypeSpan) {
+        unitTypeSpan.textContent = selectedOption.dataset.unitType || 'units';
+      }
+    }
 
     // Initialize Select2 on product select
     if (productSelect && !productSelect.classList.contains('select2-initialized')) {

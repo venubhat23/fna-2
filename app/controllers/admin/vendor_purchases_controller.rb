@@ -5,11 +5,26 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   layout 'application'
 
   def index
-    @vendor_purchases = VendorPurchase.includes(:vendor, :vendor_purchase_items, :products)
+    @vendor_purchases = VendorPurchase.includes(:vendor, :vendor_purchase_items)
                                      .recent
     @vendor_purchases = @vendor_purchases.joins(:vendor).where('vendors.name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
     @vendor_purchases = @vendor_purchases.where(vendor_id: params[:vendor_id]) if params[:vendor_id].present?
     @vendor_purchases = @vendor_purchases.where(status: params[:status]) if params[:status].present?
+
+    # Single aggregate query for the summary cards instead of 3-4 separate count/sum round trips.
+    total_count, pending_count, total_value, outstanding_value = @vendor_purchases.except(:includes, :order).pluck(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = 'pending')"),
+      Arel.sql("COALESCE(SUM(total_amount), 0)"),
+      Arel.sql("COALESCE(SUM(total_amount - paid_amount), 0)")
+    ).first
+    @stats = {
+      total_count: total_count,
+      pending_count: pending_count,
+      total_value: total_value,
+      outstanding_value: outstanding_value
+    }
+
     @vendor_purchases = @vendor_purchases.page(params[:page]).per(20)
 
     @vendors = Vendor.active.order(:name)
@@ -268,13 +283,13 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   def bulk_new
     @vendor_purchase = VendorPurchase.new
     @vendor_purchase.vendor_purchase_items.build
-    @vendors = Vendor.active.order(:name)
-    @products = Product.active.order(:name)
+    @vendors = Vendor.active.select(:id, :name, :phone).order(:name)
+    @products = Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name)
   end
 
   def bulk_create
-    @vendors = Vendor.active.order(:name)
-    @products = Product.active.order(:name)
+    @vendors = Vendor.active.select(:id, :name, :phone).order(:name)
+    @products = Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name)
 
     # Validate date range
     from_date = Date.parse(params[:from_date]) rescue nil
@@ -355,8 +370,8 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   end
 
   def set_vendors_and_products
-    @vendors = Vendor.active.order(:name)
-    @products = Product.active.order(:name)
+    @vendors = Vendor.active.select(:id, :name, :phone).order(:name)
+    @products = Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name)
   end
 
   def vendor_purchase_params

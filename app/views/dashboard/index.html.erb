@@ -421,7 +421,7 @@
             </thead>
             <tbody>
               <% begin
-                   recent_bookings = Booking.order(created_at: :desc).limit(5) rescue []
+                   recent_bookings = Booking.includes(:customer).order(created_at: :desc).limit(5) rescue []
                  rescue
                    recent_bookings = []
                  end
@@ -553,7 +553,7 @@
             </tr>
           </thead>
           <tbody>
-            <% Product.where('stock <= 5 AND stock > 0').limit(5).each do |product| %>
+            <% Product.includes(:category).where('stock <= 5 AND stock > 0').limit(5).each do |product| %>
               <tr>
                 <td class="align-middle">
                   <div>

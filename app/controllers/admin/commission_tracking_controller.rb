@@ -496,24 +496,35 @@ class Admin::CommissionTrackingController < Admin::ApplicationController
     all_policies = []
 
     # Just show payouts we have with policy information - recent payouts at top
-    payouts = Payout.order(created_at: :desc)
+    payouts = Payout.includes(:commission_payouts).order(created_at: :desc).to_a
+
+    # Batch-load policies of each type instead of a find_by per payout
+    policy_klass_by_type = {
+      'health' => HealthInsurance,
+      'life' => LifeInsurance,
+      'motor' => MotorInsurance,
+      'other' => OtherInsurance
+    }
+
+    policies_by_type_and_id = {}
+    payouts.group_by(&:policy_type).each do |type, rows|
+      klass = policy_klass_by_type[type]
+      next unless klass
+
+      policies_by_type_and_id[type] = klass.where(id: rows.map(&:policy_id)).index_by(&:id)
+    end
+
+    # Batch-load customers instead of a find_by per payout
+    customer_ids = payouts.filter_map { |p| policies_by_type_and_id.dig(p.policy_type, p.policy_id)&.customer_id }.uniq
+    customers_by_id = Customer.where(id: customer_ids).index_by(&:id)
 
     payouts.each do |payout|
       begin
-        policy = case payout.policy_type
-                 when 'health'
-                   HealthInsurance.find_by(id: payout.policy_id)
-                 when 'life'
-                   LifeInsurance.find_by(id: payout.policy_id)
-                 when 'motor'
-                   MotorInsurance.find_by(id: payout.policy_id)
-                 when 'other'
-                   OtherInsurance.find_by(id: payout.policy_id)
-                 end
+        policy = policies_by_type_and_id.dig(payout.policy_type, payout.policy_id)
 
         next unless policy && policy.customer_id
 
-        customer = Customer.find_by(id: policy.customer_id)
+        customer = customers_by_id[policy.customer_id]
         next unless customer
 
         all_policies << {
@@ -530,7 +541,7 @@ class Admin::CommissionTrackingController < Admin::ApplicationController
             try: ->(method) { policy.send(method) rescue nil }
           ),
           type: payout.policy_type,
-          commission_data: get_commission_data_from_payout(payout),
+          commission_data: get_commission_data_from_payout(payout, policy),
           transfer_status: get_transfer_status_from_payout(payout),
           saved_payout: payout,
           created_at: payout.created_at # Use payout created_at to show recent payouts first
@@ -740,11 +751,11 @@ class Admin::CommissionTrackingController < Admin::ApplicationController
     {}
   end
 
-  def get_commission_data_from_payout(saved_payout)
+  def get_commission_data_from_payout(saved_payout, policy = saved_payout.policy)
     # Convert saved payout data to the format expected by the view
     # Use net_premium from policy if available, otherwise use total_commission_amount
-    net_premium_value = saved_payout.policy&.net_premium || saved_payout.total_commission_amount || 0
-    policy_premium = saved_payout.policy&.total_premium || net_premium_value || 0
+    net_premium_value = policy&.net_premium || saved_payout.total_commission_amount || 0
+    policy_premium = policy&.total_premium || net_premium_value || 0
 
     # Use stored percentages from payout when available, otherwise calculate
     main_agent_amount = saved_payout.main_agent_commission_amount || 0

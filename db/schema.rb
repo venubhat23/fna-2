@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_12_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_20_103915) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -123,6 +123,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_12_000000) do
     t.decimal "total"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["booking_id"], name: "index_booking_items_on_booking_id"
+    t.index ["product_id"], name: "index_booking_items_on_product_id"
   end
 
   create_table "booking_schedules", force: :cascade do |t|
@@ -366,6 +368,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_12_000000) do
     t.boolean "status", default: true, null: false
     t.boolean "is_registered_by_mobile"
     t.integer "row_number"
+    t.index ["created_at"], name: "index_customers_on_created_at"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
   end
@@ -688,6 +691,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_12_000000) do
     t.datetime "booking_date"
     t.integer "booking_id"
     t.index ["booking_id"], name: "index_orders_on_booking_id"
+    t.index ["status"], name: "index_orders_on_status"
   end
 
   create_table "pending_amounts", force: :cascade do |t|
@@ -1291,6 +1295,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_12_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "invoice_generated", default: false
+    t.index ["status"], name: "index_vendor_purchases_on_status"
     t.index ["vendor_id"], name: "index_vendor_purchases_on_vendor_id"
   end
 

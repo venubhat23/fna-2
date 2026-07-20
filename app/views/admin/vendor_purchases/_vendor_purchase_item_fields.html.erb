@@ -5,12 +5,7 @@
       <span class="text-danger">*</span>
       <%= f.select :product_id,
           options_for_select(
-            @products.map { |p|
-              [p.name, p.id, {
-                'data-unit-type' => p.unit_type || 'units',
-                'data-default-price' => p.default_selling_price
-              }]
-            },
+            f.object.product_id.present? ? [[f.object.product&.name, f.object.product_id]] : [],
             f.object.product_id
           ),
           { prompt: 'Select Product' },

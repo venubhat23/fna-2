@@ -259,9 +259,10 @@
                   <% end %>
                 </td>
                 <td class="align-middle">
+                  <% booking_items = booking.booking_items.to_a %>
                   <div>
-                    <div class="fw-semibold"><%= booking.booking_items.count %> item<%= 's' if booking.booking_items.count != 1 %></div>
-                    <small class="text-muted"><%= booking.booking_items.sum(:quantity) %> units</small>
+                    <div class="fw-semibold"><%= booking_items.size %> item<%= 's' if booking_items.size != 1 %></div>
+                    <small class="text-muted"><%= booking_items.sum(&:quantity) %> units</small>
                   </div>
                 </td>
                 <td class="align-middle">

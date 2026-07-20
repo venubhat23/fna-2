@@ -187,7 +187,8 @@
                 <td class="align-middle">
                   <div>
                     <div class="fw-semibold">#<%= invoice.booking_number %></div>
-                    <small class="text-muted"><%= invoice.booking_items.count %> item<%= 's' if invoice.booking_items.count != 1 %></small>
+                    <% items_count = invoice.booking_items.to_a.size %>
+                    <small class="text-muted"><%= items_count %> item<%= 's' if items_count != 1 %></small>
                   </div>
                 </td>
                 <td class="align-middle">

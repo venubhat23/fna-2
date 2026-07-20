@@ -173,35 +173,71 @@ class Admin::AffiliatePayoutsController < Admin::ApplicationController
   private
 
   def calculate_affiliate_payouts
-    payouts = []
-
     # Get all commission payouts for affiliates directly
-    affiliate_commission_payouts = CommissionPayout.where(payout_to: 'affiliate').includes(:payout)
+    affiliate_commission_payouts = CommissionPayout.where(payout_to: 'affiliate').includes(:payout).to_a
+
+    # Batch-load policies of each type instead of a find_by per row
+    policy_klass_by_type = {
+      'health' => HealthInsurance,
+      'life' => LifeInsurance,
+      'motor' => MotorInsurance,
+      'other' => OtherInsurance
+    }
+
+    policies_by_type_and_id = {}
+    affiliate_commission_payouts.group_by(&:policy_type).each do |type, rows|
+      klass = policy_klass_by_type[type]
+      next unless klass
+
+      policies_by_type_and_id[type] = klass.where(id: rows.map(&:policy_id)).includes(:customer).index_by(&:id)
+    end
+
+    policy_for = ->(cp) { policies_by_type_and_id.dig(cp.policy_type, cp.policy_id) }
+
+    # Batch-load sub_agents instead of a find_by per row
+    sub_agent_ids = affiliate_commission_payouts.filter_map do |cp|
+      policy = policy_for.call(cp)
+      policy.sub_agent_id if policy&.respond_to?(:sub_agent_id) && policy.sub_agent_id.present?
+    end.uniq
+    sub_agents_by_id = SubAgent.where(id: sub_agent_ids).index_by(&:id)
+
+    # Batch-load leads (by commission payout lead_id and by policy lead_id) instead of a find_by per row
+    payout_lead_ids = affiliate_commission_payouts.map(&:lead_id).compact.uniq
+    leads_by_payout_lead_id = Lead.where(lead_id: payout_lead_ids).index_by(&:lead_id)
+
+    policy_lead_ids = affiliate_commission_payouts.filter_map do |cp|
+      policy = policy_for.call(cp)
+      policy.lead_id if policy&.respond_to?(:lead_id) && policy.lead_id.present?
+    end.uniq
+    leads_by_policy_lead_id = Lead.where(lead_id: policy_lead_ids).index_by(&:lead_id)
 
     # Group by affiliate
     affiliate_groups = {}
 
     affiliate_commission_payouts.each do |commission_payout|
       # Get policy from commission payout
-      policy = get_policy_from_commission_payout(commission_payout)
+      policy = policy_for.call(commission_payout)
       next unless policy
 
       # Skip if main agent commission not received
       next unless policy.respond_to?(:main_agent_commission_received) && policy.main_agent_commission_received
 
       # Get sub_agent from the policy's sub_agent_id
-      sub_agent = SubAgent.find_by(id: policy.sub_agent_id) if policy.respond_to?(:sub_agent_id) && policy.sub_agent_id.present?
+      sub_agent = nil
+      if policy.respond_to?(:sub_agent_id) && policy.sub_agent_id.present?
+        sub_agent = sub_agents_by_id[policy.sub_agent_id]
+      end
       next unless sub_agent
 
       # Get or create lead if needed
       lead = nil
       if commission_payout.lead_id.present?
-        lead = Lead.find_by(lead_id: commission_payout.lead_id)
+        lead = leads_by_payout_lead_id[commission_payout.lead_id]
       end
 
       # Fallback: try to find lead by policy lead_id
       if lead.nil? && policy.respond_to?(:lead_id) && policy.lead_id.present?
-        lead = Lead.find_by(lead_id: policy.lead_id)
+        lead = leads_by_policy_lead_id[policy.lead_id]
       end
 
       # If no lead found, create a virtual lead object for display purposes

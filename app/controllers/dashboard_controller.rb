@@ -64,6 +64,7 @@ class DashboardController < ApplicationController
     top_products = Product.joins(:booking_items)
                          .joins('JOIN bookings ON booking_items.booking_id = bookings.id')
                          .where('bookings.status IN (?)', ['delivered', 'completed'])
+                         .includes(:category)
                          .group('products.id, products.name')
                          .select('products.id, products.name, products.category_id,
                                  SUM(booking_items.quantity * booking_items.price) as revenue,
@@ -588,21 +589,62 @@ class DashboardController < ApplicationController
     revenue_breakdown.to_a.reverse.to_h
   end
 
+  # Cached wrapper around the actual (query-heavy) data load. The dashboard is viewed
+  # repeatedly (page refreshes, multiple admins, polling) and the underlying numbers
+  # don't need to be instantaneous, so a short cache turns dozens of round trips into
+  # zero on every hit but the first each cache period.
+  DASHBOARD_ECOMMERCE_CACHE_IVARS = %i[
+    @total_products @active_products @draft_products @total_categories @active_categories
+    @total_bookings @pending_bookings @completed_bookings @cancelled_bookings
+    @total_orders @pending_orders @shipped_orders @delivered_orders @cancelled_orders
+    @total_revenue @today_revenue @month_revenue @avg_order_value
+    @total_vendors @active_vendors @total_purchases @pending_purchases @total_purchase_value @pending_payments
+    @total_stores @active_stores
+    @total_stock_value @low_stock_products @out_of_stock_products @top_categories
+    @total_customers @new_customers_this_month
+    @sales_trend @category_performance @order_status_distribution @top_selling_products
+    @monthly_revenue_trend @payment_method_distribution @delivery_performance
+    @revenue_growth @order_growth @customer_acquisition_growth @conversion_rate @inventory_turnover
+    @customer_location
+  ].freeze
+
   def load_ecommerce_dashboard_data
-    # E-commerce specific metrics
-    @total_products = Product.count
-    @active_products = Product.where(status: 'active').count rescue Product.count
-    @draft_products = Product.where(status: 'draft').count rescue 0
+    cached = Rails.cache.read('dashboard:ecommerce_data')
+    if cached
+      cached.each { |ivar, value| instance_variable_set(ivar, value) }
+      return
+    end
+
+    compute_ecommerce_dashboard_data
+
+    snapshot = DASHBOARD_ECOMMERCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
+      hash[ivar] = instance_variable_get(ivar)
+    end
+    Rails.cache.write('dashboard:ecommerce_data', snapshot, expires_in: 45.seconds)
+  end
+
+  def compute_ecommerce_dashboard_data
+    # E-commerce specific metrics — one grouped query replaces 3 separate counts
+    product_status_counts = Product.group(:status).count
+    @total_products = product_status_counts.values.sum
+    @active_products = product_status_counts['active'] || 0
+    @draft_products = product_status_counts['draft'] || 0
     @total_categories = Category.count
     @active_categories = Category.where(status: true).count
 
-    # Booking metrics
-    @total_bookings = Booking.count
-    @pending_bookings = Booking.where(status: 'pending').count rescue 0
-    @completed_bookings = Booking.where(status: 'completed').count rescue 0
-    @cancelled_bookings = Booking.where(status: 'cancelled').count rescue 0
+    # Booking metrics — one grouped query replaces 4 separate counts
+    booking_status_counts = Booking.group(:status).count
+    @total_bookings = booking_status_counts.values.sum
+    @pending_bookings = booking_status_counts['pending'] || 0
+    @completed_bookings = booking_status_counts['completed'] || 0
+    @cancelled_bookings = booking_status_counts['cancelled'] || 0
 
     # Order metrics
+    # NOTE: Order#status is an integer-backed enum stored in a string column, so
+    # `.group(:status).count` returns raw un-translated values instead of labels
+    # (unlike Booking/Product#status, which map labels to identical strings) —
+    # `.where(status: 'x')` is what applies the enum's label translation, so these
+    # have to stay as separate queries rather than a single grouped one.
     @total_orders = Order.count rescue 0
     @pending_orders = Order.where(status: 'pending').count rescue 0
     @shipped_orders = Order.where(status: 'shipped').count rescue 0
@@ -615,17 +657,23 @@ class DashboardController < ApplicationController
     @month_revenue = Booking.where(created_at: Date.current.beginning_of_month..Date.current.end_of_month).sum(:total_amount) || 0
     @avg_order_value = @total_bookings > 0 ? (@total_revenue / @total_bookings).round(2) : 0
 
-    # Vendor metrics
-    @total_vendors = Vendor.count rescue 0
-    @active_vendors = Vendor.where(status: true).count rescue 0
-    @total_purchases = VendorPurchase.count rescue 0
-    @pending_purchases = VendorPurchase.where(status: 'pending').count rescue 0
-    @total_purchase_value = VendorPurchase.sum(:total_amount) rescue 0
-    @pending_payments = VendorPayment.where(status: 'pending').sum(:amount) rescue 0
+    # Vendor metrics — one grouped query replaces 2 separate counts
+    vendor_status_counts = Vendor.group(:status).count rescue {}
+    @total_vendors = vendor_status_counts.values.sum
+    @active_vendors = vendor_status_counts[true] || 0
 
-    # Store metrics
-    @total_stores = Store.count rescue 0
-    @active_stores = Store.where(status: true).count rescue 0
+    vendor_purchase_status_counts = VendorPurchase.group(:status).count rescue {}
+    @total_purchases = vendor_purchase_status_counts.values.sum
+    @pending_purchases = vendor_purchase_status_counts['pending'] || 0
+    @total_purchase_value = VendorPurchase.sum(:total_amount) rescue 0
+    # VendorPayment has neither a `status` nor an `amount` column, so this always raised
+    # and fell through to 0 anyway — skip the guaranteed-failing round trip.
+    @pending_payments = 0
+
+    # Store metrics — one grouped query replaces 2 separate counts
+    store_status_counts = Store.group(:status).count rescue {}
+    @total_stores = store_status_counts.values.sum
+    @active_stores = store_status_counts[true] || 0
 
     # Inventory metrics
     @total_stock_value = Product.sum('price * stock') || 0
@@ -673,14 +721,20 @@ class DashboardController < ApplicationController
   end
 
   def calculate_sales_trend
-    # Last 7 days sales trend
+    # Last 7 days sales trend — one query (created_at is indexed) instead of 7
+    start_date = 6.days.ago.to_date
+
     trend = {}
-    7.times do |i|
-      date = (Date.current - i.days)
-      daily_sales = Booking.where(created_at: date.beginning_of_day..date.end_of_day).sum(:total_amount) || 0
-      trend[date.strftime('%a')] = daily_sales
+    7.times { |i| trend[(start_date + i.days).strftime('%a')] = 0 }
+
+    Booking.where(created_at: start_date.beginning_of_day..Date.current.end_of_day)
+           .pluck(:created_at, :total_amount)
+           .each do |created_at, amount|
+      key = created_at.to_date.strftime('%a')
+      trend[key] += (amount || 0) if trend.key?(key)
     end
-    trend.to_a.reverse.to_h
+
+    trend
   end
 
   def calculate_category_performance
@@ -712,7 +766,12 @@ class DashboardController < ApplicationController
   end
 
   def calculate_monthly_revenue_trend
-    # Last 6 months revenue trend
+    # NOTE: kept as one query per month (rather than a single pluck bucketed in Ruby)
+    # because `month_date.end_of_month` is a Date, and `where(created_at: month_date..month_date.end_of_month)`
+    # against a datetime column compiles to `BETWEEN month_date AND month_end_date`, i.e. midnight
+    # of the last day — excluding virtually the entire last day of the month. That's a pre-existing
+    # quirk of this query; bucketing in Ruby by calendar date would silently include that last day
+    # and change the displayed totals, so the per-month query (and its exact boundary behavior) stays.
     trend = {}
     6.times do |i|
       month_date = (Date.current - i.months).beginning_of_month
@@ -724,6 +783,10 @@ class DashboardController < ApplicationController
   end
 
   def calculate_payment_method_distribution
+    # NOTE: Booking#payment_method is an integer-backed enum stored in a string column,
+    # so `.group(:payment_method).count` returns raw un-translated values instead of
+    # labels — `.where(payment_method: 'x')` is what applies the enum's label
+    # translation, so these have to stay as separate queries rather than one grouped one.
     {
       'Cash' => Booking.where(payment_method: 'cash').count,
       'Card' => Booking.where(payment_method: 'card').count,
@@ -777,19 +840,8 @@ class DashboardController < ApplicationController
   end
 
   def calculate_customer_locations
-    # Get top customer locations by state/city
-    begin
-      customer_locations = Customer.where.not(state: [nil, ''])
-                                  .group(:state)
-                                  .count
-                                  .sort_by { |state, count| -count }
-                                  .first(10)
-
-      # Return hash with state as key and count as value
-      Hash[customer_locations]
-    rescue
-      # Return empty hash if there's any error or no data
-      {}
-    end
+    # The customers table has no state/city column, so this always raised and fell
+    # through to {} anyway — skip the guaranteed-failing round trip.
+    {}
   end
 end

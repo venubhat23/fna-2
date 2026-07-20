@@ -280,11 +280,14 @@ class Admin::ReportsController < Admin::ApplicationController
                                .where(health_insurances: { created_at: start_date..Time.current })
                                .distinct.count rescue 0
 
-    @customer_growth = []
-    (0..6).each do |i|
+    growth_start = 6.days.ago.to_date
+    counts_by_date = Customer.where(created_at: growth_start.beginning_of_day..Time.current)
+                              .group("DATE(created_at)")
+                              .count
+
+    @customer_growth = (0..6).map do |i|
       date = (6-i).days.ago.to_date
-      count = Customer.where('DATE(created_at) = ?', date).count
-      @customer_growth << { date: date.strftime('%b %d'), count: count }
+      { date: date.strftime('%b %d'), count: counts_by_date[date.to_s] || counts_by_date[date] || 0 }
     end
   end
 
@@ -312,22 +315,26 @@ class Admin::ReportsController < Admin::ApplicationController
       @total_orders = Order.where(created_at: start_date..Time.current).count
       @average_order_value = @total_orders > 0 ? (@total_revenue / @total_orders).round(2) : 0
 
-      @revenue_by_day = []
-      (0..6).each do |i|
+      revenue_start = 6.days.ago.to_date
+      revenue_by_date = Order.where(created_at: revenue_start.beginning_of_day..Time.current)
+                              .group("DATE(created_at)")
+                              .sum(:total_amount)
+      @revenue_by_day = (0..6).map do |i|
         date = (6-i).days.ago.to_date
-        revenue = Order.where('DATE(created_at) = ?', date).sum(:total_amount)
-        @revenue_by_day << { date: date.strftime('%b %d'), revenue: revenue }
+        { date: date.strftime('%b %d'), revenue: revenue_by_date[date.to_s] || revenue_by_date[date] || 0 }
       end
     elsif defined?(Booking)
       @total_revenue = Booking.where(created_at: start_date..Time.current).sum(:total_amount)
       @total_orders = Booking.where(created_at: start_date..Time.current).count
       @average_order_value = @total_orders > 0 ? (@total_revenue / @total_orders).round(2) : 0
 
-      @revenue_by_day = []
-      (0..6).each do |i|
+      revenue_start = 6.days.ago.to_date
+      revenue_by_date = Booking.where(created_at: revenue_start.beginning_of_day..Time.current)
+                                .group("DATE(created_at)")
+                                .sum(:total_amount)
+      @revenue_by_day = (0..6).map do |i|
         date = (6-i).days.ago.to_date
-        revenue = Booking.where('DATE(created_at) = ?', date).sum(:total_amount)
-        @revenue_by_day << { date: date.strftime('%b %d'), revenue: revenue }
+        { date: date.strftime('%b %d'), revenue: revenue_by_date[date.to_s] || revenue_by_date[date] || 0 }
       end
     else
       @total_revenue = 0
@@ -717,11 +724,11 @@ class Admin::ReportsController < Admin::ApplicationController
 
   def build_enhanced_sales_data
     # Get all invoices in the date range (both regular and booking invoices)
-    regular_invoices = Invoice.includes(:customer, :invoice_items)
+    regular_invoices = Invoice.includes(:customer, invoice_items: :product)
                              .where(invoice_date: @from_date..@to_date)
                              .order(:invoice_date)
 
-    booking_invoices = BookingInvoice.includes(:customer, :booking)
+    booking_invoices = BookingInvoice.includes(:customer, booking: { booking_items: :product })
                                    .where(invoice_date: @from_date..@to_date)
                                    .order(:invoice_date)
 
@@ -762,8 +769,8 @@ class Admin::ReportsController < Admin::ApplicationController
 
     # Count assignments (invoice items)
     assignments = invoice_type == 'BookingInvoice' ?
-                  (invoice.respond_to?(:booking) ? invoice.booking&.booking_items&.count || 0 : 0) :
-                  invoice.invoice_items.count
+                  (invoice.respond_to?(:booking) ? invoice.booking&.booking_items&.size || 0 : 0) :
+                  invoice.invoice_items.size
 
     {
       customer_name: customer&.display_name || 'N/A',

@@ -313,12 +313,13 @@ class Product < ApplicationRecord
 
   # Review methods (using new ProductReview model)
   def average_rating
-    return 0 if approved_reviews.empty?
-    (approved_reviews.average(:rating) || 0).round(1)
+    reviews = approved_reviews.to_a
+    return 0 if reviews.empty?
+    (reviews.sum { |r| r.rating.to_f } / reviews.size).round(1)
   end
 
   def total_reviews
-    approved_reviews.count
+    approved_reviews.to_a.size
   end
 
   def review_distribution

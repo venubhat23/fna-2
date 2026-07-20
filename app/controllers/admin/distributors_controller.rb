@@ -38,13 +38,10 @@ class Admin::DistributorsController < Admin::ApplicationController
     # Get assigned affiliates with their detailed information
     @assigned_affiliates = @distributor.assigned_sub_agents.includes(
       :distributor_assignment
-    ).order('sub_agents.created_at DESC')
+    ).order('sub_agents.created_at DESC').to_a
 
-    # Calculate statistics for each affiliate
-    @affiliate_stats = {}
-    @assigned_affiliates.each do |affiliate|
-      @affiliate_stats[affiliate.id] = calculate_affiliate_stats(affiliate)
-    end
+    # Calculate statistics for each affiliate (batched to avoid N+1 across affiliates)
+    @affiliate_stats = build_affiliate_stats(@assigned_affiliates)
 
     # Overall distributor statistics
     @distributor_stats = calculate_distributor_stats
@@ -194,62 +191,79 @@ class Admin::DistributorsController < Admin::ApplicationController
     end
   end
 
-  def calculate_affiliate_stats(affiliate)
-    health_policies = HealthInsurance.where(sub_agent_id: affiliate.id)
-    life_policies = LifeInsurance.where(sub_agent_id: affiliate.id)
-    motor_policies = MotorInsurance.where(sub_agent_id: affiliate.id)
+  def build_affiliate_stats(affiliates)
+    affiliate_ids = affiliates.map(&:id)
+    return {} if affiliate_ids.empty?
 
-    # Safely try to get other policies if the association exists
-    other_policies_count = 0
-    other_policies_premium = 0.0
-    other_policies_commission = 0.0
+    health_counts = HealthInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).count
+    health_premiums = HealthInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).sum(:total_premium)
+    health_commissions = HealthInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).sum(:commission_amount)
+    health_customer_ids = Hash.new { |h, k| h[k] = [] }
+    HealthInsurance.where(sub_agent_id: affiliate_ids).pluck(:sub_agent_id, :customer_id).each do |sid, cid|
+      health_customer_ids[sid] << cid if cid
+    end
 
-    begin
-      # Try to get other insurance through customers
-      affiliate_customers = Customer.where(sub_agent_id: affiliate.id)
-      if defined?(OtherInsurance) && OtherInsurance.respond_to?(:joins)
-        other_policies = OtherInsurance.joins(:policy).where(policies: { customer_id: affiliate_customers.pluck(:id) })
-        other_policies_count = other_policies.count
-        other_policies_premium = other_policies.sum(:total_premium).to_f rescue 0.0
-        other_policies_commission = other_policies.sum(:commission_amount).to_f rescue 0.0
-      end
-    rescue => e
-      Rails.logger.debug "Could not load other insurance data: #{e.message}"
+    life_counts = LifeInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).count
+    life_premiums = LifeInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).sum(:total_premium)
+    life_commissions = LifeInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).sum(:commission_amount)
+    life_customer_ids = Hash.new { |h, k| h[k] = [] }
+    LifeInsurance.where(sub_agent_id: affiliate_ids).pluck(:sub_agent_id, :customer_id).each do |sid, cid|
+      life_customer_ids[sid] << cid if cid
+    end
+
+    motor_counts = MotorInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).count
+    motor_premiums = MotorInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).sum(:total_premium)
+    motor_commissions = MotorInsurance.where(sub_agent_id: affiliate_ids).group(:sub_agent_id).sum(:main_agent_commission_amount)
+    motor_customer_ids = Hash.new { |h, k| h[k] = [] }
+    MotorInsurance.where(sub_agent_id: affiliate_ids).pluck(:sub_agent_id, :customer_id).each do |sid, cid|
+      motor_customer_ids[sid] << cid if cid
+    end
+
+    recent_by_affiliate = build_recent_policies_for_affiliates(affiliate_ids)
+
+    affiliates.each_with_object({}) do |affiliate, stats|
+      id = affiliate.id
+
+      # Safely try to get other policies if the association exists
       other_policies_count = 0
       other_policies_premium = 0.0
       other_policies_commission = 0.0
+
+      begin
+        # Try to get other insurance through customers
+        affiliate_customers = Customer.where(sub_agent_id: id)
+        if defined?(OtherInsurance) && OtherInsurance.respond_to?(:joins)
+          other_policies = OtherInsurance.joins(:policy).where(policies: { customer_id: affiliate_customers.pluck(:id) })
+          other_policies_count = other_policies.count
+          other_policies_premium = other_policies.sum(:total_premium).to_f rescue 0.0
+          other_policies_commission = other_policies.sum(:commission_amount).to_f rescue 0.0
+        end
+      rescue => e
+        Rails.logger.debug "Could not load other insurance data: #{e.message}"
+        other_policies_count = 0
+        other_policies_premium = 0.0
+        other_policies_commission = 0.0
+      end
+
+      total_policies = health_counts[id].to_i + life_counts[id].to_i + motor_counts[id].to_i + other_policies_count
+      total_premium = health_premiums[id].to_f + life_premiums[id].to_f + motor_premiums[id].to_f + other_policies_premium
+      total_commission = health_commissions[id].to_f + life_commissions[id].to_f + motor_commissions[id].to_f + other_policies_commission
+
+      unique_customers_count = (health_customer_ids[id] + life_customer_ids[id] + motor_customer_ids[id]).uniq.count
+
+      stats[id] = {
+        total_policies: total_policies,
+        total_premium: total_premium,
+        total_commission: total_commission,
+        health_policies: health_counts[id].to_i,
+        life_policies: life_counts[id].to_i,
+        motor_policies: motor_counts[id].to_i,
+        other_policies: other_policies_count,
+        recent_policies: recent_by_affiliate[id] || [],
+        customers_count: unique_customers_count,
+        joined_date: affiliate.created_at
+      }
     end
-
-    total_policies = health_policies.count + life_policies.count + motor_policies.count + other_policies_count
-    total_premium = (health_policies.sum(:total_premium) +
-                    life_policies.sum(:total_premium) +
-                    motor_policies.sum(:total_premium) +
-                    other_policies_premium).to_f
-
-    total_commission = (health_policies.sum(:commission_amount) +
-                       life_policies.sum(:commission_amount) +
-                       motor_policies.sum(:main_agent_commission_amount) +
-                       other_policies_commission).to_f
-
-    # Get unique customers from all policies created by this affiliate
-    customer_ids = []
-    customer_ids += health_policies.pluck(:customer_id).compact
-    customer_ids += life_policies.pluck(:customer_id).compact
-    customer_ids += motor_policies.pluck(:customer_id).compact
-    unique_customers_count = customer_ids.uniq.count
-
-    {
-      total_policies: total_policies,
-      total_premium: total_premium,
-      total_commission: total_commission,
-      health_policies: health_policies.count,
-      life_policies: life_policies.count,
-      motor_policies: motor_policies.count,
-      other_policies: other_policies_count,
-      recent_policies: get_recent_policies_for_affiliate(affiliate),
-      customers_count: unique_customers_count,
-      joined_date: affiliate.created_at
-    }
   end
 
   def calculate_distributor_stats
@@ -268,7 +282,7 @@ class Admin::DistributorsController < Admin::ApplicationController
 
     {
       total_affiliates: @assigned_affiliates.count,
-      active_affiliates: @assigned_affiliates.active.count,
+      active_affiliates: @assigned_affiliates.count(&:active?),
       total_policies: total_policies,
       total_premium: total_premium,
       total_commission: total_commission,
@@ -277,55 +291,57 @@ class Admin::DistributorsController < Admin::ApplicationController
     }
   end
 
-  def get_recent_policies_for_affiliate(affiliate)
-    policies = []
+  def build_recent_policies_for_affiliates(affiliate_ids)
+    health_by_affiliate = HealthInsurance.where(sub_agent_id: affiliate_ids)
+                                          .includes(:customer)
+                                          .order(created_at: :desc)
+                                          .group_by(&:sub_agent_id)
 
-    # Get recent health policies
-    HealthInsurance.where(sub_agent_id: affiliate.id)
-                   .includes(:customer)
-                   .order(created_at: :desc)
-                   .limit(3)
-                   .each do |policy|
-      policies << {
-        type: 'Health',
-        policy_number: policy.policy_number,
-        customer: policy.customer&.display_name || 'Unknown',
-        premium: policy.total_premium,
-        created_at: policy.created_at
-      }
+    life_by_affiliate = LifeInsurance.where(sub_agent_id: affiliate_ids)
+                                      .includes(:customer)
+                                      .order(created_at: :desc)
+                                      .group_by(&:sub_agent_id)
+
+    motor_by_affiliate = MotorInsurance.where(sub_agent_id: affiliate_ids)
+                                        .includes(:customer)
+                                        .order(created_at: :desc)
+                                        .group_by(&:sub_agent_id)
+
+    affiliate_ids.each_with_object({}) do |id, result|
+      policies = []
+
+      (health_by_affiliate[id] || []).first(3).each do |policy|
+        policies << {
+          type: 'Health',
+          policy_number: policy.policy_number,
+          customer: policy.customer&.display_name || 'Unknown',
+          premium: policy.total_premium,
+          created_at: policy.created_at
+        }
+      end
+
+      (life_by_affiliate[id] || []).first(3).each do |policy|
+        policies << {
+          type: 'Life',
+          policy_number: policy.policy_number,
+          customer: policy.customer&.display_name || 'Unknown',
+          premium: policy.total_premium,
+          created_at: policy.created_at
+        }
+      end
+
+      (motor_by_affiliate[id] || []).first(2).each do |policy|
+        policies << {
+          type: 'Motor',
+          policy_number: policy.policy_number,
+          customer: policy.customer&.display_name || 'Unknown',
+          premium: policy.total_premium,
+          created_at: policy.created_at
+        }
+      end
+
+      # Sort by creation date and return top 5
+      result[id] = policies.sort_by { |p| p[:created_at] }.reverse.first(5)
     end
-
-    # Get recent life policies
-    LifeInsurance.where(sub_agent_id: affiliate.id)
-                 .includes(:customer)
-                 .order(created_at: :desc)
-                 .limit(3)
-                 .each do |policy|
-      policies << {
-        type: 'Life',
-        policy_number: policy.policy_number,
-        customer: policy.customer&.display_name || 'Unknown',
-        premium: policy.total_premium,
-        created_at: policy.created_at
-      }
-    end
-
-    # Get recent motor policies
-    MotorInsurance.where(sub_agent_id: affiliate.id)
-                  .includes(:customer)
-                  .order(created_at: :desc)
-                  .limit(2)
-                  .each do |policy|
-      policies << {
-        type: 'Motor',
-        policy_number: policy.policy_number,
-        customer: policy.customer&.display_name || 'Unknown',
-        premium: policy.total_premium,
-        created_at: policy.created_at
-      }
-    end
-
-    # Sort by creation date and return top 5
-    policies.sort_by { |p| p[:created_at] }.reverse.first(5)
   end
 end
