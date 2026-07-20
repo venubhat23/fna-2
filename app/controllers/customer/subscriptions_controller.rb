@@ -2,8 +2,8 @@ class Customer::SubscriptionsController < Customer::BaseController
   before_action :find_subscription, only: [:show, :edit, :update, :pause, :resume, :cancel, :destroy]
 
   def index
-    @active_subscriptions = current_customer.milk_subscriptions.where(is_active: true)
-    @paused_subscriptions = current_customer.milk_subscriptions.where(is_active: false)
+    @active_subscriptions = current_customer.milk_subscriptions.includes(:product).where(is_active: true)
+    @paused_subscriptions = current_customer.milk_subscriptions.includes(:product).where(is_active: false)
   end
 
   def show

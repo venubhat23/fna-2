@@ -57,7 +57,13 @@ class Api::V1::Mobile::AgentController < Api::V1::Mobile::BaseController
     # 'all' or nil shows all customers
     end
 
-    customers = customers.includes(:documents, profile_image_attachment: :blob).active.page(page).per(per_page)
+    customers = customers.includes(documents: { file_attachment: :blob }, profile_image_attachment: :blob).active.page(page).per(per_page)
+
+    customer_ids = customers.map(&:id)
+    health_policy_counts = HealthInsurance.where(customer_id: customer_ids).group(:customer_id).count
+    health_policy_premiums = HealthInsurance.where(customer_id: customer_ids).group(:customer_id).sum(:total_premium)
+    life_policy_counts = LifeInsurance.where(customer_id: customer_ids).group(:customer_id).count
+    life_policy_premiums = LifeInsurance.where(customer_id: customer_ids).group(:customer_id).sum(:total_premium)
 
     customers_data = customers.map do |customer|
       # Format document data
@@ -102,8 +108,8 @@ class Api::V1::Mobile::AgentController < Api::V1::Mobile::BaseController
         password: generate_demo_password(customer), # Demo password for testing
         customer_type: customer.customer_type,
         status: customer.active? ? 'Active' : 'Inactive',
-        policies_count: get_customer_policies_count(customer),
-        total_premium: get_customer_total_premium(customer),
+        policies_count: health_policy_counts[customer.id].to_i + life_policy_counts[customer.id].to_i,
+        total_premium: health_policy_premiums[customer.id].to_f + life_policy_premiums[customer.id].to_f,
         added_by: customer.added_by || 'system',
         added_via: determine_add_source(customer.added_by),
         created_at: customer.created_at,
@@ -1578,16 +1584,6 @@ class Api::V1::Mobile::AgentController < Api::V1::Mobile::BaseController
     end
 
     activities.sort_by { |a| a[:timestamp] }.reverse.first(10)
-  end
-
-  def get_customer_policies_count(customer)
-    HealthInsurance.where(customer: customer).count +
-    LifeInsurance.where(customer: customer).count
-  end
-
-  def get_customer_total_premium(customer)
-    HealthInsurance.where(customer: customer).sum(:total_premium) +
-    LifeInsurance.where(customer: customer).sum(:total_premium)
   end
 
   def format_policy_data(policy, type)

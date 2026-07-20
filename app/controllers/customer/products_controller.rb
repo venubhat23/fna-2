@@ -2,7 +2,14 @@ class Customer::ProductsController < Customer::BaseController
   before_action :find_product, only: [:show]
 
   def index
-    @products = Product.active.includes(:category, :approved_reviews)
+    # LEFT JOIN + cached_stock aggregate so in_stock?/low_stock?/stock_status in the view
+    # (called per product in the list) read a pre-computed column instead of re-querying
+    # stock_batches for every row. See Product#total_batch_stock / #cached_total_batch_stock.
+    @products = Product.active
+                        .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
+                        .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+                        .group("products.id")
+                        .includes(:category, :approved_reviews)
 
     # Apply filters
     @products = @products.by_category(params[:category_id]) if params[:category_id].present?
@@ -13,17 +20,12 @@ class Customer::ProductsController < Customer::BaseController
       @products = @products.where(price: params[:min_price]..params[:max_price])
     end
 
-    # Stock filter
+    # Stock filter (reuses the LEFT JOIN above instead of joining stock_batches again)
     case params[:stock_filter]
     when 'in_stock'
-      @products = @products.joins(:stock_batches)
-                          .where(stock_batches: { status: 'active' })
-                          .group('products.id')
-                          .having('SUM(stock_batches.quantity_remaining) > 0')
+      @products = @products.having('SUM(stock_batches.quantity_remaining) > 0')
     when 'out_of_stock'
-      @products = @products.left_joins(:stock_batches)
-                          .group('products.id')
-                          .having('COALESCE(SUM(CASE WHEN stock_batches.status = ? THEN stock_batches.quantity_remaining ELSE 0 END), 0) = 0', 'active')
+      @products = @products.having('COALESCE(SUM(stock_batches.quantity_remaining), 0) = 0')
     end
 
     # Sort
@@ -56,6 +58,10 @@ class Customer::ProductsController < Customer::BaseController
 
   def show
     @related_products = Product.active
+                              .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
+                              .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+                              .group("products.id")
+                              .includes(:category, :approved_reviews)
                               .where.not(id: @product.id)
                               .where(category: @product.category)
                               .limit(4)
@@ -70,14 +76,23 @@ class Customer::ProductsController < Customer::BaseController
 
   def category
     @category = Category.find(params[:id])
-    @products = @category.products.active.includes(:approved_reviews)
+    @products = @category.products.active
+                          .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
+                          .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+                          .group("products.id")
+                          .includes(:approved_reviews)
     @products = @products.page(params[:page]).per(12)
   end
 
   private
 
   def find_product
-    @product = Product.active.find(params[:id])
+    @product = Product.active
+                       .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
+                       .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+                       .group("products.id")
+                       .includes(:category, :approved_reviews)
+                       .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to customer_products_path, alert: 'Product not found.'
   end

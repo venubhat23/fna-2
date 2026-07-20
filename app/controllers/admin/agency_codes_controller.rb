@@ -5,7 +5,7 @@ class Admin::AgencyCodesController < Admin::ApplicationController
 
   # GET /admin/agency_codes
   def index
-    @agency_codes = AgencyCode.all
+    @agency_codes = AgencyCode.includes(:broker)
 
     # Apply search filter
     if params[:search].present?

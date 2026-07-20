@@ -74,7 +74,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     # Handle count for grouped queries (like rating sort)
     total_count = @products.count
     total_count = total_count.is_a?(Hash) ? total_count.keys.count : total_count
-    @products = @products.offset((page - 1) * per_page).limit(per_page)
+    @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
 
     products_data = @products.map { |product| format_product_data(product) }
 
@@ -129,7 +129,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
     count_result = @products.count
     total_count = count_result.is_a?(Hash) ? count_result.keys.count : count_result
-    @products = @products.offset((page - 1) * per_page).limit(per_page)
+    @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
 
     products_data = @products.map { |product| format_product_data(product) }
 
@@ -663,7 +663,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       count_result = @products.count
       total_count = count_result.is_a?(Hash) ? count_result.keys.count : count_result
 
-      @products = @products.offset((page - 1) * per_page).limit(per_page)
+      @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
       products_data = @products.map { |product| format_product_data(product) }
 
       json_response({
@@ -718,9 +718,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     limit = [limit, 10].min # Maximum 10 products
 
     begin
-      @products = Product.active.in_stock
-                          .order(created_at: :desc)
-                          .limit(limit)
+      @products = preload_product_listing(
+        Product.active.in_stock.order(created_at: :desc).limit(limit)
+      )
 
       products_data = @products.map { |product| format_product_data(product) }
 
@@ -796,13 +796,20 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/products/:id
   def product_details
-    @product = Product.active.includes(:category, :product_reviews, image_attachment: :blob, additional_images_attachments: :blob).find(params[:id])
+    @product = Product.active
+                       .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active' AND stock_batches.quantity_remaining > 0")
+                       .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+                       .group("products.id")
+                       .includes(:category, :product_reviews, :approved_reviews, image_attachment: :blob, additional_images_attachments: :blob)
+                       .find(params[:id])
 
     # Get related products from same category
-    related_products = Product.active.in_stock
-                              .where(category_id: @product.category_id)
-                              .where.not(id: @product.id)
-                              .limit(5)
+    related_products = preload_product_listing(
+      Product.active.in_stock
+             .where(category_id: @product.category_id)
+             .where.not(id: @product.id)
+             .limit(5)
+    )
 
     # Get recent reviews
     recent_reviews = @product.product_reviews.approved.recent.limit(10).includes(:customer)
@@ -1328,6 +1335,17 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @product = Product.active.find(params[:id] || params[:product_id])
   rescue ActiveRecord::RecordNotFound
     json_response({ success: false, message: 'Product not found' }, :not_found)
+  end
+
+  # format_product_data reads category, approved_reviews (average_rating/total_reviews) and
+  # stock (in_stock?/low_stock?/stock_status) per product. None of those respect a plain
+  # includes(:stock_batches) since they're aggregate queries, so this preloads the associations
+  # that ARE respected and pins the stock figure to the cached_stock column via the same
+  # SQL-aggregate pattern used in admin/bookings_controller.rb#new.
+  def preload_product_listing(relation)
+    relation
+      .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+      .includes(:category, :approved_reviews, image_attachment: :blob, additional_images_attachments: :blob)
   end
 
   def format_product_data(product)

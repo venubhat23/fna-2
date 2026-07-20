@@ -4,7 +4,7 @@ class Admin::SubAgentsController < Admin::ApplicationController
 
   # GET /admin/sub_agents
   def index
-    @sub_agents = SubAgent.all
+    @sub_agents = SubAgent.includes(:distributor_assignment, :assigned_distributor)
 
     # Search functionality
     if params[:search].present?
