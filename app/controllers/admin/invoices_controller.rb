@@ -1048,7 +1048,7 @@ class Admin::InvoicesController < Admin::ApplicationController
     counts_by_status = regular_query.group(:payment_status).count
     sums_by_status = regular_query.group(:payment_status).sum(:total_amount)
 
-    booking_query = build_booking_only_invoices_query
+    booking_query = build_booking_only_invoices_query.reorder(nil)
     booking_counts_by_status = booking_query.group(:payment_status).count
     booking_sums_by_status = booking_query.group(:payment_status).sum(:total_amount)
 
