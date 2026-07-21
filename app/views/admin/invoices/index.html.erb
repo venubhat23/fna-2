@@ -251,9 +251,15 @@
                   invoice_status = invoice_data.status
                 end
               %>
+              <%
+                # Booking-only rows use Booking#payment_status ('paid'), which is a
+                # different enum from Invoice#payment_status ('fully_paid') - compare
+                # against the right "already paid" value per row type.
+                already_paid = invoice_type == 'booking_only' ? payment_status == 'paid' : payment_status == 'fully_paid'
+              %>
               <tr>
                 <td>
-                  <% unless payment_status == 'fully_paid' %>
+                  <% unless already_paid %>
                     <div class="form-check">
                       <input class="form-check-input invoice-checkbox" type="checkbox"
                              value="<%= invoice_id %>"
@@ -2388,14 +2394,25 @@ function clearSelection() {
 
 function markSelectedAsPaid() {
   const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
-  const invoiceIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+  const invoiceIds = [];
+  const bookingIds = [];
 
-  if (invoiceIds.length === 0) {
+  selectedCheckboxes.forEach(cb => {
+    if (cb.dataset.invoiceType === 'booking_only') {
+      bookingIds.push(cb.value);
+    } else {
+      invoiceIds.push(cb.value);
+    }
+  });
+
+  const totalSelected = invoiceIds.length + bookingIds.length;
+
+  if (totalSelected === 0) {
     alert('Please select at least one invoice to mark as paid.');
     return;
   }
 
-  const confirmMessage = `Are you sure you want to mark ${invoiceIds.length} invoice(s) as paid?`;
+  const confirmMessage = `Are you sure you want to mark ${totalSelected} invoice(s) as paid?`;
   if (!confirm(confirmMessage)) {
     return;
   }
@@ -2414,7 +2431,8 @@ function markSelectedAsPaid() {
       'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
     },
     body: JSON.stringify({
-      invoice_ids: invoiceIds
+      invoice_ids: invoiceIds,
+      booking_ids: bookingIds
     })
   })
   .then(response => response.json())

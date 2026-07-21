@@ -619,18 +619,21 @@ class Admin::InvoicesController < Admin::ApplicationController
   end
 
   def bulk_mark_as_paid
-    invoice_ids = params[:invoice_ids]
+    invoice_ids = Array(params[:invoice_ids]).reject(&:blank?)
+    # Booking-only rows in the invoices list (bookings with an invoice number
+    # but no Invoice row yet) are keyed by Booking id, not Invoice id, so they
+    # have to be updated through the Booking model instead.
+    booking_ids = Array(params[:booking_ids]).reject(&:blank?)
 
-    if invoice_ids.blank? || !invoice_ids.is_a?(Array)
+    if invoice_ids.blank? && booking_ids.blank?
       render json: { success: false, error: 'No invoice IDs provided' }, status: :bad_request
       return
     end
 
-    # Find invoices that are not already paid
-    invoices_to_update = Invoice.where(id: invoice_ids)
-                               .where.not(payment_status: 'fully_paid')
+    invoices_to_update = Invoice.where(id: invoice_ids).where.not(payment_status: 'fully_paid')
+    bookings_to_update = Booking.where(id: booking_ids).where.not(payment_status: 'paid')
 
-    if invoices_to_update.empty?
+    if invoices_to_update.empty? && bookings_to_update.empty?
       render json: { success: false, error: 'No unpaid invoices found to update' }, status: :bad_request
       return
     end
@@ -644,6 +647,11 @@ class Admin::InvoicesController < Admin::ApplicationController
           status: :paid,
           paid_at: Time.current
         )
+        updated_count += 1
+      end
+
+      bookings_to_update.find_each do |booking|
+        booking.update!(payment_status: :paid)
         updated_count += 1
       end
     end
@@ -806,6 +814,24 @@ class Admin::InvoicesController < Admin::ApplicationController
       s = "%#{params[:search]}%"
       query = query.joins(:customer)
                    .where("bookings.invoice_number ILIKE ? OR bookings.booking_number ILIKE ? OR customers.first_name ILIKE ? OR customers.last_name ILIKE ?", s, s, s, s)
+    end
+
+    # Apply status filter, matching apply_search_filters' semantics for Invoice.
+    # Booking#payment_status uses 'paid' where Invoice#payment_status uses 'fully_paid';
+    # a nil payment_status displays as "Unpaid" (see prepare_booking_invoice_data), so it
+    # counts toward 'pending' here too.
+    if params[:status].present? && params[:status] != 'all'
+      case params[:status]
+      when 'pending'
+        query = query.where("bookings.payment_status IN (?) OR bookings.payment_status IS NULL", ['unpaid', 'partially_paid'])
+      when 'moved_to_next_month'
+        # Booking has no equivalent status; only regular invoices can be moved_to_next_month.
+        query = query.none
+      when 'fully_paid'
+        query = query.where(payment_status: 'paid')
+      else
+        query = query.where(payment_status: params[:status])
+      end
     end
 
     query.order(created_at: :desc)
@@ -1014,20 +1040,36 @@ class Admin::InvoicesController < Admin::ApplicationController
   end
 
   def calculate_regular_invoice_stats_only
-    # Calculate stats from regular invoices only (exclude booking invoices).
-    # Two grouped queries instead of six separate count/sum queries.
+    # Stats must cover the same rows the "Invoice List" table below shows, which is
+    # regular invoices PLUS booking-only invoices (see index action) - otherwise the
+    # summary cards (e.g. "Pending Amount ... N invoices") don't match the table's
+    # "Showing X-Y of Z invoices", since the table's total_count includes both.
     regular_query = build_regular_invoices_query_for_stats
-
     counts_by_status = regular_query.group(:payment_status).count
     sums_by_status = regular_query.group(:payment_status).sum(:total_amount)
 
+    booking_query = build_booking_only_invoices_query
+    booking_counts_by_status = booking_query.group(:payment_status).count
+    booking_sums_by_status = booking_query.group(:payment_status).sum(:total_amount)
+
+    # Booking#payment_status uses 'paid'/nil where Invoice#payment_status uses
+    # 'fully_paid'/'unpaid' - normalize before combining (see build_booking_only_invoices_query).
+    booking_paid_count = booking_counts_by_status['paid'] || 0
+    booking_paid_amount = booking_sums_by_status['paid'] || 0
+    booking_pending_count = (booking_counts_by_status['unpaid'] || 0) +
+                             (booking_counts_by_status['partially_paid'] || 0) +
+                             (booking_counts_by_status[nil] || 0)
+    booking_pending_amount = (booking_sums_by_status['unpaid'] || 0) +
+                              (booking_sums_by_status['partially_paid'] || 0) +
+                              (booking_sums_by_status[nil] || 0)
+
     {
-      total_invoices: counts_by_status.values.sum,
-      total_amount: sums_by_status.values.sum,
-      paid_amount: sums_by_status['fully_paid'] || 0,
-      pending_amount: (sums_by_status['unpaid'] || 0) + (sums_by_status['partially_paid'] || 0),
-      paid_count: counts_by_status['fully_paid'] || 0,
-      pending_count: (counts_by_status['unpaid'] || 0) + (counts_by_status['partially_paid'] || 0)
+      total_invoices: counts_by_status.values.sum + booking_counts_by_status.values.sum,
+      total_amount: sums_by_status.values.sum + booking_sums_by_status.values.sum,
+      paid_amount: (sums_by_status['fully_paid'] || 0) + booking_paid_amount,
+      pending_amount: (sums_by_status['unpaid'] || 0) + (sums_by_status['partially_paid'] || 0) + booking_pending_amount,
+      paid_count: (counts_by_status['fully_paid'] || 0) + booking_paid_count,
+      pending_count: (counts_by_status['unpaid'] || 0) + (counts_by_status['partially_paid'] || 0) + booking_pending_count
     }
   end
 
