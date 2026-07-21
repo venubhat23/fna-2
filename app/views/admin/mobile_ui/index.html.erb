@@ -133,6 +133,23 @@
 .icon-edit-invoice { background: #fff3e0; color: #e65100; }
 .icon-wa    { background: #e8f8ee; color: #25d366; }
 .icon-wa:hover { background: #25d366; color: white; }
+.icon-call     { background: #e3f2fd; color: #1976d2; }
+.icon-wa-call  { background: #e8f8ee; color: #25d366; }
+
+/* Payment reminder pill */
+.reminder-btn {
+  background: #ff6b35;
+  color: white;
+  border: none;
+  border-radius: 22px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  display: flex; align-items: center; gap: 5px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.reminder-btn:hover, .reminder-btn:active { background: #e85a2a; color: white; }
 
 /* Invoice share */
 .wa-send-btn {
@@ -246,6 +263,9 @@
       # WhatsApp thank-you message — includes invoice PDF link if an invoice exists
       pdf_line = invoice_pdf_url ? "\n📄 Download Invoice PDF: #{invoice_pdf_url}" : ""
       wa_thank_msg = "Dear #{cname},\n\nThank you for your booking with Atma Nirbhar Farm! 🌾\n\nBooking #: #{booking.booking_number}\nDate: #{bdate}\nAmount: ₹#{amount}#{pdf_line}\n\nWe appreciate your trust in us!\n\n🙏 Atma Nirbhar Farm Team"
+
+      payment_pending = booking.payment_status.to_s != 'paid'
+      wa_pending_msg = "🙏 Dear #{cname},\n\nThis is a friendly reminder about your booking payment with *Atma Nirbhar Farm* 🌾\n\n📋 Booking #: #{booking.booking_number}\n📅 Date: #{bdate}\n💰 Amount Due: ₹#{amount}\n\n⏳ Your payment is currently *PENDING*. Kindly complete it at your earliest convenience to avoid any delay in service.#{pdf_line}\n\nFor any queries or payment assistance, just reply to this message. 🙏\n\nThank you for your continued trust in us!\n— Atma Nirbhar Farm Team"
     %>
     <div class="booking-card">
       <div class="booking-card-header">
@@ -299,8 +319,26 @@
             <% end %>
           <% end %>
 
-          <%# WhatsApp Thanks button — for paid and unpaid bookings %>
-          <% if wa_phone.present? %>
+          <% if wa_phone.present? && payment_pending %>
+            <%# Call — dials the customer directly, no number to type %>
+            <a href="tel:+<%= wa_phone %>" class="icon-btn icon-call" title="Call Customer">
+              <i class="bi bi-telephone-fill"></i>
+            </a>
+
+            <%# WhatsApp Call — tries to open a WhatsApp voice call directly (Android),
+                falls back to opening the chat if that doesn't work or on other platforms %>
+            <a href="#" class="icon-btn icon-wa-call" title="WhatsApp Call"
+               onclick="waCall('<%= wa_phone %>'); return false;">
+              <i class="bi bi-telephone-outbound-fill"></i>
+            </a>
+
+            <%# WhatsApp Message — pre-filled payment reminder template %>
+            <a href="https://wa.me/<%= wa_phone %>?text=<%= ERB::Util.url_encode(wa_pending_msg) %>"
+               class="reminder-btn" target="_blank" title="Send Payment Reminder on WhatsApp">
+              <i class="bi bi-whatsapp"></i> Remind
+            </a>
+          <% elsif wa_phone.present? %>
+            <%# WhatsApp Thanks button — for paid bookings %>
             <a href="https://wa.me/<%= wa_phone %>?text=<%= ERB::Util.url_encode(wa_thank_msg) %>"
                class="wa-send-btn" target="_blank" title="Send Thank You + Invoice Link on WhatsApp">
               <i class="bi bi-whatsapp"></i> Thanks
@@ -335,6 +373,31 @@
 <% end %>
 
 <script>
+// Tries to open a direct WhatsApp voice call via Android's app intent scheme.
+// There's no cross-platform URL that starts a WhatsApp call, and even the Android
+// intent isn't guaranteed across WhatsApp/OS versions — if it doesn't fire within
+// 1.5s (or on non-Android devices), fall back to opening the chat instead.
+function waCall(phone) {
+  var isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (!isAndroid) {
+    window.open('https://wa.me/' + phone, '_blank');
+    return;
+  }
+
+  var fallbackTimer = setTimeout(function() {
+    window.open('https://wa.me/' + phone, '_blank');
+  }, 1500);
+
+  function cancelFallback() {
+    clearTimeout(fallbackTimer);
+    document.removeEventListener('visibilitychange', cancelFallback);
+  }
+  document.addEventListener('visibilitychange', cancelFallback);
+
+  window.location.href = 'intent://call/+' + phone + '#Intent;scheme=whatsapp;package=com.whatsapp;end';
+}
+
 function setStatus(val) {
   showLoader('Loading…', 'Filtering bookings');
   document.getElementById('statusHidden').value = val;
