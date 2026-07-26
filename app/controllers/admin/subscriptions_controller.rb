@@ -5,7 +5,12 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   LIST_STATE_PARAMS = %i[page status start_date end_date month customer_id delivery_person_id].freeze
 
   def index
-    @subscriptions = MilkSubscription.joins(:customer).includes(:customer, :product, milk_delivery_tasks: :delivery_person)
+    # :delivery_person here is MilkSubscription's own belongs_to, not the one nested
+    # under milk_delivery_tasks - preloading the latter was pulling in every delivery
+    # task row (potentially hundreds per subscription) just to call .count on it in
+    # the view, which ignores preloaded data and re-queries per row anyway. See the
+    # batched @delivery_tasks_count_by_subscription lookup below instead.
+    @subscriptions = MilkSubscription.joins(:customer).includes(:customer, :product, :delivery_person)
 
     # Apply filters
     @filtered_subscriptions = @subscriptions
@@ -22,6 +27,11 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @subscriptions = @filtered_subscriptions
                         .order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc)
                         .page(params[:page]).per(20)
+
+    # Batch-count delivery tasks per subscription for just this page, in one query,
+    # instead of preloading every task row or calling .count per row in the view.
+    @delivery_tasks_count_by_subscription = MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
+                                                              .group(:subscription_id).count
 
     # For filter options
     @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
@@ -579,11 +589,12 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     # Get subscription IDs from filtered results
     subscription_ids = filtered_subscriptions.pluck(:id)
 
-    # Calculate filtered statistics
-    total = filtered_subscriptions.count
-    active = filtered_subscriptions.where(status: 'active').count
-    paused = filtered_subscriptions.where(status: 'paused').count
-    expired = filtered_subscriptions.where(status: 'expired').count
+    # Single GROUP BY replaces 4 separate COUNT queries
+    status_counts = filtered_subscriptions.group(:status).count
+    total = status_counts.values.sum
+    active = status_counts['active'].to_i
+    paused = status_counts['paused'].to_i
+    expired = status_counts['expired'].to_i
 
     # Calculate delivery tasks based on filtered subscriptions
     if subscription_ids.any?

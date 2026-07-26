@@ -479,7 +479,7 @@
                     <button type="button"
                             class="btn btn-sm btn-outline-danger"
                             title="Delete Subscription"
-                            onclick="deleteSubscription(<%= subscription.id %>, '<%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %>', '<%= subscription.product.name %>', <%= subscription.milk_delivery_tasks.count %>)">
+                            onclick="deleteSubscription(<%= subscription.id %>, '<%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %>', '<%= subscription.product.name %>', <%= @delivery_tasks_count_by_subscription[subscription.id] || 0 %>)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </div>

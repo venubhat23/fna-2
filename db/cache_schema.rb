@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_20_103915) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -370,6 +370,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_103915) do
     t.integer "row_number"
     t.index ["created_at"], name: "index_customers_on_created_at"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
+    t.index ["row_number"], name: "index_customers_on_row_number"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
   end
 
@@ -591,6 +592,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_103915) do
     t.datetime "updated_at", null: false
     t.integer "delivery_person_id"
     t.index ["customer_id"], name: "index_milk_subscriptions_on_customer_id"
+    t.index ["delivery_person_id"], name: "index_milk_subscriptions_on_delivery_person_id"
     t.index ["product_id"], name: "index_milk_subscriptions_on_product_id"
     t.index ["start_date", "end_date"], name: "idx_milk_subscriptions_dates"
     t.index ["status"], name: "idx_milk_subscriptions_status"
