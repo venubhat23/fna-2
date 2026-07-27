@@ -547,12 +547,15 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     if params[:month].present?
       month_number = params[:month].to_i
       current_year = Date.current.year
+      range_start = Date.new(current_year, month_number, 1)
+      range_end = range_start.end_of_month
 
-      # Get subscriptions that have delivery tasks in the specified month
-      subscriptions.joins(:milk_delivery_tasks)
-                  .where('EXTRACT(month FROM milk_delivery_tasks.delivery_date) = ? AND EXTRACT(year FROM milk_delivery_tasks.delivery_date) = ?',
-                         month_number, current_year)
-                  .distinct
+      # Range comparison on delivery_date can use the existing index; EXTRACT() on the
+      # column cannot. Subquery avoids the joins(...).distinct row-multiplication (a
+      # subscription with N tasks in the month produced N duplicate joined rows before).
+      subscriptions.where(
+        id: MilkDeliveryTask.where(delivery_date: range_start..range_end).select(:subscription_id)
+      )
     else
       subscriptions
     end
@@ -568,9 +571,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def filter_by_delivery_person(subscriptions)
     if params[:delivery_person_id].present?
-      subscriptions.joins(:milk_delivery_tasks)
-                  .where(milk_delivery_tasks: { delivery_person_id: params[:delivery_person_id] })
-                  .distinct
+      subscriptions.where(
+        id: MilkDeliveryTask.where(delivery_person_id: params[:delivery_person_id]).select(:subscription_id)
+      )
     else
       subscriptions
     end
