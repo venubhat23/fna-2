@@ -56,10 +56,17 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       }
     end
 
-    # For filter options
-    @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
-    @products = Product.where(product_type: 'milk').pluck(:name, :id)
-    @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
+    # For filter options - cached, since this page does a full reload on every filter
+    # change (status/month/customer/delivery person), and these lists rarely change.
+    @customers = Rails.cache.fetch('admin_subscriptions_filter_customers', expires_in: 10.minutes) do
+      Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
+    end
+    @products = Rails.cache.fetch('admin_subscriptions_filter_products', expires_in: 10.minutes) do
+      Product.where(product_type: 'milk').pluck(:name, :id)
+    end
+    @delivery_people = Rails.cache.fetch('admin_subscriptions_filter_delivery_people', expires_in: 10.minutes) do
+      DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
+    end
 
     respond_to do |format|
       format.html
