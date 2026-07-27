@@ -404,7 +404,7 @@
                   <% end %>
                 </td>
                 <td class="align-middle">
-                  <% summary = subscription.subscription_summary %>
+                  <% summary = @subscription_summaries[subscription.id] %>
                   <div class="progress mb-1" style="height: 8px;">
                     <div class="progress-bar bg-success" style="width: <%= summary[:completion_rate] %>%"></div>
                   </div>

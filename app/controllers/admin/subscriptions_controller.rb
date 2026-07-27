@@ -33,6 +33,29 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @delivery_tasks_count_by_subscription = MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
                                                               .group(:subscription_id).count
 
+    # Batch the status breakdown (total/completed/pending/paused/rate) that the view
+    # needs per row, in one GROUP BY query, instead of calling subscription.subscription_summary
+    # per row - that method runs 6 separate COUNT queries each (up to 120 extra queries
+    # for a page of 20 subscriptions).
+    task_status_counts = Hash.new { |h, k| h[k] = Hash.new(0) }
+    MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
+                     .group(:subscription_id, :status)
+                     .count
+                     .each { |(subscription_id, status), count| task_status_counts[subscription_id][status] = count }
+
+    @subscription_summaries = @subscriptions.each_with_object({}) do |subscription, hash|
+      counts = task_status_counts[subscription.id]
+      total = counts.values.sum
+      completed = counts['completed']
+      hash[subscription.id] = {
+        total_deliveries: total,
+        completed: completed,
+        pending: counts['pending'],
+        paused: counts['paused'],
+        completion_rate: total.zero? ? 0 : (completed.to_f / total * 100).round(2)
+      }
+    end
+
     # For filter options
     @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     @products = Product.where(product_type: 'milk').pluck(:name, :id)
