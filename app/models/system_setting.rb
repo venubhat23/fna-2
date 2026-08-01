@@ -50,7 +50,7 @@ class SystemSetting < ApplicationRecord
   # Cached since this is queried on nearly every admin/customer/franchise index page load
   # (a dozen+ call sites) - an uncached lookup here means an extra DB round trip per request.
   def self.default_pagination_per_page
-    Rails.cache.fetch('system_setting_default_pagination_per_page', expires_in: 10.minutes) do
+    LOCAL_CACHE.fetch('system_setting_default_pagination_per_page', expires_in: 10.minutes) do
       value = get_value('default_pagination_per_page')
       value ? value.to_i : 10
     end
@@ -64,7 +64,7 @@ class SystemSetting < ApplicationRecord
       description: 'Default number of records per page for all index pages',
       setting_type: 'integer'
     )
-    Rails.cache.delete('system_setting_default_pagination_per_page')
+    LOCAL_CACHE.delete('system_setting_default_pagination_per_page')
     setting
   end
 
