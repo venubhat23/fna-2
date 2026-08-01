@@ -813,9 +813,16 @@ class Admin::InvoicesController < Admin::ApplicationController
   end
 
   def build_booking_only_invoices_query
+    # NOT EXISTS instead of NOT IN (subquery): this scope executes as 3 separate SQL
+    # round trips per request (grouped count, grouped sum, and the id/created_at pluck
+    # below), so a NOT IN anti-join against the whole invoices table ran 3x per request
+    # and Postgres can't plan it as cheaply as NOT EXISTS. It also silently broke - NOT IN
+    # with a NULL in the subquery set (invoices.invoice_number is nullable) makes every
+    # row's comparison UNKNOWN, so this returned zero booking-only invoices app-wide as
+    # soon as any invoice ever had a NULL invoice_number.
     query = Booking.where(invoice_generated: true)
                    .where.not(invoice_number: [nil, ''])
-                   .where.not(invoice_number: Invoice.select(:invoice_number))
+                   .where("NOT EXISTS (SELECT 1 FROM invoices WHERE invoices.invoice_number = bookings.invoice_number)")
 
     query = query.where(customer_id: params[:customer_id]) if params[:customer_id].present?
 

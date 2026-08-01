@@ -169,7 +169,10 @@ class Admin::MilkDeliveryTasksController < Admin::ApplicationController
       return
     end
 
-    deleted_count = MilkDeliveryTask.where(id: task_ids).destroy_all.length
+    # delete_all issues one bulk DELETE instead of destroy_all's load-then-destroy-each-
+    # record loop (a SELECT plus one DELETE, each in its own transaction, per row) - safe
+    # here since MilkDeliveryTask has no destroy callbacks or dependent associations to run.
+    deleted_count = MilkDeliveryTask.where(id: task_ids).delete_all
 
     render json: {
       success: true,

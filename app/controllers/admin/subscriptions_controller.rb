@@ -232,8 +232,10 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     begin
       MilkSubscription.transaction do
-        # Delete all associated daily delivery tasks first
-        @subscription.milk_delivery_tasks.destroy_all
+        # delete_all issues one bulk DELETE instead of destroy_all's per-row
+        # load-then-destroy loop - safe since MilkDeliveryTask has no destroy
+        # callbacks or dependent associations to run.
+        @subscription.milk_delivery_tasks.delete_all
 
         # Then delete the subscription
         @subscription.destroy!
@@ -302,8 +304,10 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def generate_tasks
-    # Regenerate tasks (useful if subscription was modified)
-    @subscription.milk_delivery_tasks.destroy_all
+    # Regenerate tasks (useful if subscription was modified). delete_all instead of
+    # destroy_all - no destroy callbacks/dependent associations on MilkDeliveryTask, so
+    # a single bulk DELETE is safe and avoids the per-row destroy loop.
+    @subscription.milk_delivery_tasks.delete_all
     @subscription.generate_all_delivery_tasks
     redirect_to admin_subscription_path(@subscription), notice: 'Delivery tasks regenerated successfully!'
   end
@@ -313,11 +317,15 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       render json: { error: 'Subscription not found' }, status: :not_found and return
     end
 
-    @delivery_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(:delivery_date)
+    # Loaded once into memory and all stats below (avg/sum/total/completed/pending) are
+    # computed from this same array in Ruby, instead of firing six separate SQL aggregate
+    # queries (.any?/.average/.sum/.count x3) against milk_delivery_tasks before also
+    # loading the full list for the JSON response - the list load was happening either way.
+    tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(:delivery_date).to_a
 
-    # Calculate current average quantity from tasks
-    current_avg_quantity = @delivery_tasks.any? ? @delivery_tasks.average(:quantity).round(2) : @subscription.quantity
-    current_total_quantity = @delivery_tasks.sum(:quantity).round(2)
+    quantities = tasks.map(&:quantity)
+    current_avg_quantity = quantities.any? ? (quantities.sum / quantities.size).round(2) : @subscription.quantity
+    current_total_quantity = quantities.sum.round(2)
 
     # Prepare data for JSON response
     subscription_data = {
@@ -334,9 +342,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     }
 
     # Calculate summary
-    total_tasks = @delivery_tasks.count
-    completed_tasks = @delivery_tasks.where(status: 'completed').count
-    pending_tasks = @delivery_tasks.where(status: 'pending').count
+    total_tasks = tasks.size
+    completed_tasks = tasks.count { |t| t.status == 'completed' }
+    pending_tasks = tasks.count { |t| t.status == 'pending' }
     completion_rate = total_tasks > 0 ? (completed_tasks.to_f / total_tasks * 100).round(1) : 0
 
     summary_data = {
@@ -347,7 +355,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     }
 
     # Prepare tasks data
-    tasks_data = @delivery_tasks.map do |task|
+    tasks_data = tasks.map do |task|
       {
         id: task.id,
         delivery_date: task.delivery_date.strftime('%Y-%m-%d'),
@@ -530,7 +538,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   private
 
   def set_subscription
-    @subscription = MilkSubscription.find_by(id: params[:id])
+    @subscription = MilkSubscription.includes(:customer, :product).find_by(id: params[:id])
     unless @subscription
       respond_to do |format|
         format.html { redirect_to admin_subscriptions_path, alert: 'Subscription not found.' }
@@ -696,8 +704,10 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   def generate_delivery_tasks_for_subscription(subscription)
     return 0 unless subscription.persisted?
 
-    # Delete existing tasks if any
-    subscription.milk_delivery_tasks.destroy_all
+    # Delete existing tasks if any. delete_all instead of destroy_all - no destroy
+    # callbacks/dependent associations on MilkDeliveryTask, so a single bulk DELETE is
+    # safe and avoids the per-row destroy loop.
+    subscription.milk_delivery_tasks.delete_all
 
     delivery_dates = calculate_delivery_dates(subscription)
     tasks_created = 0
