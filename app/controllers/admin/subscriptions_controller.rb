@@ -28,35 +28,34 @@ class Admin::SubscriptionsController < Admin::ApplicationController
                         .order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc)
                         .page(params[:page]).per(10)
 
-    # Batch-count delivery tasks per subscription for just this page, in one query,
-    # instead of preloading every task row or calling .count per row in the view.
-    @delivery_tasks_count_by_subscription = MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
-                                                              .group(:subscription_id).count
-
-    # Batch the status breakdown (total/completed/pending/paused/rate) that the view
-    # needs per row, in one GROUP BY query, instead of calling subscription.subscription_summary
-    # per row - that method runs 6 separate COUNT queries each (up to 120 extra queries
-    # for a page of 20 subscriptions).
+    # Batch the status breakdown (total/completed/pending/paused/rate), per-subscription
+    # task count, and average task quantity that the view needs per row, all from a
+    # single GROUP BY (subscription_id, status) query - instead of calling
+    # subscription.subscription_summary/current_average_quantity per row (6+ uncached
+    # queries per row, the actual source of the ~95-query, ~10s page loads) or even the
+    # 3 separate batched queries this replaces. Each query here is a full network round
+    # trip to the remote Postgres instance (~150-500ms/query - see logs from 2026-08-01
+    # 08:11), so cutting query count matters more than usual for this app.
     task_status_counts = Hash.new { |h, k| h[k] = Hash.new(0) }
+    task_count_by_subscription = Hash.new(0)
+    quantity_sum_by_subscription = Hash.new(0.0)
+
     MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
                      .group(:subscription_id, :status)
-                     .count
-                     .each { |(subscription_id, status), count| task_status_counts[subscription_id][status] = count }
+                     .pluck(:subscription_id, :status, Arel.sql('COUNT(*)'), Arel.sql('COALESCE(SUM(quantity), 0)'))
+                     .each do |subscription_id, status, count, quantity_sum|
+                       task_status_counts[subscription_id][status] = count
+                       task_count_by_subscription[subscription_id] += count
+                       quantity_sum_by_subscription[subscription_id] += quantity_sum.to_f
+                     end
 
-    # Batch the average task quantity per subscription in one query, instead of calling
-    # subscription.current_average_quantity per row in the view - that method (and
-    # has_quantity_changes?/daily_tasks_status, which call it and re-query on top) ran
-    # 3-6 uncached queries per row, which was the actual source of the ~95-query,
-    # ~10s page loads (Views: ~100ms, ActiveRecord: ~9.7s) - see logs from 2026-08-01.
-    avg_quantity_by_subscription = MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
-                                                     .group(:subscription_id)
-                                                     .average(:quantity)
+    @delivery_tasks_count_by_subscription = task_count_by_subscription
 
     @subscription_summaries = @subscriptions.each_with_object({}) do |subscription, hash|
       counts = task_status_counts[subscription.id]
-      total = counts.values.sum
+      total = task_count_by_subscription[subscription.id]
       completed = counts['completed']
-      current_average_quantity = avg_quantity_by_subscription[subscription.id]&.round(2) || subscription.quantity
+      current_average_quantity = total.positive? ? (quantity_sum_by_subscription[subscription.id] / total).round(2) : subscription.quantity
       hash[subscription.id] = {
         total_deliveries: total,
         completed: completed,
