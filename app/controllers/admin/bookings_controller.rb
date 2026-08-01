@@ -57,9 +57,13 @@ class Admin::BookingsController < Admin::ApplicationController
     # otherwise be 1-2 queries per row (has_invoice?/invoice_link_path/display_invoice_number).
     preload_associated_invoices(@bookings)
 
-    # Load customers for filter dropdown
-    @customers = Customer.select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
-                        .order(:first_name, :last_name)
+    # Load customers for filter dropdown - cached, since this page does a full reload on
+    # every filter change and loaded the entire customers table uncached on every request.
+    @customers = Rails.cache.fetch('admin_bookings_filter_customers', expires_in: 10.minutes) do
+      Customer.select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
+              .order(:first_name, :last_name)
+              .to_a
+    end
   end
 
   def new

@@ -26,7 +26,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     # Paginate the filtered subscriptions, ordered by the customer's row number
     @subscriptions = @filtered_subscriptions
                         .order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc)
-                        .page(params[:page]).per(20)
+                        .page(params[:page]).per(10)
 
     # Batch-count delivery tasks per subscription for just this page, in one query,
     # instead of preloading every task row or calling .count per row in the view.

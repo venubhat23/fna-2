@@ -14,7 +14,16 @@ class Admin::InvoicesController < Admin::ApplicationController
     regular_scope = apply_search_filters(Invoice.all, 'invoices')
     booking_scope = build_booking_only_invoices_query
 
-    total_count = regular_scope.count + booking_scope.count
+    # Grouped once here and handed to calculate_regular_invoice_stats_only below, instead
+    # of that method rebuilding this same anti-join scope from scratch and re-running it -
+    # booking_scope and build_booking_only_invoices_query (called again inside stats) were
+    # identical, so the invoice_number NOT-IN-subquery query ran twice per request for no
+    # reason. Also reuses the grouped counts as this scope's total instead of running a
+    # separate plain .count on top.
+    booking_counts_by_status, booking_sums_by_status = grouped_counts_and_sums(booking_scope.reorder(nil))
+    booking_total_count = booking_counts_by_status.values.sum
+
+    total_count = regular_scope.count + booking_total_count
 
     # Pull only bounded id/created_at pairs from each source (cheap, indexed, scalar-only)
     # instead of loading every matching row, so cost scales with the requested page, not
@@ -58,7 +67,7 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     @paginated_invoices = Kaminari.paginate_array([], total_count: total_count).page(page).per(per_page)
 
-    @stats = calculate_regular_invoice_stats_only
+    @stats = calculate_regular_invoice_stats_only(booking_counts_by_status, booking_sums_by_status)
     @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
     @invoice_type = invoice_type
   end
@@ -1039,18 +1048,28 @@ class Admin::InvoicesController < Admin::ApplicationController
     }
   end
 
-  def calculate_regular_invoice_stats_only
+  # Groups by payment_status via ActiveRecord's own .group().count/.sum rather than raw
+  # SQL, because Invoice#payment_status is an integer-backed enum and the ORM group
+  # methods are what correctly cast the grouped keys back to their string labels
+  # ('fully_paid', 'unpaid', ...) - a raw SQL pluck would return the underlying integers
+  # instead and silently break every string-keyed lookup below.
+  def grouped_counts_and_sums(scope)
+    [scope.group(:payment_status).count, scope.group(:payment_status).sum(:total_amount)]
+  end
+
+  def calculate_regular_invoice_stats_only(booking_counts_by_status, booking_sums_by_status)
     # Stats must cover the same rows the "Invoice List" table below shows, which is
     # regular invoices PLUS booking-only invoices (see index action) - otherwise the
     # summary cards (e.g. "Pending Amount ... N invoices") don't match the table's
     # "Showing X-Y of Z invoices", since the table's total_count includes both.
+    #
+    # booking_counts_by_status/booking_sums_by_status are passed in from index, already
+    # computed off the same booking_scope used for the list above - rebuilding and
+    # re-running build_booking_only_invoices_query here was pure duplicate work (it's an
+    # anti-join against the whole invoices table and doesn't depend on anything computed
+    # later in index, so there's nothing scope-specific about doing it twice).
     regular_query = build_regular_invoices_query_for_stats
-    counts_by_status = regular_query.group(:payment_status).count
-    sums_by_status = regular_query.group(:payment_status).sum(:total_amount)
-
-    booking_query = build_booking_only_invoices_query.reorder(nil)
-    booking_counts_by_status = booking_query.group(:payment_status).count
-    booking_sums_by_status = booking_query.group(:payment_status).sum(:total_amount)
+    counts_by_status, sums_by_status = grouped_counts_and_sums(regular_query.reorder(nil))
 
     # Booking#payment_status uses 'paid'/nil where Invoice#payment_status uses
     # 'fully_paid'/'unpaid' - normalize before combining (see build_booking_only_invoices_query).

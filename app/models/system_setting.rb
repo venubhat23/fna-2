@@ -1,4 +1,11 @@
 class SystemSetting < ApplicationRecord
+  # In-process cache, not Rails.cache: Rails.cache is Solid Cache in this app, which
+  # stores entries in the same Postgres database (see database.yml's `cache:` connection)
+  # - fetching through it would just trade one DB round trip for another. This setting is
+  # read on nearly every admin/customer/franchise index page load, so a real in-memory
+  # cache is what actually avoids the extra round trip.
+  LOCAL_CACHE = ActiveSupport::Cache::MemoryStore.new
+
   validates :key, presence: true, uniqueness: true
   validates :value, presence: true
   validates :setting_type, presence: true
@@ -40,19 +47,25 @@ class SystemSetting < ApplicationRecord
   end
 
   # Get default pagination per page as integer
+  # Cached since this is queried on nearly every admin/customer/franchise index page load
+  # (a dozen+ call sites) - an uncached lookup here means an extra DB round trip per request.
   def self.default_pagination_per_page
-    value = get_value('default_pagination_per_page')
-    value ? value.to_i : 10
+    Rails.cache.fetch('system_setting_default_pagination_per_page', expires_in: 10.minutes) do
+      value = get_value('default_pagination_per_page')
+      value ? value.to_i : 10
+    end
   end
 
   # Set default pagination per page
   def self.set_default_pagination_per_page(per_page)
-    set_value(
+    setting = set_value(
       'default_pagination_per_page',
       per_page.to_s,
       description: 'Default number of records per page for all index pages',
       setting_type: 'integer'
     )
+    Rails.cache.delete('system_setting_default_pagination_per_page')
+    setting
   end
 
   # Commission methods for new columns
