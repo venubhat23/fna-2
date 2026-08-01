@@ -50,7 +50,13 @@ class Admin::BookingsController < Admin::ApplicationController
     # the booking_items_count counter cache instead of preloading every item row.
     # booking_invoices IS included: has_invoice?/invoice_link_path/display_invoice_number
     # call booking_invoices.any?, which queries per row unless the association is preloaded.
-    @bookings = @bookings.includes(:customer, { user: :franchise }, :delivery_person, :booking_invoices)
+    # eager_load (not includes) so customer/user/franchise/delivery_person/booking_invoices
+    # come back via LEFT JOINs instead of one separate round trip per association — the DB
+    # is remote, so cutting round trips matters more than query size for this tiny table.
+    # Verified this still pages correctly: because booking_invoices is has_many, Rails
+    # automatically runs a 2-query strategy here (collect the correct N booking ids first,
+    # then fetch the joined data for those ids) rather than letting LIMIT clip mid-join.
+    @bookings = @bookings.eager_load(:customer, { user: :franchise }, :delivery_person, :booking_invoices)
                          .page(params[:page]).per(@per_page)
 
     # Batch-preload associated_invoice for the bookings on this page, replacing what would
