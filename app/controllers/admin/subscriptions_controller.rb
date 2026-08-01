@@ -43,16 +43,29 @@ class Admin::SubscriptionsController < Admin::ApplicationController
                      .count
                      .each { |(subscription_id, status), count| task_status_counts[subscription_id][status] = count }
 
+    # Batch the average task quantity per subscription in one query, instead of calling
+    # subscription.current_average_quantity per row in the view - that method (and
+    # has_quantity_changes?/daily_tasks_status, which call it and re-query on top) ran
+    # 3-6 uncached queries per row, which was the actual source of the ~95-query,
+    # ~10s page loads (Views: ~100ms, ActiveRecord: ~9.7s) - see logs from 2026-08-01.
+    avg_quantity_by_subscription = MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
+                                                     .group(:subscription_id)
+                                                     .average(:quantity)
+
     @subscription_summaries = @subscriptions.each_with_object({}) do |subscription, hash|
       counts = task_status_counts[subscription.id]
       total = counts.values.sum
       completed = counts['completed']
+      current_average_quantity = avg_quantity_by_subscription[subscription.id]&.round(2) || subscription.quantity
       hash[subscription.id] = {
         total_deliveries: total,
         completed: completed,
         pending: counts['pending'],
         paused: counts['paused'],
-        completion_rate: total.zero? ? 0 : (completed.to_f / total * 100).round(2)
+        completion_rate: total.zero? ? 0 : (completed.to_f / total * 100).round(2),
+        current_average_quantity: current_average_quantity,
+        has_quantity_changes: total.positive? && current_average_quantity != subscription.quantity,
+        daily_tasks_status: (counts['pending'] + counts['assigned']).zero? ? 'Ct' : 'PD'
       }
     end
 
@@ -67,6 +80,12 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @delivery_people = Rails.cache.fetch('admin_subscriptions_filter_delivery_people', expires_in: 10.minutes) do
       DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     end
+
+    # Cached since these are only used for the "delete all" confirm dialog text - exact
+    # precision isn't needed there, and counting both tables on every page load added to
+    # the query overhead.
+    @total_subscriptions_count = Rails.cache.fetch('admin_subscriptions_total_count', expires_in: 5.minutes) { MilkSubscription.count }
+    @total_delivery_tasks_count = Rails.cache.fetch('admin_delivery_tasks_total_count', expires_in: 5.minutes) { MilkDeliveryTask.count }
 
     respond_to do |format|
       format.html
