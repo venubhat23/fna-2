@@ -589,10 +589,13 @@ class DashboardController < ApplicationController
     revenue_breakdown.to_a.reverse.to_h
   end
 
-  # Cached wrapper around the actual (query-heavy) data load. The dashboard is viewed
-  # repeatedly (page refreshes, multiple admins, polling) and the underlying numbers
-  # don't need to be instantaneous, so a short cache turns dozens of round trips into
-  # zero on every hit but the first each cache period.
+  # Cached wrapper around the actual (query-heavy, ~40-query) data load. The dashboard is
+  # viewed repeatedly (page refreshes, multiple admins, polling) and the underlying numbers
+  # don't need to be instantaneous, so a cache turns dozens of round trips into zero on
+  # every hit but the first each cache period. TTL is 5 minutes rather than a few seconds:
+  # each query here is a full network round trip to the remote Postgres instance
+  # (~150-500ms/query - see logs from 2026-08-01), so a short TTL meant almost every visit
+  # missed the cache and paid for all ~40 queries again (10+ seconds).
   DASHBOARD_ECOMMERCE_CACHE_IVARS = %i[
     @total_products @active_products @draft_products @total_categories @active_categories
     @total_bookings @pending_bookings @completed_bookings @cancelled_bookings
@@ -620,7 +623,7 @@ class DashboardController < ApplicationController
     snapshot = DASHBOARD_ECOMMERCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
       hash[ivar] = instance_variable_get(ivar)
     end
-    Rails.cache.write('dashboard:ecommerce_data', snapshot, expires_in: 45.seconds)
+    Rails.cache.write('dashboard:ecommerce_data', snapshot, expires_in: 5.minutes)
   end
 
   def compute_ecommerce_dashboard_data

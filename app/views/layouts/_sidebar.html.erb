@@ -586,7 +586,9 @@
             </div>
             <span class="nav-text">Invoice Check</span>
             <% begin %>
-              <% pending_count = MilkSubscription.joins(:customer).where(is_active: true).select(:customer_id).distinct.count %>
+              <% pending_count = Rails.cache.fetch('admin_sidebar_invoice_check_pending_count', expires_in: 5.minutes) do
+                   MilkSubscription.joins(:customer).where(is_active: true).select(:customer_id).distinct.count
+                 end %>
               <% if pending_count > 0 %>
                 <span class="badge bg-warning text-dark ms-2" style="font-size: 10px; padding: 2px 6px;"><%= pending_count %></span>
               <% end %>

@@ -645,8 +645,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def calculate_filtered_subscription_stats(filtered_subscriptions)
-    # Get subscription IDs from filtered results
-    subscription_ids = filtered_subscriptions.pluck(:id)
+    # Subquery instead of a separate .pluck(:id) round trip - the subscription_id IN
+    # (SELECT ...) clauses below get folded into their own single query either way.
+    subscription_ids = filtered_subscriptions.select(:id)
 
     # Single GROUP BY replaces 4 separate COUNT queries
     status_counts = filtered_subscriptions.group(:status).count
@@ -655,35 +656,24 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     paused = status_counts['paused'].to_i
     expired = status_counts['expired'].to_i
 
-    # Calculate delivery tasks based on filtered subscriptions
-    if subscription_ids.any?
-      # Today's deliveries from filtered subscriptions
-      today_deliveries = MilkDeliveryTask
-        .where(subscription_id: subscription_ids)
-        .for_today
-        .count
+    # Today's deliveries and pending-today, from a single GROUP BY instead of two counts
+    today_status_counts = MilkDeliveryTask
+      .where(subscription_id: subscription_ids)
+      .for_today
+      .group(:status)
+      .count
+    today_deliveries = today_status_counts.values.sum
+    pending_today = today_status_counts['pending'].to_i
 
-      # Pending today's deliveries from filtered subscriptions
-      pending_today = MilkDeliveryTask
-        .where(subscription_id: subscription_ids)
-        .for_today
-        .pending
-        .count
-
-      # Count delivery people assigned to filtered subscriptions
-      assigned_delivery_people = MilkDeliveryTask
-        .joins(:delivery_person)
-        .where(subscription_id: subscription_ids)
-        .where(status: ['pending', 'assigned'])
-        .where(delivery_people: { status: true })
-        .select(:delivery_person_id)
-        .distinct
-        .count
-    else
-      today_deliveries = 0
-      pending_today = 0
-      assigned_delivery_people = 0
-    end
+    # Count delivery people assigned to filtered subscriptions
+    assigned_delivery_people = MilkDeliveryTask
+      .joins(:delivery_person)
+      .where(subscription_id: subscription_ids)
+      .where(status: ['pending', 'assigned'])
+      .where(delivery_people: { status: true })
+      .select(:delivery_person_id)
+      .distinct
+      .count
 
     # Total delivery people remains global
     total_delivery_people = DeliveryPerson.where(status: true).count
