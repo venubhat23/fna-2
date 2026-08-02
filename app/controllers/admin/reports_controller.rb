@@ -673,7 +673,7 @@ class Admin::ReportsController < Admin::ApplicationController
         name:         product.name,
         product_type: product.product_type,
         category:     product.category&.name || 'N/A',
-        unit:         product.unit,
+        unit:         product.unit_type,
         qty:          b[:qty] + i[:qty],
         revenue:      b[:revenue] + i[:revenue],
         orders:       b[:orders] + i[:orders]
@@ -749,7 +749,7 @@ class Admin::ReportsController < Admin::ApplicationController
       {
         product_id:    pid,
         name:          product.name,
-        unit:          product.unit,
+        unit:          product.unit_type,
         qty:           qty,
         buying_price:  buying_price,
         selling_price: selling_price,
