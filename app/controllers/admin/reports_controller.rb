@@ -659,8 +659,21 @@ class Admin::ReportsController < Admin::ApplicationController
         }
       end rescue {}
 
+    # Aggregate from milk delivery tasks (subscription deliveries not yet invoiced;
+    # already-invoiced deliveries are already counted above via invoice_data)
+    milk_data = MilkDeliveryTask
+      .where(product_id: product_ids)
+      .where(delivery_date: @from_date..@to_date)
+      .where(status: ['delivered', 'completed'])
+      .uninvoiced
+      .group(:product_id)
+      .select('product_id, SUM(quantity) AS total_qty, COUNT(*) AS delivery_count')
+      .each_with_object({}) do |row, h|
+        h[row.product_id] = { qty: row.total_qty.to_f, orders: row.delivery_count.to_i }
+      end rescue {}
+
     # Merge and attach product info
-    all_product_ids = (booking_data.keys + invoice_data.keys).uniq
+    all_product_ids = (booking_data.keys + invoice_data.keys + milk_data.keys).uniq
     products_map = Product.includes(:category).where(id: all_product_ids).index_by(&:id)
 
     @product_selling_data = all_product_ids.map do |pid|
@@ -668,15 +681,22 @@ class Admin::ReportsController < Admin::ApplicationController
       next unless product
       b = booking_data[pid] || { qty: 0, revenue: 0, orders: 0 }
       i = invoice_data[pid] || { qty: 0, revenue: 0, orders: 0 }
+      m = milk_data[pid] || { qty: 0, orders: 0 }
+      milk_unit_price = if product.gst_enabled? && product.gst_percentage.present?
+        product.calculate_base_price
+      else
+        product.price
+      end
+      milk_revenue = m[:qty] * (milk_unit_price || 0)
       {
         product_id:   pid,
         name:         product.name,
         product_type: product.product_type,
         category:     product.category&.name || 'N/A',
         unit:         product.unit_type,
-        qty:          b[:qty] + i[:qty],
-        revenue:      b[:revenue] + i[:revenue],
-        orders:       b[:orders] + i[:orders]
+        qty:          b[:qty] + i[:qty] + m[:qty],
+        revenue:      b[:revenue] + i[:revenue] + milk_revenue,
+        orders:       b[:orders] + i[:orders] + m[:orders]
       }
     end.compact
 
@@ -735,7 +755,16 @@ class Admin::ReportsController < Admin::ApplicationController
         h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
       end rescue {}
 
-    all_product_ids = (booking_data.keys + invoice_data.keys).uniq
+    # Qty delivered via milk subscriptions that hasn't been invoiced yet (already-invoiced
+    # deliveries are counted above through invoice_data, so this avoids double counting).
+    milk_qty_data = MilkDeliveryTask
+      .where(delivery_date: @from_date..@to_date)
+      .where(status: ['delivered', 'completed'])
+      .uninvoiced
+      .group(:product_id)
+      .sum(:quantity) rescue {}
+
+    all_product_ids = (booking_data.keys + invoice_data.keys + milk_qty_data.keys).uniq
     products_map = Product.where(id: all_product_ids).index_by(&:id)
 
     @business_report_data = all_product_ids.map do |pid|
@@ -743,9 +772,16 @@ class Admin::ReportsController < Admin::ApplicationController
       next unless product
       b = booking_data[pid] || { qty: 0, selling_price: 0 }
       i = invoice_data[pid] || { qty: 0, selling_price: 0 }
-      qty = b[:qty] + i[:qty]
+      milk_qty = milk_qty_data[pid].to_f
+      milk_unit_price = if product.gst_enabled? && product.gst_percentage.present?
+        product.calculate_base_price
+      else
+        product.price
+      end
+      milk_selling_price = milk_qty * (milk_unit_price || 0)
+      qty = b[:qty] + i[:qty] + milk_qty
       buying_price = qty * (product.buying_price || 0)
-      selling_price = b[:selling_price] + i[:selling_price]
+      selling_price = b[:selling_price] + i[:selling_price] + milk_selling_price
       {
         product_id:    pid,
         name:          product.name,
