@@ -927,6 +927,17 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+        <li class="nav-item">
+          <%= link_to admin_reports_business_report_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/reports/business_report')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-lime">
+                <i class="bi bi-briefcase-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Business Report</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
         <% end %>
       </ul>
     </div>

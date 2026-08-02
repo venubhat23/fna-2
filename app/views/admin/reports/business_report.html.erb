@@ -1,0 +1,183 @@
+<style>
+  .br-report-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: 1px solid #e8ecf0;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .br-filter-bar {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    border-radius: 16px;
+    border: 1px solid #e0e7ff;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .br-filter-bar .form-label { font-weight: 600; font-size: 0.82rem; color: #475569; margin-bottom: 4px; }
+  .br-filter-bar .form-control, .br-filter-bar .form-select {
+    border-radius: 10px; border-color: #cbd5e1; font-size: 0.88rem;
+  }
+  .br-stat-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf0;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .br-stat-value { font-size: 1.8rem; font-weight: 700; }
+  .br-stat-label { font-size: 0.82rem; color: #64748b; margin-top: 4px; }
+  .br-table thead th {
+    background: #f1f5f9; font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: #475569;
+    border-bottom: 2px solid #e2e8f0; padding: 10px 14px;
+  }
+  .br-table tbody td { padding: 10px 14px; font-size: 0.88rem; vertical-align: middle; }
+  .br-table tbody tr:hover { background: #f8faff; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="fw-bold mb-1" style="color:#1e293b;">
+      <i class="bi bi-briefcase-fill me-2" style="color:#6366f1;"></i>Business Report
+    </h3>
+    <div class="text-muted" style="font-size:0.85rem;">
+      Showing data from <strong><%= @from_date.strftime('%d %b %Y') %></strong>
+      to <strong><%= @to_date.strftime('%d %b %Y') %></strong>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_reports_business_report_path(request.query_parameters.merge(format: 'csv')),
+          class: "btn btn-sm btn-outline-success" do %>
+      <i class="bi bi-download me-1"></i> Export CSV
+    <% end %>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="br-filter-bar">
+  <%= form_with url: admin_reports_business_report_path, method: :get, local: true do |f| %>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">From Date</label>
+        <%= f.date_field :from_date, value: @from_date, class: 'form-control' %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">To Date</label>
+        <%= f.date_field :to_date, value: @to_date, class: 'form-control' %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Sort By</label>
+        <%= f.select :sort_by, [
+              ['Selling Price (High-Low)', 'selling_price'],
+              ['Buying Price (High-Low)', 'buying_price'],
+              ['Qty Sold (High-Low)', 'qty'],
+              ['Profit (High-Low)', 'profit'],
+              ['Product Name (A-Z)', 'name']
+            ], { selected: @sort_by }, { class: 'form-select' } %>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn w-100" style="background:#6366f1;color:#fff;border-radius:10px;font-weight:600;">
+          <i class="bi bi-search me-1"></i>Apply
+        </button>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- SUMMARY STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="br-stat-card">
+      <div class="br-stat-value" style="color:#0ea5e9;"><%= number_with_precision(@total_qty, precision: 2) %></div>
+      <div class="br-stat-label"><i class="bi bi-stack me-1"></i>Total Qty Sold</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="br-stat-card">
+      <div class="br-stat-value" style="color:#ef4444;">₹<%= number_with_delimiter(number_with_precision(@total_buying_price, precision: 2)) %></div>
+      <div class="br-stat-label"><i class="bi bi-cart-dash me-1"></i>Total Buying Price</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="br-stat-card">
+      <div class="br-stat-value" style="color:#10b981;">₹<%= number_with_delimiter(number_with_precision(@total_selling_price, precision: 2)) %></div>
+      <div class="br-stat-label"><i class="bi bi-currency-rupee me-1"></i>Total Selling Price</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="br-stat-card">
+      <div class="br-stat-value" style="color:<%= @total_profit >= 0 ? '#10b981' : '#ef4444' %>;">₹<%= number_with_delimiter(number_with_precision(@total_profit, precision: 2)) %></div>
+      <div class="br-stat-label"><i class="bi bi-graph-up-arrow me-1"></i>Total Profit</div>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT TABLE -->
+<div class="br-report-card">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0" style="color:#1e293b;">Product-wise Breakdown</h5>
+    <span class="badge bg-light text-secondary" style="font-size:0.82rem;">
+      <%= @business_report_data.size %> products
+    </span>
+  </div>
+
+  <% if @business_report_data.any? %>
+    <div class="table-responsive">
+      <table class="table br-table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product Name</th>
+            <th>Unit</th>
+            <th class="text-end">Qty Sold</th>
+            <th class="text-end">Total Buying Price</th>
+            <th class="text-end">Total Selling Price</th>
+            <th class="text-end">Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @business_report_data.each_with_index do |row, idx| %>
+            <tr>
+              <td><%= idx + 1 %></td>
+              <td class="fw-semibold" style="color:#1e293b;"><%= row[:name] %></td>
+              <td style="color:#94a3b8;"><%= row[:unit] %></td>
+              <td class="text-end fw-semibold"><%= number_with_precision(row[:qty], precision: 2) %></td>
+              <td class="text-end" style="color:#ef4444;">
+                ₹<%= number_with_delimiter(number_with_precision(row[:buying_price], precision: 2)) %>
+              </td>
+              <td class="text-end fw-bold" style="color:#10b981;">
+                ₹<%= number_with_delimiter(number_with_precision(row[:selling_price], precision: 2)) %>
+              </td>
+              <td class="text-end fw-semibold" style="color:<%= row[:profit] >= 0 ? '#10b981' : '#ef4444' %>;">
+                ₹<%= number_with_delimiter(number_with_precision(row[:profit], precision: 2)) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9;font-weight:700;border-top:2px solid #e2e8f0;">
+            <td colspan="3" class="text-end pe-3">TOTAL</td>
+            <td class="text-end"><%= number_with_precision(@total_qty, precision: 2) %></td>
+            <td class="text-end" style="color:#ef4444;">
+              ₹<%= number_with_delimiter(number_with_precision(@total_buying_price, precision: 2)) %>
+            </td>
+            <td class="text-end" style="color:#10b981;">
+              ₹<%= number_with_delimiter(number_with_precision(@total_selling_price, precision: 2)) %>
+            </td>
+            <td class="text-end" style="color:<%= @total_profit >= 0 ? '#10b981' : '#ef4444' %>;">
+              ₹<%= number_with_delimiter(number_with_precision(@total_profit, precision: 2)) %>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  <% else %>
+    <div class="text-center py-5" style="color:#94a3b8;">
+      <i class="bi bi-briefcase" style="font-size:3rem;"></i>
+      <div class="mt-2 fw-semibold">No sales data found for the selected date range.</div>
+      <div style="font-size:0.85rem;">Try changing the from/to dates.</div>
+    </div>
+  <% end %>
+</div>

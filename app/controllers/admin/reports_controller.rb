@@ -708,7 +708,97 @@ class Admin::ReportsController < Admin::ApplicationController
     flash.now[:alert] = "Error loading report: #{e.message}"
   end
 
+  # GET /admin/reports/business_report
+  def business_report
+    @from_date = params[:from_date].present? ? Date.parse(params[:from_date]) : Date.current.prev_month.beginning_of_month
+    @to_date   = params[:to_date].present?   ? Date.parse(params[:to_date])   : Date.current.prev_month.end_of_month
+    @sort_by   = params[:sort_by] || 'selling_price'
+
+    # Aggregate qty & selling price from booking_items
+    booking_data = BookingItem
+      .joins(:booking)
+      .where(bookings: { created_at: @from_date.beginning_of_day..@to_date.end_of_day })
+      .group(:product_id)
+      .select('product_id, SUM(quantity) AS total_qty, SUM(total) AS total_revenue')
+      .each_with_object({}) do |row, h|
+        h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
+      end rescue {}
+
+    # Aggregate qty & selling price from invoice_items (product-linked items only)
+    invoice_data = InvoiceItem
+      .joins(:invoice)
+      .where.not(product_id: nil)
+      .where(invoices: { invoice_date: @from_date..@to_date })
+      .group(:product_id)
+      .select('product_id, SUM(quantity) AS total_qty, SUM(total_amount) AS total_revenue')
+      .each_with_object({}) do |row, h|
+        h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
+      end rescue {}
+
+    all_product_ids = (booking_data.keys + invoice_data.keys).uniq
+    products_map = Product.where(id: all_product_ids).index_by(&:id)
+
+    @business_report_data = all_product_ids.map do |pid|
+      product = products_map[pid]
+      next unless product
+      b = booking_data[pid] || { qty: 0, selling_price: 0 }
+      i = invoice_data[pid] || { qty: 0, selling_price: 0 }
+      qty = b[:qty] + i[:qty]
+      buying_price = qty * (product.buying_price || 0)
+      selling_price = b[:selling_price] + i[:selling_price]
+      {
+        product_id:    pid,
+        name:          product.name,
+        unit:          product.unit,
+        qty:           qty,
+        buying_price:  buying_price,
+        selling_price: selling_price,
+        profit:        selling_price - buying_price
+      }
+    end.compact
+
+    @business_report_data = case @sort_by
+    when 'qty'           then @business_report_data.sort_by { |r| -r[:qty] }
+    when 'buying_price'  then @business_report_data.sort_by { |r| -r[:buying_price] }
+    when 'profit'        then @business_report_data.sort_by { |r| -r[:profit] }
+    when 'name'          then @business_report_data.sort_by { |r| r[:name] }
+    else                      @business_report_data.sort_by { |r| -r[:selling_price] }
+    end
+
+    @total_qty           = @business_report_data.sum { |r| r[:qty] }
+    @total_buying_price   = @business_report_data.sum { |r| r[:buying_price] }
+    @total_selling_price  = @business_report_data.sum { |r| r[:selling_price] }
+    @total_profit         = @total_selling_price - @total_buying_price
+
+    respond_to do |format|
+      format.html
+      format.csv do
+        send_data business_report_csv(@business_report_data),
+                  filename: "business_report_#{@from_date.strftime('%Y%m%d')}_#{@to_date.strftime('%Y%m%d')}.csv",
+                  type: 'text/csv'
+      end
+    end
+  rescue => e
+    Rails.logger.error "Error in business_report: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+    @business_report_data = []
+    @total_qty = @total_buying_price = @total_selling_price = @total_profit = 0
+    flash.now[:alert] = "Error loading report: #{e.message}"
+  end
+
   private
+
+  def business_report_csv(data)
+    require 'csv'
+    CSV.generate(headers: true) do |csv|
+      csv << ['#', 'Product Name', 'Unit', 'Qty Sold', 'Total Buying Price (₹)', 'Total Selling Price (₹)', 'Profit (₹)']
+      data.each_with_index do |row, idx|
+        csv << [idx + 1, row[:name], row[:unit], row[:qty].round(2),
+                row[:buying_price].round(2), row[:selling_price].round(2), row[:profit].round(2)]
+      end
+      csv << ['', '', 'TOTAL', @total_qty.round(2), @total_buying_price.round(2),
+              @total_selling_price.round(2), @total_profit.round(2)]
+    end
+  end
 
   def product_selling_csv(data)
     require 'csv'
