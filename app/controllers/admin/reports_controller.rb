@@ -643,11 +643,15 @@ class Admin::ReportsController < Admin::ApplicationController
         }
       end rescue {}
 
-    # Aggregate from invoice_items (product-linked items only)
+    # Aggregate from invoice_items (product-linked items only). Milk-delivery-linked items
+    # are excluded here because they're counted below by their scheduled delivery_date
+    # instead of the invoice_date (an invoice can be raised weeks after the milk was
+    # actually delivered, which would otherwise push the sale into the wrong period).
     invoice_data = InvoiceItem
       .joins(:invoice)
       .where.not(product_id: nil)
       .where(product_id: product_ids)
+      .where(milk_delivery_task_id: nil)
       .where(invoices: { invoice_date: @from_date..@to_date })
       .group(:product_id)
       .select('product_id, SUM(quantity) AS total_qty, SUM(total_amount) AS total_revenue, COUNT(DISTINCT invoice_id) AS order_count')
@@ -659,13 +663,13 @@ class Admin::ReportsController < Admin::ApplicationController
         }
       end rescue {}
 
-    # Aggregate from milk delivery tasks (subscription deliveries not yet invoiced;
-    # already-invoiced deliveries are already counted above via invoice_data)
+    # Aggregate from milk delivery tasks, counted by the SCHEDULED delivery_date (not
+    # completed_at, and regardless of whether it has been invoiced yet) - a delivery
+    # that happened in this period counts as sold in this period.
     milk_data = MilkDeliveryTask
       .where(product_id: product_ids)
       .where(delivery_date: @from_date..@to_date)
       .where(status: ['delivered', 'completed'])
-      .uninvoiced
       .group(:product_id)
       .select('product_id, SUM(quantity) AS total_qty, COUNT(*) AS delivery_count')
       .each_with_object({}) do |row, h|
@@ -744,10 +748,15 @@ class Admin::ReportsController < Admin::ApplicationController
         h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
       end rescue {}
 
-    # Aggregate qty & selling price from invoice_items (product-linked items only)
+    # Aggregate qty & selling price from invoice_items (product-linked items only).
+    # Milk-delivery-linked items are excluded here because they're counted below by their
+    # scheduled delivery_date instead of the invoice_date (an invoice can be raised weeks
+    # after the milk was actually delivered, which would otherwise push the sale into the
+    # wrong period or drop it if the invoice_date falls outside this range).
     invoice_data = InvoiceItem
       .joins(:invoice)
       .where.not(product_id: nil)
+      .where(milk_delivery_task_id: nil)
       .where(invoices: { invoice_date: @from_date..@to_date })
       .group(:product_id)
       .select('product_id, SUM(quantity) AS total_qty, SUM(total_amount) AS total_revenue')
@@ -755,12 +764,12 @@ class Admin::ReportsController < Admin::ApplicationController
         h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
       end rescue {}
 
-    # Qty delivered via milk subscriptions that hasn't been invoiced yet (already-invoiced
-    # deliveries are counted above through invoice_data, so this avoids double counting).
+    # Qty sold via milk subscriptions, counted by the SCHEDULED delivery_date (not
+    # completed_at, and regardless of whether it has been invoiced yet) - a delivery
+    # that happened in this period counts as sold in this period.
     milk_qty_data = MilkDeliveryTask
       .where(delivery_date: @from_date..@to_date)
       .where(status: ['delivered', 'completed'])
-      .uninvoiced
       .group(:product_id)
       .sum(:quantity) rescue {}
 
