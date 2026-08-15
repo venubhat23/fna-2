@@ -183,13 +183,13 @@
                             </li>
                           <% else %>
                             <li>
-                              <a class="dropdown-item" href="#" onclick="generateVendorInvoice(<%= purchase.id %>); return false;">
+                              <a class="dropdown-item" href="#" onclick="generateVendorInvoice(<%= purchase.id %>, this); return false;">
                                 <i class="bi bi-receipt me-2 text-info"></i>Generate Invoice
                               </a>
                             </li>
                           <% end %>
                           <li>
-                            <a class="dropdown-item" href="#" onclick="shareVendorInvoiceOnWhatsApp(<%= purchase.id %>); return false;">
+                            <a class="dropdown-item" href="#" onclick="shareVendorInvoiceOnWhatsApp(<%= purchase.id %>, this); return false;">
                               <i class="bi bi-whatsapp me-2 text-success"></i>Share on WhatsApp
                             </a>
                           </li>
@@ -313,12 +313,11 @@
 </style>
 
 <script>
-function generateVendorInvoice(purchaseId) {
+function generateVendorInvoice(purchaseId, linkEl) {
   // Show loading state
-  const button = event.target.closest('button');
-  const originalContent = button.innerHTML;
-  button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-  button.disabled = true;
+  const originalContent = linkEl.innerHTML;
+  linkEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+  linkEl.classList.add('disabled');
 
   fetch(`/admin/vendor_purchases/${purchaseId}/generate_invoice`, {
     method: 'POST',
@@ -352,17 +351,16 @@ function generateVendorInvoice(purchaseId) {
   })
   .finally(() => {
     // Restore button state
-    button.innerHTML = originalContent;
-    button.disabled = false;
+    linkEl.innerHTML = originalContent;
+    linkEl.classList.remove('disabled');
   });
 }
 
-function shareVendorInvoiceOnWhatsApp(purchaseId) {
+function shareVendorInvoiceOnWhatsApp(purchaseId, linkEl) {
   // First generate/get the invoice URL
-  const button = event.target.closest('button');
-  const originalContent = button.innerHTML;
-  button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-  button.disabled = true;
+  const originalContent = linkEl.innerHTML;
+  linkEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+  linkEl.classList.add('disabled');
 
   fetch(`/admin/vendor_purchases/${purchaseId}/generate_invoice`, {
     method: 'POST',
@@ -392,8 +390,8 @@ function shareVendorInvoiceOnWhatsApp(purchaseId) {
   })
   .finally(() => {
     // Restore button state
-    button.innerHTML = originalContent;
-    button.disabled = false;
+    linkEl.innerHTML = originalContent;
+    linkEl.classList.remove('disabled');
   });
 }
 

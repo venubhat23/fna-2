@@ -6,11 +6,11 @@ default: &default
 development:
   primary: &primary_development
     <<: *default
-    host: <%= ENV['DB_HOST'] || 'dpg-d8c5ce6q1p3s73fvu23g-a.oregon-postgres.render.com' %>
-    database: <%= ENV['DB_NAME'] || 'atmanorbahe' %>
-    username: <%= ENV['DB_USERNAME'] || 'atmanorbahe_user' %>
-    password: <%= ENV['DB_PASSWORD'] || 'vPlHyWMRbfdw0eP1mVyHycpCkWP9wdMZ' %>
-    port: <%= ENV['DB_PORT'] || 5432 %>
+    host: <%= ENV['DB_HOST'] || 'altaria.proxy.rlwy.net' %>
+    database: <%= ENV['DB_NAME'] || 'railway' %>
+    username: <%= ENV['DB_USERNAME'] || 'postgres' %>
+    password: <%= ENV['DB_PASSWORD'] || 'avZhBVmlmOfzDzblnoUjUSIXBJTofVms' %>
+    port: <%= ENV['DB_PORT'] || 14754 %>
   cable:
     <<: *primary_development
   queue:
@@ -32,12 +32,12 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    url: <%= ENV['DATABASE_URL'] || 'postgresql://atmanorbahe_user:vPlHyWMRbfdw0eP1mVyHycpCkWP9wdMZ@dpg-d8c5ce6q1p3s73fvu23g-a.oregon-postgres.render.com/atmanorbahe' %>
-    host: <%= ENV['DB_HOST'] || 'dpg-d8c5ce6q1p3s73fvu23g-a.oregon-postgres.render.com' %>
-    database: <%= ENV['DB_NAME'] || 'atmanorbahe' %>
-    username: <%= ENV['DB_USERNAME'] || 'atmanorbahe_user' %>
-    password: <%= ENV['DB_PASSWORD'] || 'vPlHyWMRbfdw0eP1mVyHycpCkWP9wdMZ' %>
-    port: <%= ENV['DB_PORT'] || 5432 %>
+    url: <%= ENV['DATABASE_URL'] || 'postgresql://postgres:avZhBVmlmOfzDzblnoUjUSIXBJTofVms@altaria.proxy.rlwy.net:14754/railway' %>
+    host: <%= ENV['DB_HOST'] || 'altaria.proxy.rlwy.net' %>
+    database: <%= ENV['DB_NAME'] || 'railway' %>
+    username: <%= ENV['DB_USERNAME'] || 'postgres' %>
+    password: <%= ENV['DB_PASSWORD'] || 'avZhBVmlmOfzDzblnoUjUSIXBJTofVms' %>
+    port: <%= ENV['DB_PORT'] || 14754 %>
   cable:
     <<: *primary_production
   queue:

@@ -157,6 +157,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div>
                       <h6 class="mb-0"><%= product.name %></h6>
                       <small class="text-muted">SKU: <%= product.sku || 'N/A' %></small>
+                      <% if product.has_multiple_quantities? && product.product_variants.any? %>
+                        <small class="d-block">
+                          <span class="badge bg-primary-subtle text-primary">
+                            <i class="bi bi-boxes me-1"></i><%= product.product_variants.size %> Variant<%= product.product_variants.size == 1 ? '' : 's' %>
+                          </span>
+                        </small>
+                      <% else %>
+                        <small class="d-block text-muted">No Variants</small>
+                      <% end %>
                       <% if product.image_url.present? %>
                         <small class="text-success d-block">
                           <i class="bi bi-cloud-check me-1"></i>Cloudinary
