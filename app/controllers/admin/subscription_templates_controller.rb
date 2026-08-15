@@ -12,15 +12,11 @@ class Admin::SubscriptionTemplatesController < Admin::ApplicationController
 
   def new
     @subscription_template = SubscriptionTemplate.new
-    @customers = Customer.all
-    @products = Product.where(product_type: 'milk').or(Product.where(is_subscription_enabled: true))
-    @delivery_people = DeliveryPerson.where(status: true)
+    load_form_dropdowns
   end
 
   def edit
-    @customers = Customer.all
-    @products = Product.where(product_type: 'milk').or(Product.where(is_subscription_enabled: true))
-    @delivery_people = DeliveryPerson.where(status: true)
+    load_form_dropdowns
   end
 
   def create
@@ -29,9 +25,7 @@ class Admin::SubscriptionTemplatesController < Admin::ApplicationController
     if @subscription_template.save
       redirect_to admin_subscription_templates_path, notice: 'Subscription template was successfully created.'
     else
-      @customers = Customer.all
-      @products = Product.where(product_type: 'milk').or(Product.where(is_subscription_enabled: true))
-      @delivery_people = DeliveryPerson.where(status: true)
+      load_form_dropdowns
       render :new
     end
   end
@@ -40,9 +34,7 @@ class Admin::SubscriptionTemplatesController < Admin::ApplicationController
     if @subscription_template.update(subscription_template_params)
       redirect_to admin_subscription_templates_path, notice: 'Subscription template was successfully updated.'
     else
-      @customers = Customer.all
-      @products = Product.where(product_type: 'milk').or(Product.where(is_subscription_enabled: true))
-      @delivery_people = DeliveryPerson.where(status: true)
+      load_form_dropdowns
       render :edit
     end
   end
@@ -89,6 +81,21 @@ class Admin::SubscriptionTemplatesController < Admin::ApplicationController
   end
 
   private
+
+  # Cached: these three form dropdowns don't change per-request, but were reloaded
+  # from the DB (Customer.all as full AR objects, in particular) on every new/edit/
+  # failed-save render.
+  def load_form_dropdowns
+    @customers = Rails.cache.fetch('admin_subscription_templates_customers', expires_in: 10.minutes) do
+      Customer.all.to_a
+    end
+    @products = Rails.cache.fetch('admin_subscription_templates_products', expires_in: 10.minutes) do
+      Product.where(product_type: 'milk').or(Product.where(is_subscription_enabled: true)).to_a
+    end
+    @delivery_people = Rails.cache.fetch('admin_subscription_templates_delivery_people', expires_in: 10.minutes) do
+      DeliveryPerson.where(status: true).to_a
+    end
+  end
 
   def set_subscription_template
     @subscription_template = SubscriptionTemplate.find(params[:id])

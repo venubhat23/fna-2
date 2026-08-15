@@ -1,4 +1,6 @@
 class Product < ApplicationRecord
+  include DefaultVendorLookup
+
   # Product Type Constants
   PRODUCT_TYPES = [
     ['Milk', 'Milk'],
@@ -19,10 +21,15 @@ class Product < ApplicationRecord
     ['Box', 'Box'],
     ['Liter', 'Liter'],
     ['Piece', 'Piece'],
-    ['Gram', 'Gram']
+    ['Gram', 'Gram'],
+    ['Milliliter', 'Milliliter'],
+    ['Dozen', 'Dozen'],
+    ['Packet', 'Packet'],
+    ['Bag', 'Bag']
   ].freeze
 
   belongs_to :category
+  has_many :product_variants, dependent: :destroy
   has_many :delivery_rules, dependent: :destroy
   has_many :booking_items
   has_many :order_items
@@ -51,13 +58,13 @@ class Product < ApplicationRecord
 
   validates :name, presence: true
   validates :sku, presence: true, uniqueness: { case_sensitive: false }
-  validates :price, presence: true, numericality: { greater_than: 0 }
+  validates :price, presence: true, numericality: { greater_than: 0 }, unless: :has_multiple_quantities?
   validates :discount_price, numericality: { greater_than_or_equal_to: 0 }, allow_blank: true
-  validates :stock, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :stock, presence: true, numericality: { greater_than_or_equal_to: 0 }, unless: :has_multiple_quantities?
   validates :status, presence: true
   validates :product_type, presence: true, inclusion: { in: PRODUCT_TYPES.map(&:last) }
   validates :weight, numericality: { greater_than: 0 }, allow_blank: true
-  validates :buying_price, numericality: { greater_than: 0 }, allow_blank: true
+  validates :buying_price, numericality: { greater_than: 0 }, allow_blank: true, unless: :has_multiple_quantities?
   validates :unit_type, presence: true, inclusion: { in: UNIT_TYPES.map(&:last) }
   # validates :minimum_stock_alert, numericality: { greater_than: 0 }, allow_blank: true
   # validates :default_selling_price, numericality: { greater_than: 0 }, allow_blank: true
@@ -68,7 +75,7 @@ class Product < ApplicationRecord
   validates :occasional_end_date, presence: true, if: :requires_occasional_dates?
 
   # GST validations
-  validates :gst_percentage, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }, if: :gst_enabled?
+  validates :gst_percentage, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }, if: -> { gst_enabled? && !has_multiple_quantities? }
   validates :cgst_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 25 }, allow_blank: true
   validates :sgst_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 25 }, allow_blank: true
   validates :igst_percentage, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 50 }, allow_blank: true
@@ -82,8 +89,10 @@ class Product < ApplicationRecord
   validate :discount_value_validation
   validate :occasional_dates_validation
   validate :gst_rates_validation
+  validate :variants_required_when_multi_qty, if: :has_multiple_quantities?
 
   accepts_nested_attributes_for :delivery_rules, allow_destroy: true, reject_if: :all_blank
+  accepts_nested_attributes_for :product_variants, allow_destroy: true, reject_if: ->(attrs) { attrs['weight'].blank? || attrs['selling_price'].blank? }
 
   enum :status, { active: 'active', inactive: 'inactive', draft: 'draft' }
 
@@ -101,6 +110,19 @@ class Product < ApplicationRecord
       .group('products.id')
       .having('COALESCE(SUM(CASE WHEN stock_batches.status = ? THEN stock_batches.quantity_remaining ELSE 0 END), 0) = 0', 'active')
   }
+  # For customer/mobile catalogs: multi-qty products use variant stock, not stock_batches
+  scope :available_for_sale, -> {
+    batch_stock_ids = joins(:stock_batches)
+                        .where(stock_batches: { status: 'active' }, has_multiple_quantities: false)
+                        .group('products.id')
+                        .having('SUM(stock_batches.quantity_remaining) > 0')
+                        .select('products.id')
+    variant_stock_ids = joins(:product_variants)
+                          .where(has_multiple_quantities: true)
+                          .where('product_variants.available_stock > 0')
+                          .select('DISTINCT products.id')
+    where(id: batch_stock_ids).or(where(id: variant_stock_ids))
+  }
   scope :by_category, ->(category_id) { where(category_id: category_id) }
   scope :search, ->(query) { where('name ILIKE ? OR description ILIKE ? OR sku ILIKE ?', "%#{query}%", "%#{query}%", "%#{query}%") }
   scope :recent, -> { order(created_at: :desc) }
@@ -114,6 +136,7 @@ class Product < ApplicationRecord
 
   before_validation :generate_sku, if: -> { sku.blank? }
   before_validation :set_default_status, if: :new_record?
+  before_validation :sync_price_from_variants, if: :has_multiple_quantities?
   before_save :process_delivery_rules_location_data
   before_save :calculate_discount_fields
   before_save :update_price_tracking
@@ -134,8 +157,38 @@ class Product < ApplicationRecord
   end
 
   def available_quantity
-    # Use batch system for accurate stock tracking
-    total_batch_stock
+    if has_multiple_quantities?
+      if product_variants.loaded?
+        product_variants.sum { |v| v.available_stock.to_f }
+      else
+        product_variants.sum(:available_stock).to_f
+      end
+    else
+      # Use batch system for accurate stock tracking
+      total_batch_stock
+    end
+  end
+
+  def default_variant
+    sorted_variants.first
+  end
+
+  # Same ordering as ProductVariant.default_first, served from a preloaded
+  # association when available to avoid a query per product in list views.
+  def sorted_variants
+    if product_variants.loaded?
+      product_variants.sort_by { |v| [v.is_default? ? 0 : 1, v.weight.to_f] }
+    else
+      product_variants.default_first.to_a
+    end
+  end
+
+  def display_price
+    if has_multiple_quantities? && (dv = default_variant)
+      dv.effective_price
+    else
+      price
+    end
   end
 
   def available_stock
@@ -604,7 +657,16 @@ class Product < ApplicationRecord
     unit_type || 'units'
   end
 
-  def can_fulfill_order?(requested_quantity)
+  def can_fulfill_order?(requested_quantity, variant_id: nil)
+    if has_multiple_quantities?
+      if variant_id.present?
+        variant = product_variants.find_by(id: variant_id)
+        return variant ? variant.available_stock.to_f >= requested_quantity : false
+      else
+        # No specific variant given — allow if any variant has enough stock
+        return product_variants.any? { |v| v.available_stock.to_f >= requested_quantity }
+      end
+    end
     total_batch_stock >= requested_quantity
   end
 
@@ -1064,6 +1126,23 @@ class Product < ApplicationRecord
     self.status ||= :draft
   end
 
+  def variants_required_when_multi_qty
+    active_variants = product_variants.reject { |v| v.marked_for_destruction? }
+    if active_variants.empty?
+      errors.add(:base, "Add at least one variant when 'Product has multiple quantity options' is enabled")
+    end
+  end
+
+  def sync_price_from_variants
+    # Keep product.price in sync with the default variant so every other
+    # codepath that reads product.price (invoices, non-variant-aware
+    # bookings, reports) keeps working without modification.
+    all_variants = product_variants.reject { |v| v.marked_for_destruction? }
+    return if all_variants.empty?
+    default_v = all_variants.find(&:is_default) || all_variants.min_by { |v| v.weight.to_f }
+    self.price = default_v.selling_price if default_v&.selling_price.present?
+  end
+
   def discount_price_validation
     if discount_price.present? && price.present? && discount_price >= price
       errors.add(:discount_price, 'must be less than regular price')
@@ -1339,16 +1418,6 @@ class Product < ApplicationRecord
     end
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.error "Failed to update stock batch for Product #{id}: #{e.message}"
-  end
-
-  def get_or_create_default_vendor
-    Vendor.find_or_create_by(name: 'System Default') do |vendor|
-      vendor.email = 'system@default.com'
-      vendor.phone = '0000000000'
-      vendor.address = 'System Generated'
-      vendor.payment_type = 'Cash'
-      vendor.status = true
-    end
   end
 
   def reduce_stock_from_batches(quantity_to_reduce)

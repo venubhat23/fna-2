@@ -82,12 +82,13 @@ class DashboardController < ApplicationController
       }
     end
 
-    # Get order status distribution
+    # Get order status distribution — one grouped query replaces 4 separate counts
+    booking_status_breakdown = Booking.group(:status).count
     order_status_data = {
-      'Completed' => Booking.where(status: ['delivered', 'completed']).count,
-      'Processing' => Booking.where(status: ['confirmed', 'processing', 'packed']).count,
-      'Shipped' => Booking.where(status: ['shipped', 'out_for_delivery']).count,
-      'Cancelled' => Booking.where(status: 'cancelled').count
+      'Completed' => %w[delivered completed].sum { |s| booking_status_breakdown[s] || 0 },
+      'Processing' => %w[confirmed processing packed].sum { |s| booking_status_breakdown[s] || 0 },
+      'Shipped' => %w[shipped out_for_delivery].sum { |s| booking_status_breakdown[s] || 0 },
+      'Cancelled' => booking_status_breakdown['cancelled'] || 0
     }
 
     # Generate sample activities

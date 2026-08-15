@@ -48,8 +48,10 @@ class Admin::InvoicesController < Admin::ApplicationController
     regular_ids = page_refs.select { |ref| ref[:kind] == 'regular' }.map { |ref| ref[:id] }
     booking_ids = page_refs.select { |ref| ref[:kind] == 'booking_only' }.map { |ref| ref[:id] }
 
-    regular_invoices_by_id = Invoice.where(id: regular_ids).includes(:customer).index_by(&:id)
-    booking_invoices_by_id = Booking.where(id: booking_ids).includes(:customer).index_by(&:id)
+    # eager_load (not includes): the DB is remote, so for a page-sized id list a LEFT
+    # JOIN round trip beats includes' separate "customers WHERE id IN (...)" round trip.
+    regular_invoices_by_id = Invoice.where(id: regular_ids).eager_load(:customer).index_by(&:id)
+    booking_invoices_by_id = Booking.where(id: booking_ids).eager_load(:customer).index_by(&:id)
 
     # Batch-preload related bookings for this page's invoices in one query instead of
     # one query per invoice (previously invoice.related_booking N+1'd across the whole table).
@@ -74,7 +76,11 @@ class Admin::InvoicesController < Admin::ApplicationController
 
     @stats = calculate_regular_invoice_stats_only(regular_counts_by_status, regular_sums_by_status,
                                                    booking_counts_by_status, booking_sums_by_status)
-    @delivery_persons = DeliveryPerson.active.order(:first_name, :last_name)
+    # Cached: this dropdown's contents don't change per-request, but were reloaded from
+    # the DB on every single index hit.
+    @delivery_persons = Rails.cache.fetch('admin_invoices_filter_delivery_persons', expires_in: 10.minutes) do
+      DeliveryPerson.active.order(:first_name, :last_name).to_a
+    end
     @invoice_type = invoice_type
   end
 

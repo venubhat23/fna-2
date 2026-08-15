@@ -25,10 +25,11 @@ class Admin::SubAgentsController < Admin::ApplicationController
     # Order and paginate using configurable pagination
     @sub_agents = paginate_records(@sub_agents.order(created_at: :desc))
 
-    # Statistics
-    @total_sub_agents = SubAgent.count
-    @active_sub_agents = SubAgent.active.count
-    @inactive_sub_agents = SubAgent.inactive.count
+    # Statistics - one GROUP BY instead of 3 separate COUNT queries
+    sub_agent_status_counts = SubAgent.group(:status).count
+    @total_sub_agents = sub_agent_status_counts.values.sum
+    @active_sub_agents = sub_agent_status_counts['active'].to_i
+    @inactive_sub_agents = sub_agent_status_counts['inactive'].to_i
   end
 
   # GET /admin/sub_agents/1

@@ -91,9 +91,13 @@ class Customer::CartsController < Customer::BaseController
     # Clear existing session cart
     @cart[:items] = []
 
+    # Batch-load all products in one query instead of one Product.find_by per item.
+    product_ids = cart_items.map { |item_data| item_data[:product_id] }
+    products_by_id = Product.where(id: product_ids).index_by { |p| p.id.to_s }
+
     # Add items from localStorage
     cart_items.each do |item_data|
-      product = Product.find_by(id: item_data[:product_id])
+      product = products_by_id[item_data[:product_id].to_s]
       next unless product && product.status == 'active'
 
       # Validate quantity

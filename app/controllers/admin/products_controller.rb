@@ -29,7 +29,7 @@ class Admin::ProductsController < Admin::ApplicationController
     end
 
     @products = @products.recent.page(params[:page]).per(20)
-    @categories = Category.active.ordered
+    load_categories
   end
 
   def show
@@ -46,7 +46,7 @@ class Admin::ProductsController < Admin::ApplicationController
     end
 
     @product.delivery_rules.build(rule_type: 'everywhere') # Default rule
-    @categories = Category.active.ordered
+    load_categories
   end
 
   def create
@@ -59,13 +59,13 @@ class Admin::ProductsController < Admin::ApplicationController
       handle_cloudinary_uploads if params[:product][:cloudinary_images].present?
       redirect_to admin_product_path(@product), notice: 'Product was successfully created.'
     else
-      @categories = Category.active.ordered
+      load_categories
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
-    @categories = Category.active.ordered
+    load_categories
     @existing_rule = @product.delivery_rules.first
   end
 
@@ -80,6 +80,9 @@ class Admin::ProductsController < Admin::ApplicationController
     vendor_purchase_id = params[:vendor_purchase_id].presence
 
     if @product.update(product_params)
+      # Clean up variants if multi-quantity was disabled
+      @product.product_variants.destroy_all unless @product.has_multiple_quantities?
+
       # Handle Cloudinary uploads
       handle_cloudinary_uploads if params[:product][:cloudinary_images].present?
 
@@ -91,7 +94,7 @@ class Admin::ProductsController < Admin::ApplicationController
 
       redirect_to admin_product_path(@product), notice: 'Product was successfully updated.'
     else
-      @categories = Category.active.ordered
+      load_categories
       render :edit, status: :unprocessable_entity
     end
   end
@@ -304,20 +307,33 @@ class Admin::ProductsController < Admin::ApplicationController
   end
 
   def set_product
-    @product = Product.find(params[:id])
+    @product = Product.includes(:product_variants).find(params[:id])
+  end
+
+  # Cached: this category dropdown doesn't change per-request, but was reloaded from
+  # the DB on every index/new/edit/failed-save render.
+  def load_categories
+    @categories = Rails.cache.fetch('admin_products_categories', expires_in: 10.minutes) do
+      Category.active.ordered.to_a
+    end
   end
 
   def calculate_market_stats
     products_with_prices = Product.active.where.not(today_price: nil, yesterday_price: nil)
 
-    return {} if products_with_prices.empty?
+    # Single aggregate query replaces the .empty? check + 3 separate FILTER counts +
+    # a redundant total count + a separate average query (6 round trips -> 1).
+    price_increases, price_decreases, price_stable, avg_change = products_with_prices.pluck(
+      Arel.sql("COUNT(*) FILTER (WHERE price_change_percentage > 0)"),
+      Arel.sql("COUNT(*) FILTER (WHERE price_change_percentage < 0)"),
+      Arel.sql("COUNT(*) FILTER (WHERE price_change_percentage = 0)"),
+      Arel.sql("COALESCE(AVG(price_change_percentage), 0)")
+    ).first
 
-    price_increases = products_with_prices.where('price_change_percentage > 0').count
-    price_decreases = products_with_prices.where('price_change_percentage < 0').count
-    price_stable = products_with_prices.where('price_change_percentage = 0').count
+    total_products = price_increases + price_decreases + price_stable
+    return {} if total_products.zero?
 
-    total_products = products_with_prices.count
-    avg_change = products_with_prices.average(:price_change_percentage)&.round(2) || 0
+    avg_change = avg_change.round(2)
 
     biggest_gainer = products_with_prices.order(price_change_percentage: :desc).first
     biggest_loser = products_with_prices.order(price_change_percentage: :asc).first
@@ -458,7 +474,7 @@ class Admin::ProductsController < Admin::ApplicationController
       :name, :description, :category_id, :price, :discount_price, :stock, :initial_stock,
       :status, :sku, :weight, :dimensions, :meta_title, :meta_description, :tags,
       :buying_price, :discount_type, :discount_value, :original_price, :discount_amount, :is_discounted,
-      :product_type, :unit_type, :is_subscription_enabled,
+      :product_type, :unit_type, :is_subscription_enabled, :has_multiple_quantities,
       :is_occasional_product, :occasional_start_date, :occasional_end_date, :occasional_description, :occasional_auto_hide,
       :occasional_schedule_type, :occasional_recurring_from_day, :occasional_recurring_from_time,
       :occasional_recurring_to_day, :occasional_recurring_to_time,
@@ -473,6 +489,12 @@ class Admin::ProductsController < Admin::ApplicationController
       delivery_rules_attributes: [
         :id, :rule_type, :location_data, :is_excluded, :delivery_days, :delivery_charge, :_destroy,
         :location_data_pincodes, { location_data_states: [] }, { location_data_cities: [] }
+      ],
+      product_variants_attributes: [
+        :id, :weight, :unit, :buying_price, :selling_price,
+        :discount_enabled, :discount_type, :discount_value, :discount_amount,
+        :available_stock, :is_default, :display_order,
+        :gst_percentage, :gst_amount, :final_price_with_gst, :_destroy
       ]
     )
   end

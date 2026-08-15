@@ -12,9 +12,11 @@ class Customer::ReferralsController < Customer::BaseController
 
     # Calculate statistics
     @total_referrals = @referrals.count
-    @pending_referrals = current_customer.referrals.pending.count
-    @registered_referrals = current_customer.referrals.registered.count
-    @converted_referrals = current_customer.referrals.converted.count
+    # One grouped query replaces 3 separate per-status .count calls
+    referral_status_counts = current_customer.referrals.group(:status).count
+    @pending_referrals = referral_status_counts['pending'] || 0
+    @registered_referrals = referral_status_counts['registered'] || 0
+    @converted_referrals = referral_status_counts['converted'] || 0
     @conversion_rate = calculate_conversion_rate
   end
 

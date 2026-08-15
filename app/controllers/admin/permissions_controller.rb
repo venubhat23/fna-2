@@ -9,10 +9,12 @@ class Admin::PermissionsController < Admin::ApplicationController
     @modules = Permission.modules_list
     @actions = Permission.actions_list
 
-    # Statistics
-    @total_permissions = @permissions.count
-    @modules_count = @permissions.distinct.count(:module_name)
-    @assigned_permissions = @permissions.joins(:role_permissions).distinct.count
+    # Statistics - derived from the already-loaded/preloaded @permissions instead of
+    # 3 extra COUNT/DISTINCT round trips (.count always re-queries even when the
+    # relation is loaded; .roles is already preloaded via includes above).
+    @total_permissions = @permissions.size
+    @modules_count = @grouped_permissions.keys.size
+    @assigned_permissions = @permissions.count { |p| p.roles.any? }
     @unassigned_permissions = @total_permissions - @assigned_permissions
   end
 

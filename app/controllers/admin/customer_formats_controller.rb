@@ -13,10 +13,18 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
 
     @customer_formats = @customer_formats.order(created_at: :desc).page(params[:page]).per(20)
 
-    # For filter options
-    @customers = Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
-    @products = Product.where(status: 'active').pluck(:name, :id)
-    @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
+    # For filter options - cached, since this page does a full reload on every filter
+    # change and previously loaded every customer/product/delivery person as full AR
+    # objects (not even pluck) on every single request.
+    @customers = Rails.cache.fetch('admin_customer_formats_filter_customers', expires_in: 10.minutes) do
+      Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
+    end
+    @products = Rails.cache.fetch('admin_customer_formats_filter_products', expires_in: 10.minutes) do
+      Product.where(status: 'active').pluck(:name, :id)
+    end
+    @delivery_people = Rails.cache.fetch('admin_customer_formats_filter_delivery_people', expires_in: 10.minutes) do
+      DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
+    end
 
     # Summary statistics
     @stats = calculate_customer_format_stats
@@ -306,16 +314,15 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
   end
 
   def calculate_customer_format_stats
-    total = CustomerFormat.count
-    active = CustomerFormat.where(status: 'active').count
-    inactive = CustomerFormat.where(status: 'not_active').count
-
+    # Two grouped queries replace 4 separate counts (total/active/inactive derived
+    # from the status GROUP BY instead of each running its own COUNT).
+    status_counts = CustomerFormat.group(:status).count
     pattern_counts = CustomerFormat.group(:pattern).count
 
     {
-      total: total,
-      active: active,
-      inactive: inactive,
+      total: status_counts.values.sum,
+      active: status_counts['active'].to_i,
+      inactive: status_counts['not_active'].to_i,
       pattern_counts: pattern_counts
     }
   end

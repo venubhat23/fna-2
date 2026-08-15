@@ -1,6 +1,7 @@
 class Admin::VendorPurchasesController < Admin::ApplicationController
   before_action :authenticate_user!
-  before_action :set_vendor_purchase, only: [:show, :edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid, :show_invoice]
+  before_action :set_vendor_purchase, only: [:edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid, :show_invoice]
+  before_action :set_vendor_purchase_with_items, only: [:show]
   before_action :set_vendors_and_products, only: [:new, :edit, :create, :update, :bulk_new, :bulk_create]
   layout 'application'
 
@@ -9,29 +10,34 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
                                      .recent
     @vendor_purchases = @vendor_purchases.joins(:vendor).where('vendors.name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
     @vendor_purchases = @vendor_purchases.where(vendor_id: params[:vendor_id]) if params[:vendor_id].present?
-    @vendor_purchases = @vendor_purchases.where(status: params[:status]) if params[:status].present?
+    case params[:payment_status]
+    when 'paid'
+      @vendor_purchases = @vendor_purchases.where('paid_amount >= total_amount')
+    when 'unpaid'
+      @vendor_purchases = @vendor_purchases.where('paid_amount < total_amount')
+    end
 
     # Single aggregate query for the summary cards instead of 3-4 separate count/sum round trips.
-    total_count, pending_count, total_value, outstanding_value = @vendor_purchases.except(:includes, :order).pluck(
+    total_count, unpaid_count, total_value, outstanding_value = @vendor_purchases.except(:includes, :order).pluck(
       Arel.sql("COUNT(*)"),
-      Arel.sql("COUNT(*) FILTER (WHERE status = 'pending')"),
+      Arel.sql("COUNT(*) FILTER (WHERE paid_amount < total_amount)"),
       Arel.sql("COALESCE(SUM(total_amount), 0)"),
       Arel.sql("COALESCE(SUM(total_amount - paid_amount), 0)")
     ).first
     @stats = {
       total_count: total_count,
-      pending_count: pending_count,
+      unpaid_count: unpaid_count,
       total_value: total_value,
       outstanding_value: outstanding_value
     }
 
     @vendor_purchases = @vendor_purchases.page(params[:page]).per(20)
 
-    @vendors = Vendor.active.order(:name)
+    set_vendors_and_products
   end
 
   def show
-    @stock_batches = @vendor_purchase.stock_batches.includes(:product)
+    @stock_batches = @vendor_purchase.stock_batches.includes(:product).to_a
   end
 
   def new
@@ -283,14 +289,9 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   def bulk_new
     @vendor_purchase = VendorPurchase.new
     @vendor_purchase.vendor_purchase_items.build
-    @vendors = Vendor.active.select(:id, :name, :phone).order(:name)
-    @products = Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name)
   end
 
   def bulk_create
-    @vendors = Vendor.active.select(:id, :name, :phone).order(:name)
-    @products = Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name)
-
     # Validate date range
     from_date = Date.parse(params[:from_date]) rescue nil
     to_date = Date.parse(params[:to_date]) rescue nil
@@ -369,9 +370,20 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
     @vendor_purchase = VendorPurchase.find(params[:id])
   end
 
+  def set_vendor_purchase_with_items
+    @vendor_purchase = VendorPurchase.includes(vendor_purchase_items: :product).find(params[:id])
+  end
+
+  # Cached for 2 minutes: these power the vendor/product pickers on the purchase
+  # form and rarely change second-to-second, but were being re-queried on every
+  # new/edit/create/update/bulk_new/bulk_create request.
   def set_vendors_and_products
-    @vendors = Vendor.active.select(:id, :name, :phone).order(:name)
-    @products = Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name)
+    @vendors = Rails.cache.fetch('admin/vendor_purchases/active_vendors', expires_in: 2.minutes) do
+      Vendor.active.select(:id, :name, :phone).order(:name).to_a
+    end
+    @products = Rails.cache.fetch('admin/vendor_purchases/active_products', expires_in: 2.minutes) do
+      Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name).to_a
+    end
   end
 
   def vendor_purchase_params

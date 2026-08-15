@@ -40,6 +40,9 @@ class Customer::InvoicesController < Customer::BaseController
 
     # Use all_invoices for statistics
     @invoices_for_stats = @all_invoices
+    # Two grouped/aggregate queries replace 5 separate .count/.sum calls in the view
+    @invoices_payment_status_counts = @invoices_for_stats.group(:payment_status).count
+    @invoices_total_amount = @invoices_for_stats.sum(:total_amount)
   end
 
   def show

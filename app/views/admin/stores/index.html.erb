@@ -20,7 +20,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Total Stores</h6>
-            <h5 class="mb-0"><%= @stores.count %></h5>
+            <h5 class="mb-0"><%= @stores.size %></h5>
           </div>
           <div class="text-primary">
             <i class="bi bi-shop fs-3"></i>
@@ -35,7 +35,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Active Stores</h6>
-            <h5 class="mb-0"><%= @stores.where(status: true).count %></h5>
+            <h5 class="mb-0"><%= @stores.count(&:status) %></h5>
           </div>
           <div class="text-success">
             <i class="bi bi-check-circle fs-3"></i>
@@ -50,7 +50,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Inactive Stores</h6>
-            <h5 class="mb-0"><%= @stores.where(status: false).count %></h5>
+            <h5 class="mb-0"><%= @stores.count { |s| !s.status } %></h5>
           </div>
           <div class="text-danger">
             <i class="bi bi-x-circle fs-3"></i>
@@ -65,7 +65,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">States Covered</h6>
-            <h5 class="mb-0"><%= @stores.pluck(:state).uniq.compact.count %></h5>
+            <h5 class="mb-0"><%= @stores.map(&:state).uniq.compact.count %></h5>
           </div>
           <div class="text-info">
             <i class="bi bi-geo-alt fs-3"></i>

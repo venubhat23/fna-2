@@ -35,6 +35,12 @@
   }
   .br-table tbody td { padding: 10px 14px; font-size: 0.88rem; vertical-align: middle; }
   .br-table tbody tr:hover { background: #f8faff; }
+  .br-source-badge {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 0.76rem; padding: 2px 0; white-space: nowrap;
+  }
+  .br-source-label { color: #64748b; font-weight: 600; }
+  .br-source-label i { width: 14px; text-align: center; }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -131,6 +137,7 @@
             <th>#</th>
             <th>Product Name</th>
             <th>Unit</th>
+            <th>Source Breakdown (Qty / Revenue)</th>
             <th class="text-end">Qty Sold</th>
             <th class="text-end">Total Buying Price</th>
             <th class="text-end">Total Selling Price</th>
@@ -143,6 +150,26 @@
               <td><%= idx + 1 %></td>
               <td class="fw-semibold" style="color:#1e293b;"><%= row[:name] %></td>
               <td style="color:#94a3b8;"><%= row[:unit] %></td>
+              <td>
+                <% if row[:booking_qty] > 0 %>
+                  <div class="br-source-badge">
+                    <span class="br-source-label"><i class="bi bi-bag-check"></i> Booking</span>
+                    <span><%= number_with_precision(row[:booking_qty], precision: 2) %> &middot; ₹<%= number_with_delimiter(number_with_precision(row[:booking_selling_price], precision: 2)) %></span>
+                  </div>
+                <% end %>
+                <% if row[:subscription_qty] > 0 %>
+                  <div class="br-source-badge">
+                    <span class="br-source-label"><i class="bi bi-arrow-repeat"></i> Subscription</span>
+                    <span><%= number_with_precision(row[:subscription_qty], precision: 2) %> &middot; ₹<%= number_with_delimiter(number_with_precision(row[:subscription_selling_price], precision: 2)) %></span>
+                  </div>
+                <% end %>
+                <% if row[:invoice_qty] > 0 %>
+                  <div class="br-source-badge">
+                    <span class="br-source-label"><i class="bi bi-receipt"></i> Invoice</span>
+                    <span><%= number_with_precision(row[:invoice_qty], precision: 2) %> &middot; ₹<%= number_with_delimiter(number_with_precision(row[:invoice_selling_price], precision: 2)) %></span>
+                  </div>
+                <% end %>
+              </td>
               <td class="text-end fw-semibold"><%= number_with_precision(row[:qty], precision: 2) %></td>
               <td class="text-end" style="color:#ef4444;">
                 ₹<%= number_with_delimiter(number_with_precision(row[:buying_price], precision: 2)) %>
@@ -158,7 +185,7 @@
         </tbody>
         <tfoot>
           <tr style="background:#f1f5f9;font-weight:700;border-top:2px solid #e2e8f0;">
-            <td colspan="3" class="text-end pe-3">TOTAL</td>
+            <td colspan="4" class="text-end pe-3">TOTAL</td>
             <td class="text-end"><%= number_with_precision(@total_qty, precision: 2) %></td>
             <td class="text-end" style="color:#ef4444;">
               ₹<%= number_with_delimiter(number_with_precision(@total_buying_price, precision: 2)) %>

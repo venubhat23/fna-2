@@ -653,6 +653,18 @@
         Pricing & Inventory
       </h3>
 
+      <div class="toggle-container">
+        <div class="toggle-switch">
+          <%= form.check_box :has_multiple_quantities, id: "has_multiple_quantities" %>
+          <label class="toggle-slider" for="has_multiple_quantities"></label>
+        </div>
+        <div>
+          <strong>Product has multiple quantity options</strong><br>
+          <small class="text-muted">Sell this product in several weights/sizes (e.g. 500ml, 1L, 2L), each with its own price and stock</small>
+        </div>
+      </div>
+
+      <div id="single_pricing_section">
       <div class="form-grid form-grid-2">
         <div class="form-group">
           <%= form.label :buying_price, class: "form-label" do %>
@@ -805,10 +817,36 @@
             placeholder: "30cm x 20cm x 10cm" %>
         <div class="help-text">Product dimensions (optional)</div>
       </div>
+      </div><!-- /#single_pricing_section -->
+    </div>
+
+    <!-- Variants Section -->
+    <div class="form-section" id="variants_section" style="display: none;">
+      <h3 class="section-title">
+        <i class="bi bi-layers"></i>
+        Quantity Options / Variants
+      </h3>
+      <p class="text-muted">Each variant has its own weight, price, stock and (optionally) discount and GST. At least one variant is required, and exactly one should be marked default.</p>
+
+      <div id="variants_body">
+        <%= form.fields_for :product_variants, product.product_variants.ordered do |vf| %>
+          <%= render "admin/products/variant_row", vf: vf %>
+        <% end %>
+      </div>
+
+      <button type="button" class="btn btn-outline-primary mt-2" id="add-variant-btn">
+        <i class="bi bi-plus-circle"></i> Add Variant
+      </button>
+
+      <template id="variant_row_template">
+        <%= form.fields_for :product_variants, ProductVariant.new, child_index: "NEW_IDX" do |vf| %>
+          <%= render "admin/products/variant_row", vf: vf %>
+        <% end %>
+      </template>
     </div>
 
     <!-- GST Configuration Section -->
-    <div class="form-section">
+    <div class="form-section" id="product_gst_section">
       <h3 class="section-title">
         <i class="bi bi-receipt"></i>
         GST Configuration
@@ -2271,5 +2309,135 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }, 5000);
   }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const multiQtyToggle = document.getElementById('has_multiple_quantities');
+  const singlePricingSection = document.getElementById('single_pricing_section');
+  const gstSection = document.getElementById('product_gst_section');
+  const variantsSection = document.getElementById('variants_section');
+  const variantsBody = document.getElementById('variants_body');
+  const addVariantBtn = document.getElementById('add-variant-btn');
+  const variantTemplate = document.getElementById('variant_row_template');
+
+  if (!multiQtyToggle || !variantsSection) return;
+
+  // Fields inside single_pricing_section that carry a `required` attribute
+  // and must not block submission when the section is hidden.
+  const REQUIRED_SINGLE_PRICING_IDS = ['buying-price', 'selling-price', 'product_stock'];
+
+  function setSectionDisabled(section, disabled) {
+    if (!section) return;
+    section.querySelectorAll('input, select, textarea').forEach(function(field) {
+      field.disabled = disabled;
+    });
+  }
+
+  function toggleVariantMode() {
+    const multiQty = multiQtyToggle.checked;
+
+    if (singlePricingSection) singlePricingSection.style.display = multiQty ? 'none' : '';
+    if (gstSection) gstSection.style.display = multiQty ? 'none' : '';
+    variantsSection.style.display = multiQty ? '' : 'none';
+
+    setSectionDisabled(singlePricingSection, multiQty);
+    setSectionDisabled(gstSection, multiQty);
+    setSectionDisabled(variantsSection, !multiQty);
+
+    // Belt-and-suspenders: explicitly clear `required` blocking even if the
+    // section-level disable above missed something (e.g. nested toggles).
+    REQUIRED_SINGLE_PRICING_IDS.forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.disabled = multiQty;
+    });
+  }
+
+  function recalcVariantRow(row) {
+    const sellingPrice = parseFloat(row.querySelector('.variant-selling-price')?.value) || 0;
+    const discountEnabled = row.querySelector('.variant-discount-toggle')?.checked;
+    const discountType = row.querySelector('.variant-discount-type')?.value;
+    const discountValue = parseFloat(row.querySelector('.variant-discount-value')?.value) || 0;
+    const gstPercentage = parseFloat(row.querySelector('.variant-gst-percentage')?.value) || 0;
+
+    let effectivePrice = sellingPrice;
+    if (discountEnabled && discountValue > 0) {
+      if (discountType === 'percentage') {
+        effectivePrice = sellingPrice - (sellingPrice * discountValue / 100);
+      } else {
+        effectivePrice = sellingPrice - discountValue;
+      }
+      effectivePrice = Math.max(effectivePrice, 0);
+    }
+
+    const gstAmount = gstPercentage > 0 ? (effectivePrice * gstPercentage / 100) : 0;
+    const finalPrice = effectivePrice + gstAmount;
+
+    const preview = row.querySelector('.variant-price-preview');
+    if (preview) {
+      preview.textContent = gstAmount > 0
+        ? `₹${effectivePrice.toFixed(2)} + GST = ₹${finalPrice.toFixed(2)}`
+        : `₹${effectivePrice.toFixed(2)}`;
+    }
+  }
+
+  function bindVariantRowEvents(row) {
+    const discountToggle = row.querySelector('.variant-discount-toggle');
+    const discountConfig = row.querySelector('.variant-discount-config');
+
+    if (discountToggle && discountConfig) {
+      discountConfig.style.display = discountToggle.checked ? '' : 'none';
+      discountToggle.addEventListener('change', function() {
+        discountConfig.style.display = discountToggle.checked ? '' : 'none';
+        recalcVariantRow(row);
+      });
+    }
+
+    row.querySelectorAll('.variant-selling-price, .variant-discount-type, .variant-discount-value, .variant-gst-percentage')
+      .forEach(function(input) {
+        input.addEventListener('input', function() { recalcVariantRow(row); });
+        input.addEventListener('change', function() { recalcVariantRow(row); });
+      });
+
+    const removeBtn = row.querySelector('.variant-remove-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        const idField = row.querySelector('input[type="hidden"][name*="[id]"]');
+        const destroyField = row.querySelector('.variant-destroy-field');
+
+        if (idField && idField.value) {
+          // Persisted variant — soft delete via _destroy and hide the row.
+          if (destroyField) destroyField.value = '1';
+          row.style.display = 'none';
+        } else {
+          // Unsaved row — just remove it from the DOM.
+          row.remove();
+        }
+      });
+    }
+
+    recalcVariantRow(row);
+  }
+
+  // Wire up any variant rows already rendered server-side (existing variants).
+  if (variantsBody) {
+    variantsBody.querySelectorAll('[data-variant-row]').forEach(bindVariantRowEvents);
+  }
+
+  if (addVariantBtn && variantTemplate && variantsBody) {
+    addVariantBtn.addEventListener('click', function() {
+      const newIndex = Date.now();
+      const html = variantTemplate.innerHTML.replace(/NEW_IDX/g, newIndex);
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html;
+      const newRow = wrapper.firstElementChild;
+      variantsBody.appendChild(newRow);
+      bindVariantRowEvents(newRow);
+    });
+  }
+
+  multiQtyToggle.addEventListener('change', toggleVariantMode);
+  toggleVariantMode();
 });
 </script>

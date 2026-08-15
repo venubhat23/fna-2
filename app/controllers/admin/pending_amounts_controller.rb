@@ -14,7 +14,11 @@ class Admin::PendingAmountsController < ApplicationController
       @pending_amounts = @pending_amounts.where(pending_date: start_date..end_date)
     end
 
-    @customers = Customer.order(:first_name, :last_name)
+    # Cached: this dropdown's contents don't change per-request, but were reloaded
+    # from the DB (as full AR objects) on every single index hit.
+    @customers = Rails.cache.fetch('admin_pending_amounts_customers', expires_in: 10.minutes) do
+      Customer.order(:first_name, :last_name).to_a
+    end
     @new_pending_amount = PendingAmount.new
   end
 

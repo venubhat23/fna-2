@@ -23,19 +23,21 @@ class Admin::OrdersController < Admin::ApplicationController
       @orders = @orders.where(created_at: params[:date_from]..params[:date_to])
     end
 
+    # Single GROUP BY replaces 12 separate COUNT queries on every index hit.
+    status_counts = Order.group(:status).count
     @status_counts = {
-      all: Order.count,
-      draft: Order.draft.count,
-      ordered_and_delivery_pending: Order.ordered_and_delivery_pending.count,
-      confirmed: Order.confirmed.count,
-      processing: Order.processing.count,
-      packed: Order.packed.count,
-      shipped: Order.shipped.count,
-      out_for_delivery: Order.out_for_delivery.count,
-      delivered: Order.delivered.count,
-      completed: Order.completed.count,
-      cancelled: Order.cancelled.count,
-      returned: Order.returned.count
+      all: status_counts.values.sum,
+      draft: status_counts['draft'].to_i,
+      ordered_and_delivery_pending: status_counts['ordered_and_delivery_pending'].to_i,
+      confirmed: status_counts['confirmed'].to_i,
+      processing: status_counts['processing'].to_i,
+      packed: status_counts['packed'].to_i,
+      shipped: status_counts['shipped'].to_i,
+      out_for_delivery: status_counts['out_for_delivery'].to_i,
+      delivered: status_counts['delivered'].to_i,
+      completed: status_counts['completed'].to_i,
+      cancelled: status_counts['cancelled'].to_i,
+      returned: status_counts['returned'].to_i
     }
   end
 

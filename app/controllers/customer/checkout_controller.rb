@@ -36,7 +36,7 @@ class Customer::CheckoutController < Customer::BaseController
 
     # Load collect from store settings and available stores
     @collect_from_store_enabled = SystemSetting.collect_from_store_enabled?
-    @available_stores = Store.available_for_collection if @collect_from_store_enabled
+    @available_stores = available_stores_for_collection if @collect_from_store_enabled
     @selected_store = find_selected_store if @collect_from_store_enabled
   end
 
@@ -78,20 +78,20 @@ class Customer::CheckoutController < Customer::BaseController
       Rails.logger.error "Booking validation error: #{e.message}"
       @cart_items = @cart[:items] || []
       @cart_total = calculate_cart_total
-      @available_stores = Store.available_for_collection if @collect_from_store_enabled
+      @available_stores = available_stores_for_collection if @collect_from_store_enabled
       flash.now[:alert] = "Failed to process order: #{e.message}"
       render :payment
     rescue ActiveRecord::Rollback
       @cart_items = @cart[:items] || []
       @cart_total = calculate_cart_total
-      @available_stores = Store.available_for_collection if @collect_from_store_enabled
+      @available_stores = available_stores_for_collection if @collect_from_store_enabled
       flash.now[:alert] = 'Failed to process order. Please try again.'
       render :payment
     rescue => e
       Rails.logger.error "Unexpected error in checkout: #{e.message}\n#{e.backtrace.join('\n')}"
       @cart_items = @cart[:items] || []
       @cart_total = calculate_cart_total
-      @available_stores = Store.available_for_collection if @collect_from_store_enabled
+      @available_stores = available_stores_for_collection if @collect_from_store_enabled
       flash.now[:alert] = 'An unexpected error occurred. Please try again.'
       render :payment
     end
@@ -232,7 +232,16 @@ class Customer::CheckoutController < Customer::BaseController
     store_id = params[:selected_store_id] || session[:selected_store_id]
     return nil if store_id.blank?
 
-    Store.available_for_collection.find_by(id: store_id)
+    available_stores_for_collection.find { |store| store.id == store_id.to_i }
+  end
+
+  # Store list is admin-managed and capped at Store::MAX_STORES_LIMIT (10) - cached
+  # since it was reloaded from the DB on every checkout hit (this method is called up
+  # to twice per request across payment/create).
+  def available_stores_for_collection
+    Rails.cache.fetch('checkout_available_stores', expires_in: 10.minutes) do
+      Store.available_for_collection.to_a
+    end
   end
 
   def create_booking

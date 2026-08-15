@@ -195,19 +195,20 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
           <%
-            # Calculate the actual total tax rate from all booking items
+            # Calculate the actual total tax rate from all booking items.
+            # Reuses @booking_items (preloaded with .includes(product: ...) above)
+            # instead of calling @booking.booking_items fresh three times here, which
+            # bypasses that preload and N+1's a product query per item per call.
             total_tax_rate = 0
             total_base_amount = 0
-            @booking.booking_items.each do |item|
-              if item.product&.gst_enabled && item.product.gst_percentage.to_f > 0
-                base_amount = item.quantity * (item.price || 0)
-                total_base_amount += base_amount
-                total_tax_rate += item.product.gst_percentage.to_f
-              end
+            gst_items = @booking_items.select { |item| item.product&.gst_enabled && item.product.gst_percentage.to_f > 0 }
+            gst_items.each do |item|
+              base_amount = item.quantity * (item.price || 0)
+              total_base_amount += base_amount
+              total_tax_rate += item.product.gst_percentage.to_f
             end
             # Calculate weighted average tax rate
-            avg_tax_rate = @booking.booking_items.any? { |item| item.product&.gst_enabled } ?
-              (total_tax_rate / @booking.booking_items.select { |item| item.product&.gst_enabled }.count rescue 0) : 0
+            avg_tax_rate = gst_items.any? ? (total_tax_rate / gst_items.count rescue 0) : 0
             tax_display = avg_tax_rate.to_i == avg_tax_rate ? avg_tax_rate.to_i : avg_tax_rate.round(2)
           %>
           <span class="text-muted">Tax (<%= tax_display %>%):</span>

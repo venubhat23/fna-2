@@ -9,7 +9,7 @@ class Customer::ProductsController < Customer::BaseController
                         .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
                         .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
                         .group("products.id")
-                        .includes(:category, :approved_reviews)
+                        .includes(:category, :approved_reviews, image_attachment: :blob)
 
     # Apply filters
     @products = @products.by_category(params[:category_id]) if params[:category_id].present?
@@ -61,7 +61,7 @@ class Customer::ProductsController < Customer::BaseController
                               .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
                               .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
                               .group("products.id")
-                              .includes(:category, :approved_reviews)
+                              .includes(:category, :approved_reviews, image_attachment: :blob)
                               .where.not(id: @product.id)
                               .where(category: @product.category)
                               .limit(4)

@@ -32,7 +32,7 @@ class Affiliate::BookingsController < Affiliate::BaseController
 
   def show
     @customer = @booking.customer
-    @booking_items = @booking.booking_items.includes(:product)
+    @booking_items = @booking.booking_items.includes(product: :category)
   end
 
   def update

@@ -70,28 +70,33 @@ class SystemSetting < ApplicationRecord
 
   # Commission methods for new columns
 
+  # These 4 getters all read the same 'system_config' row - previously each ran its own
+  # find_by, so any page showing all 4 (admin/settings/system#index) did 4 round trips
+  # for one row. Cached like collect_from_store_enabled? above, invalidated on write.
+  def self.system_config_setting
+    LOCAL_CACHE.fetch('system_setting_system_config_row', expires_in: 10.minutes) do
+      find_by(key: 'system_config')
+    end
+  end
+
   # Get default main agent commission as float
   def self.default_main_agent_commission
-    setting = find_by(key: 'system_config')
-    setting&.default_main_agent_commission || 0.0
+    system_config_setting&.default_main_agent_commission || 0.0
   end
 
   # Get default affiliate commission as float
   def self.default_affiliate_commission
-    setting = find_by(key: 'system_config')
-    setting&.default_affiliate_commission || 0.0
+    system_config_setting&.default_affiliate_commission || 0.0
   end
 
   # Get default ambassador commission as float
   def self.default_ambassador_commission
-    setting = find_by(key: 'system_config')
-    setting&.default_ambassador_commission || 0.0
+    system_config_setting&.default_ambassador_commission || 0.0
   end
 
   # Get default company expenses as float
   def self.default_company_expenses
-    setting = find_by(key: 'system_config')
-    setting&.default_company_expenses || 0.0
+    system_config_setting&.default_company_expenses || 0.0
   end
 
   # Update commission values
@@ -110,13 +115,19 @@ class SystemSetting < ApplicationRecord
       default_ambassador_commission: params[:default_ambassador_commission],
       default_company_expenses: params[:default_company_expenses]
     )
+    LOCAL_CACHE.delete('system_setting_system_config_row')
+    setting
   end
 
   # Business Settings Methods
 
   # Singleton pattern to get the current business settings
+  # Cached: read on every public invoice/booking-invoice view (no auth, so no session
+  # caching upstream) - same LOCAL_CACHE pattern as collect_from_store_enabled? above.
   def self.business_settings
-    find_by(key: 'business_config') || new
+    LOCAL_CACHE.fetch('system_setting_business_settings', expires_in: 10.minutes) do
+      find_by(key: 'business_config') || new
+    end
   end
 
   # Update business settings
@@ -142,6 +153,7 @@ class SystemSetting < ApplicationRecord
       terms_and_conditions: params[:terms_and_conditions]
     )
 
+    LOCAL_CACHE.delete('system_setting_business_settings')
     setting
   end
 
@@ -153,9 +165,13 @@ class SystemSetting < ApplicationRecord
   # Collect From Store Feature Methods
 
   # Check if collect from store feature is enabled
+  # Checked on every admin/stores request (and elsewhere) - same in-process cache
+  # pattern as default_pagination_per_page above, to avoid a DB round trip per hit.
   def self.collect_from_store_enabled?
-    setting = find_by(key: 'system_config')
-    setting&.collect_from_store_enabled || false
+    LOCAL_CACHE.fetch('system_setting_collect_from_store_enabled', expires_in: 10.minutes) do
+      setting = find_by(key: 'system_config')
+      setting&.collect_from_store_enabled || false
+    end
   end
 
   # Enable or disable collect from store feature
@@ -167,6 +183,7 @@ class SystemSetting < ApplicationRecord
     end
 
     setting.update!(collect_from_store_enabled: enabled)
+    LOCAL_CACHE.delete('system_setting_collect_from_store_enabled')
     setting
   end
 
@@ -179,6 +196,7 @@ class SystemSetting < ApplicationRecord
     end
 
     setting.update!(collect_from_store_enabled: params[:collect_from_store_enabled] || false)
+    LOCAL_CACHE.delete('system_setting_collect_from_store_enabled')
     setting
   end
 end

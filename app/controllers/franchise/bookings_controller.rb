@@ -3,7 +3,7 @@ class Franchise::BookingsController < Franchise::BaseController
 
   def index
     # Start with base query for statistics (before filtering)
-    @all_bookings = Booking.where(franchise_id: current_franchise.id).includes(:customer, :user, :booking_items, :store)
+    @all_bookings = Booking.where(franchise_id: current_franchise.id).includes(:customer, { user: :franchise }, :booking_items, :booking_invoices, :store)
 
     # Apply filters
     @bookings = @all_bookings.recent
@@ -339,6 +339,7 @@ class Franchise::BookingsController < Franchise::BaseController
 
   def set_booking
     @booking = Booking.where(franchise_id: current_franchise.id)
+                     .includes(booking_items: :product)
                      .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to franchise_bookings_path, alert: 'Booking not found'

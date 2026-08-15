@@ -24,12 +24,11 @@
               { prompt: "All Vendors" }, { class: "form-select" } %>
         </div>
         <div class="col-md-2">
-          <%= f.select :status, options_for_select([
-            ['All Status', ''],
-            ['Pending', 'pending'],
-            ['Completed', 'completed'],
-            ['Cancelled', 'cancelled']
-          ], params[:status]), {}, { class: "form-select" } %>
+          <%= f.select :payment_status, options_for_select([
+            ['All Payments', ''],
+            ['Paid', 'paid'],
+            ['Unpaid', 'unpaid']
+          ], params[:payment_status]), {}, { class: "form-select" } %>
         </div>
         <div class="col-md-2">
           <%= f.submit "Filter", class: "btn btn-outline-primary" %>
@@ -54,8 +53,8 @@
     <div class="col-md-3">
       <div class="card border-warning">
         <div class="card-body text-center">
-          <div class="h4 mb-1 text-warning"><%= @stats[:pending_count] %></div>
-          <div class="text-muted">Pending Orders</div>
+          <div class="h4 mb-1 text-warning"><%= @stats[:unpaid_count] %></div>
+          <div class="text-muted">Unpaid Purchases</div>
         </div>
       </div>
     </div>
@@ -113,7 +112,7 @@
                 <th>Purchase Date</th>
                 <th>Items</th>
                 <th>Amount</th>
-                <th>Status</th>
+                <th>Payment</th>
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
@@ -154,16 +153,10 @@
                     </div>
                   </td>
                   <td class="text-center">
-                    <div class="d-flex flex-column gap-1 align-items-center">
-                      <span class="badge <%= purchase.status_badge_class %> px-2 py-1">
-                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
-                        <%= purchase.status.titleize %>
-                      </span>
-                      <span class="badge <%= purchase.payment_status_badge_class %> px-2 py-1">
-                        <i class="bi bi-wallet2 me-1" style="font-size: 0.7rem;"></i>
-                        <%= purchase.payment_status.titleize %>
-                      </span>
-                    </div>
+                    <span class="badge <%= purchase.payment_status_badge_class %> px-2 py-1">
+                      <i class="bi bi-wallet2 me-1" style="font-size: 0.7rem;"></i>
+                      <%= purchase.payment_status.titleize %>
+                    </span>
                   </td>
                   <td>
                     <div class="d-flex justify-content-end align-items-center gap-1">
@@ -263,7 +256,7 @@
           <i class="bi bi-cart-x display-1 text-muted"></i>
           <h4 class="mt-3">No Vendor Purchases Found</h4>
           <p class="text-muted">
-            <% if params[:search].present? || params[:vendor_id].present? || params[:status].present? %>
+            <% if params[:search].present? || params[:vendor_id].present? || params[:payment_status].present? %>
               Try adjusting your search filters.
             <% else %>
               Start by creating your first vendor purchase order.

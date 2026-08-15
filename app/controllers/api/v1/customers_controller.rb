@@ -3,7 +3,10 @@ class Api::V1::CustomersController < Api::V1::ApplicationController
 
   # GET /api/v1/customers
   def index
-    @customers = Customer.includes(:family_members, :corporate_members, :documents)
+    # customer_summary below doesn't touch family_members/corporate_members/documents
+    # (only customer_details, used by show/create/update, does) - eager-loading them
+    # here was 3 unused joins/queries on every list request.
+    @customers = Customer.all
 
     # Search functionality
     if params[:search].present?
@@ -23,13 +26,16 @@ class Api::V1::CustomersController < Api::V1::ApplicationController
       @customers = @customers.inactive
     end
 
+    # Count the filtered scope before limit/offset are applied - matches the
+    # filters actually used, and avoids counting through the LIMIT/OFFSET.
+    total_count = @customers.count
     @customers = @customers.order(created_at: :desc)
                           .limit(params[:limit] || 50)
                           .offset(params[:offset] || 0)
 
     render_success(
       customers: @customers.map { |customer| customer_summary(customer) },
-      total_count: Customer.count,
+      total_count: total_count,
       message: 'Customers retrieved successfully'
     )
   end

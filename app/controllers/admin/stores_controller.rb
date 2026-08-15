@@ -4,9 +4,13 @@ class Admin::StoresController < Admin::ApplicationController
   before_action :check_collect_from_store_enabled, only: [:index, :new, :create]
 
   def index
-    @stores = Store.all.order(:name)
-    @can_add_more = Store.can_add_more_stores?
-    @remaining_slots = Store.remaining_store_slots
+    # Loaded as an array (not left as a Relation) so the stats below - and the stats
+    # cards in the view - are computed in Ruby from this one result set instead of each
+    # issuing its own COUNT/pluck round trip to the DB. Stores are capped at
+    # Store::MAX_STORES_LIMIT (10), so holding them all in memory is cheap.
+    @stores = Store.all.order(:name).to_a
+    @can_add_more = @stores.size < Store::MAX_STORES_LIMIT
+    @remaining_slots = Store::MAX_STORES_LIMIT - @stores.size
     @collect_from_store_enabled = SystemSetting.collect_from_store_enabled?
 
     respond_to do |format|

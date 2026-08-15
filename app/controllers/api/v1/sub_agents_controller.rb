@@ -2,7 +2,9 @@ class Api::V1::SubAgentsController < Api::V1::ApplicationController
 
   # GET /api/v1/sub_agents
   def index
-    sub_agents = SubAgent.all
+    # with_attached_upload_main_document avoids one attachment-lookup query per
+    # sub_agent below (sub_agent_response calls .upload_main_document.attached?).
+    sub_agents = SubAgent.with_attached_upload_main_document
 
     # Search functionality
     if params[:search].present?
@@ -32,11 +34,7 @@ class Api::V1::SubAgentsController < Api::V1::ApplicationController
         total_count: sub_agents.total_count,
         per_page: sub_agents.limit_value
       },
-      statistics: {
-        total_sub_agents: SubAgent.count,
-        active_sub_agents: SubAgent.active.count,
-        inactive_sub_agents: SubAgent.inactive.count
-      }
+      statistics: sub_agent_statistics
     })
   end
 
@@ -112,6 +110,16 @@ class Api::V1::SubAgentsController < Api::V1::ApplicationController
   end
 
   private
+
+  def sub_agent_statistics
+    # One GROUP BY replaces 3 separate COUNT round trips.
+    status_counts = SubAgent.group(:status).count
+    {
+      total_sub_agents: status_counts.values.sum,
+      active_sub_agents: status_counts[SubAgent.statuses['active']].to_i,
+      inactive_sub_agents: status_counts[SubAgent.statuses['inactive']].to_i
+    }
+  end
 
   def sub_agent_params
     params.require(:sub_agent).permit(

@@ -79,15 +79,13 @@ class Customer::SubscriptionsController < Customer::BaseController
     if Product.column_names.include?('is_subscription_enabled')
       Product.where(status: 'active', is_subscription_enabled: true)
     else
-      # Fallback to products that are suitable for subscriptions (like milk products)
+      # Fallback to products that are suitable for subscriptions (like milk products).
+      # category_id IN (SELECT ...) is a real SQL subquery, not a `?` bind (Rails
+      # would materialize a `?`-bound relation into a separate round trip first).
       Product.where(status: 'active')
-             .where("name ILIKE ? OR product_type = ? OR category_id IN (?)",
-                    '%milk%', 'milk', subscription_category_ids)
+             .where("name ILIKE ? OR product_type = ? OR category_id IN " \
+                    "(SELECT id FROM categories WHERE name ILIKE ? OR name ILIKE ?)",
+                    '%milk%', 'milk', '%milk%', '%dairy%')
     end
-  end
-
-  def subscription_category_ids
-    # Get category IDs for subscription-suitable categories
-    Category.where("name ILIKE ? OR name ILIKE ?", '%milk%', '%dairy%').pluck(:id)
   end
 end

@@ -8,7 +8,7 @@ class Customer::ShopController < Customer::BaseController
 
     # Simple query without complex SQL to avoid syntax errors
     @products = Product.active
-                      .includes(:category, :stock_batches, :product_reviews)
+                      .includes(:category, :stock_batches, :product_reviews, image_attachment: :blob)
                       .order(:display_order, :name)
 
     # Apply search filter if present
@@ -23,6 +23,10 @@ class Customer::ShopController < Customer::BaseController
     if params[:category_id].present? && params[:category_id] != ''
       @products = @products.where(category_id: params[:category_id])
     end
+
+    # Load once here so the view's @products.count / .any? / .each in the template
+    # read from the same in-memory array instead of firing a COUNT + EXISTS + SELECT.
+    @products = @products.to_a
 
     # Get customer info if logged in
     @customer_addresses = current_customer&.customer_addresses || []
@@ -70,6 +74,7 @@ class Customer::ShopController < Customer::BaseController
     @related_products = Product.where(category_id: @product.category_id)
                                .where.not(id: @product.id)
                                .where(status: 'active')
+                               .includes(image_attachment: :blob)
                                .limit(4)
   end
 

@@ -8,6 +8,13 @@ class Admin::VendorsController < Admin::ApplicationController
                     .order(created_at: :desc)
     @vendors = @vendors.where('name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
     @vendors = @vendors.where(status: params[:status]) if params[:status].present?
+
+    # Single GROUP BY for the stat cards instead of 2 separate COUNT queries
+    # (the view previously called @vendors.count and @vendors.active.count directly).
+    vendor_status_counts = @vendors.except(:includes, :order).group(:status).count
+    @total_vendors_count = vendor_status_counts.values.sum
+    @active_vendors_count = vendor_status_counts[true].to_i
+
     @vendors = @vendors.page(params[:page]).per(20)
 
     respond_to do |format|

@@ -17,7 +17,10 @@ class Api::V1::ClientRequestsController < ApplicationController
       @client_requests = @client_requests.search_requests(params[:search])
     end
 
-    # Pagination
+    # Pagination - count the filtered scope once before paginating, instead of a
+    # separate unfiltered ClientRequest.count round trip (which also didn't match
+    # the filters actually applied above).
+    total_count = @client_requests.count
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 25
     @client_requests = @client_requests.offset((page - 1) * per_page).limit(per_page)
@@ -28,7 +31,7 @@ class Api::V1::ClientRequestsController < ApplicationController
       pagination: {
         current_page: page,
         per_page: per_page,
-        total_count: ClientRequest.count
+        total_count: total_count
       }
     }
   end
@@ -148,6 +151,10 @@ class Api::V1::ClientRequestsController < ApplicationController
   def stage_history
     history = @client_request.stage_history.present? ? JSON.parse(@client_request.stage_history) : []
 
+    # Batch-load the users referenced in the history instead of one find_by per entry.
+    changed_by_ids = history.filter_map { |entry| entry['changed_by'] }.uniq
+    first_names_by_id = User.where(id: changed_by_ids).pluck(:id, :first_name).to_h
+
     render json: {
       success: true,
       data: {
@@ -155,7 +162,7 @@ class Api::V1::ClientRequestsController < ApplicationController
         current_stage: @client_request.stage,
         history: history.map { |entry|
           entry.merge(
-            'changed_by_name' => entry['changed_by'] ? User.find_by(id: entry['changed_by'])&.first_name : nil
+            'changed_by_name' => entry['changed_by'] ? first_names_by_id[entry['changed_by']] : nil
           )
         }
       }
@@ -167,12 +174,13 @@ class Api::V1::ClientRequestsController < ApplicationController
   # GET /api/v1/client_requests/by_stage
   def by_stage
     stage = params[:stage]
-    requests = ClientRequest.by_stage(stage).includes(:assignee, :resolved_by)
+    # .to_a so count reads the already-loaded array instead of firing a second COUNT query.
+    requests = ClientRequest.by_stage(stage).includes(:assignee, :resolved_by).to_a
 
     render json: {
       success: true,
       stage: stage,
-      count: requests.count,
+      count: requests.size,
       data: requests.map { |request| format_client_request(request) }
     }
   end
@@ -180,23 +188,23 @@ class Api::V1::ClientRequestsController < ApplicationController
   # GET /api/v1/client_requests/by_department
   def by_department
     department = params[:department]
-    requests = ClientRequest.by_department(department).includes(:assignee, :resolved_by)
+    requests = ClientRequest.by_department(department).includes(:assignee, :resolved_by).to_a
 
     render json: {
       success: true,
       department: department,
-      count: requests.count,
+      count: requests.size,
       data: requests.map { |request| format_client_request(request) }
     }
   end
 
   # GET /api/v1/client_requests/overdue
   def overdue
-    requests = ClientRequest.overdue.includes(:assignee, :resolved_by)
+    requests = ClientRequest.overdue.includes(:assignee, :resolved_by).to_a
 
     render json: {
       success: true,
-      count: requests.count,
+      count: requests.size,
       data: requests.map { |request| format_client_request(request).merge(
         hours_overdue: request.estimated_hours_remaining * -1
       )}
@@ -205,27 +213,26 @@ class Api::V1::ClientRequestsController < ApplicationController
 
   # GET /api/v1/client_requests/unassigned
   def unassigned
-    requests = ClientRequest.unassigned.where.not(stage: ['closed', 'resolved'])
+    # Added includes(:assignee) - format_client_request reads request.assignee, which was
+    # N+1ing once per row before. .to_a avoids a second COUNT query for the same reason
+    # as by_stage/by_department/overdue above.
+    requests = ClientRequest.unassigned.where.not(stage: ['closed', 'resolved']).includes(:assignee).to_a
 
     render json: {
       success: true,
-      count: requests.count,
+      count: requests.size,
       data: requests.map { |request| format_client_request(request) }
     }
   end
 
   # GET /api/v1/client_requests/stage_statistics
   def stage_statistics
-    stats = {}
+    # One GROUP BY per dimension instead of one COUNT query per stage/priority value.
+    stage_counts = ClientRequest.group(:stage).count
+    stats = ClientRequest::STAGES.index_with { |stage| stage_counts[stage].to_i }
 
-    ClientRequest::STAGES.each do |stage|
-      stats[stage] = ClientRequest.by_stage(stage).count
-    end
-
-    priority_stats = {}
-    ClientRequest::PRIORITIES.each do |priority|
-      priority_stats[priority] = ClientRequest.by_priority(priority).count
-    end
+    priority_counts = ClientRequest.group(:priority).count
+    priority_stats = ClientRequest::PRIORITIES.index_with { |priority| priority_counts[priority].to_i }
 
     render json: {
       success: true,
@@ -307,13 +314,10 @@ class Api::V1::ClientRequestsController < ApplicationController
   end
 
   def calculate_average_resolution_time
-    resolved_requests = ClientRequest.where.not(actual_resolution_time: nil, submitted_at: nil)
-    return 0 if resolved_requests.empty?
+    # Averaged in SQL instead of loading every resolved request's full row into Ruby.
+    avg_hours = ClientRequest.where.not(actual_resolution_time: nil, submitted_at: nil)
+      .average(Arel.sql("EXTRACT(EPOCH FROM (actual_resolution_time - submitted_at)) / 3600"))
 
-    total_hours = resolved_requests.sum do |request|
-      (request.actual_resolution_time - request.submitted_at) / 1.hour
-    end
-
-    (total_hours / resolved_requests.count).round(1)
+    avg_hours ? avg_hours.round(1) : 0
   end
 end

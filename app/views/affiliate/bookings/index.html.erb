@@ -147,7 +147,7 @@
                       </div>
                     </td>
                     <td>
-                      <span class="badge bg-light text-dark"><%= pluralize(booking.booking_items.count, 'item') %></span>
+                      <span class="badge bg-light text-dark"><%= pluralize(booking.booking_items.size, 'item') %></span>
                     </td>
                     <td>
                       <span class="fw-semibold">₹<%= number_with_delimiter(booking.total_amount&.to_f || 0, delimiter: ',') %></span>

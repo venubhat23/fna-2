@@ -28,7 +28,9 @@ class Affiliate::DashboardController < Affiliate::ApplicationController
       }
     end
 
-    # Referral status distribution
-    @status_distribution = current_affiliate.referrals.group(:status).count
+    # Referral status distribution - reuses the same GROUP BY the @stats hash above
+    # already triggered (via referral_stats/referral_status_counts) instead of
+    # re-running it.
+    @status_distribution = current_affiliate.referral_status_counts
   end
 end

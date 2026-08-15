@@ -37,18 +37,24 @@ class Api::V1::LifeInsurancesController < Api::V1::ApplicationController
       )
     end
 
+    # Count the filtered scope before limit/offset are applied - Relation#count
+    # includes LIMIT/OFFSET in its SQL, so counting after pagination was applied
+    # returned at most the page size (never the real total) and issued 2 queries.
+    limit = (params[:limit] || 20).to_i
+    total_count = @life_insurances.count
+
     # Pagination
     @life_insurances = @life_insurances.order(created_at: :desc)
-    @life_insurances = @life_insurances.limit(params[:limit] || 20)
+    @life_insurances = @life_insurances.limit(limit)
     @life_insurances = @life_insurances.offset(params[:offset] || 0)
 
     render json: {
       success: true,
       data: @life_insurances.map { |policy| policy_json(policy) },
       meta: {
-        total_count: @life_insurances.count,
-        current_page: (params[:offset].to_i / (params[:limit] || 20).to_i) + 1,
-        total_pages: (@life_insurances.count / (params[:limit] || 20).to_f).ceil
+        total_count: total_count,
+        current_page: (params[:offset].to_i / limit) + 1,
+        total_pages: (total_count / limit.to_f).ceil
       }
     }
   end
@@ -116,34 +122,53 @@ class Api::V1::LifeInsurancesController < Api::V1::ApplicationController
   def statistics
     policies = LifeInsurance.all
 
+    # Single aggregate query replaces 14 separate COUNT/SUM round trips.
+    total_policies, active_policies, expired_policies, expiring_soon, new_policies, renewals,
+      total_premium, total_sum_insured, total_commission,
+      term_rider, ci_rider, accident_rider, pwb_rider, other_rider = policies.pluck(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COUNT(*) FILTER (WHERE policy_end_date >= CURRENT_DATE)"),
+      Arel.sql("COUNT(*) FILTER (WHERE policy_end_date < CURRENT_DATE)"),
+      Arel.sql("COUNT(*) FILTER (WHERE policy_end_date >= CURRENT_DATE AND policy_end_date <= CURRENT_DATE + INTERVAL '30 days')"),
+      Arel.sql("COUNT(*) FILTER (WHERE policy_type = 'New')"),
+      Arel.sql("COUNT(*) FILTER (WHERE policy_type = 'Renewal')"),
+      Arel.sql("COALESCE(SUM(total_premium), 0)"),
+      Arel.sql("COALESCE(SUM(sum_insured), 0)"),
+      Arel.sql("COALESCE(SUM(commission_amount), 0)"),
+      Arel.sql("COALESCE(SUM(term_rider_amount), 0)"),
+      Arel.sql("COALESCE(SUM(critical_illness_rider_amount), 0)"),
+      Arel.sql("COALESCE(SUM(accident_rider_amount), 0)"),
+      Arel.sql("COALESCE(SUM(pwb_rider_amount), 0)"),
+      Arel.sql("COALESCE(SUM(other_rider_amount), 0)")
+    ).first
+
     render json: {
       success: true,
       data: {
-        total_policies: policies.count,
-        active_policies: policies.active.count,
-        expired_policies: policies.expired.count,
-        expiring_soon: policies.expiring_soon.count,
-        new_policies: policies.new_policies.count,
-        renewals: policies.renewals.count,
-        total_premium: policies.sum(:total_premium).to_f,
-        total_sum_insured: policies.sum(:sum_insured).to_f,
-        total_commission: policies.sum(:commission_amount).to_f,
-        total_riders: policies.sum(:term_rider_amount).to_f + policies.sum(:critical_illness_rider_amount).to_f +
-                     policies.sum(:accident_rider_amount).to_f + policies.sum(:pwb_rider_amount).to_f +
-                     policies.sum(:other_rider_amount).to_f,
+        total_policies: total_policies,
+        active_policies: active_policies,
+        expired_policies: expired_policies,
+        expiring_soon: expiring_soon,
+        new_policies: new_policies,
+        renewals: renewals,
+        total_premium: total_premium.to_f,
+        total_sum_insured: total_sum_insured.to_f,
+        total_commission: total_commission.to_f,
+        total_riders: term_rider.to_f + ci_rider.to_f + accident_rider.to_f + pwb_rider.to_f + other_rider.to_f,
         by_policy_type: policies.group(:policy_type).count,
         by_company: policies.group(:insurance_company_name).count,
         by_payment_mode: policies.group(:payment_mode).count,
-        recent_policies: policies.order(created_at: :desc).limit(5).map { |p| policy_json(p) }
+        recent_policies: policies.order(created_at: :desc).limit(5).includes(:customer).map { |p| policy_json(p) }
       }
     }
   end
 
   # GET /api/v1/life_insurances/form_data
   def form_data
-    render json: {
-      success: true,
-      data: {
+    # Customers/sub_agents/agency_codes/brokers barely change between requests but
+    # were reloaded from the DB (4 queries) on every single form_data hit.
+    db_backed_data = Rails.cache.fetch('api_v1_life_insurances_form_data', expires_in: 10.minutes) do
+      {
         customers: Customer.active.order(:first_name, :last_name, :company_name).map do |c|
           {
             id: c.id,
@@ -174,14 +199,20 @@ class Api::V1::LifeInsurancesController < Api::V1::ApplicationController
             id: broker.id,
             name: broker.name
           }
-        end,
+        end
+      }
+    end
+
+    render json: {
+      success: true,
+      data: db_backed_data.merge(
         insurance_companies: InsuranceCompanyHelper.company_names,
         policy_types: LifeInsurance::POLICY_TYPES,
         payment_modes: LifeInsurance::PAYMENT_MODES,
         relationships: LifeInsurance::RELATIONSHIPS,
         account_types: LifeInsurance::ACCOUNT_TYPES,
         document_types: LifeInsurance::DOCUMENT_TYPES
-      }
+      )
     }
   end
 

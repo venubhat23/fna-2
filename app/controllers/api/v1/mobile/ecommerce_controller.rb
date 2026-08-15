@@ -1004,7 +1004,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @subscription = MilkSubscription.where(customer: customer).includes(:product, :milk_delivery_tasks).find(params[:id])
 
     # Get recent delivery tasks from this subscription
-    recent_tasks = @subscription.milk_delivery_tasks.order(delivery_date: :desc).limit(10)
+    recent_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(delivery_date: :desc).limit(10)
 
     subscription_data = format_milk_subscription_data(@subscription)
     subscription_data[:recent_delivery_tasks] = recent_tasks.map do |task|

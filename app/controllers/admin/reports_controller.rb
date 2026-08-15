@@ -792,13 +792,19 @@ class Admin::ReportsController < Admin::ApplicationController
       buying_price = qty * (product.buying_price || 0)
       selling_price = b[:selling_price] + i[:selling_price] + milk_selling_price
       {
-        product_id:    pid,
-        name:          product.name,
-        unit:          product.unit_type,
-        qty:           qty,
-        buying_price:  buying_price,
-        selling_price: selling_price,
-        profit:        selling_price - buying_price
+        product_id:              pid,
+        name:                    product.name,
+        unit:                    product.unit_type,
+        qty:                     qty,
+        buying_price:            buying_price,
+        selling_price:           selling_price,
+        profit:                  selling_price - buying_price,
+        booking_qty:             b[:qty],
+        booking_selling_price:   b[:selling_price],
+        subscription_qty:        milk_qty,
+        subscription_selling_price: milk_selling_price,
+        invoice_qty:             i[:qty],
+        invoice_selling_price:   i[:selling_price]
       }
     end.compact
 
@@ -835,12 +841,19 @@ class Admin::ReportsController < Admin::ApplicationController
   def business_report_csv(data)
     require 'csv'
     CSV.generate(headers: true) do |csv|
-      csv << ['#', 'Product Name', 'Unit', 'Qty Sold', 'Total Buying Price (₹)', 'Total Selling Price (₹)', 'Profit (₹)']
+      csv << ['#', 'Product Name', 'Unit',
+              'Booking Qty', 'Booking Revenue (₹)',
+              'Subscription Qty', 'Subscription Revenue (₹)',
+              'Invoice Qty', 'Invoice Revenue (₹)',
+              'Total Qty Sold', 'Total Buying Price (₹)', 'Total Selling Price (₹)', 'Profit (₹)']
       data.each_with_index do |row, idx|
-        csv << [idx + 1, row[:name], row[:unit], row[:qty].round(2),
-                row[:buying_price].round(2), row[:selling_price].round(2), row[:profit].round(2)]
+        csv << [idx + 1, row[:name], row[:unit],
+                row[:booking_qty].round(2), row[:booking_selling_price].round(2),
+                row[:subscription_qty].round(2), row[:subscription_selling_price].round(2),
+                row[:invoice_qty].round(2), row[:invoice_selling_price].round(2),
+                row[:qty].round(2), row[:buying_price].round(2), row[:selling_price].round(2), row[:profit].round(2)]
       end
-      csv << ['', '', 'TOTAL', @total_qty.round(2), @total_buying_price.round(2),
+      csv << ['', '', 'TOTAL', '', '', '', '', '', '', @total_qty.round(2), @total_buying_price.round(2),
               @total_selling_price.round(2), @total_profit.round(2)]
     end
   end

@@ -6,16 +6,18 @@ class Api::V1::Mobile::CustomerController < Api::V1::Mobile::BaseController
     customer_id = current_customer.id
 
     # Get all health insurance policies
-    health_policies = HealthInsurance.where(customer_id: customer_id)
+    # with_attached_policy_documents avoids one attachment-lookup query per policy
+    # inside the .each loop below (policy.policy_documents.attached?).
+    health_policies = HealthInsurance.with_attached_policy_documents.where(customer_id: customer_id)
 
     # Get all life insurance policies
-    life_policies = LifeInsurance.where(customer_id: customer_id)
+    life_policies = LifeInsurance.with_attached_policy_documents.where(customer_id: customer_id)
 
     # Get all motor insurance policies
     motor_policies = []
     begin
       if defined?(MotorInsurance)
-        motor_policies = MotorInsurance.where(customer_id: customer_id)
+        motor_policies = MotorInsurance.with_attached_policy_documents.where(customer_id: customer_id)
       end
     rescue => e
       Rails.logger.warn "Motor insurance table issue: #{e.message}"
@@ -128,7 +130,9 @@ class Api::V1::Mobile::CustomerController < Api::V1::Mobile::BaseController
     installments = []
 
     # Health Insurance installments - include active and expired policies that might need renewal payments
-    health_policies = HealthInsurance.where(customer_id: customer_id)
+    # with_attached_policy_documents avoids one attachment-lookup query per policy
+    # inside the .each loop below (policy.policy_documents.attached?).
+    health_policies = HealthInsurance.with_attached_policy_documents.where(customer_id: customer_id)
                                     .where('policy_end_date >= ? OR policy_start_date >= ?', 18.months.ago, Date.current)
 
     health_policies.each do |policy|
@@ -217,7 +221,7 @@ class Api::V1::Mobile::CustomerController < Api::V1::Mobile::BaseController
     end
 
     # Life Insurance installments - include active and expired policies that might need renewal payments
-    life_policies = LifeInsurance.where(customer_id: customer_id)
+    life_policies = LifeInsurance.with_attached_policy_documents.where(customer_id: customer_id)
                                 .where('policy_end_date >= ? OR policy_start_date >= ?', 18.months.ago, Date.current)
 
     life_policies.each do |policy|
@@ -309,7 +313,7 @@ class Api::V1::Mobile::CustomerController < Api::V1::Mobile::BaseController
     motor_policies = []
     begin
       if defined?(MotorInsurance)
-        motor_policies = MotorInsurance.where(customer_id: customer_id)
+        motor_policies = MotorInsurance.with_attached_policy_documents.where(customer_id: customer_id)
                                      .where('policy_end_date >= ? OR policy_start_date >= ?', 18.months.ago, Date.current)
       end
     rescue => e
@@ -440,7 +444,9 @@ class Api::V1::Mobile::CustomerController < Api::V1::Mobile::BaseController
     Rails.logger.info "Upcoming renewals for customer ID: #{customer_id}"
 
     # Health Insurance renewals - show only policies with renewals within next 2 months
-    health_policies = HealthInsurance.where(customer_id: customer_id)
+    # with_attached_policy_documents avoids one attachment-lookup query per policy
+    # inside the .each loop below (policy.policy_documents.attached?).
+    health_policies = HealthInsurance.with_attached_policy_documents.where(customer_id: customer_id)
                                     .where('policy_end_date BETWEEN ? AND ?', Date.current, 2.months.from_now)
                                     .where.not(policy_end_date: nil)
 
@@ -490,7 +496,7 @@ class Api::V1::Mobile::CustomerController < Api::V1::Mobile::BaseController
     end
 
     # Life Insurance renewals - show only policies with renewals within next 2 months
-    life_policies = LifeInsurance.where(customer_id: customer_id)
+    life_policies = LifeInsurance.with_attached_policy_documents.where(customer_id: customer_id)
                                 .where('policy_end_date BETWEEN ? AND ?', Date.current, 2.months.from_now)
                                 .where.not(policy_end_date: nil)
 

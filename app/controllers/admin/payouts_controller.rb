@@ -41,14 +41,25 @@ class Admin::PayoutsController < Admin::ApplicationController
                        .page(params[:page])
                        .per(20)
 
-    # Summary statistics
+    # Summary statistics - single aggregate query (count/sum + FILTER per status)
+    # replaces 6 of the previous 8 separate COUNT/SUM round trips.
+    total_payouts, total_amount, pending_amount, paid_amount, pending_count, paid_count =
+      CommissionPayout.pluck(
+        Arel.sql("COUNT(*)"),
+        Arel.sql("COALESCE(SUM(payout_amount), 0)"),
+        Arel.sql("COALESCE(SUM(payout_amount) FILTER (WHERE status = 'pending'), 0)"),
+        Arel.sql("COALESCE(SUM(payout_amount) FILTER (WHERE status = 'paid'), 0)"),
+        Arel.sql("COUNT(*) FILTER (WHERE status = 'pending')"),
+        Arel.sql("COUNT(*) FILTER (WHERE status = 'paid')")
+      ).first
+
     @summary = {
-      total_payouts: CommissionPayout.count,
-      total_amount: CommissionPayout.sum(:payout_amount),
-      pending_amount: CommissionPayout.pending.sum(:payout_amount),
-      paid_amount: CommissionPayout.paid.sum(:payout_amount),
-      pending_count: CommissionPayout.pending.count,
-      paid_count: CommissionPayout.paid.count,
+      total_payouts: total_payouts,
+      total_amount: total_amount,
+      pending_amount: pending_amount,
+      paid_amount: paid_amount,
+      pending_count: pending_count,
+      paid_count: paid_count,
       this_month: CommissionPayout.this_month.sum(:payout_amount),
       last_month: CommissionPayout.last_month.sum(:payout_amount)
     }
@@ -165,11 +176,14 @@ class Admin::PayoutsController < Admin::ApplicationController
                   .page(params[:page])
                   .per(20)
 
+    # Single GROUP BY replaces 2 separate COUNT queries on the same table
+    distribution_counts = CommissionReceipt.group(:auto_distributed).count
+
     @receipt_summary = {
       total_received: CommissionReceipt.sum(:total_commission_received),
       total_distributed: PayoutDistribution.sum(:calculated_amount),
-      pending_distribution: CommissionReceipt.pending_distribution.count,
-      auto_distributed: CommissionReceipt.distributed.count
+      pending_distribution: distribution_counts[false].to_i,
+      auto_distributed: distribution_counts[true].to_i
     }
   end
 
@@ -349,8 +363,10 @@ class Admin::PayoutsController < Admin::ApplicationController
 
   def available_policies_for_payout
     # Get policies that don't have complete payouts yet
-    health_policies = HealthInsurance.includes(:customer).limit(100)
-    life_policies = LifeInsurance.includes(:customer).limit(100)
+    # eager_load (not includes): a LEFT JOIN for this single belongs_to, capped at 100
+    # rows, is one round trip vs includes' separate "customers WHERE id IN (...)" query.
+    health_policies = HealthInsurance.eager_load(:customer).limit(100)
+    life_policies = LifeInsurance.eager_load(:customer).limit(100)
     motor_policies = MotorInsurance.includes(:customer).limit(100) rescue []
 
     policies = []
@@ -387,13 +403,19 @@ class Admin::PayoutsController < Admin::ApplicationController
   end
 
   def monthly_payout_data
+    # Single grouped query replaces 12 separate per-month SUM queries.
+    range_start = 11.months.ago.beginning_of_month
+    sums_by_month = CommissionPayout
+      .where(payout_date: range_start..Date.current.end_of_month)
+      .group("DATE_TRUNC('month', payout_date)")
+      .sum(:payout_amount)
+
     12.times.map do |i|
       month = i.months.ago.beginning_of_month
+      key = sums_by_month.keys.find { |k| k.year == month.year && k.month == month.month }
       {
         month: month.strftime('%b %Y'),
-        amount: CommissionPayout.where(
-          payout_date: month..month.end_of_month
-        ).sum(:payout_amount)
+        amount: key ? sums_by_month[key] : 0
       }
     end.reverse
   end

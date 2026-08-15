@@ -114,81 +114,114 @@ class VendorPurchase < ApplicationRecord
     self.paid_amount ||= 0
   end
 
+  # Bulk-creates stock batches + stock movements in 2 INSERTs instead of one
+  # round trip per item (previously: 2 SELECTs + 2 INSERTs per item, i.e. an
+  # N+1 that made a 5-item purchase issue ~20 separate DB calls).
   def create_stock_batches
-    vendor_purchase_items.each do |item|
-      product = item.product
-      current_stock = product.total_batch_stock
+    items = vendor_purchase_items.to_a
+    return if items.empty?
 
-      # Create stock batch
-      StockBatch.create!(
-        product: item.product,
-        vendor: vendor,
-        vendor_purchase: self,
+    products = Product.where(id: items.map(&:product_id)).index_by(&:id)
+    current_stock_by_product = StockBatch.active
+                                          .where(product_id: items.map(&:product_id))
+                                          .group(:product_id).sum(:quantity_remaining)
+
+    now = Time.current
+    batch_rows = []
+    movement_rows = []
+    stock_by_product = {}
+
+    items.each do |item|
+      product = products[item.product_id]
+      current_stock = (stock_by_product[item.product_id] ||= current_stock_by_product[item.product_id].to_f)
+      new_stock = current_stock + item.quantity.to_f
+      stock_by_product[item.product_id] = new_stock
+
+      batch_rows << {
+        product_id: item.product_id,
+        vendor_id: vendor_id,
+        vendor_purchase_id: id,
         quantity_purchased: item.quantity,
         quantity_remaining: item.quantity,
         purchase_price: item.purchase_price,
         selling_price: item.selling_price,
         batch_date: purchase_date,
-        status: 'active'
-      )
+        status: 'active',
+        created_at: now,
+        updated_at: now
+      }
 
-      # Update product stock field for backward compatibility
-      # Use update_column to skip validations since we're only updating stock
-      new_stock = product.total_batch_stock
-      product.update_column(:stock, new_stock)
-
-      # Create stock movement record
-      product.stock_movements.create!(
+      movement_rows << {
+        product_id: item.product_id,
         reference_type: 'vendor_purchase',
         reference_id: id,
         movement_type: 'added',
-        quantity: item.quantity.to_f, # Positive for addition
+        quantity: item.quantity.to_f,
         stock_before: current_stock,
         stock_after: new_stock,
-        notes: "Stock added from vendor purchase: #{purchase_number} - #{product.name} (Qty: #{item.quantity})"
-      )
+        notes: "Stock added from vendor purchase: #{purchase_number} - #{product.name} (Qty: #{item.quantity})",
+        created_at: now,
+        updated_at: now
+      }
     end
+
+    StockBatch.insert_all(batch_rows)
+    StockMovement.insert_all(movement_rows)
+    stock_by_product.each { |product_id, stock| Product.where(id: product_id).update_all(stock: stock) }
   end
 
   def update_stock_batches
-    # Update existing batches when purchase items are modified
-    vendor_purchase_items.each do |item|
-      batch = stock_batches.find_by(product: item.product)
-      if batch
-        product = item.product
-        current_stock = product.total_batch_stock
-        old_quantity = batch.quantity_purchased.to_f
-        new_quantity = item.quantity.to_f
-        quantity_difference = new_quantity - old_quantity
+    items = vendor_purchase_items.to_a
+    return if items.empty?
 
-        batch.update!(
-          quantity_purchased: item.quantity,
-          quantity_remaining: item.quantity,
-          purchase_price: item.purchase_price,
-          selling_price: item.selling_price
-        )
+    product_ids = items.map(&:product_id)
+    products = Product.where(id: product_ids).index_by(&:id)
+    existing_batches = stock_batches.where(product_id: product_ids).index_by(&:product_id)
+    current_stock_by_product = StockBatch.active.where(product_id: product_ids)
+                                          .group(:product_id).sum(:quantity_remaining)
 
-        # Update product stock field for backward compatibility
-        # Use update_column to skip validations since we're only updating stock
-        new_stock = product.total_batch_stock
-        product.update_column(:stock, new_stock)
+    now = Time.current
+    movement_rows = []
+    stock_by_product = {}
 
-        # Create stock movement record if quantity changed
-        if quantity_difference != 0
-          movement_type = quantity_difference > 0 ? 'added' : 'adjusted'
+    items.each do |item|
+      batch = existing_batches[item.product_id]
+      next unless batch
 
-          product.stock_movements.create!(
-            reference_type: 'vendor_purchase',
-            reference_id: id,
-            movement_type: movement_type,
-            quantity: quantity_difference,
-            stock_before: current_stock,
-            stock_after: new_stock,
-            notes: "Vendor purchase updated: #{purchase_number} - #{product.name} quantity changed by #{quantity_difference}"
-          )
-        end
-      end
+      product = products[item.product_id]
+      current_stock = (stock_by_product[item.product_id] ||= current_stock_by_product[item.product_id].to_f)
+      old_quantity = batch.quantity_purchased.to_f
+      new_quantity = item.quantity.to_f
+      quantity_difference = new_quantity - old_quantity
+
+      batch.update!(
+        quantity_purchased: item.quantity,
+        quantity_remaining: item.quantity,
+        purchase_price: item.purchase_price,
+        selling_price: item.selling_price
+      )
+
+      new_stock = current_stock + quantity_difference
+      stock_by_product[item.product_id] = new_stock
+
+      next if quantity_difference == 0
+
+      movement_rows << {
+        product_id: item.product_id,
+        reference_type: 'vendor_purchase',
+        reference_id: id,
+        movement_type: quantity_difference > 0 ? 'added' : 'adjusted',
+        quantity: quantity_difference,
+        stock_before: current_stock,
+        stock_after: new_stock,
+        notes: "Vendor purchase updated: #{purchase_number} - #{product.name} quantity changed by #{quantity_difference}",
+        created_at: now,
+        updated_at: now
+      }
     end
+
+    StockMovement.insert_all(movement_rows) if movement_rows.any?
+    stock_by_product.each { |product_id, stock| Product.where(id: product_id).update_all(stock: stock) }
   end
 
   def saved_change_to_vendor_purchase_items?

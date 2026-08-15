@@ -22,12 +22,19 @@ class Admin::BannersController < Admin::ApplicationController
       @banners = @banners.by_location(params[:location])
     end
 
-    # Statistics for dashboard cards
+    # Statistics for dashboard cards - one aggregate query instead of 4 separate COUNTs.
+    today = Banner.connection.quote(Date.current)
+    total_banners, active_banners, current_banners, expired_banners = Banner.pluck(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = true)"),
+      Arel.sql("COUNT(*) FILTER (WHERE display_start_date <= #{today} AND display_end_date >= #{today})"),
+      Arel.sql("COUNT(*) FILTER (WHERE display_end_date < #{today})")
+    ).first
     @stats = {
-      total_banners: Banner.count,
-      active_banners: Banner.active.count,
-      current_banners: Banner.current.count,
-      expired_banners: Banner.where('display_end_date < ?', Date.current).count
+      total_banners: total_banners,
+      active_banners: active_banners,
+      current_banners: current_banners,
+      expired_banners: expired_banners
     }
   end
 

@@ -25,11 +25,14 @@ class Admin::UsersController < Admin::ApplicationController
 
     @users = @users.order(created_at: :desc).page(params[:page])
 
-    # Statistics
-    @total_users = User.count
-    @active_users = User.active.count
-    @admin_users = User.where(user_type: 'admin').count
-    @agent_users = User.where(user_type: ['agent', 'sub_agent']).count
+    # Statistics - one GROUP BY per dimension instead of 4 separate COUNT queries
+    status_counts = User.group(:status).count
+    @total_users = status_counts.values.sum
+    @active_users = status_counts[true].to_i
+
+    type_counts = User.group(:user_type).count
+    @admin_users = type_counts['admin'].to_i
+    @agent_users = type_counts['agent'].to_i + type_counts['sub_agent'].to_i
   end
 
   # GET /admin/users/1

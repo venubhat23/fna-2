@@ -1,0 +1,72 @@
+<div class="variant-row-card" data-variant-row>
+  <%= vf.hidden_field :id %>
+  <%= vf.hidden_field :_destroy, class: "variant-destroy-field" %>
+
+  <div class="form-grid form-grid-3">
+    <div class="form-group">
+      <%= vf.label :weight, "Weight/Quantity", class: "form-label" %>
+      <%= vf.number_field :weight, class: "form-control variant-weight", step: "0.001", min: "0.001", placeholder: "1.000" %>
+    </div>
+
+    <div class="form-group">
+      <%= vf.label :unit, "Unit", class: "form-label" %>
+      <%= vf.select :unit, ProductVariant::UNIT_TYPES, {}, { class: "form-select variant-unit" } %>
+    </div>
+
+    <div class="form-group">
+      <%= vf.label :available_stock, "Available Stock", class: "form-label" %>
+      <%= vf.number_field :available_stock, class: "form-control variant-stock", min: "0", placeholder: "0" %>
+    </div>
+  </div>
+
+  <div class="form-grid form-grid-3">
+    <div class="form-group">
+      <%= vf.label :buying_price, "Buying Price (₹)", class: "form-label" %>
+      <%= vf.number_field :buying_price, class: "form-control variant-buying-price", step: "0.01", placeholder: "0.00" %>
+    </div>
+
+    <div class="form-group">
+      <%= vf.label :selling_price, "Selling Price (₹)", class: "form-label" %>
+      <%= vf.number_field :selling_price, class: "form-control variant-selling-price", step: "0.01", placeholder: "0.00" %>
+    </div>
+
+    <div class="form-group">
+      <%= vf.label :gst_percentage, "GST (%)", class: "form-label" %>
+      <%= vf.number_field :gst_percentage, class: "form-control variant-gst-percentage", step: "0.01", min: "0", max: "50", placeholder: "0" %>
+    </div>
+  </div>
+
+  <div class="toggle-container">
+    <div class="toggle-switch">
+      <%= vf.check_box :discount_enabled, class: "variant-discount-toggle" %>
+      <label class="toggle-slider"></label>
+    </div>
+    <div><strong>Enable Discount</strong></div>
+  </div>
+
+  <div class="variant-discount-config form-grid form-grid-2" style="display: none;">
+    <div class="form-group">
+      <%= vf.label :discount_type, "Discount Type", class: "form-label" %>
+      <%= vf.select :discount_type, [["Percentage", "percentage"], ["Fixed Amount", "fixed"]], { include_blank: true }, { class: "form-select variant-discount-type" } %>
+    </div>
+    <div class="form-group">
+      <%= vf.label :discount_value, "Discount Value", class: "form-label" %>
+      <%= vf.number_field :discount_value, class: "form-control variant-discount-value", step: "0.01", min: "0", placeholder: "0" %>
+    </div>
+  </div>
+
+  <div class="form-grid form-grid-2 mt-2">
+    <div class="form-group">
+      <label class="toggle-container" style="border: none; padding: 0;">
+        <%= vf.check_box :is_default, class: "variant-is-default" %>
+        <span class="ms-2">Default variant</span>
+      </label>
+    </div>
+    <div class="form-group text-end">
+      <span class="badge bg-light text-dark variant-price-preview">₹0.00</span>
+      <button type="button" class="btn btn-outline-danger btn-sm ms-2 variant-remove-btn">
+        <i class="bi bi-trash"></i> Remove
+      </button>
+    </div>
+  </div>
+</div>

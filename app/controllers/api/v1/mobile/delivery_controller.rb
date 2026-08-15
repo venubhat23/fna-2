@@ -427,6 +427,7 @@ module Api
               bookings = Booking.where(delivery_person_id: current_delivery_person_id)
                               .where('DATE(created_at) = ?', Date.current)
                               .where.not(status: ['delivered', 'cancelled'])
+                              .includes(booking_items: :product)
             else
               bookings = []
             end
@@ -441,7 +442,7 @@ module Api
               subscription_tasks = MilkDeliveryTask.where(
                 delivery_person_id: current_delivery_person_id,
                 delivery_date: Date.current
-              )
+              ).includes(:customer, :product)
             else
               subscription_tasks = []
             end

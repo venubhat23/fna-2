@@ -187,9 +187,9 @@
               <div class="info-title">Purchase Details</div>
               <div><strong>Purchase Number:</strong> <%= @vendor_purchase.purchase_number %></div>
               <div><strong>Purchase Date:</strong> <%= @vendor_purchase.purchase_date.strftime("%B %d, %Y") %></div>
-              <div><strong>Status:</strong>
-                <span class="badge bg-<%= @vendor_purchase.status == 'completed' ? 'success' : @vendor_purchase.status == 'pending' ? 'warning' : 'secondary' %>">
-                  <%= @vendor_purchase.status.titleize %>
+              <div><strong>Payment Status:</strong>
+                <span class="badge <%= @vendor_purchase.payment_status_badge_class %>">
+                  <%= @vendor_purchase.payment_status.titleize %>
                 </span>
               </div>
               <div><strong>Invoice Date:</strong> <%= @vendor_invoice.created_at.strftime("%B %d, %Y") %></div>

@@ -954,23 +954,44 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
   end
 
   def calculate_agent_ranking(sub_agent)
-    # Calculate ranking based on commission earned compared to other sub-agents
+    # Calculate ranking based on commission earned compared to other sub-agents.
+    #
+    # Previously called get_sub_agent_statistics (3 relation loads + several
+    # pluck/count queries each) once per active sub-agent, on every single
+    # sub-agent login - O(active sub-agents) round trips to a remote DB just to
+    # rank one agent. Replaced with 3 grouped SQL sums (one per policy type),
+    # each COALESCE/NULLIF chain mirroring the exact per-policy fallback used in
+    # get_sub_agent_statistics's health_commission/life_commission/motor_commission
+    # blocks (first non-nil-and-nonzero field in the chain, else the % formula).
     begin
-      all_sub_agents = SubAgent.where(status: 'active')
-      sub_agent_commissions = []
+      commission_by_agent = Hash.new(0.0)
+      active_ids = SubAgent.where(status: 'active').select(:id)
 
-      all_sub_agents.each do |agent|
-        stats = get_sub_agent_statistics(agent)
-        sub_agent_commissions << { id: agent.id, commission: stats[:commission_earned] }
+      HealthInsurance.where(sub_agent_id: active_ids).group(:sub_agent_id)
+        .sum(Arel.sql("COALESCE(NULLIF(sub_agent_commission_amount, 0), NULLIF(commission_amount, 0), NULLIF(after_tds_value, 0), NULLIF(main_agent_commission_amount, 0), net_premium * 0.02, 0)"))
+        .each { |id, sum| commission_by_agent[id] += sum.to_f }
+
+      LifeInsurance.where(sub_agent_id: active_ids).group(:sub_agent_id)
+        .sum(Arel.sql("COALESCE(NULLIF(sub_agent_commission_amount, 0), NULLIF(after_tds_value, 0), NULLIF(commission_amount, 0), net_premium * 0.10, 0)"))
+        .each { |id, sum| commission_by_agent[id] += sum.to_f }
+
+      if defined?(MotorInsurance)
+        begin
+          MotorInsurance.where(sub_agent_id: active_ids).group(:sub_agent_id)
+            .sum(Arel.sql("COALESCE(NULLIF(main_agent_commission_amount, 0), NULLIF(commission_amount, 0), NULLIF(after_tds_value, 0), net_premium * 0.15, 0)"))
+            .each { |id, sum| commission_by_agent[id] += sum.to_f }
+        rescue => e
+          # Skip motor insurance if there's an error
+        end
       end
 
-      # Sort by commission in descending order
-      sorted_agents = sub_agent_commissions.sort_by { |agent| -agent[:commission] }
+      # Every active sub-agent competes for a rank, even ones with zero commission.
+      SubAgent.where(status: 'active').pluck(:id).each { |id| commission_by_agent[id] ||= 0.0 }
 
-      # Find current agent's position
-      current_agent_rank = sorted_agents.find_index { |agent| agent[:id] == sub_agent.id }
+      sorted_ids = commission_by_agent.sort_by { |_id, commission| -commission }.map(&:first)
+      current_agent_rank = sorted_ids.index(sub_agent.id)
 
-      current_agent_rank ? current_agent_rank + 1 : sorted_agents.count
+      current_agent_rank ? current_agent_rank + 1 : sorted_ids.count
     rescue => e
       # Fallback to a consistent ranking based on ID
       ((sub_agent.id * 7) % 20) + 1
