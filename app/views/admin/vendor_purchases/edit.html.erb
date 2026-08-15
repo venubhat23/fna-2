@@ -98,7 +98,7 @@
               <i class="bi bi-file-earmark-text-fill text-info me-2"></i>
               Invoice #<%= @vendor_purchase.vendor_invoice.invoice_number %>
             </p>
-            <%= link_to @vendor_purchase.vendor_invoice.public_url,
+            <%= link_to @vendor_purchase.vendor_invoice.public_url(host: request.host_with_port, protocol: request.ssl? ? 'https' : 'http'),
                        target: "_blank",
                        class: "btn btn-sm btn-outline-info" do %>
               <i class="bi bi-eye me-1"></i>
@@ -110,7 +110,7 @@
               No invoice generated yet
             </p>
             <%= button_to generate_invoice_admin_vendor_purchase_path(@vendor_purchase),
-                         method: :patch,
+                         method: :post,
                          class: "btn btn-sm btn-outline-success",
                          form: { style: "display: inline;" },
                          data: { confirm: "Generate invoice for this purchase?" } do %>

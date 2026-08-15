@@ -55,8 +55,10 @@ class VendorInvoice < ApplicationRecord
     end
   end
 
-  def public_url
-    Rails.application.routes.url_helpers.vendor_invoice_public_url(share_token, host: Rails.application.config.action_mailer.default_url_options[:host] || 'localhost:3000')
+  def public_url(host: nil, protocol: nil)
+    host ||= Rails.application.config.action_mailer.default_url_options[:host] || 'localhost:3000'
+    protocol ||= Rails.env.production? ? 'https' : 'http'
+    Rails.application.routes.url_helpers.vendor_invoice_public_url(share_token, host: host, protocol: protocol)
   end
 
   private

@@ -192,8 +192,9 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
     # Always mark invoice as generated (in case flag wasn't set previously)
     @vendor_purchase.update!(invoice_generated: true)
 
-    # Generate the public URL
-    invoice_url = vendor_invoice.public_url
+    # Generate the public URL using the host actually serving this request,
+    # so the link works regardless of which domain the app is deployed on.
+    invoice_url = vendor_invoice.public_url(host: request.host_with_port, protocol: request.ssl? ? 'https' : 'http')
 
     respond_to do |format|
       format.json {
