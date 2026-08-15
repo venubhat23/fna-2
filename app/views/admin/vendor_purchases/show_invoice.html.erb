@@ -1,303 +1,693 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Purchase Invoice #<%= @vendor_invoice.invoice_number %></title>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="csrf-token" content="<%= form_authenticity_token %>">
+    <title>Vendor Purchase Invoice #<%= @vendor_invoice.invoice_number %></title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 10px;
+        background-color: #f5f5f5;
+        font-size: 11px;
+      }
 
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #f8f9fa;
-      color: #333;
-    }
-
-    .invoice-container {
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      margin: 20px auto;
-      max-width: 800px;
-      overflow: hidden;
-    }
-
-    .invoice-header {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-
-    .invoice-body {
-      padding: 30px;
-    }
-
-    .company-info {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .company-name {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .invoice-details {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 30px;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-
-    .invoice-info, .vendor-info {
-      flex: 1;
-      min-width: 250px;
-    }
-
-    .info-card {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 10px;
-      border-left: 4px solid #28a745;
-    }
-
-    .info-title {
-      font-weight: 600;
-      color: #28a745;
-      margin-bottom: 10px;
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .items-table {
-      margin: 30px 0;
-    }
-
-    .table {
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .table th {
-      background: #28a745;
-      color: white;
-      font-weight: 600;
-      border: none;
-      padding: 15px;
-    }
-
-    .table td {
-      padding: 15px;
-      border-bottom: 1px solid #e9ecef;
-    }
-
-    .total-section {
-      text-align: right;
-      margin-top: 30px;
-    }
-
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #e9ecef;
-    }
-
-    .total-row.grand-total {
-      background: #28a745;
-      color: white;
-      padding: 15px 20px;
-      margin: 10px 0;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 18px;
-    }
-
-    .print-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
-
-    @media print {
-      body { background: white !important; }
       .invoice-container {
-        box-shadow: none !important;
-        margin: 0 !important;
-        max-width: 100% !important;
-      }
-      .print-btn { display: none !important; }
-    }
-
-    @media (max-width: 768px) {
-      .invoice-details {
-        flex-direction: column;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 15px;
+        border: 1px solid #ddd;
       }
 
-      .invoice-body {
-        padding: 20px;
+      /* Header section */
+      .invoice-header-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+      }
+
+      .invoice-header-table td {
+        vertical-align: top;
+        padding: 0;
+      }
+
+      .logo-cell {
+        width: 150px;
+        padding-right: 12px;
+      }
+
+      .logo {
+        width: 100px;
+        height: auto;
+        border-radius: 50%;
+        border: 3px solid #5a4ec9;
+      }
+
+      .company-info-cell {
+        width: auto;
+      }
+
+      .tax-label-container {
+        margin-bottom: 10px;
+        position: relative;
+      }
+
+      .tax-label {
+        font-weight: bold;
+        font-size: 14px;
+        color: #333;
+        display: inline-block;
+      }
+
+      .original-recipient {
+        display: inline-block;
+        font-size: 10px;
+        color: #666;
+        border: 1px solid #999;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 12px;
+        background-color: #f9f9f9;
+      }
+
+      .company-name {
+        color: #5a4ec9;
+        font-size: 22px;
+        font-weight: bold;
+        margin: 0 0 5px 0;
+      }
+
+      .address,
+      .contact {
+        font-size: 11px;
+        line-height: 1.3;
+        color: #333;
+      }
+
+      .highlight {
+        font-weight: bold;
+      }
+
+      .top-bar {
+        height: 6px;
+        background-color: #5a4ec9;
+        margin-bottom: 10px;
+        width: 100%;
+      }
+
+      .invoice-divider {
+        height: 2px;
+        background-color: #5a4ec9;
+        margin: 12px 0;
+        width: 100%;
+        border-radius: 2px;
+      }
+
+      /* Invoice meta */
+      .invoice-meta-table {
+        width: 100%;
+        background-color: #e7e7e7;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+
+      .invoice-meta-table td {
+        padding: 8px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: bold;
+        width: 33.33%;
+        border-right: 1px solid #ddd;
+      }
+
+      .invoice-meta-table td:last-child {
+        border-right: none;
+      }
+
+      .invoice-meta-table span {
+        font-weight: normal;
+        margin-left: 5px;
+      }
+
+      /* Vendor / purchase details section */
+      .bill-ship-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 10px 0;
+      }
+
+      .bill-ship-table td {
+        width: 50%;
+        vertical-align: top;
+        padding: 0 8px;
+      }
+
+      .bill-title,
+      .ship-title {
+        font-size: 12px;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #5a4ec9;
+      }
+
+      .client-name {
+        font-size: 13px;
+        font-weight: bold;
+        margin-bottom: 3px;
+        color: #333;
+      }
+
+      .mobile {
+        font-size: 11px;
+        color: #666;
+      }
+
+      /* Items table */
+      .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+      }
+
+      .items-table thead {
+        border-top: 3px solid #5a4ec9;
+        border-bottom: 3px solid #5a4ec9;
+        background-color: #f8f9fa;
+      }
+
+      .items-table th {
+        padding: 6px 4px;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: left;
+        color: #333;
+      }
+
+      .items-table th.center-align {
+        text-align: center;
+      }
+
+      .items-table th.right-align {
+        text-align: right;
+      }
+
+      .items-table td {
+        padding: 5px 4px;
+        font-size: 11px;
+        vertical-align: top;
+        border-bottom: 1px solid #eee;
+      }
+
+      .items-table td.center-align {
+        text-align: center;
+      }
+
+      .items-table td.right-align {
+        text-align: right;
+        font-weight: bold;
+      }
+
+      .items-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+
+      .description {
+        color: #666;
+        font-size: 10px;
+        font-style: italic;
+      }
+
+      /* Subtotal section */
+      .subtotal-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+      }
+
+      .subtotal-table .section-border {
+        border-top: 3px solid #5a4ec9;
+        border-bottom: 3px solid #5a4ec9;
+        font-weight: bold;
+        font-size: 14px;
+        background-color: #f8f9fa;
+      }
+
+      .subtotal-table td {
+        padding: 8px;
+      }
+
+      .subtotal-values-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .subtotal-values-table td {
+        text-align: right;
+        padding: 0 12px;
+        font-weight: bold;
+        font-size: 12px;
+      }
+
+      /* Amount summary */
+      .tax-summary {
+        font-size: 11px;
+        line-height: 1.4;
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #e0e0e0;
+        margin: 10px 0;
+      }
+
+      .tax-summary .tax-line {
+        width: 100%;
+        margin-bottom: 5px;
+        padding: 3px 0;
+        border-bottom: 1px solid #eee;
+        position: relative;
+      }
+
+      .tax-summary .tax-line:last-child {
+        border-bottom: none;
+      }
+
+      .tax-summary .tax-line .tax-label {
+        float: left;
+        text-align: left;
+      }
+
+      .tax-summary .tax-line .tax-amount {
+        float: right;
+        text-align: right;
+        font-weight: bold;
+        min-width: 70px;
+      }
+
+      .tax-summary .tax-line::after {
+        content: "";
+        display: table;
+        clear: both;
+      }
+
+      .tax-summary .total {
+        font-weight: bold;
+        border-top: 2px solid #5a4ec9;
+        padding-top: 6px;
+        margin-top: 6px;
+        background-color: #f0f0f0;
+        padding: 8px;
+        border-radius: 5px;
+      }
+
+      .tax-summary .total .tax-line {
+        border-bottom: none;
+        margin-bottom: 3px;
+      }
+
+      .amount-words {
+        margin-top: 8px;
+        background-color: #f0f0f0;
+        padding: 6px;
+        border-radius: 5px;
+      }
+
+      .amount-words h3 {
+        font-size: 11px;
+        font-weight: bold;
+        margin-bottom: 3px;
+        color: #5a4ec9;
+        text-align: left;
+      }
+
+      .amount-words div {
+        font-size: 10px;
+        font-weight: bold;
+        text-align: left;
+      }
+
+      .text-success { color: #1a7f37; }
+      .text-danger { color: #c0392b; }
+
+      /* Terms and signature */
+      .terms-signature-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+
+      .terms-signature-table td {
+        vertical-align: top;
+        padding: 0 6px;
+      }
+
+      .terms-cell {
+        width: 65%;
+      }
+
+      .signature-cell {
+        width: 35%;
+        text-align: center;
+      }
+
+      .terms h3 {
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #5a4ec9;
+      }
+
+      .terms ol {
+        font-size: 9px;
+        padding-left: 15px;
+        line-height: 1.3;
+        margin: 0;
+      }
+
+      .signature-box {
+        height: 50px;
+        border: 2px solid #5a4ec9;
+        margin-bottom: 5px;
+        width: 120px;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+      }
+
+      .signature-label {
+        font-weight: bold;
+        font-size: 9px;
+        color: #333;
+      }
+
+      .signature-name {
+        font-size: 10px;
+        margin-top: 2px;
+        color: #5a4ec9;
+        font-weight: bold;
+      }
+
+      /* Back button styling */
+      .back-button {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background-color: #5a4ec9;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      }
+
+      .back-button:hover {
+        background-color: #4a3eb3;
+        color: white;
+        text-decoration: none;
       }
 
       .print-btn {
-        position: static;
-        margin: 20px auto;
-        display: block;
-        width: 200px;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        background-color: #5a4ec9;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       }
-    }
-  </style>
-</head>
 
-<body>
-  <div class="container-fluid">
+      /* Print styles */
+      @media print {
+        .back-button, .print-btn {
+          display: none;
+        }
+        body {
+          padding: 0;
+          background-color: white;
+          font-size: 10px;
+        }
+        .invoice-container {
+          border: none;
+          padding: 10px;
+        }
+        .logo {
+          width: 80px;
+        }
+        .company-name {
+          font-size: 18px;
+        }
+        .signature-box {
+          height: 40px;
+          width: 100px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Back Button -->
+    <%= link_to admin_vendor_purchases_path, class: "back-button" do %>
+      ← Back to Vendor Purchases
+    <% end %>
+
+    <%
+      business_settings = SystemSetting.business_settings
+      purchase_items = @vendor_purchase.vendor_purchase_items
+      subtotal_amount = purchase_items.sum { |item| item.quantity.to_f * item.purchase_price.to_f }
+    %>
+
     <div class="invoice-container">
-      <!-- Invoice Header -->
-      <div class="invoice-header">
-        <h1><i class="fas fa-receipt me-2"></i>Vendor Purchase Invoice</h1>
-        <h3>#<%= @vendor_invoice.invoice_number %></h3>
+      <!-- Label -->
+      <div class="tax-label-container">
+        <span class="tax-label">PURCHASE INVOICE</span>
       </div>
 
-      <!-- Invoice Body -->
-      <div class="invoice-body">
-        <!-- Company Information -->
-        <div class="company-info">
-          <div class="company-name">
-            <%= @vendor_purchase.vendor.name %>
-          </div>
-          <div class="text-muted">
-            Vendor Purchase Invoice
-          </div>
-        </div>
-
-        <!-- Invoice Details -->
-        <div class="invoice-details">
-          <div class="invoice-info">
-            <div class="info-card">
-              <div class="info-title">Purchase Details</div>
-              <div><strong>Purchase Number:</strong> <%= @vendor_purchase.purchase_number %></div>
-              <div><strong>Purchase Date:</strong> <%= @vendor_purchase.purchase_date.strftime("%B %d, %Y") %></div>
-              <div><strong>Payment Status:</strong>
-                <span class="badge <%= @vendor_purchase.payment_status_badge_class %>">
-                  <%= @vendor_purchase.payment_status.titleize %>
-                </span>
-              </div>
-              <div><strong>Invoice Date:</strong> <%= @vendor_invoice.created_at.strftime("%B %d, %Y") %></div>
+      <!-- Header section -->
+      <table class="invoice-header-table">
+        <tr>
+          <td class="logo-cell">
+            <img class="logo" src="/logo1.jpeg" alt="<%= business_settings.business_name || 'Atma Nirbhar Farm' %> Logo" />
+          </td>
+          <td class="company-info-cell">
+            <div class="company-name"><%= business_settings.business_name || 'Atma Nirbhar Farm' %></div>
+            <div class="address">
+              <%= business_settings.address || '#827 4th main 9th Block 2nd Stage Near Hanumagiri temple Nagarbhavi, Bangalore, Karnataka, 560072' %>
             </div>
-          </div>
-
-          <div class="vendor-info">
-            <div class="info-card">
-              <div class="info-title">Vendor Information</div>
-              <div><strong>Vendor Name:</strong> <%= @vendor_purchase.vendor.name %></div>
-              <div><strong>Contact:</strong> <%= @vendor_purchase.vendor.phone %></div>
-              <div><strong>Email:</strong> <%= @vendor_purchase.vendor.email %></div>
-              <% if @vendor_purchase.vendor.address.present? %>
-                <div><strong>Address:</strong> <%= @vendor_purchase.vendor.address %></div>
-              <% end %>
+            <div class="contact">
+              <span class="highlight">Mobile:</span> <%= business_settings.mobile || '9972808044' %> &nbsp;&nbsp;
+              <span class="highlight">GSTIN:</span> <%= business_settings.gstin || '29AOIPT8113K1ZC' %> &nbsp;&nbsp;
+              <span class="highlight">PAN Number:</span> <%= business_settings.pan_number || 'AOIPT8113K' %><br />
+              <span class="highlight">Email:</span> <%= business_settings.email || 'atmanirbharfarm@gmail.com' %>
             </div>
-          </div>
-        </div>
+          </td>
+        </tr>
+      </table>
 
-        <!-- Items Table -->
-        <div class="items-table">
-          <table class="table">
-            <thead>
+      <div class="top-bar"></div>
+
+      <!-- Invoice meta information -->
+      <table class="invoice-meta-table">
+        <tr>
+          <td>Invoice No.: <span><%= @vendor_invoice.invoice_number %></span></td>
+          <td>Invoice Date: <span><%= @vendor_invoice.invoice_date&.strftime('%d/%m/%Y') || @vendor_invoice.created_at.strftime('%d/%m/%Y') %></span></td>
+          <td>Payment Status: <span><%= @vendor_purchase.payment_status.titleize %></span></td>
+        </tr>
+      </table>
+
+      <div class="invoice-divider"></div>
+
+      <!-- Vendor and purchase details -->
+      <table class="bill-ship-table">
+        <tr>
+          <td>
+            <div class="bill-title">VENDOR DETAILS</div>
+            <div class="client-name"><%= @vendor_purchase.vendor.name %></div>
+            <% if @vendor_purchase.vendor.address.present? %>
+              <div><%= @vendor_purchase.vendor.address %></div>
+            <% end %>
+            <% if @vendor_purchase.vendor.phone.present? %>
+              <div class="mobile">Mobile: <%= @vendor_purchase.vendor.phone %></div>
+            <% end %>
+            <% if @vendor_purchase.vendor.email.present? %>
+              <div class="mobile">Email: <%= @vendor_purchase.vendor.email %></div>
+            <% end %>
+          </td>
+          <td>
+            <div class="ship-title">PURCHASE DETAILS</div>
+            <div class="client-name">Purchase #<%= @vendor_purchase.purchase_number %></div>
+            <div>Purchase Date: <%= @vendor_purchase.purchase_date.strftime("%d/%m/%Y") %></div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Items table -->
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>ITEMS</th>
+            <th class="center-align">HSN</th>
+            <th class="center-align">QTY.</th>
+            <th class="right-align">PURCHASE PRICE</th>
+            <th class="right-align">SELLING PRICE</th>
+            <th class="right-align">AMOUNT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% purchase_items.each do |item| %>
+            <tr>
+              <td><%= item.product.name %></td>
+              <td class="center-align"><%= item.product.hsn_code.presence || '-' %></td>
+              <td class="center-align"><%= number_with_precision(item.quantity, precision: 2) %> <%= item.product.unit_type || 'units' %></td>
+              <td class="right-align">₹<%= number_with_precision(item.purchase_price, precision: 2, delimiter: ',') %></td>
+              <td class="right-align">₹<%= number_with_precision(item.selling_price, precision: 2, delimiter: ',') %></td>
+              <td class="right-align">₹<%= number_with_delimiter((item.quantity.to_f * item.purchase_price.to_f).round(2), delimiter: ',') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <!-- Subtotal section -->
+      <table class="subtotal-table">
+        <tr class="section-border">
+          <td>SUBTOTAL</td>
+          <td>-</td>
+          <td style="width: 40%;">
+            <table class="subtotal-values-table">
               <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th>Unit Type</th>
-                <th>Purchase Price</th>
-                <th>Selling Price</th>
-                <th>Total</th>
+                <td></td>
+                <td>₹ <%= number_with_delimiter(subtotal_amount.round(2), delimiter: ',') %></td>
               </tr>
-            </thead>
-            <tbody>
-              <% @vendor_purchase.vendor_purchase_items.each do |item| %>
-                <tr>
-                  <td>
-                    <strong><%= item.product.name %></strong>
-                    <% if item.product.hsn_code.present? %>
-                      <br><small class="text-muted">HSN: <%= item.product.hsn_code %></small>
-                    <% end %>
-                  </td>
-                  <td><%= number_with_precision(item.quantity, precision: 2) %></td>
-                  <td><%= item.product.unit_type || 'units' %></td>
-                  <td>₹<%= number_with_precision(item.purchase_price, precision: 2) %></td>
-                  <td>₹<%= number_with_precision(item.selling_price, precision: 2) %></td>
-                  <td><strong>₹<%= number_with_precision(item.quantity * item.purchase_price, precision: 2) %></strong></td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
+            </table>
+          </td>
+        </tr>
+      </table>
 
-        <!-- Total Section -->
-        <div class="total-section">
-          <div class="row justify-content-end">
-            <div class="col-md-6">
-              <div class="total-row">
-                <span>Subtotal:</span>
-                <span>₹<%= number_with_delimiter(@vendor_purchase.total_amount.round) %></span>
-              </div>
-
-              <div class="total-row grand-total">
-                <span>Grand Total:</span>
-                <span>₹<%= number_with_delimiter(@vendor_purchase.total_amount.round) %></span>
-              </div>
-
-              <% if @vendor_purchase.paid_amount > 0 %>
-                <div class="total-row">
-                  <span>Paid Amount:</span>
-                  <span class="text-success">₹<%= number_with_precision(@vendor_purchase.paid_amount, precision: 2) %></span>
-                </div>
-
-                <% if @vendor_purchase.outstanding_amount > 0 %>
-                  <div class="total-row">
-                    <span>Outstanding:</span>
-                    <span class="text-danger">₹<%= number_with_precision(@vendor_purchase.outstanding_amount, precision: 2) %></span>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
+      <!-- Amount summary -->
+      <div class="tax-summary">
+        <div class="total">
+          <div class="tax-line">
+            <span class="tax-label">TOTAL AMOUNT</span>
+            <span class="tax-amount">₹ <%= number_with_delimiter(@vendor_purchase.total_amount.round(2), delimiter: ',') %></span>
           </div>
         </div>
-
-        <!-- Additional Notes -->
-        <% if @vendor_purchase.notes.present? %>
-          <div class="mt-4">
-            <div class="info-card">
-              <div class="info-title">Notes</div>
-              <p><%= simple_format(@vendor_purchase.notes) %></p>
-            </div>
+        <% if @vendor_purchase.paid_amount > 0 %>
+          <div class="tax-line">
+            <span class="tax-label">Paid Amount</span>
+            <span class="tax-amount text-success">₹ <%= number_with_delimiter(@vendor_purchase.paid_amount.round(2), delimiter: ',') %></span>
           </div>
+          <% if @vendor_purchase.outstanding_amount > 0 %>
+            <div class="tax-line">
+              <span class="tax-label">Outstanding</span>
+              <span class="tax-amount text-danger">₹ <%= number_with_delimiter(@vendor_purchase.outstanding_amount.round(2), delimiter: ',') %></span>
+            </div>
+          <% end %>
         <% end %>
+        <div class="amount-words">
+          <h3>Total Amount (in words)</h3>
+          <%
+            total_amount_int = @vendor_purchase.total_amount.to_i
+            ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"]
+            teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"]
+            tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
 
-        <!-- Footer -->
-        <div class="text-center mt-4 text-muted">
-          <hr>
-          <small>Invoice generated on <%= @vendor_invoice.created_at.strftime("%B %d, %Y at %I:%M %p") %></small>
+            def convert_hundreds(num, ones, teens, tens)
+              result = ""
+              if num >= 100
+                result += ones[num / 100] + " Hundred "
+                num %= 100
+              end
+              if num >= 20
+                result += tens[num / 10] + " "
+                num %= 10
+              elsif num >= 10
+                result += teens[num - 10] + " "
+                num = 0
+              end
+              if num > 0
+                result += ones[num] + " "
+              end
+              result.strip
+            end
+
+            words = ""
+            if total_amount_int >= 10000000
+              crores = total_amount_int / 10000000
+              words += convert_hundreds(crores, ones, teens, tens) + " Crore "
+              total_amount_int %= 10000000
+            end
+            if total_amount_int >= 100000
+              lakhs = total_amount_int / 100000
+              words += convert_hundreds(lakhs, ones, teens, tens) + " Lakh "
+              total_amount_int %= 100000
+            end
+            if total_amount_int >= 1000
+              thousands = total_amount_int / 1000
+              words += convert_hundreds(thousands, ones, teens, tens) + " Thousand "
+              total_amount_int %= 1000
+            end
+            if total_amount_int > 0
+              words += convert_hundreds(total_amount_int, ones, teens, tens)
+            end
+            words = words.strip
+            words = "Zero" if words.empty?
+          %>
+          <div><%= words %> Rupees Only</div>
         </div>
       </div>
+
+      <!-- Additional Notes -->
+      <% if @vendor_purchase.notes.present? %>
+        <div class="tax-summary">
+          <strong>Notes:</strong>
+          <p style="margin: 5px 0 0;"><%= simple_format(@vendor_purchase.notes) %></p>
+        </div>
+      <% end %>
+
+      <!-- Terms and signature section -->
+      <table class="terms-signature-table">
+        <tr>
+          <td class="terms-cell">
+            <div class="terms">
+              <h3>TERMS AND CONDITIONS</h3>
+              <% if business_settings.terms_and_conditions.present? %>
+                <% formatted_terms = business_settings.formatted_terms_and_conditions %>
+                <% if formatted_terms.any? %>
+                  <ol>
+                    <% formatted_terms.each do |term| %>
+                      <li><%= term %></li>
+                    <% end %>
+                  </ol>
+                <% else %>
+                  <div style="padding-left: 15px; font-size: 9px;"><%= simple_format(business_settings.terms_and_conditions) %></div>
+                <% end %>
+              <% else %>
+                <ol>
+                  <li>Goods received as per the quantities and prices listed above.</li>
+                  <li>Please retain this invoice for your records.</li>
+                </ol>
+              <% end %>
+            </div>
+          </td>
+          <td class="signature-cell">
+            <div class="signature-box"></div>
+            <div class="signature-label">AUTHORISED SIGNATORY FOR</div>
+            <div class="signature-name"><%= business_settings.business_name || 'Atma Nirbhar Farm' %></div>
+          </td>
+        </tr>
+      </table>
     </div>
-  </div>
 
-  <!-- Print Button -->
-  <button onclick="window.print()" class="btn btn-success btn-lg print-btn">
-    <i class="fas fa-print me-2"></i>Print Invoice
-  </button>
-
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    <!-- Print Button -->
+    <button onclick="window.print()" class="print-btn">Print Invoice</button>
+  </body>
 </html>

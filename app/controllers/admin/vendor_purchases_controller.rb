@@ -1,7 +1,7 @@
 class Admin::VendorPurchasesController < Admin::ApplicationController
   before_action :authenticate_user!
-  before_action :set_vendor_purchase, only: [:edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid, :show_invoice]
-  before_action :set_vendor_purchase_with_items, only: [:show]
+  before_action :set_vendor_purchase, only: [:edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid]
+  before_action :set_vendor_purchase_with_items, only: [:show, :show_invoice]
   before_action :set_vendors_and_products, only: [:new, :edit, :create, :update, :bulk_new, :bulk_create]
   layout 'application'
 
