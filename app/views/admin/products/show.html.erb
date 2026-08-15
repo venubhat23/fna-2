@@ -378,6 +378,60 @@
         </div>
       </div>
 
+    <!-- Product Variants -->
+    <% if @product.has_multiple_quantities? && @product.product_variants.any? %>
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0">Variants (<%= @product.product_variants.size %>)</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0 fw-semibold">Variant</th>
+                  <th class="border-0 fw-semibold">Selling Price</th>
+                  <th class="border-0 fw-semibold">Discount</th>
+                  <th class="border-0 fw-semibold">Stock</th>
+                  <th class="border-0 fw-semibold">GST</th>
+                  <th class="border-0 fw-semibold">Default</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @product.sorted_variants.each do |variant| %>
+                  <tr>
+                    <td><%= variant.label %></td>
+                    <td>
+                      ₹<%= variant.effective_price.round(2) %>
+                      <% if variant.discount_enabled? && variant.discount_amount.to_f > 0 %>
+                        <br><small class="text-muted text-decoration-line-through">₹<%= variant.selling_price.round(2) %></small>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if variant.discount_enabled? && variant.discount_amount.to_f > 0 %>
+                        <span class="badge bg-success-subtle text-success">
+                          <%= variant.discount_type == 'percentage' ? "#{variant.discount_value}%" : "₹#{variant.discount_value}" %>
+                        </span>
+                      <% else %>
+                        <span class="text-muted">—</span>
+                      <% end %>
+                    </td>
+                    <td class="<%= variant.in_stock? ? 'text-success' : 'text-danger' %>"><%= variant.available_stock %></td>
+                    <td><%= variant.effective_gst_percentage %>%</td>
+                    <td>
+                      <% if variant.is_default? %>
+                        <span class="badge bg-primary-subtle text-primary">Default</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
     <!-- Delivery Rules -->
     <% if @delivery_rules.any? %>
       <div class="card border-0 shadow-sm mt-4">

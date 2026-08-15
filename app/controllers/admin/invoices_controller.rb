@@ -1067,13 +1067,19 @@ class Admin::InvoicesController < Admin::ApplicationController
     }
   end
 
-  # Groups by payment_status via ActiveRecord's own .group().count/.sum rather than raw
-  # SQL, because Invoice#payment_status is an integer-backed enum and the ORM group
-  # methods are what correctly cast the grouped keys back to their string labels
-  # ('fully_paid', 'unpaid', ...) - a raw SQL pluck would return the underlying integers
-  # instead and silently break every string-keyed lookup below.
+  # One query instead of two: .group(:payment_status).count and .sum(:total_amount) each
+  # hit the DB separately, so plucking both aggregates together halves the round trips.
+  # payment_status is still passed as a bare attribute (not raw SQL), so pluck applies the
+  # same enum-aware casting .group().count relies on ('fully_paid', 'unpaid', ...) rather
+  # than returning the underlying integers - verified against live data before applying.
   def grouped_counts_and_sums(scope)
-    [scope.group(:payment_status).count, scope.group(:payment_status).sum(:total_amount)]
+    counts = {}
+    sums = {}
+    scope.group(:payment_status).pluck(:payment_status, Arel.sql("COUNT(*)"), Arel.sql("SUM(total_amount)")).each do |status, count, sum|
+      counts[status] = count
+      sums[status] = sum
+    end
+    [counts, sums]
   end
 
   def calculate_regular_invoice_stats_only(counts_by_status, sums_by_status, booking_counts_by_status, booking_sums_by_status)

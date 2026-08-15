@@ -166,27 +166,30 @@ class User < ApplicationRecord
 
   # Get permissions in CRUD format (for compatibility)
   def sidebar_permissions_hash
-    return {} if sidebar_permissions.blank?
-    begin
-      parsed = if sidebar_permissions.is_a?(String)
-        JSON.parse(sidebar_permissions)
+    @sidebar_permissions_hash ||= begin
+      if sidebar_permissions.blank?
+        {}
       else
-        sidebar_permissions
-      end
-      # If it's already a hash (CRUD format), return it
-      if parsed.is_a?(Hash)
-        parsed
-      else
-        # Convert old array format to CRUD format (view-only)
-        result = {}
-        parsed.each do |permission|
-          result[permission] = { 'view' => true, 'create' => false, 'edit' => false, 'delete' => false }
+        parsed = if sidebar_permissions.is_a?(String)
+          JSON.parse(sidebar_permissions)
+        else
+          sidebar_permissions
         end
-        result
+        # If it's already a hash (CRUD format), return it
+        if parsed.is_a?(Hash)
+          parsed
+        else
+          # Convert old array format to CRUD format (view-only)
+          result = {}
+          parsed.each do |permission|
+            result[permission] = { 'view' => true, 'create' => false, 'edit' => false, 'delete' => false }
+          end
+          result
+        end
       end
-    rescue JSON::ParserError
-      {}
     end
+  rescue JSON::ParserError
+    @sidebar_permissions_hash = {}
   end
 
   def has_sidebar_permission?(permission_key)
@@ -206,6 +209,7 @@ class User < ApplicationRecord
   end
 
   def update_sidebar_permissions(permissions)
+    @sidebar_permissions_hash = nil
     self.update(sidebar_permissions: permissions.to_json)
   end
 
