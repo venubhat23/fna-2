@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
@@ -213,6 +214,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.boolean "quick_invoice", default: false
     t.string "booked_by", default: "admin"
     t.integer "booking_items_count", default: 0, null: false
+    t.boolean "is_outlet_booking", default: true, null: false
     t.index ["booked_by"], name: "index_bookings_on_booked_by"
     t.index ["booking_number"], name: "index_bookings_on_booking_number"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
@@ -242,6 +244,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.datetime "updated_at", null: false
     t.string "image_backup_url"
     t.index ["display_order"], name: "index_categories_on_display_order"
+    t.index ["name"], name: "index_categories_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["status"], name: "index_categories_on_status"
   end
 
@@ -377,6 +380,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.index ["created_at"], name: "index_customers_on_created_at"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
     t.index ["row_number"], name: "index_customers_on_row_number"
+    t.index ["status"], name: "index_customers_on_status"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
   end
 
@@ -869,9 +873,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.index ["is_subscription_enabled"], name: "index_products_on_is_subscription_enabled"
     t.index ["last_price_update"], name: "index_products_on_last_price_update"
     t.index ["name"], name: "index_products_on_name"
+    t.index ["name"], name: "index_products_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["product_type"], name: "index_products_on_product_type"
     t.index ["sku"], name: "index_products_on_sku", unique: true
+    t.index ["sku"], name: "index_products_on_sku_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["status"], name: "index_products_on_status"
+    t.index ["stock"], name: "index_products_on_stock"
   end
 
   create_table "referrals", force: :cascade do |t|
@@ -1329,127 +1336,3 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.index ["product_id"], name: "index_vendor_purchase_items_on_product_id"
     t.index ["vendor_purchase_id"], name: "index_vendor_purchase_items_on_vendor_purchase_id"
   end
-
-  create_table "vendor_purchases", force: :cascade do |t|
-    t.bigint "vendor_id", null: false
-    t.date "purchase_date"
-    t.decimal "total_amount"
-    t.decimal "paid_amount"
-    t.string "status"
-    t.text "notes"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.boolean "invoice_generated", default: false
-    t.index ["created_at"], name: "index_vendor_purchases_on_created_at"
-    t.index ["status"], name: "index_vendor_purchases_on_status"
-    t.index ["vendor_id"], name: "index_vendor_purchases_on_vendor_id"
-  end
-
-  create_table "vendors", force: :cascade do |t|
-    t.string "name"
-    t.string "phone"
-    t.string "email"
-    t.text "address"
-    t.string "payment_type"
-    t.decimal "opening_balance"
-    t.boolean "status"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["status"], name: "index_vendors_on_status"
-  end
-
-  create_table "wallet_transactions", force: :cascade do |t|
-    t.bigint "customer_wallet_id", null: false
-    t.string "transaction_type"
-    t.decimal "amount", precision: 10, scale: 2
-    t.decimal "balance_after", precision: 10, scale: 2
-    t.string "description"
-    t.string "reference_number"
-    t.json "metadata"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["customer_wallet_id"], name: "index_wallet_transactions_on_customer_wallet_id"
-    t.index ["reference_number"], name: "index_wallet_transactions_on_reference_number", unique: true
-    t.index ["transaction_type"], name: "index_wallet_transactions_on_transaction_type"
-  end
-
-  create_table "wishlists", force: :cascade do |t|
-    t.bigint "customer_id", null: false
-    t.bigint "product_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["customer_id"], name: "index_wishlists_on_customer_id"
-    t.index ["product_id"], name: "index_wishlists_on_product_id"
-  end
-
-  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "booking_invoices", "bookings"
-  add_foreign_key "booking_invoices", "customers"
-  add_foreign_key "booking_schedules", "customers"
-  add_foreign_key "booking_schedules", "products"
-  add_foreign_key "bookings", "booking_schedules"
-  add_foreign_key "bookings", "delivery_people"
-  add_foreign_key "bookings", "franchises"
-  add_foreign_key "bookings", "stores"
-  add_foreign_key "client_requests", "customers"
-  add_foreign_key "client_requests", "users", column: "assignee_id"
-  add_foreign_key "customer_addresses", "customers"
-  add_foreign_key "customer_formats", "customers"
-  add_foreign_key "customer_formats", "delivery_people"
-  add_foreign_key "customer_formats", "products"
-  add_foreign_key "customer_wallets", "customers"
-  add_foreign_key "delivery_rules", "products"
-  add_foreign_key "device_tokens", "customers"
-  add_foreign_key "device_tokens", "delivery_people"
-  add_foreign_key "franchises", "users"
-  add_foreign_key "invoice_items", "invoices"
-  add_foreign_key "invoice_items", "milk_delivery_tasks"
-  add_foreign_key "invoice_items", "products"
-  add_foreign_key "milk_delivery_tasks", "customers"
-  add_foreign_key "milk_delivery_tasks", "delivery_people"
-  add_foreign_key "milk_delivery_tasks", "milk_subscriptions", column: "subscription_id"
-  add_foreign_key "milk_delivery_tasks", "products"
-  add_foreign_key "milk_subscriptions", "customers"
-  add_foreign_key "milk_subscriptions", "delivery_people", name: "fk_milk_subscriptions_delivery_person"
-  add_foreign_key "milk_subscriptions", "products"
-  add_foreign_key "notes", "users", column: "created_by_user_id"
-  add_foreign_key "notifications", "customers"
-  add_foreign_key "pending_amounts", "customers"
-  add_foreign_key "product_ratings", "customers"
-  add_foreign_key "product_ratings", "products"
-  add_foreign_key "product_ratings", "users"
-  add_foreign_key "product_reviews", "customers"
-  add_foreign_key "product_reviews", "products"
-  add_foreign_key "product_reviews", "users"
-  add_foreign_key "product_variants", "products"
-  add_foreign_key "products", "categories"
-  add_foreign_key "referrals", "affiliates"
-  add_foreign_key "referrals", "customers"
-  add_foreign_key "referrals", "customers", column: "referring_customer_id"
-  add_foreign_key "sale_items", "bookings"
-  add_foreign_key "sale_items", "products"
-  add_foreign_key "sale_items", "stock_batches"
-  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "stock_batches", "products"
-  add_foreign_key "stock_batches", "vendor_purchases"
-  add_foreign_key "stock_batches", "vendors"
-  add_foreign_key "stock_movements", "products"
-  add_foreign_key "subscription_templates", "customers"
-  add_foreign_key "subscription_templates", "delivery_people"
-  add_foreign_key "subscription_templates", "products"
-  add_foreign_key "vendor_invoices", "vendor_purchases"
-  add_foreign_key "vendor_payments", "vendor_purchases"
-  add_foreign_key "vendor_payments", "vendors"
-  add_foreign_key "vendor_purchase_items", "products"
-  add_foreign_key "vendor_purchase_items", "vendor_purchases"
-  add_foreign_key "vendor_purchases", "vendors"
-  add_foreign_key "wallet_transactions", "customer_wallets"
-  add_foreign_key "wishlists", "customers"
-  add_foreign_key "wishlists", "products"
-end

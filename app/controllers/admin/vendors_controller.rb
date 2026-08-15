@@ -15,6 +15,21 @@ class Admin::VendorsController < Admin::ApplicationController
     @total_vendors_count = vendor_status_counts.values.sum
     @active_vendors_count = vendor_status_counts[true].to_i
 
+    # Purchases/outstanding stat cards must reflect ALL vendors matching the
+    # current filter, not just the current page — computed here via SQL
+    # aggregates on the pre-pagination scope (the view previously called
+    # @vendors.sum(&:total_purchases)/(&:outstanding_balance) on the already-
+    # paginated 20-row relation, which was both wrong and triggered a
+    # per-vendor query since Vendor#total_purchases sums via association).
+    totals = @vendors.except(:includes, :order)
+                     .joins(:vendor_purchases)
+                     .pick(Arel.sql('SUM(vendor_purchases.total_amount)'), Arel.sql('SUM(vendor_purchases.paid_amount)'))
+    total_purchases_sum = totals&.first.to_f
+    total_paid_sum = totals&.last.to_f
+    total_opening_balance_sum = @vendors.except(:includes, :order).sum(:opening_balance).to_f
+    @total_purchases_sum = total_purchases_sum
+    @total_outstanding_sum = total_purchases_sum - total_paid_sum + total_opening_balance_sum
+
     @vendors = @vendors.page(params[:page]).per(20)
 
     respond_to do |format|

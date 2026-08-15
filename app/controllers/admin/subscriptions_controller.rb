@@ -681,7 +681,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       .count
 
     # Total delivery people remains global
-    total_delivery_people = DeliveryPerson.where(status: true).count
+    total_delivery_people = LOCAL_CACHE.fetch('admin_subscriptions_active_delivery_people_count', 5.minutes) { DeliveryPerson.where(status: true).count }
 
     {
       total: total,

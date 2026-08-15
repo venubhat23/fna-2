@@ -627,10 +627,15 @@ class DashboardController < ApplicationController
   # Cached wrapper around the actual (query-heavy, ~40-query) data load. The dashboard is
   # viewed repeatedly (page refreshes, multiple admins, polling) and the underlying numbers
   # don't need to be instantaneous, so a cache turns dozens of round trips into zero on
-  # every hit but the first each cache period. TTL is 5 minutes rather than a few seconds:
-  # each query here is a full network round trip to the remote Postgres instance
-  # (~150-500ms/query - see logs from 2026-08-01), so a short TTL meant almost every visit
-  # missed the cache and paid for all ~40 queries again (10+ seconds).
+  # every hit but the first each cache period. Each query here is a full network round trip
+  # to the remote Postgres instance (~150-500ms/query - see logs from 2026-08-01).
+  #
+  # Two layers: DASHBOARD_LOCAL_CACHE is per-worker-process (zero-cost hit, no network hop),
+  # but on a multi-worker deploy each worker independently recomputes on its own first hit
+  # and again every TTL — so a Rails.cache (Solid Cache) layer sits underneath it, shared
+  # across all workers. A miss on the local layer usually still hits Rails.cache (one round
+  # trip to fetch the cached blob) instead of falling all the way through to all ~40 queries.
+  # TTL is 2 minutes on both layers (staleness tolerance for this dashboard).
   DASHBOARD_ECOMMERCE_CACHE_IVARS = %i[
     @total_products @active_products @draft_products @total_categories @active_categories
     @total_bookings @pending_bookings @completed_bookings @cancelled_bookings
@@ -647,10 +652,12 @@ class DashboardController < ApplicationController
   ].freeze
 
   def load_ecommerce_dashboard_data
-    snapshot = DASHBOARD_LOCAL_CACHE.fetch('dashboard:ecommerce_data', 5.minutes) do
-      compute_ecommerce_dashboard_data
-      DASHBOARD_ECOMMERCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
-        hash[ivar] = instance_variable_get(ivar)
+    snapshot = DASHBOARD_LOCAL_CACHE.fetch('dashboard:ecommerce_data', 2.minutes) do
+      Rails.cache.fetch('dashboard:ecommerce_data', expires_in: 2.minutes) do
+        compute_ecommerce_dashboard_data
+        DASHBOARD_ECOMMERCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
+          hash[ivar] = instance_variable_get(ivar)
+        end
       end
     end
     snapshot.each { |ivar, value| instance_variable_set(ivar, value) }

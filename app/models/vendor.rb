@@ -12,12 +12,23 @@ class Vendor < ApplicationRecord
   scope :active, -> { where(status: true) }
   scope :inactive, -> { where(status: false) }
 
+  # The `.sum(:column)` symbol form always issues a fresh SQL SUM, even when
+  # vendor_purchases is already eager-loaded — summing the loaded records in
+  # Ruby instead avoids a per-vendor query on pages that list many vendors.
   def total_purchases
-    vendor_purchases.sum(:total_amount)
+    if vendor_purchases.loaded?
+      vendor_purchases.sum(&:total_amount)
+    else
+      vendor_purchases.sum(:total_amount)
+    end
   end
 
   def total_paid
-    vendor_purchases.sum(:paid_amount)
+    if vendor_purchases.loaded?
+      vendor_purchases.sum(&:paid_amount)
+    else
+      vendor_purchases.sum(:paid_amount)
+    end
   end
 
   def outstanding_balance

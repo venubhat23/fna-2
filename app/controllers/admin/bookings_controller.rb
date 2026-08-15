@@ -65,7 +65,7 @@ class Admin::BookingsController < Admin::ApplicationController
     # Verified this still pages correctly: because booking_invoices is has_many, Rails
     # automatically runs a 2-query strategy here (collect the correct N booking ids first,
     # then fetch the joined data for those ids) rather than letting LIMIT clip mid-join.
-    @bookings = @bookings.eager_load(:customer, { user: :franchise }, :delivery_person, :booking_invoices)
+    @bookings = @bookings.eager_load(:customer, { user: :franchise }, :delivery_person, :booking_invoices, :store)
                          .page(params[:page]).per(@per_page)
 
     # Batch-preload associated_invoice for the bookings on this page, replacing what would

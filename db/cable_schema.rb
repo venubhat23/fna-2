@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
@@ -213,6 +214,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.boolean "quick_invoice", default: false
     t.string "booked_by", default: "admin"
     t.integer "booking_items_count", default: 0, null: false
+    t.boolean "is_outlet_booking", default: true, null: false
     t.index ["booked_by"], name: "index_bookings_on_booked_by"
     t.index ["booking_number"], name: "index_bookings_on_booking_number"
     t.index ["booking_schedule_id"], name: "index_bookings_on_booking_schedule_id"
@@ -242,6 +244,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.datetime "updated_at", null: false
     t.string "image_backup_url"
     t.index ["display_order"], name: "index_categories_on_display_order"
+    t.index ["name"], name: "index_categories_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["status"], name: "index_categories_on_status"
   end
 
@@ -377,6 +380,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.index ["created_at"], name: "index_customers_on_created_at"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
     t.index ["row_number"], name: "index_customers_on_row_number"
+    t.index ["status"], name: "index_customers_on_status"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
   end
 
@@ -869,9 +873,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.index ["is_subscription_enabled"], name: "index_products_on_is_subscription_enabled"
     t.index ["last_price_update"], name: "index_products_on_last_price_update"
     t.index ["name"], name: "index_products_on_name"
+    t.index ["name"], name: "index_products_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["product_type"], name: "index_products_on_product_type"
     t.index ["sku"], name: "index_products_on_sku", unique: true
+    t.index ["sku"], name: "index_products_on_sku_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["status"], name: "index_products_on_status"
+    t.index ["stock"], name: "index_products_on_stock"
   end
 
   create_table "referrals", force: :cascade do |t|
@@ -1355,6 +1362,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
     t.boolean "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_vendors_on_created_at"
     t.index ["status"], name: "index_vendors_on_status"
   end
 

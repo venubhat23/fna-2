@@ -50,7 +50,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Total Purchases</h6>
-            <h5 class="mb-0">₹<%= number_with_delimiter(@vendors.sum(&:total_purchases).to_i) %></h5>
+            <h5 class="mb-0">₹<%= number_with_delimiter(@total_purchases_sum.to_i) %></h5>
           </div>
           <div class="text-info">
             <i class="bi bi-cart fs-3"></i>
@@ -65,7 +65,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Outstanding</h6>
-            <h5 class="mb-0">₹<%= number_with_delimiter(@vendors.sum(&:outstanding_balance).to_i) %></h5>
+            <h5 class="mb-0">₹<%= number_with_delimiter(@total_outstanding_sum.to_i) %></h5>
           </div>
           <div class="text-warning">
             <i class="bi bi-exclamation-triangle fs-3"></i>

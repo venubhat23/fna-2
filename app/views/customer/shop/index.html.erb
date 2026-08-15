@@ -14,8 +14,11 @@
     font-family: 'Poppins', sans-serif;
   }
 
-  /* Modern Container Spacing */
-  .container-fluid {
+  /* Modern Container Spacing - scoped to main content only. Unscoped ".container-fluid"
+     also matches the site header's own container-fluid (layouts/customer.html.erb),
+     and "margin: 0 auto" was centering that 1400px box on wide screens, shoving the
+     header logo/cart/profile inward instead of leaving them flush at the edges. */
+  main .container-fluid {
     max-width: 1400px;
     margin: 0 auto;
   }
