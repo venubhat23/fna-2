@@ -1,6 +1,11 @@
 class Admin::ProductsController < Admin::ApplicationController
   include LocationHelper
 
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the category dropdown lookup below into a hash read.
+  FILTER_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :set_product, only: [:show, :edit, :update, :destroy, :toggle_status, :detail]
   before_action :authenticate_user!
 
@@ -313,7 +318,7 @@ class Admin::ProductsController < Admin::ApplicationController
   # Cached: this category dropdown doesn't change per-request, but was reloaded from
   # the DB on every index/new/edit/failed-save render.
   def load_categories
-    @categories = Rails.cache.fetch('admin_products_categories', expires_in: 10.minutes) do
+    @categories = FILTER_LOCAL_CACHE.fetch('admin_products_categories', 10.minutes) do
       Category.active.ordered.to_a
     end
   end

@@ -4,6 +4,11 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   LIST_STATE_PARAMS = %i[page status start_date end_date month customer_id delivery_person_id].freeze
 
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the lookups below into plain hash reads.
+  LOCAL_CACHE = LocalTtlCache.new
+
   def index
     # :delivery_person here is MilkSubscription's own belongs_to, not the one nested
     # under milk_delivery_tasks - preloading the latter was pulling in every delivery
@@ -70,21 +75,21 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     # For filter options - cached, since this page does a full reload on every filter
     # change (status/month/customer/delivery person), and these lists rarely change.
-    @customers = Rails.cache.fetch('admin_subscriptions_filter_customers', expires_in: 10.minutes) do
+    @customers = LOCAL_CACHE.fetch('admin_subscriptions_filter_customers', 10.minutes) do
       Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     end
-    @products = Rails.cache.fetch('admin_subscriptions_filter_products', expires_in: 10.minutes) do
+    @products = LOCAL_CACHE.fetch('admin_subscriptions_filter_products', 10.minutes) do
       Product.where(product_type: 'milk').pluck(:name, :id)
     end
-    @delivery_people = Rails.cache.fetch('admin_subscriptions_filter_delivery_people', expires_in: 10.minutes) do
+    @delivery_people = LOCAL_CACHE.fetch('admin_subscriptions_filter_delivery_people', 10.minutes) do
       DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     end
 
     # Cached since these are only used for the "delete all" confirm dialog text - exact
     # precision isn't needed there, and counting both tables on every page load added to
     # the query overhead.
-    @total_subscriptions_count = Rails.cache.fetch('admin_subscriptions_total_count', expires_in: 5.minutes) { MilkSubscription.count }
-    @total_delivery_tasks_count = Rails.cache.fetch('admin_delivery_tasks_total_count', expires_in: 5.minutes) { MilkDeliveryTask.count }
+    @total_subscriptions_count = LOCAL_CACHE.fetch('admin_subscriptions_total_count', 5.minutes) { MilkSubscription.count }
+    @total_delivery_tasks_count = LOCAL_CACHE.fetch('admin_delivery_tasks_total_count', 5.minutes) { MilkDeliveryTask.count }
 
     respond_to do |format|
       format.html

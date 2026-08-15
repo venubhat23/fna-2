@@ -1,4 +1,9 @@
 class Admin::CustomerFormatsController < Admin::ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the filter dropdown lookups below into hash reads.
+  FILTER_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :set_customer_format, only: [:show, :edit, :update, :destroy, :toggle_status]
   before_action :check_sidebar_permission
   skip_before_action :check_sidebar_permission, only: [:import_from_master]
@@ -16,13 +21,13 @@ class Admin::CustomerFormatsController < Admin::ApplicationController
     # For filter options - cached, since this page does a full reload on every filter
     # change and previously loaded every customer/product/delivery person as full AR
     # objects (not even pluck) on every single request.
-    @customers = Rails.cache.fetch('admin_customer_formats_filter_customers', expires_in: 10.minutes) do
+    @customers = FILTER_LOCAL_CACHE.fetch('admin_customer_formats_filter_customers', 10.minutes) do
       Customer.all.pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     end
-    @products = Rails.cache.fetch('admin_customer_formats_filter_products', expires_in: 10.minutes) do
+    @products = FILTER_LOCAL_CACHE.fetch('admin_customer_formats_filter_products', 10.minutes) do
       Product.where(status: 'active').pluck(:name, :id)
     end
-    @delivery_people = Rails.cache.fetch('admin_customer_formats_filter_delivery_people', expires_in: 10.minutes) do
+    @delivery_people = FILTER_LOCAL_CACHE.fetch('admin_customer_formats_filter_delivery_people', 10.minutes) do
       DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}".strip, id] }
     end
 

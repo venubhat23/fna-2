@@ -1,4 +1,9 @@
 class Admin::VendorPurchasesController < Admin::ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the vendor/product picker lookups below into hash reads.
+  FORM_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :authenticate_user!
   before_action :set_vendor_purchase, only: [:edit, :update, :destroy, :complete_purchase, :generate_invoice, :mark_as_paid]
   before_action :set_vendor_purchase_with_items, only: [:show, :show_invoice]
@@ -379,10 +384,10 @@ class Admin::VendorPurchasesController < Admin::ApplicationController
   # form and rarely change second-to-second, but were being re-queried on every
   # new/edit/create/update/bulk_new/bulk_create request.
   def set_vendors_and_products
-    @vendors = Rails.cache.fetch('admin/vendor_purchases/active_vendors', expires_in: 2.minutes) do
+    @vendors = FORM_LOCAL_CACHE.fetch('admin/vendor_purchases/active_vendors', 2.minutes) do
       Vendor.active.select(:id, :name, :phone).order(:name).to_a
     end
-    @products = Rails.cache.fetch('admin/vendor_purchases/active_products', expires_in: 2.minutes) do
+    @products = FORM_LOCAL_CACHE.fetch('admin/vendor_purchases/active_products', 2.minutes) do
       Product.active.select(:id, :name, :unit_type, :default_selling_price).order(:name).to_a
     end
   end

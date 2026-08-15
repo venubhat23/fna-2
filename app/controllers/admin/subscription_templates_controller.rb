@@ -1,4 +1,9 @@
 class Admin::SubscriptionTemplatesController < Admin::ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the form dropdown lookups below into hash reads.
+  FORM_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :set_subscription_template, only: [:show, :edit, :update, :destroy, :toggle_status, :apply_to_customer]
 
   def index
@@ -86,13 +91,13 @@ class Admin::SubscriptionTemplatesController < Admin::ApplicationController
   # from the DB (Customer.all as full AR objects, in particular) on every new/edit/
   # failed-save render.
   def load_form_dropdowns
-    @customers = Rails.cache.fetch('admin_subscription_templates_customers', expires_in: 10.minutes) do
+    @customers = FORM_LOCAL_CACHE.fetch('admin_subscription_templates_customers', 10.minutes) do
       Customer.all.to_a
     end
-    @products = Rails.cache.fetch('admin_subscription_templates_products', expires_in: 10.minutes) do
+    @products = FORM_LOCAL_CACHE.fetch('admin_subscription_templates_products', 10.minutes) do
       Product.where(product_type: 'milk').or(Product.where(is_subscription_enabled: true)).to_a
     end
-    @delivery_people = Rails.cache.fetch('admin_subscription_templates_delivery_people', expires_in: 10.minutes) do
+    @delivery_people = FORM_LOCAL_CACHE.fetch('admin_subscription_templates_delivery_people', 10.minutes) do
       DeliveryPerson.where(status: true).to_a
     end
   end

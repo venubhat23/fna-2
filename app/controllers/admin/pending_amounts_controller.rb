@@ -1,4 +1,9 @@
 class Admin::PendingAmountsController < ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the customer dropdown lookup below into a hash read.
+  FILTER_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :authenticate_user!
   before_action :set_pending_amount, only: [:update, :destroy]
 
@@ -16,7 +21,7 @@ class Admin::PendingAmountsController < ApplicationController
 
     # Cached: this dropdown's contents don't change per-request, but were reloaded
     # from the DB (as full AR objects) on every single index hit.
-    @customers = Rails.cache.fetch('admin_pending_amounts_customers', expires_in: 10.minutes) do
+    @customers = FILTER_LOCAL_CACHE.fetch('admin_pending_amounts_customers', 10.minutes) do
       Customer.order(:first_name, :last_name).to_a
     end
     @new_pending_amount = PendingAmount.new

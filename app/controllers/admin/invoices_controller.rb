@@ -1,6 +1,11 @@
 require 'set'
 
 class Admin::InvoicesController < Admin::ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the delivery-person dropdown lookup below into a hash read.
+  FILTER_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :set_invoice, only: [:show, :edit, :update, :destroy, :mark_as_paid]
 
   def index
@@ -78,7 +83,7 @@ class Admin::InvoicesController < Admin::ApplicationController
                                                    booking_counts_by_status, booking_sums_by_status)
     # Cached: this dropdown's contents don't change per-request, but were reloaded from
     # the DB on every single index hit.
-    @delivery_persons = Rails.cache.fetch('admin_invoices_filter_delivery_persons', expires_in: 10.minutes) do
+    @delivery_persons = FILTER_LOCAL_CACHE.fetch('admin_invoices_filter_delivery_persons', 10.minutes) do
       DeliveryPerson.active.order(:first_name, :last_name).to_a
     end
     @invoice_type = invoice_type

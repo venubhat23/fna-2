@@ -740,10 +740,25 @@ class Admin::ReportsController < Admin::ApplicationController
     @to_date   = params[:to_date].present?   ? Date.parse(params[:to_date])   : Date.current.end_of_month
     @sort_by   = params[:sort_by] || 'selling_price'
 
-    # Aggregate qty & selling price from booking_items
-    booking_data = BookingItem
+    # Aggregate qty & selling price from booking_items, split by whether the booking
+    # came from a recurring BookingSchedule (which stamps booking_schedule_id on every
+    # booking it generates) or was booked directly at an outlet/checkout. Schedule-driven
+    # bookings get folded into the subscription bucket below, alongside milk_qty_data,
+    # so "Booking" here means outlet-only.
+    booking_range = { created_at: @from_date.beginning_of_day..@to_date.end_of_day }
+    outlet_booking_data = BookingItem
       .joins(:booking)
-      .where(bookings: { created_at: @from_date.beginning_of_day..@to_date.end_of_day })
+      .where(bookings: booking_range.merge(booking_schedule_id: nil))
+      .group(:product_id)
+      .select('product_id, SUM(quantity) AS total_qty, SUM(total) AS total_revenue')
+      .each_with_object({}) do |row, h|
+        h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
+      end rescue {}
+
+    subscription_booking_data = BookingItem
+      .joins(:booking)
+      .where(bookings: booking_range)
+      .where.not(bookings: { booking_schedule_id: nil })
       .group(:product_id)
       .select('product_id, SUM(quantity) AS total_qty, SUM(total) AS total_revenue')
       .each_with_object({}) do |row, h|
@@ -775,13 +790,15 @@ class Admin::ReportsController < Admin::ApplicationController
       .group(:product_id)
       .sum(:quantity) rescue {}
 
-    all_product_ids = (booking_data.keys + invoice_data.keys + milk_qty_data.keys).uniq
+    all_product_ids = (outlet_booking_data.keys + subscription_booking_data.keys +
+                        invoice_data.keys + milk_qty_data.keys).uniq
     products_map = Product.where(id: all_product_ids).index_by(&:id)
 
     @business_report_data = all_product_ids.map do |pid|
       product = products_map[pid]
       next unless product
-      b = booking_data[pid] || { qty: 0, selling_price: 0 }
+      b = outlet_booking_data[pid] || { qty: 0, selling_price: 0 }
+      sb = subscription_booking_data[pid] || { qty: 0, selling_price: 0 }
       i = invoice_data[pid] || { qty: 0, selling_price: 0 }
       milk_qty = milk_qty_data[pid].to_f
       milk_unit_price = if product.gst_enabled? && product.gst_percentage.present?
@@ -790,9 +807,14 @@ class Admin::ReportsController < Admin::ApplicationController
         product.price
       end
       milk_selling_price = milk_qty * (milk_unit_price || 0)
-      qty = b[:qty] + i[:qty] + milk_qty
+      # Subscription bucket combines schedule-driven bookings with milk subscription
+      # deliveries - both represent recurring/subscribed sales, just tracked through
+      # two different subsystems (BookingSchedule vs MilkSubscription).
+      subscription_qty = sb[:qty] + milk_qty
+      subscription_selling_price = sb[:selling_price] + milk_selling_price
+      qty = b[:qty] + subscription_qty + i[:qty]
       buying_price = qty * (product.buying_price || 0)
-      selling_price = b[:selling_price] + i[:selling_price] + milk_selling_price
+      selling_price = b[:selling_price] + subscription_selling_price + i[:selling_price]
       {
         product_id:              pid,
         name:                    product.name,
@@ -803,8 +825,8 @@ class Admin::ReportsController < Admin::ApplicationController
         profit:                  selling_price - buying_price,
         booking_qty:             b[:qty],
         booking_selling_price:   b[:selling_price],
-        subscription_qty:        milk_qty,
-        subscription_selling_price: milk_selling_price,
+        subscription_qty:        subscription_qty,
+        subscription_selling_price: subscription_selling_price,
         invoice_qty:             i[:qty],
         invoice_selling_price:   i[:selling_price]
       }
@@ -844,7 +866,7 @@ class Admin::ReportsController < Admin::ApplicationController
     require 'csv'
     CSV.generate(headers: true) do |csv|
       csv << ['#', 'Product Name', 'Unit',
-              'Booking Qty', 'Booking Revenue (₹)',
+              'Outlet Booking Qty', 'Outlet Booking Revenue (₹)',
               'Subscription Qty', 'Subscription Revenue (₹)',
               'Invoice Qty', 'Invoice Revenue (₹)',
               'Total Qty Sold', 'Total Buying Price (₹)', 'Total Selling Price (₹)', 'Profit (₹)']

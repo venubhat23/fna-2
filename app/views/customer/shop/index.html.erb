@@ -560,10 +560,8 @@
                   <div class="card h-100 border-0 shadow-sm hover-lift product-card">
                 <!-- Product Image -->
                 <div class="position-relative">
-                  <% if product.image.present? %>
-                    <%= image_tag product.image, class: "card-img-top", style: "height: 200px; object-fit: cover;" %>
-                  <% elsif product.image_url.present? %>
-                    <img src="<%= product.image_url %>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<%= product.name %>">
+                  <% if (img_url = product.main_image_url).present? %>
+                    <img src="<%= img_url %>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<%= product.name %>">
                   <% else %>
                     <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
                       <i class="bi bi-box-seam fs-1 text-muted"></i>
@@ -577,11 +575,11 @@
                     </span>
                   <% elsif current_stock < 10 %>
                     <span class="position-absolute top-0 end-0 badge bg-warning text-dark m-2">
-                      <i class="bi bi-exclamation-triangle me-1"></i>Low Stock (<%= current_stock.to_i %> left)
+                      <i class="bi bi-exclamation-triangle me-1"></i>Low Stock
                     </span>
                   <% else %>
                     <span class="position-absolute top-0 end-0 badge bg-success m-2">
-                      <i class="bi bi-check-circle me-1"></i><%= current_stock.to_i %> in stock
+                      <i class="bi bi-check-circle me-1"></i>In Stock
                     </span>
                   <% end %>
 
@@ -650,7 +648,7 @@
                                       data-label="<%= v.label %>"
                                       <%= 'selected' if v.is_default? %>
                                       <%= 'disabled' unless v.in_stock? %>>
-                                <%= v.label %> - ₹<%= number_with_delimiter(v.price_with_gst.round(2)) %> (<%= v.available_stock.to_i %> left)
+                                <%= v.label %> - ₹<%= number_with_delimiter(v.price_with_gst.round(2)) %><%= v.in_stock? ? '' : ' (Out of Stock)' %>
                               </option>
                             <% end %>
                           </select>
@@ -661,9 +659,6 @@
                       <div class="mb-3">
                         <label class="form-label fw-bold small">
                           Quantity
-                          <span class="badge bg-info-subtle text-info ms-1">
-                            Max: <%= current_stock.to_i %>
-                          </span>
                         </label>
                         <div class="input-group">
                           <button class="btn btn-outline-primary quantity-btn" type="button" onclick="decreaseQty(<%= product.id %>)">
@@ -686,7 +681,7 @@
                         <% if current_stock < 10 %>
                           <small class="text-warning d-block mt-1">
                             <i class="bi bi-exclamation-triangle-fill"></i>
-                            <strong>Low Stock!</strong> Only <%= current_stock.to_i %> left
+                            <strong>Low Stock!</strong> Order soon.
                           </small>
                         <% end %>
                       </div>
@@ -765,15 +760,29 @@
 // Modern Shopping Cart Management - Based on Admin Booking Design
 let cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
 
-document.addEventListener('DOMContentLoaded', function() {
+// Bound to both DOMContentLoaded and turbo:load: this app uses Turbo Drive
+// (see layouts/customer.html.erb), which swaps page content on in-app navigation
+// without re-firing DOMContentLoaded. Without the turbo:load listener, search,
+// filters, and Select2 silently never attach when the shop page is reached via
+// a link instead of a full page load/refresh.
+function initShopPage() {
   updateCartBadge();
   initializeFilters();
   initializeSearch();
   initializeSelect2();
-});
+}
+document.addEventListener('DOMContentLoaded', initShopPage);
+document.addEventListener('turbo:load', initShopPage);
 
 // Initialize Select2 dropdowns
 function initializeSelect2() {
+  // Guard against double-initialization: this runs on both DOMContentLoaded and
+  // turbo:load (see initShopPage above), which both fire on every page visit
+  // (including a hard reload) under Turbo Drive.
+  $('.category-select2.select2-hidden-accessible, .stock-select2.select2-hidden-accessible').each(function() {
+    $(this).select2('destroy');
+  });
+
   // Category Select2
   $('.category-select2').select2({
     theme: 'bootstrap-5',

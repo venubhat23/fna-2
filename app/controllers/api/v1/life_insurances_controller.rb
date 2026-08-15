@@ -1,4 +1,9 @@
 class Api::V1::LifeInsurancesController < Api::V1::ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the form_data lookup below into a hash read.
+  FORM_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :set_life_insurance, only: [:show, :update, :destroy]
 
   # GET /api/v1/life_insurances
@@ -167,7 +172,7 @@ class Api::V1::LifeInsurancesController < Api::V1::ApplicationController
   def form_data
     # Customers/sub_agents/agency_codes/brokers barely change between requests but
     # were reloaded from the DB (4 queries) on every single form_data hit.
-    db_backed_data = Rails.cache.fetch('api_v1_life_insurances_form_data', expires_in: 10.minutes) do
+    db_backed_data = FORM_LOCAL_CACHE.fetch('api_v1_life_insurances_form_data', 10.minutes) do
       {
         customers: Customer.active.order(:first_name, :last_name, :company_name).map do |c|
           {

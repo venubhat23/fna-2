@@ -1,4 +1,9 @@
 class Admin::BookingsController < Admin::ApplicationController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the customer-dropdown lookup below into a plain hash read.
+  FILTER_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :authenticate_user!
   skip_before_action :authenticate_user!, only: [:invoice]
   skip_before_action :ensure_admin, only: [:invoice]
@@ -69,7 +74,7 @@ class Admin::BookingsController < Admin::ApplicationController
 
     # Load customers for filter dropdown - cached, since this page does a full reload on
     # every filter change and loaded the entire customers table uncached on every request.
-    @customers = Rails.cache.fetch('admin_bookings_filter_customers', expires_in: 10.minutes) do
+    @customers = FILTER_LOCAL_CACHE.fetch('admin_bookings_filter_customers', 10.minutes) do
       Customer.select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
               .order(:first_name, :last_name)
               .to_a

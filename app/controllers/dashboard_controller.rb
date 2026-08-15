@@ -1,6 +1,12 @@
 class DashboardController < ApplicationController
   skip_load_and_authorize_resource
 
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so even a Rails.cache "hit" on the dashboard snapshots below
+  # still paid a full network round trip. This in-process cache turns that into a
+  # plain hash read on every request but the first each TTL window.
+  DASHBOARD_LOCAL_CACHE = LocalTtlCache.new
+
   def index
     # Handle session validation requests
     if request.headers['X-Session-Validation'] == 'true'
@@ -179,18 +185,13 @@ class DashboardController < ApplicationController
     # Load actual data from database instead of static zeros
     load_ecommerce_dashboard_data
 
-    cached = Rails.cache.read('dashboard:insurance_data')
-    if cached
-      cached.each { |ivar, value| instance_variable_set(ivar, value) }
-      return
+    snapshot = DASHBOARD_LOCAL_CACHE.fetch('dashboard:insurance_data', 5.minutes) do
+      compute_dashboard_insurance_data
+      DASHBOARD_INSURANCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
+        hash[ivar] = instance_variable_get(ivar)
+      end
     end
-
-    compute_dashboard_insurance_data
-
-    snapshot = DASHBOARD_INSURANCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
-      hash[ivar] = instance_variable_get(ivar)
-    end
-    Rails.cache.write('dashboard:insurance_data', snapshot, expires_in: 5.minutes)
+    snapshot.each { |ivar, value| instance_variable_set(ivar, value) }
   end
 
   def compute_dashboard_insurance_data
@@ -646,18 +647,13 @@ class DashboardController < ApplicationController
   ].freeze
 
   def load_ecommerce_dashboard_data
-    cached = Rails.cache.read('dashboard:ecommerce_data')
-    if cached
-      cached.each { |ivar, value| instance_variable_set(ivar, value) }
-      return
+    snapshot = DASHBOARD_LOCAL_CACHE.fetch('dashboard:ecommerce_data', 5.minutes) do
+      compute_ecommerce_dashboard_data
+      DASHBOARD_ECOMMERCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
+        hash[ivar] = instance_variable_get(ivar)
+      end
     end
-
-    compute_ecommerce_dashboard_data
-
-    snapshot = DASHBOARD_ECOMMERCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
-      hash[ivar] = instance_variable_get(ivar)
-    end
-    Rails.cache.write('dashboard:ecommerce_data', snapshot, expires_in: 5.minutes)
+    snapshot.each { |ivar, value| instance_variable_set(ivar, value) }
   end
 
   def compute_ecommerce_dashboard_data

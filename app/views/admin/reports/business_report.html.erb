@@ -153,7 +153,7 @@
               <td>
                 <% if row[:booking_qty] > 0 %>
                   <div class="br-source-badge">
-                    <span class="br-source-label"><i class="bi bi-bag-check"></i> Booking</span>
+                    <span class="br-source-label"><i class="bi bi-bag-check"></i> Outlet Booking</span>
                     <span><%= number_with_precision(row[:booking_qty], precision: 2) %> &middot; ₹<%= number_with_delimiter(number_with_precision(row[:booking_selling_price], precision: 2)) %></span>
                   </div>
                 <% end %>

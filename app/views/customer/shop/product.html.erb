@@ -28,10 +28,8 @@
     <div class="col-lg-6">
       <div class="product-images">
         <div class="main-image mb-3">
-          <% if @product.image.present? %>
-            <%= image_tag @product.image, class: "img-fluid rounded", alt: @product.name, id: "mainProductImage" %>
-          <% elsif @product.image_url.present? %>
-            <img src="<%= @product.image_url %>" class="img-fluid rounded" alt="<%= @product.name %>" id="mainProductImage">
+          <% if (main_img_url = @product.main_image_url).present? %>
+            <img src="<%= main_img_url %>" class="img-fluid rounded" alt="<%= @product.name %>" id="mainProductImage">
           <% else %>
             <div class="product-image-placeholder d-flex align-items-center justify-content-center rounded">
               <i class="fas fa-image fa-5x text-muted"></i>
@@ -209,10 +207,8 @@
           <div class="col-lg-3 col-md-6">
             <div class="product-card h-100">
               <div class="product-image-wrapper">
-                <% if product.image.present? %>
-                  <%= image_tag product.image, class: "product-image", alt: product.name %>
-                <% elsif product.image_url.present? %>
-                  <img src="<%= product.image_url %>" class="product-image" alt="<%= product.name %>">
+                <% if (related_img_url = product.main_image_url).present? %>
+                  <img src="<%= related_img_url %>" class="product-image" alt="<%= product.name %>">
                 <% else %>
                   <div class="product-image-placeholder">
                     <i class="fas fa-image"></i>
@@ -357,7 +353,7 @@ if (variantSelectEl) {
 // Frontend-only Add to Cart functionality
 function addToCart(productId) {
   const quantity = parseInt(document.getElementById('quantity').value);
-  const productImage = '<%= @product.image_url || (@product.image.present? ? asset_path(@product.image) : '') %>';
+  const productImage = '<%= j @product.main_image_url.to_s %>';
 
   let productName = '<%= j @product.name %>';
   let productPrice = <%= @product.discount_price.present? && @product.discount_price > 0 ? @product.discount_price : @product.price %>;

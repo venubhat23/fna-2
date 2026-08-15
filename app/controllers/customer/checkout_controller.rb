@@ -1,4 +1,9 @@
 class Customer::CheckoutController < Customer::BaseController
+  # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
+  # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
+  # in-process cache turns the store lookup below into a hash read.
+  CHECKOUT_LOCAL_CACHE = LocalTtlCache.new
+
   before_action :initialize_cart
   before_action :check_cart_not_empty, except: [:confirmation, :cart_order]
 
@@ -242,7 +247,7 @@ class Customer::CheckoutController < Customer::BaseController
   # since it was reloaded from the DB on every checkout hit (this method is called up
   # to twice per request across payment/create).
   def available_stores_for_collection
-    Rails.cache.fetch('checkout_available_stores', expires_in: 10.minutes) do
+    CHECKOUT_LOCAL_CACHE.fetch('checkout_available_stores', 10.minutes) do
       Store.available_for_collection.to_a
     end
   end

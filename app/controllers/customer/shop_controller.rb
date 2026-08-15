@@ -3,12 +3,19 @@ class Customer::ShopController < Customer::BaseController
     @booking = Booking.new
     @booking.booking_items.build
 
-    # Get categories for filters
+    # Get categories for filters (Category.active_ordered_by_display is already
+    # backed by an in-process cache, see Category::LOCAL_CACHE)
     @categories = Category.active_ordered_by_display
 
-    # Simple query without complex SQL to avoid syntax errors
+    # LEFT JOIN + cached_stock aggregate so in_stock?/low_stock?/cached_total_batch_stock
+    # (called per product in the view) read a pre-computed column instead of loading every
+    # historical stock_batches row per product. See Product#total_batch_stock /
+    # #cached_total_batch_stock and Customer::ProductsController for the same pattern.
     @products = Product.active
-                      .includes(:category, :stock_batches, :product_variants, :product_reviews, image_attachment: :blob)
+                      .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active'")
+                      .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
+                      .group("products.id")
+                      .includes(:category, :product_variants, image_attachment: :blob)
                       .order(:display_order, :name)
 
     # Apply search filter if present
