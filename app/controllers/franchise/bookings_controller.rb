@@ -35,6 +35,8 @@ class Franchise::BookingsController < Franchise::BaseController
 
     # Use all_bookings for statistics cards to show complete picture
     @bookings_for_stats = @all_bookings
+    # One grouped query replaces 6 separate per-status .count calls in the view
+    @bookings_status_counts = @bookings_for_stats.group(:status).count
 
     # Load customers for filter dropdown
     @customers = Customer.select(:id, :first_name, :middle_name, :last_name, :email, :mobile)
@@ -354,16 +356,28 @@ class Franchise::BookingsController < Franchise::BaseController
   end
 
   def validate_stock_availability(booking, is_update: false)
-    booking.booking_items.each do |item|
-      next if item.marked_for_destruction?
+    active_items = booking.booking_items.reject(&:marked_for_destruction?)
 
-      product = Product.find(item.product_id)
+    # Batch-load products and (for updates) original persisted quantities instead of
+    # querying once per booking item inside the loop below.
+    products_by_id = Product.where(id: active_items.map(&:product_id)).index_by(&:id)
+
+    original_quantities_by_id = {}
+    if is_update
+      persisted_ids = active_items.select(&:persisted?).map(&:id)
+      original_quantities_by_id = BookingItem.where(id: persisted_ids).pluck(:id, :quantity).to_h
+    end
+
+    active_items.each do |item|
+      # Fallback to a direct lookup preserves the original RecordNotFound behavior in the
+      # rare case a booking item references a product missing from the batch above.
+      product = products_by_id[item.product_id] || Product.find(item.product_id)
       available_stock = product.available_stock
 
       # For updates, add back the current item's quantity to available stock
       if is_update && item.persisted?
-        original_item = booking.booking_items.find(item.id)
-        available_stock += original_item.quantity if original_item
+        original_quantity = original_quantities_by_id[item.id]
+        available_stock += original_quantity if original_quantity
       end
 
       if item.quantity > available_stock

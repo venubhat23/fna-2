@@ -17,6 +17,7 @@ class Admin::FranchisesController < Admin::ApplicationController
   end
 
   def show
+    @franchise_bookings_count = @franchise.bookings.count
   end
 
   def new

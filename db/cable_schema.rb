@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -269,6 +269,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
     t.index ["customer_id"], name: "index_client_requests_on_customer_id"
     t.index ["department"], name: "index_client_requests_on_department"
     t.index ["estimated_resolution_time"], name: "index_client_requests_on_estimated_resolution_time"
+    t.index ["resolved_by_id"], name: "index_client_requests_on_resolved_by_id"
     t.index ["stage"], name: "index_client_requests_on_stage"
     t.index ["ticket_number"], name: "index_client_requests_on_ticket_number", unique: true
   end
@@ -517,6 +518,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
     t.index ["month", "year"], name: "index_invoices_on_month_and_year"
     t.index ["month"], name: "index_invoices_on_month"
     t.index ["payment_status"], name: "index_invoices_on_payment_status"
+    t.index ["payout_id"], name: "index_invoices_on_payout_id"
+    t.index ["payout_type", "payout_id"], name: "index_invoices_on_payout_type_and_payout_id"
     t.index ["share_token"], name: "index_invoices_on_share_token", unique: true
     t.index ["year"], name: "index_invoices_on_year"
   end
@@ -546,6 +549,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
     t.decimal "weight"
     t.decimal "annual_income"
     t.string "business_job"
+    t.index ["affiliate_id"], name: "index_leads_on_affiliate_id"
   end
 
   create_table "milk_delivery_tasks", force: :cascade do |t|
@@ -639,6 +643,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
     t.decimal "total"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_order_items_on_order_id"
+    t.index ["product_id"], name: "index_order_items_on_product_id"
   end
 
   create_table "orders", force: :cascade do |t|
@@ -693,7 +699,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
     t.datetime "booking_date"
     t.integer "booking_id"
     t.index ["booking_id"], name: "index_orders_on_booking_id"
+    t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["status"], name: "index_orders_on_status"
+    t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
   create_table "pending_amounts", force: :cascade do |t|
@@ -1241,6 +1249,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_26_000000) do
     t.index ["pan_no"], name: "index_users_on_pan_no", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
+    t.index ["role_id"], name: "index_users_on_role_id"
     t.index ["status"], name: "index_users_on_status"
     t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true
     t.index ["user_type"], name: "index_users_on_user_type"

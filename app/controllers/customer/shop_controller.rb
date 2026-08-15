@@ -4,7 +4,7 @@ class Customer::ShopController < Customer::BaseController
     @booking.booking_items.build
 
     # Get categories for filters
-    @categories = Category.where(status: true).order(:display_order, :name)
+    @categories = Category.active_ordered_by_display
 
     # Simple query without complex SQL to avoid syntax errors
     @products = Product.active

@@ -1,7 +1,7 @@
 class Customer::DashboardController < Customer::BaseController
   def index
     # Categories for the category cards section
-    @categories = Category.where(status: true).order(:display_order, :name).limit(8)
+    @categories = Category.active_ordered_by_display.first(8)
 
     # Featured products for showcase - prioritize products with images and good stock
     @featured_products = Product.includes(:category)
@@ -40,16 +40,20 @@ class Customer::DashboardController < Customer::BaseController
     @monthly_spending_data = build_monthly_spending_data
 
     # Banners (if still needed)
-    @banners = Banner.where(status: true, display_location: 'homepage')
-                     .where('display_start_date <= ? AND (display_end_date IS NULL OR display_end_date >= ?)',
-                            Date.current, Date.current)
-                     .order(:display_order)
+    @banners = Banner.cached_homepage_banners
   end
 
   private
 
   def build_order_activity_data
-    # Get order counts for last 7 days
+    # Get order counts for last 7 days - one query over the whole window instead of
+    # one per day, bucketed in Ruby (same approach as Affiliate::DashboardController#index).
+    window_start = (Date.current - 7.days).beginning_of_day
+    window_end = Date.current.end_of_day
+    booking_dates = current_customer&.bookings
+                                 &.where(booking_date: window_start..window_end)
+                                 &.pluck(:booking_date) || []
+
     order_data = []
     labels = []
 
@@ -57,9 +61,7 @@ class Customer::DashboardController < Customer::BaseController
       date = Date.current - days_ago.days
       labels << date.strftime('%a')
 
-      orders_count = current_customer&.bookings
-                                   &.where(booking_date: date.beginning_of_day..date.end_of_day)
-                                   &.count || 0
+      orders_count = booking_dates.count { |booking_date| booking_date && booking_date.to_date == date }
       order_data << orders_count
     end
 
@@ -82,22 +84,26 @@ class Customer::DashboardController < Customer::BaseController
   end
 
   def build_monthly_spending_data
-    # Get spending data for current year by month
+    # Get spending data for current year by month - one query over the whole year
+    # instead of one per month, bucketed in Ruby (same approach as
+    # Affiliate::DashboardController#index).
+    current_year = Date.current.year
+    year_start = Date.new(current_year, 1, 1).beginning_of_day
+    year_end = Date.new(current_year, 12, 31).end_of_day
+    booking_rows = current_customer&.bookings
+                                 &.where(booking_date: year_start..year_end)
+                                 &.where.not(total_amount: nil)
+                                 &.pluck(:booking_date, :total_amount) || []
+
     spending_data = []
     labels = []
-    current_year = Date.current.year
 
     (1..12).each do |month|
       labels << Date::MONTHNAMES[month][0, 3] # Jan, Feb, etc.
 
-      month_start = Date.new(current_year, month, 1)
-      month_end = month_start.end_of_month
-
       # Calculate total spending for this month
-      monthly_total = current_customer&.bookings
-                                    &.where(booking_date: month_start..month_end)
-                                    &.where.not(total_amount: nil)
-                                    &.sum(:total_amount) || 0
+      monthly_total = booking_rows.select { |booking_date, _total_amount| booking_date && booking_date.month == month }
+                                   .sum { |_booking_date, total_amount| total_amount }
 
       spending_data << monthly_total.to_f
     end

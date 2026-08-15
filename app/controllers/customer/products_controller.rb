@@ -47,7 +47,7 @@ class Customer::ProductsController < Customer::BaseController
     @products = @products.page(params[:page]).per(12)
 
     # For filters
-    @categories = Category.where(status: true).order(:name)
+    @categories = Category.active_ordered_by_name
     @price_ranges = [
       { label: 'Under ₹100', min: 0, max: 100 },
       { label: '₹100 - ₹500', min: 100, max: 500 },

@@ -124,7 +124,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Draft</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: 'draft').count %></h5>
+            <h5 class="mb-0"><%= @bookings_status_counts['draft'] || 0 %></h5>
           </div>
           <div class="text-secondary">
             <i class="bi bi-pencil fs-3"></i>
@@ -139,7 +139,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Pending</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: 'pending').count %></h5>
+            <h5 class="mb-0"><%= @bookings_status_counts['pending'] || 0 %></h5>
           </div>
           <div class="text-warning">
             <i class="bi bi-clock fs-3"></i>
@@ -154,7 +154,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Processing</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: [:confirmed, :processing, :packed]).count %></h5>
+            <h5 class="mb-0"><%= %w[confirmed processing packed].sum { |s| @bookings_status_counts[s] || 0 } %></h5>
           </div>
           <div class="text-info">
             <i class="bi bi-gear fs-3"></i>
@@ -169,7 +169,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Shipped</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: [:shipped, :out_for_delivery]).count %></h5>
+            <h5 class="mb-0"><%= %w[shipped out_for_delivery].sum { |s| @bookings_status_counts[s] || 0 } %></h5>
           </div>
           <div class="text-primary">
             <i class="bi bi-truck fs-3"></i>
@@ -184,7 +184,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Completed</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: :completed).count %></h5>
+            <h5 class="mb-0"><%= @bookings_status_counts['completed'] || 0 %></h5>
           </div>
           <div class="text-success">
             <i class="bi bi-check-circle fs-3"></i>
@@ -199,7 +199,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Issues</h6>
-            <h5 class="mb-0"><%= @bookings_for_stats.where(status: [:cancelled, :returned]).count %></h5>
+            <h5 class="mb-0"><%= %w[cancelled returned].sum { |s| @bookings_status_counts[s] || 0 } %></h5>
           </div>
           <div class="text-danger">
             <i class="bi bi-exclamation-triangle fs-3"></i>

@@ -109,10 +109,10 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def new
     @subscription = MilkSubscription.new
-    @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
+    @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
     # Show all active products or products suitable for subscriptions
-    @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
-    @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
+    @products = Product.where(status: 'active').pluck(:name, :id)
+    @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
   end
 
   def create
@@ -120,9 +120,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     if products_data.empty?
       flash.now[:alert] = 'Please select at least one product for the subscription.'
-      @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
-      @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
-      @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
+      @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
+      @products = Product.where(status: 'active').pluck(:name, :id)
+      @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
       render :new
       return
     end
@@ -163,9 +163,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     if errors.any?
       flash.now[:alert] = "Failed to create subscriptions: #{errors.join('; ')}"
-      @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
-      @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
-      @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
+      @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
+      @products = Product.where(status: 'active').pluck(:name, :id)
+      @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
       render :new
     else
       total_tasks = created_tasks.sum { |ct| ct[:tasks_count] }
@@ -181,9 +181,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def edit
     @list_state = list_state_params
-    @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
-    @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
-    @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
+    @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
+    @products = Product.where(status: 'active').pluck(:name, :id)
+    @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
   end
 
   def update
@@ -216,9 +216,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
         redirect_to admin_subscriptions_path(@list_state), notice: 'Subscription updated successfully!'
       end
     else
-      @customers = Customer.all.map { |c| ["#{c.first_name} #{c.last_name} - #{c.mobile}", c.id] }
-      @products = Product.where(status: 'active').map { |p| [p.name, p.id] }
-      @delivery_people = DeliveryPerson.where(status: true).map { |dp| ["#{dp.first_name} #{dp.last_name}", dp.id] }
+      @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
+      @products = Product.where(status: 'active').pluck(:name, :id)
+      @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
       render :edit
     end
   end

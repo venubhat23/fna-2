@@ -127,9 +127,9 @@
                     <% if role.users.any? %>
                       <div class="mt-1">
                         <small class="text-muted">
-                          <%= role.users.limit(3).map(&:full_name).join(', ') %>
-                          <% if role.users.count > 3 %>
-                            and <%= role.users.count - 3 %> more
+                          <%= role.users.to_a.first(3).map(&:full_name).join(', ') %>
+                          <% if role.users.size > 3 %>
+                            and <%= role.users.size - 3 %> more
                           <% end %>
                         </small>
                       </div>
@@ -138,14 +138,15 @@
                 </td>
                 <td>
                   <div>
-                    <span class="badge bg-secondary"><%= role.permissions.count %> permissions</span>
+                    <span class="badge bg-secondary"><%= role.permissions.size %> permissions</span>
                     <% if role.permissions.any? %>
+                      <% role_module_names = role.permissions.map(&:module_name).uniq %>
                       <div class="mt-1">
-                        <% role.permissions.distinct.pluck(:module_name).first(3).each do |module_name| %>
+                        <% role_module_names.first(3).each do |module_name| %>
                           <span class="badge badge-sm bg-outline-primary me-1"><%= module_name.humanize %></span>
                         <% end %>
-                        <% if role.permissions.distinct.count(:module_name) > 3 %>
-                          <span class="text-muted">+<%= role.permissions.distinct.count(:module_name) - 3 %> more</span>
+                        <% if role_module_names.size > 3 %>
+                          <span class="text-muted">+<%= role_module_names.size - 3 %> more</span>
                         <% end %>
                       </div>
                     <% end %>

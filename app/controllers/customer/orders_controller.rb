@@ -33,6 +33,8 @@ class Customer::OrdersController < Customer::BaseController
 
     # Use all_bookings for statistics cards to show customer's complete picture
     @bookings_for_stats = @all_bookings
+    # One grouped query replaces 7 separate per-status .count calls in the view
+    @bookings_status_counts = @bookings_for_stats.group(:status).count
   end
 
   def show

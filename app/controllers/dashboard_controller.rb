@@ -157,10 +157,42 @@ class DashboardController < ApplicationController
 
   private
 
+  # Cached wrapper, same pattern as load_ecommerce_dashboard_data above: avoids repeating
+  # this method's DB round trips (including a remote-Postgres query) on every dashboard hit.
+  DASHBOARD_INSURANCE_CACHE_IVARS = %i[
+    @total_customers @active_customers @inactive_customers
+    @total_affiliates @total_sub_agents
+    @total_policies @total_premium_collected @total_sum_insured
+    @total_leads @converted_leads @pending_leads @lead_conversion_percentage
+    @renewal_due_count @expired_policies_count
+    @pending_payouts @paid_payouts @total_payouts
+    @policy_type_distribution
+    @customer_location @age_distribution @policy_status_distribution @monthly_revenue_breakdown @premium_by_type
+    @client_requests_count @claims_processing @docs_pending @commissions_due @new_leads @support_tickets
+    @customer_growth @policy_growth @premium_growth @affiliate_growth @lead_growth
+    @renewal_growth @payout_growth @sum_insured_growth
+    @conversion_rate @avg_policy_value @customer_retention @monthly_recurring_revenue
+  ].freeze
+
   def load_dashboard_data
     # Load actual data from database instead of static zeros
     load_ecommerce_dashboard_data
 
+    cached = Rails.cache.read('dashboard:insurance_data')
+    if cached
+      cached.each { |ivar, value| instance_variable_set(ivar, value) }
+      return
+    end
+
+    compute_dashboard_insurance_data
+
+    snapshot = DASHBOARD_INSURANCE_CACHE_IVARS.each_with_object({}) do |ivar, hash|
+      hash[ivar] = instance_variable_get(ivar)
+    end
+    Rails.cache.write('dashboard:insurance_data', snapshot, expires_in: 5.minutes)
+  end
+
+  def compute_dashboard_insurance_data
     # Additional insurance-specific metrics that might be needed
     begin
       # Basic counts
@@ -533,15 +565,16 @@ class DashboardController < ApplicationController
   end
 
   def calculate_monthly_revenue_breakdown
+    # Hoisted out of the loop below: these categories don't change per-month, so looking
+    # them up once instead of on every one of the 6 iterations saves ~4 queries x 5 iterations.
+    electronics_category = Category.find_by(name: 'Electronics')
+    clothing_category = Category.find_by(name: 'Clothing')
+    home_category = Category.find_by(name: ['Home & Garden', 'Home', 'Garden'].find { |name| Category.find_by(name: name) })
+
     revenue_breakdown = {}
     6.times do |i|
       month_date = (Date.current - i.months).beginning_of_month
       month_name = month_date.strftime('%b')
-
-      # Get revenue by top product categories for ecommerce
-      electronics_category = Category.find_by(name: 'Electronics')
-      clothing_category = Category.find_by(name: 'Clothing')
-      home_category = Category.find_by(name: ['Home & Garden', 'Home', 'Garden'].find { |name| Category.find_by(name: name) })
 
       electronics_revenue = 0
       clothing_revenue = 0

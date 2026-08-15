@@ -4,7 +4,7 @@ class Admin::VendorsController < Admin::ApplicationController
   layout 'application'
 
   def index
-    @vendors = Vendor.includes(:vendor_purchases, :stock_batches)
+    @vendors = Vendor.includes(:vendor_purchases)
                     .order(created_at: :desc)
     @vendors = @vendors.where('name ILIKE ?', "%#{params[:search]}%") if params[:search].present?
     @vendors = @vendors.where(status: params[:status]) if params[:status].present?

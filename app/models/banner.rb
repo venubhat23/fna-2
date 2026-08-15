@@ -2,6 +2,13 @@ class Banner < ApplicationRecord
   # Image attachment
   has_one_attached :banner_image
 
+  # In-process cache, not Rails.cache: Rails.cache is Solid Cache in this app, which stores
+  # entries in the same remote Postgres database (see database.yml), so fetching through it
+  # would just trade one network round trip for another. Same pattern as
+  # Category::LOCAL_CACHE / SystemSetting::LOCAL_CACHE.
+  LOCAL_CACHE = ActiveSupport::Cache::MemoryStore.new
+  after_commit :clear_local_cache
+
   # Validations
   validates :title, presence: true, length: { maximum: 255 }
   validates :description, length: { maximum: 500 }
@@ -86,6 +93,18 @@ class Banner < ApplicationRecord
     image_url.present? || banner_image.attached?
   end
 
+  # Cached: same result set as the homepage-banner query in Customer::DashboardController,
+  # served from the in-process cache instead of a fresh query on every request. Keyed by
+  # date since the query filters on Date.current.
+  def self.cached_homepage_banners
+    LOCAL_CACHE.fetch("banner_homepage_#{Date.current}", expires_in: 10.minutes) do
+      where(status: true, display_location: 'homepage')
+        .where('display_start_date <= ? AND (display_end_date IS NULL OR display_end_date >= ?)',
+               Date.current, Date.current)
+        .order(:display_order).to_a
+    end
+  end
+
   def upload_to_cloudinary(file)
     begin
       result = Cloudinary::Uploader.upload(
@@ -108,6 +127,10 @@ class Banner < ApplicationRecord
   end
 
   private
+
+  def clear_local_cache
+    LOCAL_CACHE.clear
+  end
 
   def end_date_after_start_date
     return unless display_start_date && display_end_date

@@ -4,19 +4,23 @@ class Franchise::DashboardController < Franchise::BaseController
     # Since bookings are associated with franchises, not users directly
     @bookings = current_franchise.bookings.includes(:customer, :booking_items)
 
-    # Analytics data
-    @total_bookings = @bookings.count
-    @draft_bookings = @bookings.draft.count
-    @pending_bookings = @bookings.ordered_and_delivery_pending.count
-    @confirmed_bookings = @bookings.confirmed.count
-    @processing_bookings = @bookings.where(status: [:processing, :packed]).count
-    @shipped_bookings = @bookings.where(status: [:shipped, :out_for_delivery]).count
-    @delivered_bookings = @bookings.where(status: [:delivered, :completed]).count
-    @cancelled_bookings = @bookings.where(status: [:cancelled, :returned]).count
+    # Analytics data - one grouped query for counts, one for sums, instead of
+    # ~10 separate per-status count/sum queries
+    status_counts = @bookings.group(:status).count
+    status_sums = @bookings.group(:status).sum(:total_amount)
+
+    @total_bookings = status_counts.values.sum
+    @draft_bookings = status_counts['draft'] || 0
+    @pending_bookings = status_counts['ordered_and_delivery_pending'] || 0
+    @confirmed_bookings = status_counts['confirmed'] || 0
+    @processing_bookings = %w[processing packed].sum { |s| status_counts[s] || 0 }
+    @shipped_bookings = %w[shipped out_for_delivery].sum { |s| status_counts[s] || 0 }
+    @delivered_bookings = %w[delivered completed].sum { |s| status_counts[s] || 0 }
+    @cancelled_bookings = %w[cancelled returned].sum { |s| status_counts[s] || 0 }
 
     # Revenue analytics
-    @total_revenue = @bookings.where(status: [:delivered, :completed]).sum(:total_amount) || 0
-    @pending_revenue = @bookings.where.not(status: [:cancelled, :returned]).sum(:total_amount) || 0
+    @total_revenue = %w[delivered completed].sum { |s| status_sums[s] || 0 }
+    @pending_revenue = status_sums.reject { |s, _| %w[cancelled returned].include?(s) }.values.sum
     @this_month_revenue = @bookings.where(
       status: [:delivered, :completed],
       created_at: Date.current.beginning_of_month..Date.current.end_of_month
@@ -32,9 +36,7 @@ class Franchise::DashboardController < Franchise::BaseController
     # Recent bookings
     @recent_bookings = @bookings.recent.limit(5)
 
-    # Average order value
-    completed_bookings = @bookings.where(status: [:delivered, :completed])
-    @average_order_value = completed_bookings.any? ?
-      (completed_bookings.sum(:total_amount) / completed_bookings.count) : 0
+    # Average order value - reuse the aggregates computed above instead of 2-3 more queries
+    @average_order_value = @delivered_bookings > 0 ? (@total_revenue / @delivered_bookings) : 0
   end
 end

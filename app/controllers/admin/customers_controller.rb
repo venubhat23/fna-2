@@ -172,6 +172,8 @@ class Admin::CustomersController < Admin::ApplicationController
     @policies = []
     @family_members = []
     @uploaded_documents = []
+    @customer_bookings_count = @customer.bookings.count
+    @customer_orders_count = @customer.orders.count
   end
 
   # GET /admin/customers/:id/policy_chart
