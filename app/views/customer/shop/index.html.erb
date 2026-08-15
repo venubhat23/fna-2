@@ -550,7 +550,7 @@
         <div class="p-4">
             <div class="row g-4" id="productGrid">
               <% @products.each do |product| %>
-                <% current_stock = product.cached_total_batch_stock %>
+                <% current_stock = product.has_multiple_quantities? ? product.available_quantity : product.cached_total_batch_stock %>
                 <% in_stock = current_stock > 0 %>
 
                 <div class="col-xl-3 col-lg-4 col-md-6 product-grid-item"
@@ -619,7 +619,9 @@
                       end
                     %>
 
-                    <% if product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price %>
+                    <% if product.has_multiple_quantities? %>
+                      <span class="h6 text-primary mb-0">₹<%= number_with_delimiter((product.default_variant&.price_with_gst || 0).round(2)) %></span>
+                    <% elsif product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price %>
                       <div class="d-flex align-items-center gap-2">
                         <span class="h6 text-success mb-0">₹<%= number_with_delimiter(final_price.round(2)) %></span>
                         <small class="text-muted text-decoration-line-through">₹<%= number_with_delimiter(product.price) %></small>
@@ -628,7 +630,7 @@
                       <span class="h6 text-primary mb-0">₹<%= number_with_delimiter(final_price.round(2)) %></span>
                     <% end %>
 
-                    <% if product.gst_enabled && gst_rate > 0 %>
+                    <% if !product.has_multiple_quantities? && product.gst_enabled && gst_rate > 0 %>
                       <small class="text-muted d-block">
                         Base: ₹<%= number_with_delimiter(base_price.round(2)) %> + GST: ₹<%= number_with_delimiter(gst_amount.round(2)) %> (<%= gst_rate %>%) = ₹<%= number_with_delimiter(final_price.round(2)) %>
                       </small>
@@ -638,6 +640,23 @@
                   <!-- Quantity and Add to Cart -->
                   <div class="mt-auto">
                     <% if current_stock > 0 %>
+                      <% if product.has_multiple_quantities? %>
+                        <div class="mb-2">
+                          <select class="form-select form-select-sm shop-variant-select" id="variant-select-<%= product.id %>" data-product-id="<%= product.id %>">
+                            <% product.sorted_variants.each do |v| %>
+                              <option value="<%= v.id %>"
+                                      data-price="<%= v.price_with_gst %>"
+                                      data-stock="<%= v.available_stock %>"
+                                      data-label="<%= v.label %>"
+                                      <%= 'selected' if v.is_default? %>
+                                      <%= 'disabled' unless v.in_stock? %>>
+                                <%= v.label %> - ₹<%= number_with_delimiter(v.price_with_gst.round(2)) %> (<%= v.available_stock.to_i %> left)
+                              </option>
+                            <% end %>
+                          </select>
+                        </div>
+                      <% end %>
+
                       <!-- Quantity Selector -->
                       <div class="mb-3">
                         <label class="form-label fw-bold small">
@@ -673,10 +692,18 @@
                       </div>
 
                       <!-- Add to Cart Button -->
-                      <button class="btn btn-primary w-100"
-                              onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= final_price %>, <%= current_stock %>, <%= base_price %>, <%= gst_rate %>)">
-                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
-                      </button>
+                      <% if product.has_multiple_quantities? %>
+                        <button class="btn btn-primary w-100 shop-add-to-cart-variant-btn"
+                                data-product-id="<%= product.id %>"
+                                data-product-name="<%= j(product.name) %>">
+                          <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                        </button>
+                      <% else %>
+                        <button class="btn btn-primary w-100"
+                                onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= final_price %>, <%= current_stock %>, <%= base_price %>, <%= gst_rate %>)">
+                          <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                        </button>
+                      <% end %>
                     <% else %>
                       <!-- Out of Stock Button -->
                       <button class="btn btn-danger w-100" disabled>
@@ -856,10 +883,12 @@ function validateQty(productId, maxStock) {
 }
 
 // Enhanced Add to Cart functionality
-function addToCart(productId, productName, finalPrice, maxStock, basePrice, gstRate) {
+function addToCart(productId, productName, finalPrice, maxStock, basePrice, gstRate, variantId, variantLabel, buttonEl) {
+  variantId = variantId || null;
+  variantLabel = variantLabel || null;
   const qtyInput = document.getElementById(`qty-${productId}`);
   const quantity = parseInt(qtyInput.value);
-  const button = document.querySelector(`button[onclick*="addToCart(${productId}"]`);
+  const button = buttonEl || document.querySelector(`button[onclick*="addToCart(${productId}"]`);
 
   if (quantity <= 0) {
     alert('Please enter a valid quantity');
@@ -878,8 +907,8 @@ function addToCart(productId, productName, finalPrice, maxStock, basePrice, gstR
 
   // Simulate API call delay for better UX
   setTimeout(() => {
-    // Check if product already exists in cart
-    const existingIndex = cart.findIndex(item => item.id == productId);
+    // Check if this exact product+variant already exists in cart
+    const existingIndex = cart.findIndex(item => item.id == productId && (item.variantId || null) == variantId);
 
     if (existingIndex > -1) {
       // Update quantity
@@ -892,6 +921,8 @@ function addToCart(productId, productName, finalPrice, maxStock, basePrice, gstR
       // Add new item
       cart.push({
         id: productId,
+        variantId: variantId,
+        variantLabel: variantLabel,
         name: productName,
         price: finalPrice,
         basePrice: basePrice,
@@ -914,6 +945,30 @@ function addToCart(productId, productName, finalPrice, maxStock, basePrice, gstR
     qtyInput.value = 1;
   }, 500);
 }
+
+// Add-to-cart for variant (multi-quantity) products: price comes from the
+// currently selected <option>'s data attributes, not a static onclick.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.shop-add-to-cart-variant-btn');
+  if (!btn) return;
+
+  const productId = btn.dataset.productId;
+  const productName = btn.dataset.productName;
+  const select = document.getElementById(`variant-select-${productId}`);
+
+  if (!select || !select.value) {
+    alert('Please select a quantity option');
+    return;
+  }
+
+  const opt = select.options[select.selectedIndex];
+  const variantId = select.value;
+  const variantLabel = opt.dataset.label;
+  const price = parseFloat(opt.dataset.price);
+  const stock = parseFloat(opt.dataset.stock) || 0;
+
+  addToCart(productId, `${productName} (${variantLabel})`, price, stock, price, 0, variantId, variantLabel, btn);
+});
 
 // Modern toast notifications
 function showToast(type, message) {

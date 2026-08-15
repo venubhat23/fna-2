@@ -59,7 +59,7 @@
       <% if @products&.any? %>
         <div class="row g-3" id="productGrid">
           <% @products.each do |product| %>
-            <% current_stock = product.cached_total_batch_stock %>
+            <% current_stock = product.has_multiple_quantities? ? product.available_quantity : product.cached_total_batch_stock %>
             <div class="col-md-4 col-lg-3 product-grid-item" data-product-id="<%= product.id %>" data-category="<%= product.category_id %>" data-stock="<%= current_stock %>">
               <div class="card h-100 border-0 shadow-sm hover-lift">
                 <%# Product Image %>
@@ -152,6 +152,27 @@
                   <%# Quantity and Add to Cart %>
                   <div class="mt-3">
                     <% if current_stock > 0 %>
+                      <% if product.has_multiple_quantities? %>
+                        <!-- Variant Selector -->
+                        <div class="mb-3">
+                          <label class="form-label fw-bold small">Quantity Option</label>
+                          <select class="form-select variant-select" id="variant-select-<%= product.id %>" data-product-id="<%= product.id %>">
+                            <% product.sorted_variants.each do |v| %>
+                              <option value="<%= v.id %>"
+                                      data-price="<%= v.price_with_gst %>"
+                                      data-base-price="<%= v.effective_price %>"
+                                      data-gst-rate="<%= v.effective_gst_percentage %>"
+                                      data-stock="<%= v.available_stock %>"
+                                      data-label="<%= v.label %>"
+                                      <%= 'selected' if v.is_default? %>
+                                      <%= 'disabled' unless v.in_stock? %>>
+                                <%= v.label %> - ₹<%= number_with_delimiter(v.price_with_gst.round(2)) %> (<%= v.available_stock.to_i %> in stock)
+                              </option>
+                            <% end %>
+                          </select>
+                        </div>
+                      <% end %>
+
                       <!-- Quantity Selector -->
                       <div class="mb-3">
                         <label class="form-label fw-bold small">
@@ -186,18 +207,26 @@
                         cart_base_price = base_price
                         cart_gst_rate = gst_rate
                       %>
-                      <button class="btn btn-primary w-100"
-                              onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= cart_final_price %>, <%= current_stock %>, <%= cart_base_price %>, <%= cart_gst_rate %>)"
-                              data-base-price="<%= cart_base_price %>"
-                              data-gst-rate="<%= cart_gst_rate %>"
-                              data-final-price="<%= cart_final_price %>"
-                              <%= 'disabled' if product.out_of_stock? %>>
-                        <% if product.out_of_stock? %>
-                          <i class="bi bi-x-circle me-2"></i>Out of Stock
-                        <% else %>
+                      <% if product.has_multiple_quantities? %>
+                        <button class="btn btn-primary w-100 add-to-cart-variant-btn"
+                                data-product-id="<%= product.id %>"
+                                data-product-name="<%= j(product.name) %>">
                           <i class="bi bi-cart-plus me-2"></i>Add to Cart
-                        <% end %>
-                      </button>
+                        </button>
+                      <% else %>
+                        <button class="btn btn-primary w-100"
+                                onclick="addToCart(<%= product.id %>, '<%= j(product.name) %>', <%= cart_final_price %>, <%= current_stock %>, <%= cart_base_price %>, <%= cart_gst_rate %>)"
+                                data-base-price="<%= cart_base_price %>"
+                                data-gst-rate="<%= cart_gst_rate %>"
+                                data-final-price="<%= cart_final_price %>"
+                                <%= 'disabled' if product.out_of_stock? %>>
+                          <% if product.out_of_stock? %>
+                            <i class="bi bi-x-circle me-2"></i>Out of Stock
+                          <% else %>
+                            <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                          <% end %>
+                        </button>
+                      <% end %>
                     <% else %>
                       <div class="text-center">
                         <button class="btn btn-danger w-100" disabled>
@@ -591,8 +620,36 @@ function initializeCart() {
   updateCartDisplay();
 }
 
+// Add-to-cart for variant (multi-quantity) products: price/stock come from
+// the currently selected <option>'s data attributes, not a static onclick.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.add-to-cart-variant-btn');
+  if (!btn) return;
+
+  const productId = btn.dataset.productId;
+  const productName = btn.dataset.productName;
+  const select = document.getElementById(`variant-select-${productId}`);
+
+  if (!select || !select.value) {
+    alert('Please select a quantity option');
+    return;
+  }
+
+  const opt = select.options[select.selectedIndex];
+  const variantId = select.value;
+  const variantLabel = opt.dataset.label;
+  const price = parseFloat(opt.dataset.price);
+  const basePrice = parseFloat(opt.dataset.basePrice);
+  const gstRate = parseFloat(opt.dataset.gstRate) || 0;
+  const stock = parseFloat(opt.dataset.stock) || 0;
+
+  addToCart(productId, productName, price, stock, basePrice, gstRate, variantId, variantLabel);
+});
+
 // Add item to cart
-function addToCart(productId, productName, finalPrice, stock, basePrice, gstRate) {
+function addToCart(productId, productName, finalPrice, stock, basePrice, gstRate, variantId, variantLabel) {
+  variantId = variantId || null;
+  const cartKey = variantId ? `${productId}_${variantId}` : `${productId}`;
   const quantity = parseFloat(document.getElementById(`qty-${productId}`).value) || 1;
 
   if (quantity > stock) {
@@ -600,14 +657,17 @@ function addToCart(productId, productName, finalPrice, stock, basePrice, gstRate
     return;
   }
 
-  if (cart[productId]) {
-    if (cart[productId].quantity + quantity > stock) {
+  if (cart[cartKey]) {
+    if (cart[cartKey].quantity + quantity > stock) {
       alert(`Cannot add more items. Maximum stock: ${stock}`);
       return;
     }
-    cart[productId].quantity += quantity;
+    cart[cartKey].quantity += quantity;
   } else {
-    cart[productId] = {
+    cart[cartKey] = {
+      productId: productId,
+      variantId: variantId,
+      variantLabel: variantLabel || null,
       name: productName,
       price: finalPrice,  // Final price including GST
       basePrice: basePrice || finalPrice,  // Base price without GST
@@ -673,7 +733,7 @@ function updateCartDisplay() {
   // Sort items by name for consistent display
   const sortedItems = Object.entries(cart).sort((a, b) => a[1].name.localeCompare(b[1].name));
 
-  for (const [productId, item] of sortedItems) {
+  for (const [cartKey, item] of sortedItems) {
     const itemBasePrice = item.basePrice || item.price;
     const itemGSTRate = item.gstRate || 0;
     let itemTotal;
@@ -693,7 +753,7 @@ function updateCartDisplay() {
       <div class="cart-item-card mb-3">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div class="flex-grow-1">
-            <div class="fw-semibold text-dark" style="font-size: 0.95rem;">${item.name}</div>
+            <div class="fw-semibold text-dark" style="font-size: 0.95rem;">${item.name}${item.variantLabel ? ` <span class="badge bg-secondary-subtle text-secondary">${item.variantLabel}</span>` : ''}</div>
             <div class="d-flex align-items-center gap-2 mt-1">
               ${itemGSTRate > 0 ?
                 `<span class="badge bg-light text-dark">₹${itemBasePrice.toFixed(2)} + GST ${itemGSTRate}%</span>` :
@@ -702,17 +762,17 @@ function updateCartDisplay() {
               ${item.quantity >= item.stock - 2 ? `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Only ${item.stock} in stock</span>` : ''}
             </div>
           </div>
-          <button type="button" class="btn btn-sm btn-link text-danger p-1" onclick="removeFromCart(${productId})" title="Remove item">
+          <button type="button" class="btn btn-sm btn-link text-danger p-1" onclick="removeFromCart('${cartKey}')" title="Remove item">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
         <div class="d-flex justify-content-between align-items-center">
           <div class="input-group input-group-sm" style="width: 140px;">
-            <button class="btn btn-outline-secondary px-3" type="button" onclick="decreaseCartQuantity(${productId})" ${item.quantity <= 0.1 ? 'disabled' : ''}>
+            <button class="btn btn-outline-secondary px-3" type="button" onclick="decreaseCartQuantity('${cartKey}')" ${item.quantity <= 0.1 ? 'disabled' : ''}>
               <i class="bi bi-dash"></i>
             </button>
             <input type="text" class="form-control text-center fw-bold" value="${item.quantity}" readonly style="background: white;">
-            <button class="btn btn-outline-secondary px-3" type="button" onclick="increaseCartQuantity(${productId})" ${item.quantity >= item.stock ? 'disabled' : ''}>
+            <button class="btn btn-outline-secondary px-3" type="button" onclick="increaseCartQuantity('${cartKey}')" ${item.quantity >= item.stock ? 'disabled' : ''}>
               <i class="bi bi-plus"></i>
             </button>
           </div>
@@ -730,7 +790,7 @@ function updateCartDisplay() {
 
   // Calculate GST based on individual products
   let totalGST = 0;
-  for (const [productId, item] of Object.entries(cart)) {
+  for (const [cartKey, item] of Object.entries(cart)) {
     const itemGSTRate = item.gstRate || 0;
     if (itemGSTRate > 0) {
       const itemBasePrice = item.basePrice || item.price;
@@ -788,43 +848,43 @@ function maximizeCart() {
 }
 
 // Remove item from cart
-function removeFromCart(productId) {
-  const item = cart[productId];
+function removeFromCart(cartKey) {
+  const item = cart[cartKey];
   if (item) {
     showNotification(`${item.name} removed from cart`, 'info');
   }
-  delete cart[productId];
+  delete cart[cartKey];
   updateCartDisplay();
   updateCheckoutDisplay();
 }
 
 // Increase cart item quantity
-function increaseCartQuantity(productId) {
-  if (cart[productId]) {
-    if (cart[productId].quantity < cart[productId].stock) {
-      cart[productId].quantity += 1;
-      cart[productId].quantity = parseFloat(cart[productId].quantity.toFixed(1));
+function increaseCartQuantity(cartKey) {
+  if (cart[cartKey]) {
+    if (cart[cartKey].quantity < cart[cartKey].stock) {
+      cart[cartKey].quantity += 1;
+      cart[cartKey].quantity = parseFloat(cart[cartKey].quantity.toFixed(1));
       updateCartDisplay();
       updateCheckoutDisplay();
-      showNotification(`Quantity increased for ${cart[productId].name}`, 'success');
+      showNotification(`Quantity increased for ${cart[cartKey].name}`, 'success');
     } else {
-      showNotification(`Maximum stock reached for ${cart[productId].name}`, 'warning');
+      showNotification(`Maximum stock reached for ${cart[cartKey].name}`, 'warning');
     }
   }
 }
 
 // Decrease cart item quantity
-function decreaseCartQuantity(productId) {
-  if (cart[productId]) {
-    if (cart[productId].quantity > 1) {
-      cart[productId].quantity -= 1;
-      cart[productId].quantity = parseFloat(cart[productId].quantity.toFixed(1));
+function decreaseCartQuantity(cartKey) {
+  if (cart[cartKey]) {
+    if (cart[cartKey].quantity > 1) {
+      cart[cartKey].quantity -= 1;
+      cart[cartKey].quantity = parseFloat(cart[cartKey].quantity.toFixed(1));
       updateCartDisplay();
       updateCheckoutDisplay();
-      showNotification(`Quantity decreased for ${cart[productId].name}`, 'success');
+      showNotification(`Quantity decreased for ${cart[cartKey].name}`, 'success');
     } else {
       // If quantity would be 0, remove the item
-      removeFromCart(productId);
+      removeFromCart(cartKey);
     }
   }
 }
@@ -924,7 +984,7 @@ function updateCheckoutDisplay() {
   let subtotal = 0;
   let fieldIndex = 0;
 
-  for (const [productId, item] of Object.entries(cart)) {
+  for (const [cartKey, item] of Object.entries(cart)) {
     const itemBasePrice = item.basePrice || item.price;
     const itemGSTRate = item.gstRate || 0;
     let itemTotal;
@@ -945,7 +1005,7 @@ function updateCheckoutDisplay() {
     summaryHtml += `
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-          <div class="fw-medium">${item.name}</div>
+          <div class="fw-medium">${item.name}${item.variantLabel ? ` <span class="badge bg-secondary-subtle text-secondary">${item.variantLabel}</span>` : ''}</div>
           <small class="text-muted">₹${item.price.toFixed(2)} × ${item.quantity}</small>
           ${itemGSTRate > 0 ? `<br><small class="text-success">GST ${itemGSTRate}%: ₹${itemGSTAmount.toFixed(2)}</small>` : ''}
         </div>
@@ -954,7 +1014,8 @@ function updateCheckoutDisplay() {
     `;
 
     fieldsHtml += `
-      <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_id]" value="${productId}">
+      <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_id]" value="${item.productId}">
+      ${item.variantId ? `<input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_variant_id]" value="${item.variantId}">` : ''}
       <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][quantity]" value="${item.quantity}">
       <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][price]" value="${item.price}">
     `;
@@ -976,9 +1037,10 @@ function ensureCartItemsInForm() {
     let fieldsHtml = '';
     let fieldIndex = 0;
 
-    for (const [productId, item] of Object.entries(cart)) {
+    for (const [cartKey, item] of Object.entries(cart)) {
       fieldsHtml += `
-        <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_id]" value="${productId}">
+        <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_id]" value="${item.productId}">
+        ${item.variantId ? `<input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][product_variant_id]" value="${item.variantId}">` : ''}
         <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][quantity]" value="${item.quantity}">
         <input type="hidden" name="booking[booking_items_attributes][${fieldIndex}][price]" value="${item.price}">
       `;
@@ -999,7 +1061,7 @@ function updateCheckoutTotals() {
   let totalGST = 0;
 
   // Calculate subtotal and GST based on each product's GST configuration
-  for (const [productId, item] of Object.entries(cart)) {
+  for (const [cartKey, item] of Object.entries(cart)) {
     const itemBasePrice = item.basePrice || item.price;
     const itemGSTRate = item.gstRate || 0;
 

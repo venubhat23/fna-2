@@ -82,8 +82,10 @@
         </div>
 
         <!-- Product Pricing -->
-        <div class="product-pricing mb-4">
-          <% if @product.discount_price.present? && @product.discount_price > 0 %>
+        <div class="product-pricing mb-4" id="product-pricing">
+          <% if @product.has_multiple_quantities? %>
+            <span class="current-price fs-3 fw-bold text-success" id="variant-price-display">₹<%= number_with_delimiter((@product.default_variant&.price_with_gst || 0).round(2)) %></span>
+          <% elsif @product.discount_price.present? && @product.discount_price > 0 %>
             <div class="pricing-info">
               <span class="current-price fs-3 fw-bold text-success">₹<%= number_with_delimiter(@product.discount_price.to_i) %></span>
               <span class="original-price fs-5 text-muted text-decoration-line-through ms-2">₹<%= number_with_delimiter(@product.price.to_i) %></span>
@@ -96,11 +98,31 @@
           <% end %>
         </div>
 
+        <% if @product.has_multiple_quantities? %>
+          <!-- Variant Selector -->
+          <div class="mb-4">
+            <label for="variant-select" class="form-label fw-bold">Quantity Option</label>
+            <select id="variant-select" class="form-select">
+              <% @product.sorted_variants.each do |v| %>
+                <option value="<%= v.id %>"
+                        data-price="<%= v.price_with_gst %>"
+                        data-stock="<%= v.available_stock %>"
+                        data-label="<%= v.label %>"
+                        <%= 'selected' if v.is_default? %>
+                        <%= 'disabled' unless v.in_stock? %>>
+                  <%= v.label %> - ₹<%= number_with_delimiter(v.price_with_gst.round(2)) %> (<%= v.available_stock.to_i %> in stock)
+                </option>
+              <% end %>
+            </select>
+          </div>
+        <% end %>
+
         <!-- Stock Status -->
-        <div class="stock-info mb-4">
-          <% if @product.total_batch_stock > 0 %>
-            <span class="badge bg-success fs-6">
-              <i class="fas fa-check-circle me-1"></i>In Stock (<%= @product.total_batch_stock %> available)
+        <div class="stock-info mb-4" id="stock-info">
+          <% current_stock = @product.has_multiple_quantities? ? @product.available_quantity : @product.total_batch_stock %>
+          <% if current_stock > 0 %>
+            <span class="badge bg-success fs-6" id="stock-badge">
+              <i class="fas fa-check-circle me-1"></i>In Stock (<%= current_stock.to_i %> available)
             </span>
           <% else %>
             <span class="badge bg-danger fs-6">
@@ -126,14 +148,14 @@
                 <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity()">
                   <i class="fas fa-minus"></i>
                 </button>
-                <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="<%= @product.total_batch_stock %>" style="width: 80px;">
+                <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="<%= current_stock %>" style="width: 80px;">
                 <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity()">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
             </div>
             <div class="col">
-              <% if @product.total_batch_stock > 0 %>
+              <% if current_stock > 0 %>
                 <button type="button" class="btn btn-primary btn-lg w-100" onclick="addToCart(<%= @product.id %>)">
                   <i class="fas fa-cart-plus me-2"></i>Add to Cart
                 </button>
@@ -309,40 +331,72 @@ function decreaseQuantity() {
   }
 }
 
+const productHasVariants = <%= @product.has_multiple_quantities? %>;
+
+// Keep price/stock display in sync with the selected variant.
+const variantSelectEl = document.getElementById('variant-select');
+if (variantSelectEl) {
+  variantSelectEl.addEventListener('change', function() {
+    const opt = variantSelectEl.options[variantSelectEl.selectedIndex];
+    const price = parseFloat(opt.dataset.price);
+    const stock = parseFloat(opt.dataset.stock) || 0;
+
+    const priceDisplay = document.getElementById('variant-price-display');
+    if (priceDisplay) priceDisplay.textContent = `₹${price.toFixed(2)}`;
+
+    const qtyInput = document.getElementById('quantity');
+    if (qtyInput) qtyInput.max = stock;
+
+    const stockBadge = document.getElementById('stock-badge');
+    if (stockBadge) {
+      stockBadge.innerHTML = `<i class="fas fa-check-circle me-1"></i>In Stock (${Math.floor(stock)} available)`;
+    }
+  });
+}
+
 // Frontend-only Add to Cart functionality
 function addToCart(productId) {
   const quantity = parseInt(document.getElementById('quantity').value);
-  const productName = '<%= @product.name %>';
-  const productPrice = <%= @product.discount_price.present? && @product.discount_price > 0 ? @product.discount_price : @product.price %>;
   const productImage = '<%= @product.image_url || (@product.image.present? ? asset_path(@product.image) : '') %>';
 
-  // Use the global cart function
-  if (window.addToCartFromButton) {
-    // Add multiple quantities
-    for (let i = 0; i < quantity; i++) {
-      window.addToCartFromButton(productId, productName, productPrice, productImage);
-    }
-  } else {
-    // Fallback local implementation
-    let cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
-    const existingIndex = cart.findIndex(item => item.id == productId);
+  let productName = '<%= j @product.name %>';
+  let productPrice = <%= @product.discount_price.present? && @product.discount_price > 0 ? @product.discount_price : @product.price %>;
+  let variantId = null;
+  let variantLabel = null;
 
-    if (existingIndex > -1) {
-      cart[existingIndex].quantity += quantity;
-    } else {
-      cart.push({
-        id: productId,
-        name: productName,
-        price: productPrice,
-        quantity: quantity,
-        image: productImage
-      });
+  if (productHasVariants) {
+    if (!variantSelectEl || !variantSelectEl.value) {
+      alert('Please select a quantity option');
+      return;
     }
-
-    localStorage.setItem('customerCart', JSON.stringify(cart));
-    updateCartCounter();
-    showCartNotification('Product added to cart successfully!');
+    const opt = variantSelectEl.options[variantSelectEl.selectedIndex];
+    variantId = variantSelectEl.value;
+    variantLabel = opt.dataset.label;
+    productPrice = parseFloat(opt.dataset.price);
+    productName = `${productName} (${variantLabel})`;
   }
+
+  // Fallback local implementation (window.addToCartFromButton is not defined anywhere in this app)
+  let cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
+  const existingIndex = cart.findIndex(item => item.id == productId && (item.variantId || null) == variantId);
+
+  if (existingIndex > -1) {
+    cart[existingIndex].quantity += quantity;
+  } else {
+    cart.push({
+      id: productId,
+      variantId: variantId,
+      variantLabel: variantLabel,
+      name: productName,
+      price: productPrice,
+      quantity: quantity,
+      image: productImage
+    });
+  }
+
+  localStorage.setItem('customerCart', JSON.stringify(cart));
+  updateCartCounter();
+  showCartNotification('Product added to cart successfully!');
 }
 
 function showCartNotification(message) {

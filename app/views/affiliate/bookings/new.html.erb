@@ -1,0 +1,254 @@
+<% content_for :page_title, "New Booking" %>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="fw-bold text-dark mb-1">Create Booking</h2>
+        <p class="text-muted mb-0">Book products for one of your referred customers</p>
+      </div>
+      <%= link_to affiliate_bookings_path, class: "btn btn-outline-secondary" do %>
+        <i class="bi bi-arrow-left me-1"></i>Back to Bookings
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<% if @booking&.errors&.any? %>
+  <div class="alert alert-danger">
+    <%= @booking.errors.full_messages.join(', ') %>
+  </div>
+<% end %>
+
+<%= form_with model: [:affiliate, @booking], local: true, html: { id: 'affBookingForm' } do |f| %>
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+          <label class="form-label fw-bold">Customer <span class="text-danger">*</span></label>
+          <%= f.select :customer_id,
+              options_from_collection_for_select(@customers, :id, ->(c) { "#{c.first_name} #{c.last_name} (#{c.mobile})" }, f.object.customer_id),
+              { include_blank: "Select a referred customer" },
+              { class: "form-select", required: true } %>
+          <% if @customers.empty? %>
+            <div class="form-text text-warning">You have no referred customers yet.</div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0">Products</h5>
+        </div>
+        <div class="card-body">
+          <% if @products&.any? %>
+            <div class="row g-3">
+              <% @products.each do |product| %>
+                <% current_stock = product.has_multiple_quantities? ? product.available_quantity : product.cached_total_batch_stock %>
+                <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                      <h6 class="card-title mb-1"><%= product.name %></h6>
+                      <small class="text-muted mb-2"><%= product.category&.name || 'No Category' %></small>
+
+                      <% if current_stock > 0 %>
+                        <% if product.has_multiple_quantities? %>
+                          <select class="form-select form-select-sm mb-2 aff-variant-select" id="aff-variant-<%= product.id %>" data-product-id="<%= product.id %>">
+                            <% product.sorted_variants.each do |v| %>
+                              <option value="<%= v.id %>"
+                                      data-price="<%= v.price_with_gst %>"
+                                      data-stock="<%= v.available_stock %>"
+                                      data-label="<%= v.label %>"
+                                      <%= 'selected' if v.is_default? %>
+                                      <%= 'disabled' unless v.in_stock? %>>
+                                <%= v.label %> - ₹<%= number_with_delimiter(v.price_with_gst.round(2)) %> (<%= v.available_stock.to_i %> left)
+                              </option>
+                            <% end %>
+                          </select>
+                        <% else %>
+                          <div class="mb-2 fw-semibold text-primary">₹<%= number_with_delimiter(product.display_price.round(2)) %></div>
+                        <% end %>
+
+                        <div class="input-group input-group-sm mb-2">
+                          <span class="input-group-text">Qty</span>
+                          <input type="number" id="aff-qty-<%= product.id %>" value="1" min="0.1" step="0.1" max="<%= current_stock %>" class="form-control">
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-sm w-100 mt-auto aff-add-btn"
+                                data-product-id="<%= product.id %>"
+                                data-product-name="<%= j(product.name) %>"
+                                data-has-variants="<%= product.has_multiple_quantities? %>"
+                                data-price="<%= product.display_price %>">
+                          <i class="bi bi-cart-plus me-1"></i>Add
+                        </button>
+                      <% else %>
+                        <button class="btn btn-secondary btn-sm w-100 mt-auto" disabled>Out of Stock</button>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-muted text-center py-4">No products available.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm" style="position: sticky; top: 1rem;">
+        <div class="card-header bg-transparent border-0">
+          <h5 class="mb-0"><i class="bi bi-cart3 me-1"></i>Cart</h5>
+        </div>
+        <div class="card-body">
+          <div id="affCartItems">
+            <p class="text-muted text-center py-3">Your cart is empty</p>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between fw-bold">
+            <span>Total</span>
+            <span>₹<span id="affCartTotal">0.00</span></span>
+          </div>
+
+          <div id="affCheckoutFields"></div>
+
+          <div class="form-group mt-3">
+            <label class="form-label">Notes</label>
+            <%= f.text_area :notes, class: "form-control", rows: 2 %>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100 mt-3" id="affSubmitBtn" disabled>
+            <i class="bi bi-check-circle me-1"></i>Create Booking
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const cart = {};
+  const cartItemsEl = document.getElementById('affCartItems');
+  const cartTotalEl = document.getElementById('affCartTotal');
+  const fieldsEl = document.getElementById('affCheckoutFields');
+  const submitBtn = document.getElementById('affSubmitBtn');
+
+  function render() {
+    const keys = Object.keys(cart);
+    submitBtn.disabled = keys.length === 0;
+
+    if (keys.length === 0) {
+      cartItemsEl.innerHTML = '<p class="text-muted text-center py-3">Your cart is empty</p>';
+      cartTotalEl.textContent = '0.00';
+      fieldsEl.innerHTML = '';
+      return;
+    }
+
+    let html = '';
+    let fields = '';
+    let total = 0;
+    let idx = 0;
+
+    keys.forEach(function(cartKey) {
+      const item = cart[cartKey];
+      const lineTotal = item.price * item.quantity;
+      total += lineTotal;
+
+      html += `
+        <div class="d-flex justify-content-between align-items-start mb-2 pb-2 border-bottom">
+          <div>
+            <div class="fw-semibold">${item.name}${item.variantLabel ? ` <span class="badge bg-secondary-subtle text-secondary">${item.variantLabel}</span>` : ''}</div>
+            <small class="text-muted">${item.quantity} × ₹${item.price.toFixed(2)}</small>
+          </div>
+          <div class="text-end">
+            <div class="fw-semibold">₹${lineTotal.toFixed(2)}</div>
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 aff-remove-btn" data-cart-key="${cartKey}">Remove</button>
+          </div>
+        </div>
+      `;
+
+      fields += `
+        <input type="hidden" name="booking[booking_items_attributes][${idx}][product_id]" value="${item.productId}">
+        ${item.variantId ? `<input type="hidden" name="booking[booking_items_attributes][${idx}][product_variant_id]" value="${item.variantId}">` : ''}
+        <input type="hidden" name="booking[booking_items_attributes][${idx}][quantity]" value="${item.quantity}">
+        <input type="hidden" name="booking[booking_items_attributes][${idx}][price]" value="${item.price}">
+      `;
+      idx++;
+    });
+
+    cartItemsEl.innerHTML = html;
+    fieldsEl.innerHTML = fields;
+    cartTotalEl.textContent = total.toFixed(2);
+  }
+
+  cartItemsEl.addEventListener('click', function(e) {
+    const btn = e.target.closest('.aff-remove-btn');
+    if (!btn) return;
+    delete cart[btn.dataset.cartKey];
+    render();
+  });
+
+  document.querySelectorAll('.aff-add-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const productId = btn.dataset.productId;
+      const productName = btn.dataset.productName;
+      const hasVariants = btn.dataset.hasVariants === 'true';
+      const qtyInput = document.getElementById(`aff-qty-${productId}`);
+      const quantity = parseFloat(qtyInput.value) || 1;
+
+      let price, stock, variantId = null, variantLabel = null;
+
+      if (hasVariants) {
+        const select = document.getElementById(`aff-variant-${productId}`);
+        if (!select || !select.value) {
+          alert('Please select a quantity option');
+          return;
+        }
+        const opt = select.options[select.selectedIndex];
+        variantId = select.value;
+        variantLabel = opt.dataset.label;
+        price = parseFloat(opt.dataset.price);
+        stock = parseFloat(opt.dataset.stock) || 0;
+      } else {
+        price = parseFloat(btn.dataset.price);
+        stock = parseFloat(qtyInput.max) || 0;
+      }
+
+      if (quantity > stock) {
+        alert(`Only ${stock} available in stock`);
+        return;
+      }
+
+      const cartKey = variantId ? `${productId}_${variantId}` : `${productId}`;
+      if (cart[cartKey]) {
+        if (cart[cartKey].quantity + quantity > stock) {
+          alert(`Cannot add more. Maximum stock: ${stock}`);
+          return;
+        }
+        cart[cartKey].quantity += quantity;
+      } else {
+        cart[cartKey] = {
+          productId: productId,
+          variantId: variantId,
+          variantLabel: variantLabel,
+          name: productName,
+          price: price,
+          quantity: quantity
+        };
+      }
+
+      qtyInput.value = 1;
+      render();
+    });
+  });
+
+  document.getElementById('affBookingForm').addEventListener('submit', function(e) {
+    if (Object.keys(cart).length === 0) {
+      e.preventDefault();
+      alert('Please add at least one product to the cart');
+    }
+  });
+});
+</script>

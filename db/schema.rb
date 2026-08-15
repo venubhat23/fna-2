@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_15_141500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -88,6 +88,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.string "image_url"
     t.index ["display_location"], name: "index_banners_on_display_location"
     t.index ["display_order"], name: "index_banners_on_display_order"
+    t.index ["display_start_date", "display_end_date"], name: "index_banners_on_display_start_date_and_display_end_date"
     t.index ["status"], name: "index_banners_on_status"
   end
 
@@ -123,8 +124,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.decimal "total"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "product_variant_id"
     t.index ["booking_id"], name: "index_booking_items_on_booking_id"
     t.index ["product_id"], name: "index_booking_items_on_product_id"
+    t.index ["product_variant_id"], name: "index_booking_items_on_product_variant_id"
   end
 
   create_table "booking_schedules", force: :cascade do |t|
@@ -323,7 +326,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.text "days"
     t.index ["customer_id"], name: "index_customer_formats_on_customer_id"
     t.index ["delivery_person_id"], name: "index_customer_formats_on_delivery_person_id"
+    t.index ["pattern"], name: "index_customer_formats_on_pattern"
     t.index ["product_id"], name: "index_customer_formats_on_product_id"
+    t.index ["status"], name: "index_customer_formats_on_status"
   end
 
   create_table "customer_wallets", force: :cascade do |t|
@@ -403,6 +408,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.datetime "updated_at", null: false
     t.string "password_digest"
     t.string "auto_generated_password"
+    t.index ["email"], name: "index_delivery_people_on_email"
+    t.index ["mobile"], name: "index_delivery_people_on_mobile"
+    t.index ["status"], name: "index_delivery_people_on_status"
   end
 
   create_table "delivery_rules", force: :cascade do |t|
@@ -643,8 +651,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.decimal "total"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "product_variant_id"
     t.index ["order_id"], name: "index_order_items_on_order_id"
     t.index ["product_id"], name: "index_order_items_on_product_id"
+    t.index ["product_variant_id"], name: "index_order_items_on_product_variant_id"
   end
 
   create_table "orders", force: :cascade do |t|
@@ -772,6 +782,29 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.index ["user_id"], name: "index_product_reviews_on_user_id"
   end
 
+  create_table "product_variants", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.decimal "weight", precision: 8, scale: 3, null: false
+    t.string "unit", default: "Kg", null: false
+    t.decimal "buying_price", precision: 10, scale: 2, default: "0.0"
+    t.decimal "selling_price", precision: 10, scale: 2, null: false
+    t.boolean "discount_enabled", default: false
+    t.string "discount_type"
+    t.decimal "discount_value", precision: 10, scale: 2
+    t.decimal "discount_amount", precision: 10, scale: 2
+    t.integer "available_stock", default: 0, null: false
+    t.boolean "is_default", default: false
+    t.integer "display_order", default: 0
+    t.decimal "gst_percentage", precision: 5, scale: 2
+    t.decimal "gst_amount", precision: 10, scale: 2
+    t.decimal "final_price_with_gst", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_default"], name: "index_product_variants_on_is_default"
+    t.index ["product_id", "weight", "unit"], name: "index_product_variants_uniqueness", unique: true
+    t.index ["product_id"], name: "index_product_variants_on_product_id"
+  end
+
   create_table "products", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -829,6 +862,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.text "additional_images_urls"
     t.integer "display_order"
     t.decimal "base_price_excluding_gst"
+    t.boolean "has_multiple_quantities", default: false, null: false
     t.index ["category_id"], name: "index_products_on_category_id"
     t.index ["is_occasional_product", "occasional_start_date", "occasional_end_date"], name: "index_products_on_occasional_dates"
     t.index ["is_occasional_product"], name: "index_products_on_is_occasional_product"
@@ -1306,6 +1340,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "invoice_generated", default: false
+    t.index ["created_at"], name: "index_vendor_purchases_on_created_at"
     t.index ["status"], name: "index_vendor_purchases_on_status"
     t.index ["vendor_id"], name: "index_vendor_purchases_on_vendor_id"
   end
@@ -1320,6 +1355,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
     t.boolean "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_vendors_on_status"
   end
 
   create_table "wallet_transactions", force: :cascade do |t|
@@ -1386,6 +1422,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_14_230000) do
   add_foreign_key "product_reviews", "customers"
   add_foreign_key "product_reviews", "products"
   add_foreign_key "product_reviews", "users"
+  add_foreign_key "product_variants", "products"
   add_foreign_key "products", "categories"
   add_foreign_key "referrals", "affiliates"
   add_foreign_key "referrals", "customers"

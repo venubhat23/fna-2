@@ -52,6 +52,7 @@ class Franchise::BookingsController < Franchise::BaseController
                        .includes(
                          :category,
                          :stock_batches,
+                         :product_variants,
                          image_attachment: :blob,
                          additional_images_attachments: :blob
                        )
@@ -98,7 +99,7 @@ class Franchise::BookingsController < Franchise::BaseController
 
     # Validate stock availability before saving
     unless validate_stock_availability(@booking)
-      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
+      @products = Product.active.includes(:category, :product_variants, image_attachment: :blob, additional_images_attachments: :blob)
       @customers = Customer.all.order(:first_name, :last_name)
       @stores = Store.where(status: true)
       render :new, status: :unprocessable_entity
@@ -351,7 +352,7 @@ class Franchise::BookingsController < Franchise::BaseController
       :customer_phone, :customer_address, :delivery_date, :delivery_time,
       :payment_method, :payment_status, :discount_amount, :store_id, :booked_by,
       booking_items_attributes: [
-        :id, :product_id, :quantity, :unit_price, :subtotal, :_destroy
+        :id, :product_id, :product_variant_id, :quantity, :unit_price, :subtotal, :_destroy
       ]
     )
   end
@@ -359,9 +360,11 @@ class Franchise::BookingsController < Franchise::BaseController
   def validate_stock_availability(booking, is_update: false)
     active_items = booking.booking_items.reject(&:marked_for_destruction?)
 
-    # Batch-load products and (for updates) original persisted quantities instead of
+    # Batch-load products, variants and (for updates) original persisted quantities instead of
     # querying once per booking item inside the loop below.
     products_by_id = Product.where(id: active_items.map(&:product_id)).index_by(&:id)
+    variant_ids = active_items.map(&:product_variant_id).compact
+    variants_by_id = ProductVariant.where(id: variant_ids).index_by(&:id)
 
     original_quantities_by_id = {}
     if is_update
@@ -373,7 +376,13 @@ class Franchise::BookingsController < Franchise::BaseController
       # Fallback to a direct lookup preserves the original RecordNotFound behavior in the
       # rare case a booking item references a product missing from the batch above.
       product = products_by_id[item.product_id] || Product.find(item.product_id)
-      available_stock = product.available_stock
+
+      if product.has_multiple_quantities? && item.product_variant_id.present?
+        variant = variants_by_id[item.product_variant_id]
+        available_stock = variant ? variant.available_stock.to_f : 0.0
+      else
+        available_stock = product.available_stock
+      end
 
       # For updates, add back the current item's quantity to available stock
       if is_update && item.persisted?
@@ -398,6 +407,7 @@ class Franchise::BookingsController < Franchise::BaseController
   # AJAX endpoints
   def search_products
     @products = Product.active
+                       .includes(:product_variants)
                        .where("name ILIKE ? OR sku ILIKE ?", "%#{params[:q]}%", "%#{params[:q]}%")
                        .limit(10)
 
@@ -413,7 +423,11 @@ class Franchise::BookingsController < Franchise::BaseController
         out_of_stock: p.out_of_stock?,
         low_stock: p.low_stock?,
         minimum_threshold: p.minimum_stock_threshold,
-        image_url: p.main_image ? url_for(p.main_image) : nil
+        image_url: p.main_image ? url_for(p.main_image) : nil,
+        has_multiple_quantities: p.has_multiple_quantities?,
+        variants: p.has_multiple_quantities? ? p.sorted_variants.map { |v|
+          { id: v.id, label: v.label, price: v.effective_price, stock: v.available_stock }
+        } : []
       }
     }
   end

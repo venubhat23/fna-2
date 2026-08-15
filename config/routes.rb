@@ -974,6 +974,9 @@ Rails.application.routes.draw do
     root 'dashboard#index'
     get '/dashboard', to: 'dashboard#index'
 
+    # Bookings
+    resources :bookings, only: [:index, :show, :new, :create, :update]
+
     # Referral management
     resources :referrals do
       collection do

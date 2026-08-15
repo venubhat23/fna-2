@@ -165,7 +165,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     booking_params = params.require(:booking).permit(
       :customer_id, :customer_name, :customer_email, :customer_phone, :delivery_address,
       :payment_method, :notes, :pincode, :latitude, :longitude,
-      booking_items_attributes: [:product_id, :quantity, :price]
+      booking_items_attributes: [:product_id, :product_variant_id, :quantity, :price]
     )
 
     # Validate required fields
@@ -219,13 +219,27 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
     booking_params[:booking_items_attributes]&.each do |item_params|
       product_id = item_params[:product_id]
+      variant_id = item_params[:product_variant_id].presence
       quantity = item_params[:quantity].to_i
 
       begin
         product = Product.active.find(product_id)
 
-        # Check stock availability
-        if product.stock < quantity
+        # Check stock availability (variant-specific stock for multi-qty products)
+        if product.has_multiple_quantities? && variant_id.present?
+          variant = product.product_variants.find_by(id: variant_id)
+          variant_stock = variant ? variant.available_stock.to_i : 0
+          if variant_stock < quantity
+            unavailable_products << {
+              product_id: product.id,
+              product_name: product.name,
+              requested_quantity: quantity,
+              available_stock: variant_stock,
+              reason: 'Insufficient stock'
+            }
+            next
+          end
+        elsif product.stock < quantity
           unavailable_products << {
             product_id: product.id,
             product_name: product.name,
@@ -325,11 +339,16 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
         @booking.save!
 
-        # Update product stock
+        # Update product/variant stock
         @booking.booking_items.each do |item|
           product = item.product
-          new_stock = product.stock - item.quantity
-          product.update!(stock: new_stock)
+          if product.has_multiple_quantities? && item.product_variant_id.present?
+            variant = ProductVariant.find_by(id: item.product_variant_id)
+            variant&.update!(available_stock: [variant.available_stock - item.quantity, 0].max)
+          else
+            new_stock = [product.stock - item.quantity, 0].max
+            product.update!(stock: new_stock)
+          end
         end
 
         booking_response_data = format_booking_data(@booking).merge({
@@ -1332,7 +1351,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   end
 
   def set_product
-    @product = Product.active.find(params[:id] || params[:product_id])
+    @product = Product.active.includes(:product_variants).find(params[:id] || params[:product_id])
   rescue ActiveRecord::RecordNotFound
     json_response({ success: false, message: 'Product not found' }, :not_found)
   end
@@ -1345,7 +1364,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   def preload_product_listing(relation)
     relation
       .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
-      .includes(:category, :approved_reviews, image_attachment: :blob, additional_images_attachments: :blob)
+      .includes(:category, :approved_reviews, :product_variants, image_attachment: :blob, additional_images_attachments: :blob)
   end
 
   def format_product_data(product)
@@ -1390,6 +1409,30 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       is_discounted: product.discounted?,
       is_low_stock: product.low_stock?,
       stock_status: product.stock_status,
+      has_multiple_quantities: product.has_multiple_quantities?,
+      display_price: product.display_price.to_f,
+      default_variant_id: product.has_multiple_quantities? ? product.default_variant&.id : nil,
+      variants: product.has_multiple_quantities? ? product.sorted_variants.map { |v|
+        {
+          id: v.id,
+          label: v.label,
+          weight: v.weight.to_f,
+          unit: v.unit,
+          buying_price: v.buying_price&.to_f,
+          selling_price: v.selling_price.to_f,
+          discount_enabled: v.discount_enabled,
+          discount_type: v.discount_type,
+          discount_value: v.discount_value&.to_f,
+          discount_amount: v.discount_amount&.to_f,
+          effective_price: v.effective_price.to_f,
+          gst_percentage: v.gst_percentage&.to_f,
+          gst_amount: v.gst_amount&.to_f,
+          price_with_gst: v.price_with_gst.to_f,
+          available_stock: v.available_stock.to_f,
+          is_default: v.is_default,
+          is_in_stock: v.available_stock > 0
+        }
+      } : [],
       created_at: product.created_at,
       updated_at: product.updated_at
     }

@@ -8,7 +8,7 @@ class Customer::ShopController < Customer::BaseController
 
     # Simple query without complex SQL to avoid syntax errors
     @products = Product.active
-                      .includes(:category, :stock_batches, :product_reviews, image_attachment: :blob)
+                      .includes(:category, :stock_batches, :product_variants, :product_reviews, image_attachment: :blob)
                       .order(:display_order, :name)
 
     # Apply search filter if present
@@ -70,7 +70,7 @@ class Customer::ShopController < Customer::BaseController
   end
 
   def product
-    @product = Product.find(params[:id])
+    @product = Product.includes(:product_variants).find(params[:id])
     @related_products = Product.where(category_id: @product.category_id)
                                .where.not(id: @product.id)
                                .where(status: 'active')
@@ -113,11 +113,13 @@ class Customer::ShopController < Customer::BaseController
           product = Product.find(item_data[:product_id])
           quantity = item_data[:quantity].to_f
           price = item_data[:price].to_f
+          variant_id = item_data[:product_variant_id].presence
 
           # Validate stock
-          if !product.can_fulfill_order?(quantity)
+          if !product.can_fulfill_order?(quantity, variant_id: variant_id)
+            available = variant_id.present? ? product.product_variants.find_by(id: variant_id)&.available_stock.to_f : product.available_quantity
             render json: {
-              error: "Insufficient stock for #{product.name}. Only #{product.available_quantity} available."
+              error: "Insufficient stock for #{product.name}. Only #{available} available."
             }, status: :unprocessable_entity
             return
           end
@@ -125,6 +127,7 @@ class Customer::ShopController < Customer::BaseController
           # Create booking item
           booking_item = @booking.booking_items.build(
             product: product,
+            product_variant_id: variant_id,
             quantity: quantity,
             price: price
           )
@@ -178,9 +181,16 @@ class Customer::ShopController < Customer::BaseController
             next if quantity <= 0
 
             product = Product.find(item_data[:product_id])
+            variant_id = item_data[:product_variant_id].presence
 
             # Check stock availability
-            available_stock = product.stock_batches.where(status: 'active').sum(:quantity_remaining) || 0
+            if product.has_multiple_quantities? && variant_id.present?
+              variant = product.product_variants.find_by(id: variant_id)
+              available_stock = variant ? variant.available_stock.to_f : 0.0
+            else
+              available_stock = product.stock_batches.where(status: 'active').sum(:quantity_remaining) || 0
+            end
+
             if quantity > available_stock
               flash[:error] = "Insufficient stock for #{product.name}. Only #{available_stock} available."
               redirect_to customer_shop_path and return
@@ -189,6 +199,7 @@ class Customer::ShopController < Customer::BaseController
             # Create booking item
             booking_item = @booking.booking_items.build(
               product_id: item_data[:product_id],
+              product_variant_id: variant_id,
               quantity: quantity,
               price: item_data[:price].to_f
             )

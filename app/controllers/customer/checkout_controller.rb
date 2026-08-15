@@ -150,9 +150,11 @@ class Customer::CheckoutController < Customer::BaseController
             product = cart_products_by_id[product_id] || raise(ActiveRecord::RecordNotFound, "Couldn't find Product with 'id'=#{product_id}")
             quantity = (item[:quantity] || item['quantity']).to_f
             price = (item[:price] || item['price']).to_f
+            variant_id = (item[:variantId] || item['variantId']).presence
 
             @booking.booking_items.build(
               product: product,
+              product_variant_id: variant_id,
               quantity: quantity,
               price: price
             )
