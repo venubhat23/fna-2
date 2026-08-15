@@ -31,6 +31,10 @@ class Admin::BookingsController < Admin::ApplicationController
       @bookings = @bookings.where(customer_id: params[:customer_id])
     end
 
+    if params[:booked_by].present? && params[:booked_by].strip != ''
+      @bookings = @bookings.where(booked_by: params[:booked_by])
+    end
+
     # Pre-compute stats with a single GROUP BY — replaces 6 separate COUNT queries
     stats_counts = @all_bookings.group(:status).count
     @booking_stats = {
@@ -800,7 +804,7 @@ class Admin::BookingsController < Admin::ApplicationController
       :customer_id, :customer_name, :customer_email, :customer_phone,
       :payment_method, :payment_status, :discount_amount, :notes,
       :delivery_address, :cash_received, :change_amount, :status, :store_id,
-      :booking_date, booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
+      :booking_date, :is_outlet_booking, booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
     )
   end
 

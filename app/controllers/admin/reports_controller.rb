@@ -734,8 +734,10 @@ class Admin::ReportsController < Admin::ApplicationController
 
   # GET /admin/reports/business_report
   def business_report
-    @from_date = params[:from_date].present? ? Date.parse(params[:from_date]) : Date.current.prev_month.beginning_of_month
-    @to_date   = params[:to_date].present?   ? Date.parse(params[:to_date])   : Date.current.prev_month.end_of_month
+    # Default period matches product_selling's default (current month) so the two
+    # reports agree on "today's" numbers when neither has explicit date params.
+    @from_date = params[:from_date].present? ? Date.parse(params[:from_date]) : Date.current.beginning_of_month
+    @to_date   = params[:to_date].present?   ? Date.parse(params[:to_date])   : Date.current.end_of_month
     @sort_by   = params[:sort_by] || 'selling_price'
 
     # Aggregate qty & selling price from booking_items

@@ -106,6 +106,7 @@ class Customer::ShopController < Customer::BaseController
         @booking.customer_email = current_customer&.email
         @booking.customer_phone = current_customer&.mobile
         @booking.payment_method = params[:payment_method] || 'cod'
+        @booking.booked_by = 'customer'
 
         # Create booking items from cart
         total_amount = 0
@@ -162,6 +163,7 @@ class Customer::ShopController < Customer::BaseController
     @booking = Booking.new(booking_params)
     @booking.customer = current_customer
     @booking.booking_date = Date.current
+    @booking.booked_by = 'customer'
 
     # Handle customer information from form
     @booking.customer_name = params.dig(:booking, :customer_name) || current_customer&.display_name
