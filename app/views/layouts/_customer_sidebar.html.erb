@@ -2,10 +2,15 @@
 /* Modern Customer Sidebar - Perfectly Matching Admin Design */
 .customer-sidebar {
   position: fixed !important;
-  top: 80px !important;
+  /* Must match the top/left/width that layouts/customer.html.erb's shared
+     layout_fix.css forces onto .main-content (top: 70px, left: 260px !important) -
+     that stylesheet is also used by the admin layout, so it's kept in sync here
+     rather than edited to fit this sidebar. A mismatch here is what causes the
+     page content to overlap/hide behind the sidebar's right edge. */
+  top: 70px !important;
   left: 0 !important;
-  width: 280px !important;
-  height: calc(100vh - 80px) !important;
+  width: 260px !important;
+  height: calc(100vh - 70px) !important;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
   border-right: 2px solid #e2e8f0 !important;
   z-index: 1040 !important;
@@ -25,6 +30,15 @@
 
   .customer-sidebar.sidebar-open {
     transform: translateX(0) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* layout_fix.css shrinks the header to 60px and moves .main-content/.sidebar's
+     top to match below this breakpoint - keep this sidebar's top/height in sync. */
+  .customer-sidebar {
+    top: 60px !important;
+    height: calc(100vh - 60px) !important;
   }
 }
 

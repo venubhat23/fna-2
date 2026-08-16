@@ -487,13 +487,21 @@
             <i class="bi bi-search me-1 text-primary"></i>
             Search Products
           </label>
-          <div class="position-relative">
-            <input type="text"
-                   class="form-control pe-5"
-                   placeholder="Search products by name, SKU, or category..."
-                   id="productSearchInput">
-            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
-          </div>
+          <select class="form-select product-search-select2" id="productSearchInput" style="width: 100%;">
+            <option value=""></option>
+            <% @products.each do |product| %>
+              <%
+                search_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
+              %>
+              <option value="<%= product.id %>"
+                      data-name="<%= product.name %>"
+                      data-category="<%= product.category&.name || 'No Category' %>"
+                      data-price="<%= number_with_delimiter(number_with_precision(search_price, precision: 2)) %>"
+                      data-image="<%= product.main_image_url %>">
+                <%= product.name %>
+              </option>
+            <% end %>
+          </select>
         </div>
         <div class="col-xl-3 col-lg-3">
           <label class="form-label fw-semibold mb-2">
@@ -536,10 +544,6 @@
         <div class="d-flex justify-content-between align-items-center">
           <h5 class="mb-0 fw-semibold">Product List</h5>
           <div class="d-flex gap-2">
-            <div class="position-relative">
-              <input type="text" class="form-control" placeholder="Search in table..." id="searchInput">
-              <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
-            </div>
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleView('grid')" id="gridViewBtn">
               <i class="bi bi-grid-3x3-gap"></i>
             </button>
@@ -771,7 +775,6 @@ let cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
 function initShopPage() {
   updateCartBadge();
   initializeFilters();
-  initializeSearch();
   initializeSelect2();
 }
 document.addEventListener('DOMContentLoaded', initShopPage);
@@ -782,8 +785,28 @@ function initializeSelect2() {
   // Guard against double-initialization: this runs on both DOMContentLoaded and
   // turbo:load (see initShopPage above), which both fire on every page visit
   // (including a hard reload) under Turbo Drive.
-  $('.category-select2.select2-hidden-accessible, .stock-select2.select2-hidden-accessible').each(function() {
+  $('.category-select2.select2-hidden-accessible, .stock-select2.select2-hidden-accessible, .product-search-select2.select2-hidden-accessible').each(function() {
     $(this).select2('destroy');
+  });
+
+  // Product Search Select2 - live search-as-you-type against every product name,
+  // with a rich thumbnail/category/price result row. Selecting a product narrows
+  // the grid to just that card; clearing (the x button) restores the full grid.
+  $('.product-search-select2').select2({
+    theme: 'bootstrap-5',
+    placeholder: 'Search products by name...',
+    allowClear: true,
+    width: '100%',
+    templateResult: formatProductSearchResult,
+    templateSelection: formatProductSearchSelection
+  });
+
+  $('.product-search-select2').on('select2:select', function(e) {
+    filterProductsByProduct(e.params.data.id);
+  });
+
+  $('.product-search-select2').on('select2:clear', function() {
+    showAllProducts();
   });
 
   // Category Select2
@@ -819,25 +842,47 @@ function initializeSelect2() {
   });
 }
 
-// Initialize search functionality
-function initializeSearch() {
-  const searchInput = document.getElementById('productSearchInput');
-  if (searchInput) {
-    searchInput.addEventListener('input', function() {
-      const searchTerm = this.value.toLowerCase();
-      const products = document.querySelectorAll('.product-grid-item');
+// Rich dropdown row for the product search Select2: thumbnail + name + category + price,
+// so results are recognizable at a glance instead of a plain text list.
+function formatProductSearchResult(product) {
+  if (!product.id) {
+    return product.text;
+  }
+  const $option = $(product.element);
+  const image = $option.data('image');
+  const category = $option.data('category');
+  const price = $option.data('price');
 
-      products.forEach(product => {
-        const productName = product.querySelector('.card-title')?.textContent.toLowerCase() || '';
-        const categoryName = product.querySelector('small')?.textContent.toLowerCase() || '';
+  const $result = $(`
+    <div class="d-flex align-items-center gap-2 py-1">
+      <div class="flex-shrink-0" style="width: 36px; height: 36px;">
+        ${image ? `<img src="${image}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">`
+                : `<div class="d-flex align-items-center justify-content-center bg-light" style="width:36px;height:36px;border-radius:6px;"><i class="bi bi-box-seam text-muted"></i></div>`}
+      </div>
+      <div class="flex-grow-1">
+        <div class="fw-semibold">${product.text}</div>
+        <small class="text-muted">${category}</small>
+      </div>
+      <div class="fw-semibold text-success">₹${price}</div>
+    </div>
+  `);
+  return $result;
+}
 
-        if (productName.includes(searchTerm) || categoryName.includes(searchTerm)) {
-          product.style.display = 'block';
-        } else {
-          product.style.display = 'none';
-        }
-      });
-    });
+// Selected-state chip: just the product name (the rich row above is for the dropdown only).
+function formatProductSearchSelection(product) {
+  return product.text || 'Search products by name...';
+}
+
+// Narrows the grid to the single selected product from the search dropdown.
+function filterProductsByProduct(productId) {
+  const products = document.querySelectorAll('.product-grid-item');
+  products.forEach(product => {
+    product.style.display = product.dataset.productId == productId ? 'block' : 'none';
+  });
+  const match = document.querySelector(`.product-grid-item[data-product-id="${productId}"]`);
+  if (match) {
+    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
@@ -1090,13 +1135,8 @@ function filterProductsByStock(stockType) {
 
 // Updated clear all filters function
 function clearAllFilters() {
-  // Clear search
-  const searchInput = document.getElementById('productSearchInput');
-  if (searchInput) {
-    searchInput.value = '';
-  }
-
   // Clear Select2 filters
+  $('.product-search-select2').val(null).trigger('change');
   $('.category-select2').val('').trigger('change');
   $('.stock-select2').val('all').trigger('change');
 
