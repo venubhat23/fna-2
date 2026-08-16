@@ -745,15 +745,27 @@ class Admin::ReportsController < Admin::ApplicationController
     # booking it generates) or was booked directly at an outlet/checkout. Schedule-driven
     # bookings get folded into the subscription bucket below, alongside milk_qty_data,
     # so "Booking" here means outlet-only.
+    # Grouped by booked_by too (not just product_id) so the view can show a badge per
+    # booking channel (Website, Mobile App, Franchise, Affiliate, Delivery Person, Store)
+    # instead of lumping every non-subscription booking into one "Outlet Booking" bucket -
+    # see Admin::BookingsHelper::BOOKING_SOURCES for the same channel labels used on the
+    # admin/bookings index page.
     booking_range = { created_at: @from_date.beginning_of_day..@to_date.end_of_day }
-    outlet_booking_data = BookingItem
+    outlet_booking_rows = BookingItem
       .joins(:booking)
       .where(bookings: booking_range.merge(booking_schedule_id: nil))
-      .group(:product_id)
-      .select('product_id, SUM(quantity) AS total_qty, SUM(total) AS total_revenue')
-      .each_with_object({}) do |row, h|
-        h[row.product_id] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
+      .group(:product_id, 'bookings.booked_by')
+      .select('product_id, bookings.booked_by AS booked_by, SUM(quantity) AS total_qty, SUM(total) AS total_revenue')
+      .each_with_object(Hash.new { |h, k| h[k] = {} }) do |row, h|
+        h[row.product_id][row.booked_by] = { qty: row.total_qty.to_f, selling_price: row.total_revenue.to_f }
       end rescue {}
+
+    outlet_booking_data = outlet_booking_rows.each_with_object({}) do |(pid, by_channel), h|
+      h[pid] = {
+        qty: by_channel.values.sum { |v| v[:qty] },
+        selling_price: by_channel.values.sum { |v| v[:selling_price] }
+      }
+    end
 
     subscription_booking_data = BookingItem
       .joins(:booking)
@@ -798,6 +810,7 @@ class Admin::ReportsController < Admin::ApplicationController
       product = products_map[pid]
       next unless product
       b = outlet_booking_data[pid] || { qty: 0, selling_price: 0 }
+      by_channel = outlet_booking_rows[pid] || {}
       sb = subscription_booking_data[pid] || { qty: 0, selling_price: 0 }
       i = invoice_data[pid] || { qty: 0, selling_price: 0 }
       milk_qty = milk_qty_data[pid].to_f
@@ -825,6 +838,7 @@ class Admin::ReportsController < Admin::ApplicationController
         profit:                  selling_price - buying_price,
         booking_qty:             b[:qty],
         booking_selling_price:   b[:selling_price],
+        booking_by_channel:      by_channel,
         subscription_qty:        subscription_qty,
         subscription_selling_price: subscription_selling_price,
         invoice_qty:             i[:qty],

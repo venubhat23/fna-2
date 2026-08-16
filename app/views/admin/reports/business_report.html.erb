@@ -151,10 +151,12 @@
               <td class="fw-semibold" style="color:#1e293b;"><%= row[:name] %></td>
               <td style="color:#94a3b8;"><%= row[:unit] %></td>
               <td>
-                <% if row[:booking_qty] > 0 %>
+                <% row[:booking_by_channel].each do |booked_by, data| %>
+                  <% next unless data[:qty] > 0 %>
+                  <% source = Admin::BookingsHelper::BOOKING_SOURCES.fetch(booked_by, Admin::BookingsHelper::DEFAULT_BOOKING_SOURCE) %>
                   <div class="br-source-badge">
-                    <span class="br-source-label"><i class="bi bi-bag-check"></i> Outlet Booking</span>
-                    <span><%= number_with_precision(row[:booking_qty], precision: 2) %> &middot; ₹<%= number_with_delimiter(number_with_precision(row[:booking_selling_price], precision: 2)) %></span>
+                    <span class="br-source-label"><i class="bi <%= source[:icon] %>"></i> <%= source[:label] %></span>
+                    <span><%= number_with_precision(data[:qty], precision: 2) %> &middot; ₹<%= number_with_delimiter(number_with_precision(data[:selling_price], precision: 2)) %></span>
                   </div>
                 <% end %>
                 <% if row[:subscription_qty] > 0 %>
