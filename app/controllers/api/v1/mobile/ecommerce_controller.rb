@@ -5,7 +5,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/categories
   def categories
-    @categories = Category.active.ordered.includes(:products)
+    @categories = Category.active.ordered.includes(image_attachment: :blob)
+    product_counts = Product.where(category_id: @categories.map(&:id)).group(:category_id).count
 
     categories_data = @categories.map do |category|
       {
@@ -13,7 +14,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         name: category.name,
         description: category.description,
         image_url: category.image.attached? ? url_for(category.image) : nil,
-        products_count: category.products_count,
+        products_count: product_counts[category.id] || 0,
         display_order: category.display_order
       }
     end
@@ -446,7 +447,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
-    @orders = customer.orders.recent.includes(:order_items => :product)
+    @orders = customer.orders.recent.includes(order_items: { product: { image_attachment: :blob, additional_images_attachments: :blob } })
 
     # Filter by status if provided
     @orders = @orders.where(status: params[:status]) if params[:status].present?
@@ -478,7 +479,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     customer = Customer.find_by(email: @current_user&.email) if @current_user
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
-    @order = customer.orders.includes(:order_items => :product).find(params[:id])
+    @order = customer.orders.includes(order_items: { product: { image_attachment: :blob, additional_images_attachments: :blob } }).find(params[:id])
 
     json_response({
       success: true,
@@ -820,7 +821,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
                        .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active' AND stock_batches.quantity_remaining > 0")
                        .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
                        .group("products.id")
-                       .includes(:category, :product_reviews, :approved_reviews, image_attachment: :blob, additional_images_attachments: :blob)
+                       .includes(:category, :product_reviews, :approved_reviews, :product_variants, image_attachment: :blob, additional_images_attachments: :blob)
                        .find(params[:id])
 
     # Get related products from same category
@@ -989,7 +990,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
-    @subscriptions = MilkSubscription.where(customer: customer).includes(:product, :milk_delivery_tasks)
+    @subscriptions = MilkSubscription.where(customer: customer).includes(:milk_delivery_tasks, product: { image_attachment: :blob, additional_images_attachments: :blob })
 
     # Filter by status if provided
     @subscriptions = @subscriptions.where(status: params[:status]) if params[:status].present?
@@ -1021,7 +1022,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     customer = @current_user if @current_user.is_a?(Customer)
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    @subscription = MilkSubscription.where(customer: customer).includes(:product, :milk_delivery_tasks).find(params[:id])
+    @subscription = MilkSubscription.where(customer: customer).includes(:milk_delivery_tasks, product: { image_attachment: :blob, additional_images_attachments: :blob }).find(params[:id])
 
     # Get recent delivery tasks from this subscription
     recent_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(delivery_date: :desc).limit(10)
@@ -1346,7 +1347,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   private
 
   def set_category
-    @category = Category.find(params[:id] || params[:category_id])
+    @category = Category.includes(image_attachment: :blob).find(params[:id] || params[:category_id])
   rescue ActiveRecord::RecordNotFound
     json_response({ success: false, message: 'Category not found' }, :not_found)
   end
@@ -1567,18 +1568,29 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     base_data
   end
 
+  # Was an uncached Net::HTTP.get_response with no timeout on every call - a single
+  # slow/hanging response from api.postalpincode.in blew every endpoint that validates
+  # a pincode (check_delivery_pincode, create_subscription, check_pincode,
+  # validate_delivery) way past 1s. Now bounded to a few seconds and cached, since a
+  # pincode's district/state mapping doesn't change.
   def validate_pincode(pincode)
     return { valid: false, error: 'Pincode is required' } if pincode.blank?
 
     pincode_str = pincode.to_s
     return { valid: false, error: 'Pincode must be 6 digits' } unless pincode_str.match?(/\A\d{6}\z/)
 
+    cache_key = "pincode_validation:#{pincode_str}"
+    cached = Rails.cache.read(cache_key)
+    return cached if cached
+
     begin
       require 'net/http'
       require 'json'
 
       uri = URI("https://api.postalpincode.in/pincode/#{pincode}")
-      response = Net::HTTP.get_response(uri)
+      response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 2, read_timeout: 2) do |http|
+        http.get(uri)
+      end
 
       if response.code == '200'
         data = JSON.parse(response.body)
@@ -1587,7 +1599,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
           post_office_data = data.first['PostOffice']
           if post_office_data && post_office_data.any?
             first_office = post_office_data.first
-            return {
+            result = {
               valid: true,
               pincode: pincode,
               district: first_office['District'],
@@ -1596,6 +1608,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
               post_offices: post_office_data.map { |po| po['Name'] },
               serviceable: true # You can add your own logic here
             }
+            Rails.cache.write(cache_key, result, expires_in: 30.days)
+            return result
           end
         end
       end

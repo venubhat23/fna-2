@@ -1,5 +1,3 @@
-require 'open-uri'
-
 module Api
   module V1
     module Mobile
@@ -247,9 +245,12 @@ module Api
             )
             public_url = result["secure_url"]
 
+            # Was re-downloading the image we just uploaded via URI.open(public_url) - a
+            # second full network round trip for no reason. The local tempfile still has
+            # the same bytes; just rewind and reuse it.
             attachment_name = { "profile" => :profile_image, "house" => :house_image, "personal" => :personal_image }[image_type]
             customer.send(attachment_name).attach(
-              io: URI.open(public_url),
+              io: image_file.tempfile.tap(&:rewind),
               filename: "#{image_type}_#{customer.id}.jpg",
               content_type: "image/jpeg"
             ) if attachment_name

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_17_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -378,7 +378,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.boolean "is_registered_by_mobile"
     t.integer "row_number"
     t.index ["created_at"], name: "index_customers_on_created_at"
+    t.index ["email"], name: "index_customers_on_email"
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
+    t.index ["mobile"], name: "index_customers_on_mobile"
     t.index ["row_number"], name: "index_customers_on_row_number"
     t.index ["status"], name: "index_customers_on_status"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
