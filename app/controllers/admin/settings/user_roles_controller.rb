@@ -188,7 +188,8 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
         { key: 'affiliates', name: 'Affiliate' }
       ],
       'Delivery Management' => [
-        { key: 'delivery_people', name: 'Delivery People' }
+        { key: 'delivery_people', name: 'Delivery People' },
+        { key: 'delivery_settings', name: 'Delivery Settings' }
       ],
       'Import & Export' => [
         { key: 'imports', name: 'Import Data' }

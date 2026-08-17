@@ -86,6 +86,10 @@ class Ability
       can :manage, DeliveryPerson
     end
 
+    if user.has_sidebar_permission?('delivery_settings')
+      can :manage, DeliveryCharge
+    end
+
     if user.has_sidebar_permission?('franchises')
       can :manage, Franchise
     end

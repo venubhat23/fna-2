@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_17_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_17_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -384,6 +384,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_17_090000) do
     t.index ["row_number"], name: "index_customers_on_row_number"
     t.index ["status"], name: "index_customers_on_status"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
+  end
+
+  create_table "delivery_charges", force: :cascade do |t|
+    t.string "pincode", null: false
+    t.string "area"
+    t.decimal "charge_amount", precision: 10, scale: 2, default: "0.0"
+    t.boolean "is_active", default: true
+    t.boolean "free_delivery_allowed", default: false, null: false
+    t.decimal "min_order_for_free_delivery", precision: 10, scale: 2, default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_active"], name: "index_delivery_charges_on_is_active"
+    t.index ["pincode"], name: "index_delivery_charges_on_pincode", unique: true
   end
 
   create_table "delivery_people", force: :cascade do |t|

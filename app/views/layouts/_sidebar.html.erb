@@ -851,7 +851,7 @@
     <% end %>
 
     <!-- Delivery Management Section -->
-    <% if current_user.has_sidebar_permission?('delivery_people') %>
+    <% if current_user.has_sidebar_permission?('delivery_people') || current_user.has_sidebar_permission?('delivery_settings') || current_user.user_type == 'admin' || current_user.user_type == 'super_admin' %>
     <div class="nav-section">
       <div class="nav-section-title">Delivery Management</div>
       <ul class="nav-menu">
@@ -865,6 +865,21 @@
               </div>
             </div>
             <span class="nav-text">Delivery People</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
+        <% end %>
+
+        <!-- Delivery Settings: visible to admins by default, others need the permission grant -->
+        <% if current_user.has_sidebar_permission?('delivery_settings') || current_user.user_type == 'admin' || current_user.user_type == 'super_admin' %>
+        <li class="nav-item">
+          <%= link_to admin_delivery_settings_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/delivery_settings')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-orange">
+                <i class="fas fa-truck"></i>
+              </div>
+            </div>
+            <span class="nav-text">Delivery Settings</span>
             <div class="nav-indicator"></div>
           <% end %>
         </li>

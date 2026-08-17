@@ -1,0 +1,130 @@
+<% content_for :title, "Delivery Settings" %>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">
+            <i class="fas fa-truck"></i>
+            Delivery Charges Management
+          </h4>
+          <%= link_to new_admin_delivery_setting_path, class: "btn btn-primary" do %>
+            <i class="fas fa-plus"></i> Add New Pincode
+          <% end %>
+        </div>
+
+        <div class="card-body">
+          <!-- Summary Cards -->
+          <div class="row mb-4">
+            <div class="col-md-3">
+              <div class="card border-primary border-2">
+                <div class="card-body text-center" style="background-color: #f8f9fa; color: #333;">
+                  <i class="fas fa-map-marker-alt fa-2x text-primary mb-2"></i>
+                  <h6 class="text-muted mb-1">Total Pincodes</h6>
+                  <h3 class="text-primary fw-bold"><%= @pincode_stats[:total] %></h3>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card border-success border-2">
+                <div class="card-body text-center" style="background-color: #f8f9fa; color: #333;">
+                  <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                  <h6 class="text-muted mb-1">Active Zones</h6>
+                  <h3 class="text-success fw-bold"><%= @pincode_stats[:active] %></h3>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card border-warning border-2">
+                <div class="card-body text-center" style="background-color: #f8f9fa; color: #333;">
+                  <i class="fas fa-pause-circle fa-2x text-warning mb-2"></i>
+                  <h6 class="text-muted mb-1">Inactive Zones</h6>
+                  <h3 class="text-warning fw-bold"><%= @pincode_stats[:inactive] %></h3>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card border-info border-2">
+                <div class="card-body text-center" style="background-color: #f8f9fa; color: #333;">
+                  <i class="fas fa-rupee-sign fa-2x text-info mb-2"></i>
+                  <h6 class="text-muted mb-1">Avg. Charge</h6>
+                  <h3 class="text-info fw-bold">₹<%= @pincode_stats[:avg_active_charge] %></h3>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delivery Charges Table -->
+          <div class="table-responsive">
+            <table class="table table-striped" id="deliveryChargesTable">
+              <thead class="table-dark">
+                <tr>
+                  <th>Pincode</th>
+                  <th>Area</th>
+                  <th>Charge Amount</th>
+                  <th>Free Delivery Allowed?</th>
+                  <th>Min. Order for Free Delivery</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @delivery_charges.each do |delivery_charge| %>
+                  <tr id="delivery-charge-<%= delivery_charge.id %>">
+                    <td><strong><%= delivery_charge.pincode %></strong></td>
+                    <td><%= delivery_charge.area || 'Not specified' %></td>
+                    <td class="text-success"><strong><%= delivery_charge.formatted_charge %></strong></td>
+                    <td class="text-center">
+                      <% if delivery_charge.free_delivery_allowed? %>
+                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>Yes</span>
+                      <% else %>
+                        <span class="badge bg-secondary"><i class="fas fa-times me-1"></i>No</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if delivery_charge.free_delivery_allowed? %>
+                        <span class="text-success fw-medium">₹<%= delivery_charge.min_order_for_free_delivery %></span>
+                      <% else %>
+                        <span class="text-muted">—</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if delivery_charge.is_active? %>
+                        <span class="badge bg-success">Active</span>
+                      <% else %>
+                        <span class="badge bg-secondary">Inactive</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <%= link_to edit_admin_delivery_setting_path(delivery_charge),
+                            target: "_blank",
+                            rel: "noopener",
+                            class: "btn btn-sm btn-outline-primary" do %>
+                        <i class="fas fa-edit"></i> Edit
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+
+            <% if @delivery_charges.empty? %>
+              <div class="text-center py-4">
+                <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No delivery charges configured</h5>
+                <p class="text-muted">Add delivery charges for different pincodes to get started.</p>
+              </div>
+            <% end %>
+
+            <% if respond_to?(:paginate) && @delivery_charges.respond_to?(:total_pages) %>
+              <div class="d-flex justify-content-center mt-3">
+                <%= paginate @delivery_charges %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -229,7 +229,18 @@ document.addEventListener('DOMContentLoaded', function() {
                   </div>
                 </td>
                 <td class="align-middle">
-                  <% if product.stock.to_i > 0 %>
+                  <% if product.has_multiple_quantities? %>
+                    <% product.sorted_variants.each do |variant| %>
+                      <div class="d-flex justify-content-between align-items-center" style="min-width: 140px;">
+                        <span class="small text-muted me-2"><%= variant.label %></span>
+                        <% if variant.available_stock.to_i > 0 %>
+                          <span class="text-success fw-medium small"><%= variant.available_stock.to_i %></span>
+                        <% else %>
+                          <span class="text-danger fw-medium small">0</span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  <% elsif product.stock.to_i > 0 %>
                     <span class="text-success fw-medium"><%= product.stock %> <%= product.unit_type %></span>
                     <div class="small text-muted">In Stock</div>
                   <% else %>

@@ -873,6 +873,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     pincode_validation = validate_pincode(pincode)
 
     if pincode_validation[:valid]
+      delivery_charge_record = DeliveryCharge.for_pincode(pincode)
+
       json_response({
         success: true,
         data: {
@@ -885,7 +887,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
             post_offices: pincode_validation[:post_offices]
           },
           estimated_days: 3,
-          delivery_charge: 0,
+          delivery_charge: delivery_charge_record&.charge_amount.to_f,
+          free_delivery_allowed: delivery_charge_record&.free_delivery_allowed || false,
+          min_order_for_free_delivery: delivery_charge_record&.min_order_for_free_delivery.to_f,
           message: pincode_validation[:serviceable] ?
             "Delivery available to #{pincode_validation[:district]}, #{pincode_validation[:state]}" :
             "Delivery not available in this area"
@@ -1172,6 +1176,70 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       data: validation_result,
       message: validation_result[:valid] ? 'Pincode is serviceable' : 'Pincode not serviceable'
     })
+  end
+
+  # POST /api/v1/mobile/ecommerce/delivery/charges
+  def delivery_charges
+    pincode = params[:pincode]
+    address = params[:address]
+
+    if pincode.blank?
+      return json_response({
+        success: false,
+        message: 'Pincode is required',
+        error: 'Missing pincode parameter'
+      }, :unprocessable_entity)
+    end
+
+    sanitized_pincode = pincode.to_s.gsub(/[^0-9]/, '')
+
+    unless sanitized_pincode.match?(/^\d{6}$/)
+      return json_response({
+        success: false,
+        message: 'Invalid pincode format. Pincode should be 6 digits.',
+        error: 'Invalid pincode format',
+        data: {
+          pincode: sanitized_pincode,
+          address: address,
+          delivery_charge: 0.0,
+          is_deliverable: false
+        }
+      }, :unprocessable_entity)
+    end
+
+    delivery_charge_record = DeliveryCharge.for_pincode(sanitized_pincode)
+
+    if delivery_charge_record
+      json_response({
+        success: true,
+        message: 'Delivery charges calculated successfully',
+        data: {
+          pincode: sanitized_pincode,
+          address: address,
+          area: delivery_charge_record.area,
+          delivery_charge: delivery_charge_record.charge_amount,
+          formatted_charge: delivery_charge_record.formatted_charge,
+          free_delivery_allowed: delivery_charge_record.free_delivery_allowed?,
+          min_order_for_free_delivery: delivery_charge_record.min_order_for_free_delivery,
+          is_deliverable: true,
+          delivery_available: true
+        }
+      })
+    else
+      json_response({
+        success: false,
+        message: 'Delivery not available for this pincode',
+        error: 'Pincode not serviceable',
+        data: {
+          pincode: sanitized_pincode,
+          address: address,
+          delivery_charge: 0.0,
+          is_deliverable: false,
+          delivery_available: false,
+          suggested_message: "We don't currently deliver to pincode #{sanitized_pincode}. Please contact support for more information."
+        }
+      }, :unprocessable_entity)
+    end
   end
 
   # POST /api/v1/mobile/ecommerce/delivery/validate

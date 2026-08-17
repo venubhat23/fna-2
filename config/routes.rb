@@ -740,6 +740,14 @@ Rails.application.routes.draw do
       end
     end
 
+    # Delivery Settings Management
+    resources :delivery_settings, only: [:index, :new, :create, :update, :edit] do
+      collection do
+        get :edit_pincode_charges
+        patch :update_pincode_charges
+      end
+    end
+
     # Coupons Management
     resources :coupons do
       member do
@@ -813,6 +821,7 @@ Rails.application.routes.draw do
         # Pincode & Delivery Validation APIs
         get 'ecommerce/delivery/check-pincode/:pincode', to: 'ecommerce#check_pincode'
         post 'ecommerce/delivery/validate', to: 'ecommerce#validate_delivery'
+        post 'ecommerce/delivery/charges', to: 'ecommerce#delivery_charges'
         post 'ecommerce/location/save', to: 'ecommerce#save_location'
 
         # Delivery Person APIs
