@@ -1367,7 +1367,23 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!form.checkValidity()) {
         event.preventDefault();
         event.stopPropagation();
+        form.classList.add('was-validated');
+        return;
       }
+
+      // Guard against duplicate subscriptions from a double-click: disable
+      // the button on the click that actually submits, so a second click
+      // before the page navigates away can't fire a second POST.
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        if (submitBtn.disabled) {
+          event.preventDefault();
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.value = 'Creating...';
+      }
+
       form.classList.add('was-validated');
     });
   }

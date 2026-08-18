@@ -43,15 +43,6 @@
       Create New Subscription
     <% end %>
 
-    <%= button_to delete_all_admin_subscriptions_path, method: :delete,
-          class: "btn btn-danger",
-          form: { id: "deleteAllSubsForm" },
-          data: {
-            confirm: "WARNING: This will permanently delete ALL #{@total_subscriptions_count} subscriptions and ALL #{@total_delivery_tasks_count} milk delivery tasks. This cannot be undone. Are you sure?"
-          } do %>
-      <i class="bi bi-trash3 me-1"></i>
-      Remove All Subscriptions
-    <% end %>
   </div>
 </div>
 

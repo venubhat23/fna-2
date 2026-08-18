@@ -436,7 +436,7 @@ module Api
             if defined?(Booking) && Booking.column_names.include?('delivery_person_id')
               bookings = Booking.where(delivery_person_id: current_delivery_person_id)
                               .where('DATE(created_at) = ?', Date.current)
-                              .where.not(status: ['delivered', 'cancelled'])
+                              .where.not(status: 'cancelled')
                               .includes(booking_items: :product)
                               .to_a
             else
@@ -506,7 +506,13 @@ module Api
             formatted_tasks << format_subscription_task(subscription)
           end
 
+          # Pending/in-progress tasks first, completed ones pushed to the bottom.
+          # sort_by isn't guaranteed stable, so pair with the original index to
+          # keep relative order within each group.
           formatted_tasks
+            .each_with_index
+            .sort_by { |task, index| [task[:status] == 'completed' ? 1 : 0, index] }
+            .map(&:first)
         end
 
         def format_booking_task(booking)
