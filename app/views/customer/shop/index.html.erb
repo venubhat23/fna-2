@@ -480,21 +480,7 @@
             <i class="bi bi-search me-1 text-primary"></i>
             Search Products
           </label>
-          <select class="form-select product-search-select2" id="productSearchInput" style="width: 100%;">
-            <option value=""></option>
-            <% @products.each do |product| %>
-              <%
-                search_price = product.respond_to?(:discount_price) && product.discount_price.present? && product.discount_price != product.price ? product.discount_price : product.price
-              %>
-              <option value="<%= product.id %>"
-                      data-name="<%= product.name %>"
-                      data-category="<%= product.category&.name || 'No Category' %>"
-                      data-price="<%= number_with_delimiter(number_with_precision(search_price, precision: 2)) %>"
-                      data-image="<%= product.main_image_url %>">
-                <%= product.name %>
-              </option>
-            <% end %>
-          </select>
+          <input type="text" class="form-control" id="productSearchInput" placeholder="Search products by name, SKU, or category...">
         </div>
         <div class="col-xl-3 col-lg-3">
           <label class="form-label fw-semibold mb-2">
@@ -556,7 +542,8 @@
                 <div class="col-xl-3 col-lg-4 col-md-6 product-grid-item"
                      data-product-id="<%= product.id %>"
                      data-category="<%= product.category_id %>"
-                     data-stock="<%= current_stock %>">
+                     data-stock="<%= current_stock %>"
+                     data-search="<%= j("#{product.name} #{product.category&.name} #{product.sku}".downcase) %>">
                   <div class="card h-100 border-0 shadow-sm hover-lift product-card">
                 <!-- Product Image -->
                 <div class="position-relative">
@@ -778,25 +765,9 @@ function initializeSelect2() {
   // Guard against double-initialization: this runs on both DOMContentLoaded and
   // turbo:load (see initShopPage above), which both fire on every page visit
   // (including a hard reload) under Turbo Drive.
-  $('.category-select2.select2-hidden-accessible, .stock-select2.select2-hidden-accessible, .product-search-select2.select2-hidden-accessible').each(function() {
+  $('.category-select2.select2-hidden-accessible, .stock-select2.select2-hidden-accessible').each(function() {
     $(this).select2('destroy');
   });
-
-  // Product Search Select2 - live search-as-you-type against every product name,
-  // with a rich thumbnail/category/price result row. Selecting a product narrows
-  // the grid to just that card; clearing (the x button) restores the full grid.
-  $('.product-search-select2').select2({
-    theme: 'bootstrap-5',
-    placeholder: 'Search products by name...',
-    allowClear: true,
-    width: '100%',
-    templateResult: formatProductSearchResult,
-    templateSelection: formatProductSearchSelection
-  });
-
-  $('.product-search-select2').on('select2:select', applyFilters);
-
-  $('.product-search-select2').on('select2:clear', applyFilters);
 
   // Category Select2 - minimumResultsForSearch: 0 forces the search box to always
   // render, even with a handful of categories (Select2 hides it by default under 10
@@ -825,44 +796,11 @@ function initializeSelect2() {
   $('.stock-select2').on('change', applyFilters);
 }
 
-// Rich dropdown row for the product search Select2: thumbnail + name + category + price,
-// so results are recognizable at a glance instead of a plain text list.
-function formatProductSearchResult(product) {
-  if (!product.id) {
-    return product.text;
-  }
-  const $option = $(product.element);
-  const image = $option.data('image');
-  const category = $option.data('category');
-  const price = $option.data('price');
-
-  const $result = $(`
-    <div class="d-flex align-items-center gap-2 py-1">
-      <div class="flex-shrink-0" style="width: 36px; height: 36px;">
-        ${image ? `<img src="${image}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">`
-                : `<div class="d-flex align-items-center justify-content-center bg-light" style="width:36px;height:36px;border-radius:6px;"><i class="bi bi-box-seam text-muted"></i></div>`}
-      </div>
-      <div class="flex-grow-1">
-        <div class="fw-semibold">${product.text}</div>
-        <small class="text-muted">${category}</small>
-      </div>
-      <div class="fw-semibold text-success">₹${price}</div>
-    </div>
-  `);
-  return $result;
-}
-
-// Selected-state chip: just the product name (the rich row above is for the dropdown only).
-function formatProductSearchSelection(product) {
-  return product.text || 'Search products by name...';
-}
-
-// Combined product-name / category / stock filtering. All three read from the
-// live Select2 values and AND together, so picking a category doesn't wipe out
-// an active stock filter (or vice versa) the way three independent
-// show/hide-everything functions used to.
+// Combined product-search / category / stock filtering. All three read live
+// and AND together, so picking a category doesn't wipe out an active search
+// or stock filter (or vice versa).
 function applyFilters() {
-  const selectedProductId = $('.product-search-select2').val() || '';
+  const searchTerm = (document.getElementById('productSearchInput')?.value || '').trim().toLowerCase();
   const categoryId = $('.category-select2').val() || '';
   const stockType = $('.stock-select2').val() || 'all';
 
@@ -870,7 +808,7 @@ function applyFilters() {
   products.forEach(product => {
     let visible = true;
 
-    if (selectedProductId && product.dataset.productId !== selectedProductId) {
+    if (searchTerm && !(product.dataset.search || '').includes(searchTerm)) {
       visible = false;
     }
 
@@ -887,17 +825,14 @@ function applyFilters() {
 
     product.style.display = visible ? 'block' : 'none';
   });
-
-  if (selectedProductId) {
-    const match = document.querySelector(`.product-grid-item[data-product-id="${selectedProductId}"]`);
-    if (match && match.style.display !== 'none') {
-      match.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }
 }
 
 // Initialize filters
 function initializeFilters() {
+  const searchInput = document.getElementById('productSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+  }
   applyFilters();
 }
 
@@ -1089,9 +1024,10 @@ function updateCartBadge() {
   }));
 }
 
-// Reset all three Select2 filters and re-show every product.
+// Reset search text and both Select2 filters, then re-show every product.
 function clearAllFilters() {
-  $('.product-search-select2').val(null).trigger('change.select2');
+  const searchInput = document.getElementById('productSearchInput');
+  if (searchInput) searchInput.value = '';
   $('.category-select2').val('').trigger('change.select2');
   $('.stock-select2').val('all').trigger('change.select2');
 
