@@ -502,33 +502,6 @@
         </li>
         <% end %>
 
-        <!-- Subscriptions -->
-        <% if current_user.has_sidebar_permission?('subscriptions') %>
-        <li class="nav-item">
-          <%= link_to admin_subscriptions_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/subscriptions') && params[:month] != '7'}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-purple">
-                <i class="bi bi-arrow-repeat"></i>
-              </div>
-            </div>
-            <span class="nav-text">Subscriptions</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-
-        <!-- Subscriptions - July -->
-        <li class="nav-item">
-          <%= link_to admin_subscriptions_path(month: 7), class: "nav-link-modern #{'active' if request.path.include?('/admin/subscriptions') && params[:month] == '7'}" do %>
-            <div class="nav-icon-modern">
-              <div class="icon-bg gradient-purple">
-                <i class="bi bi-calendar-event"></i>
-              </div>
-            </div>
-            <span class="nav-text">Subscription - July</span>
-            <div class="nav-indicator"></div>
-          <% end %>
-        </li>
-        <% end %>
 
         <!-- Invoices -->
         <% if current_user.has_sidebar_permission?('invoices') %>

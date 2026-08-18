@@ -93,6 +93,17 @@
                   </div>
                 </div>
 
+                <div class="mb-3 variant-select-wrapper <%= 'd-none' if @product_variants_by_product[@subscription.product_id].blank? %>">
+                  <%= form.label :product_variant_id, "Variant", class: "form-label fw-bold" %>
+                  <%= form.select :product_variant_id,
+                      options_for_select(
+                        (@product_variants_by_product[@subscription.product_id] || []).map { |v| ["#{v[:label]} - ₹#{v[:price]}", v[:id]] },
+                        @subscription.product_variant_id
+                      ),
+                      { include_blank: 'Select Variant...' },
+                      { class: "form-select select2-variant" } %>
+                </div>
+
                 <div class="row">
                   <div class="col-md-8">
                     <%= form.label :quantity, "Quantity", class: "form-label fw-bold" %>
@@ -332,6 +343,9 @@
 <!-- JavaScript for Dynamic Form Behavior -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Variants for each active product, e.g. { "12": [{ id: 5, label: "1 Kg", price: 60.0 }, ...] }
+  const PRODUCT_VARIANTS = <%= raw @product_variants_by_product.to_json %>;
+
   // Initialize Select2
   if (typeof $ !== 'undefined' && $.fn.select2) {
     $('.select2-customer').select2({
@@ -346,10 +360,42 @@ document.addEventListener('DOMContentLoaded', function() {
       allowClear: true
     });
 
+    $('.select2-variant').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'Select variant...',
+      allowClear: true
+    });
+
     $('.select2-delivery-person').select2({
       theme: 'bootstrap-5',
       placeholder: 'Select delivery person...',
       allowClear: true
+    });
+  }
+
+  // Repopulate the variant dropdown when the product changes. Products without
+  // variants keep it hidden and non-required.
+  const productSelect = document.getElementById('milk_subscription_product_id');
+  const variantWrapper = document.querySelector('.variant-select-wrapper');
+  const variantSelect = document.getElementById('milk_subscription_product_variant_id');
+
+  if (productSelect && variantWrapper && variantSelect) {
+    productSelect.addEventListener('change', function() {
+      const variants = PRODUCT_VARIANTS[this.value] || [];
+
+      variantSelect.innerHTML = '<option value="">Select Variant...</option>';
+      variants.forEach(function(variant) {
+        const option = document.createElement('option');
+        option.value = variant.id;
+        option.textContent = `${variant.label} - ₹${variant.price}`;
+        variantSelect.appendChild(option);
+      });
+
+      variantWrapper.classList.toggle('d-none', variants.length === 0);
+
+      if (typeof $ !== 'undefined' && $.fn.select2 && $(variantSelect).hasClass('select2-hidden-accessible')) {
+        $(variantSelect).trigger('change.select2');
+      }
     });
   }
 

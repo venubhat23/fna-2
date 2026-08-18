@@ -101,6 +101,14 @@
                       <div class="invalid-feedback">Please select a product.</div>
                     </div>
 
+                    <div class="mb-3 variant-select-wrapper d-none">
+                      <label class="form-label fw-bold">Variant</label>
+                      <select name="subscription[products][0][product_variant_id]" class="form-select select2-variant">
+                        <option value="">Select Variant...</option>
+                      </select>
+                      <div class="invalid-feedback">Please select a variant.</div>
+                    </div>
+
                     <div class="row">
                       <div class="col-md-6">
                         <label class="form-label fw-bold">Quantity</label>
@@ -659,6 +667,9 @@
 document.addEventListener('DOMContentLoaded', function() {
   let productCounter = 0;
 
+  // Variants for each active product, e.g. { "12": [{ id: 5, label: "1 Kg", price: 60.0 }, ...] }
+  const PRODUCT_VARIANTS = <%= raw @product_variants_by_product.to_json %>;
+
   // Initialize Select2
   if (typeof $ !== 'undefined' && $.fn.select2) {
     $('.select2-customer').select2({
@@ -674,6 +685,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     initializeProductSelects();
+    initializeVariantSelects();
   }
 
   // Initialize product selects
@@ -688,6 +700,61 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  // Initialize variant selects
+  function initializeVariantSelects() {
+    $('.select2-variant').each(function() {
+      if (!$(this).hasClass('select2-hidden-accessible')) {
+        $(this).select2({
+          theme: 'bootstrap-5',
+          placeholder: 'Select variant...',
+          allowClear: true
+        });
+      }
+    });
+  }
+
+  // Show/populate the variant dropdown for a product row based on the selected product.
+  // Products without variants keep the dropdown hidden and non-required.
+  function updateVariantOptions(productItem) {
+    const productSelect = productItem.querySelector('select[name*="[product_id]"]');
+    const variantWrapper = productItem.querySelector('.variant-select-wrapper');
+    const variantSelect = productItem.querySelector('select[name*="[product_variant_id]"]');
+    if (!productSelect || !variantWrapper || !variantSelect) return;
+
+    const variants = PRODUCT_VARIANTS[productSelect.value] || [];
+
+    const isSelect2 = typeof $ !== 'undefined' && $.fn.select2 && $(variantSelect).hasClass('select2-hidden-accessible');
+
+    variantSelect.innerHTML = '<option value="">Select Variant...</option>';
+    variants.forEach(function(variant) {
+      const option = document.createElement('option');
+      option.value = variant.id;
+      option.dataset.price = variant.price;
+      option.textContent = `${variant.label} - ₹${variant.price}`;
+      variantSelect.appendChild(option);
+    });
+
+    if (variants.length > 0) {
+      variantWrapper.classList.remove('d-none');
+      variantSelect.required = true;
+    } else {
+      variantWrapper.classList.add('d-none');
+      variantSelect.required = false;
+      variantSelect.value = '';
+    }
+
+    if (isSelect2) {
+      $(variantSelect).trigger('change.select2');
+    }
+  }
+
+  // React to product selection changes on any product row (existing or dynamically added)
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('select[name*="[product_id]"]')) {
+      updateVariantOptions(e.target.closest('.product-item'));
+    }
+  });
 
   // Add Product Button
   document.getElementById('addProductBtn').addEventListener('click', function() {
@@ -719,6 +786,14 @@ document.addEventListener('DOMContentLoaded', function() {
             ${productOptions}
           </select>
           <div class="invalid-feedback">Please select a product.</div>
+        </div>
+
+        <div class="mb-3 variant-select-wrapper d-none">
+          <label class="form-label fw-bold">Variant</label>
+          <select name="subscription[products][${productCounter}][product_variant_id]" class="form-select select2-variant">
+            <option value="">Select Variant...</option>
+          </select>
+          <div class="invalid-feedback">Please select a variant.</div>
         </div>
 
         <div class="row">
@@ -755,6 +830,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize Select2 for new select
     initializeProductSelects();
+    initializeVariantSelects();
 
     // Update product numbers
     updateProductNumbers();
@@ -825,17 +901,21 @@ document.addEventListener('DOMContentLoaded', function() {
       const productSelect = item.querySelector('select[name*="product_id"]');
       const quantityInput = item.querySelector('input[name*="quantity"]');
       const unitSelect = item.querySelector('select[name*="unit"]');
+      const variantSelect = item.querySelector('select[name*="product_variant_id"]');
 
       if (productSelect.value) {
         hasValidProducts = true;
         const productText = productSelect.options[productSelect.selectedIndex].text;
         const quantity = quantityInput.value || '1';
         const unit = unitSelect.options[unitSelect.selectedIndex].text;
+        const variantText = variantSelect && variantSelect.selectedIndex > 0
+          ? variantSelect.options[variantSelect.selectedIndex].text
+          : null;
 
         summaryHTML += `
           <div class="col-md-6 col-lg-4">
             <div class="p-2 bg-white rounded border">
-              <small class="fw-bold text-primary d-block">${productText}</small>
+              <small class="fw-bold text-primary d-block">${productText}${variantText ? ` <span class="badge bg-secondary-subtle text-secondary">${variantText}</span>` : ''}</small>
               <small class="text-muted">${quantity} ${unit} per delivery</small>
             </div>
           </div>
@@ -852,9 +932,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Listen for product/quantity changes
+  // Listen for product/variant/quantity changes
   document.addEventListener('change', function(e) {
-    if (e.target.matches('select[name*="product_id"], input[name*="quantity"], select[name*="unit"]')) {
+    if (e.target.matches('select[name*="product_id"], select[name*="product_variant_id"], input[name*="quantity"], select[name*="unit"]')) {
       updateProductsSummary();
       updateCostEstimation();
     }
@@ -1238,7 +1318,9 @@ document.addEventListener('DOMContentLoaded', function() {
           hasValidProducts = true;
           const productText = productSelect.options[productSelect.selectedIndex].text;
           const quantity = parseFloat(quantityInput.value) || 1;
-          const pricePerUnit = 30; // This should come from backend
+          const variantSelect = item.querySelector('select[name*="product_variant_id"]');
+          const selectedVariantOption = variantSelect && variantSelect.selectedIndex > 0 ? variantSelect.options[variantSelect.selectedIndex] : null;
+          const pricePerUnit = selectedVariantOption ? parseFloat(selectedVariantOption.dataset.price) : 30; // Falls back to a placeholder when the product has no variant price
           const totalQuantity = formatNumber(deliveryCount * quantity);
           const productTotal = formatNumber(totalQuantity * pricePerUnit);
           totalEstimate += parseFloat(productTotal);

@@ -1,0 +1,2404 @@
+{
+  "info": {
+    "_postman_id": "77fb44b4-caa3-4896-976c-76c014aec613",
+    "name": "Ecommerce Mobile App API AtmaNirbhar",
+    "description": "Mobile-app-only API surface for this Rails app (app/controllers/api/v1/mobile/**, routed under /api/v1/mobile in config/routes.rb).\n\nExcludes the admin/web dashboard, franchise, affiliate and customer-web-portal controllers \u2014 this collection is scoped strictly to what the mobile app calls.\n\nInsurance-related mobile endpoints (customer insurance portfolio, agent dashboard/leads/commission, insurance-derived login stats) have been removed from the mobile API entirely \u2014 those features remain in the app's admin/web side but are no longer exposed to the mobile app.\n\n## Auth model\nOne shared JWT login endpoint (Authentication > Login) serves four different account types \u2014 Customer, User(agent/sub_agent), SubAgent, DeliveryPerson \u2014 differentiated by `data.role` in the response. Send the token back as `Authorization: Bearer <token>` (30-day expiry, HS256, signed with Rails.application.secret_key_base).\n\nBecause a mobile device is usually only ever ONE of these roles at a time, this collection saves the token into 4 collection variables after every login:\n- `token` \u2014 always set to whatever the last login returned\n- `customer_token` \u2014 set when data.role == 'customer'\n- `agent_token` \u2014 set when data.role == 'agent' or 'sub_agent'\n- `delivery_token` \u2014 set when data.role == 'delivery_person'\n\nAgent/sub-agent accounts can still log in and use Settings (profile, password, terms, contact, helpdesk) \u2014 the dedicated agent dashboard/leads/commission endpoints and insurance-derived login stats have been removed.\n\n## base_url\nDefaults to the production host found hardcoded in app/controllers/api/v1/mobile/authentication_controller.rb \u2014 change the `base_url` collection variable to point at localhost or staging.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://dr-wise-ag.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agent_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "delivery_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "delivery_person_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "description": "Shared authentication endpoints used by every mobile role. Run 'Login' first \u2014 its test script populates {{token}} for the rest of the collection.",
+      "item": [
+        {
+          "name": "Login (Customer / Agent / Sub-Agent / Delivery Person)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Single login endpoint shared by every mobile role. The backend tries, in order: User (agent/admin/customer login), Customer, DeliveryPerson, SubAgent. `username` accepts an email OR a 10-digit Indian mobile number (also accepts +91/91-prefixed variants). Response `data.role` tells you which type of account logged in (customer | agent | sub_agent | delivery_person) and `data.token` is a 30-day JWT to send as `Authorization: Bearer <token>`.\n\nA test script on this request auto-saves the token into {{token}} and into the role-specific variable ({{customer_token}} / {{agent_token}} / {{delivery_token}}) so the rest of the collection works without manual copy/paste.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"customer@example.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.success && json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('token', json.data.token);",
+                  "        const role = json.data.role;",
+                  "        if (role === 'customer') {",
+                  "            pm.collectionVariables.set('customer_token', json.data.token);",
+                  "            if (json.data.customer_id) pm.collectionVariables.set('customer_id', json.data.customer_id);",
+                  "        }",
+                  "        if (role === 'agent' || role === 'sub_agent') {",
+                  "            pm.collectionVariables.set('agent_token', json.data.token);",
+                  "        }",
+                  "        if (role === 'delivery_person') {",
+                  "            pm.collectionVariables.set('delivery_token', json.data.token);",
+                  "            if (json.data.delivery_person_id) pm.collectionVariables.set('delivery_person_id', json.data.delivery_person_id);",
+                  "        }",
+                  "        console.log('Saved token for role: ' + role);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register - Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates both a Customer record and a linked User (for login) inside a DB transaction. Requires: first_name, last_name, email, mobile, password. Mobile must be a valid 10-digit Indian number (6-9 start). Fails 409 if email/mobile already used, 422 on validation errors.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"customer\",\n  \"first_name\": \"Asha\",\n  \"last_name\": \"Rao\",\n  \"email\": \"asha.rao@example.com\",\n  \"mobile\": \"9876543210\",\n  \"password\": \"Password123\",\n  \"password_confirmation\": \"Password123\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\",\n  \"pincode\": \"560001\",\n  \"whatsapp_number\": \"9876543210\",\n  \"latitude\": \"12.9716\",\n  \"longitude\": \"77.5946\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register - Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates a User with user_type=agent, role=agent_role and status=false (pending admin approval - cannot log in until an admin activates the account).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"agent\",\n  \"first_name\": \"Vikram\",\n  \"last_name\": \"Shah\",\n  \"email\": \"vikram.shah@example.com\",\n  \"mobile\": \"9998887776\",\n  \"password\": \"Password123\",\n  \"password_confirmation\": \"Password123\",\n  \"pan_no\": \"ABCDE1234F\",\n  \"address\": \"45 Park Street\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"gender\": \"Male\",\n  \"occupation\": \"Insurance Agent\",\n  \"annual_income\": \"500000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/auth/forgot_password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "auth",
+                "forgot_password"
+              ]
+            },
+            "description": "Looks up the account across User, Customer and SubAgent by email or mobile. NOTE: current implementation only generates a reset token in memory and does not actually persist it or send an email yet - it always returns a generic success message when the account is found.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Ecommerce - Catalog",
+      "description": "Product/category browsing. Only products (list), featured_products and banners are public \u2014 everything else needs a customer Bearer token.",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "categories"
+              ]
+            },
+            "description": "List active categories with product counts. Requires customer auth.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/categories/:id/products?page=1&per_page=20&min_price=&max_price=&search=&sort_by=newest",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "categories",
+                ":id",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "min_price",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "max_price",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "newest",
+                  "description": "newest|price_low|price_high|name|rating",
+                  "disabled": false
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Products (list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products?page=1&per_page=20&category_id=&min_price=&max_price=&search=&sort_by=newest",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "category_id",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "min_price",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "max_price",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "newest",
+                  "description": "newest|price_low|price_high|name|rating",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required (explicitly excepted from authenticate_customer!).",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "products",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Includes variants, related products and recent reviews.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Featured Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/featured_products?limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "featured_products"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "max 10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/search?query=milk&page=1&per_page=20&category_id=&min_price=&max_price=&sort_by=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "milk",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "category_id",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "min_price",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "max_price",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Requires customer auth. `query` (or `q`/`search`) is required.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Filters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "filters"
+              ]
+            },
+            "description": "Requires customer auth. Returns categories, price range, brands, sort options.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Banners (Ecommerce)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/banners?location=home",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "home",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required. Prefer the dedicated Banners folder for the richer /api/v1/mobile/banners endpoints.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Ecommerce - Delivery & Location",
+      "description": "Pincode validation, delivery-charge lookup and saving the customer's live location.",
+      "item": [
+        {
+          "name": "Check Delivery by Pincode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/check_delivery",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "check_delivery"
+              ]
+            },
+            "description": "PUBLIC endpoint. Validates pincode via api.postalpincode.in (cached 30 days) and looks up DeliveryCharge.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pincode\": \"560001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Check Product Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/products/:id/check_delivery",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "products",
+                ":id",
+                "check_delivery"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Uses Product#delivery_info_for.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pincode\": \"560001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Check Pincode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/check-pincode/:pincode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "delivery",
+                "check-pincode",
+                ":pincode"
+              ],
+              "variable": [
+                {
+                  "key": "pincode",
+                  "value": "560001",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth (not in the public-except list, despite the similar-sounding public check_delivery route).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validate Delivery (multi-product)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "delivery",
+                "validate"
+              ]
+            },
+            "description": "Requires customer auth. Checks stock + deliverability for a list of product_ids in one call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pincode\": \"560001\",\n  \"product_ids\": [\n    1,\n    2,\n    3\n  ],\n  \"delivery_date\": \"2026-08-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delivery Charges",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/delivery/charges",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "delivery",
+                "charges"
+              ]
+            },
+            "description": "Requires customer auth. pincode must be exactly 6 digits.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pincode\": \"560001\",\n  \"address\": \"12 MG Road, Bengaluru\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/location/save",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "location",
+                "save"
+              ]
+            },
+            "description": "Requires customer auth. Persists lat/long (+ optional address) onto the Customer record.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": \"12.9716\",\n  \"longitude\": \"77.5946\",\n  \"address\": \"12 MG Road, Bengaluru\",\n  \"pincode\": \"560001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Ecommerce - Bookings",
+      "description": "Mobile app 'quick order' flow \u2014 separate from full Orders/Cart checkout.",
+      "item": [
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "bookings"
+              ]
+            },
+            "description": "Requires customer auth. Required fields: booking.customer_id, booking.delivery_address, booking.pincode. Validates stock per item (product or product_variant) before creating; decrements stock on success. Wrap all fields under a top-level `booking` object (Rails strong params).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking\": {\n    \"customer_id\": \"{{customer_id}}\",\n    \"customer_name\": \"Asha Rao\",\n    \"customer_email\": \"asha.rao@example.com\",\n    \"customer_phone\": \"9876543210\",\n    \"delivery_address\": \"12 MG Road, Bengaluru\",\n    \"payment_method\": \"cod\",\n    \"notes\": \"Leave at the gate\",\n    \"pincode\": \"560001\",\n    \"latitude\": \"12.9716\",\n    \"longitude\": \"77.5946\",\n    \"booking_items_attributes\": [\n      {\n        \"product_id\": \"1\",\n        \"quantity\": \"2\",\n        \"price\": \"50\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/bookings?page=1&per_page=20&status=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "e.g. confirmed, delivered, cancelled",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Requires customer auth. Scoped to the logged-in customer's own bookings.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Ecommerce - Orders",
+      "description": "Read-only order history for the logged-in customer.",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/orders?page=1&per_page=20&status=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Requires customer auth.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/orders/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "orders",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Returns full order with items.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Ecommerce - Subscriptions",
+      "description": "Recurring milk/product subscription management (MilkSubscription model).",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "subscriptions"
+              ]
+            },
+            "description": "Requires customer auth. Wraps a `subscription` object; maps to a MilkSubscription under the hood. frequency: daily|weekly/alternate|specific/custom.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscription\": {\n    \"product_id\": \"1\",\n    \"frequency\": \"daily\",\n    \"start_date\": \"2026-08-20\",\n    \"end_date\": \"2026-09-20\",\n    \"quantity\": \"1\",\n    \"delivery_time\": \"morning\",\n    \"delivery_address\": \"12 MG Road, Bengaluru\",\n    \"pincode\": \"560001\",\n    \"latitude\": \"12.9716\",\n    \"longitude\": \"77.5946\",\n    \"notes\": \"Ring the bell\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions?page=1&per_page=20&status=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "subscriptions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active|paused|cancelled",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Requires customer auth.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Subscription Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "subscriptions",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Includes last 10 delivery tasks.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pause Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/:id/pause",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "subscriptions",
+                ":id",
+                "pause"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Only valid from status=active.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resume Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/:id/resume",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "subscriptions",
+                ":id",
+                "resume"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Only valid from status=paused.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/subscriptions/:id/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "subscriptions",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires customer auth. Idempotent-ish: 422 if already cancelled.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Customer Profile",
+      "description": "Customer's own ecommerce profile (distinct from account settings at /settings/profile).",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "profile"
+              ]
+            },
+            "description": "Requires customer auth. Includes stats + last 5 orders/bookings.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "profile"
+              ]
+            },
+            "description": "Requires customer auth. Accepts the fields either wrapped in `customer`, in `ecommerce`, or flat at the top level (all three are supported for backwards compatibility) - this example uses the `customer` wrapper.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"first_name\": \"Asha\",\n    \"last_name\": \"Rao\",\n    \"middle_name\": \"\",\n    \"mobile\": \"9876543210\",\n    \"whatsapp_number\": \"9876543210\",\n    \"address\": \"12 MG Road, Bengaluru\",\n    \"gender\": \"Female\",\n    \"marital_status\": \"Single\",\n    \"birth_date\": \"1995-04-12\",\n    \"pan_no\": \"\",\n    \"gst_no\": \"\",\n    \"company_name\": \"\",\n    \"occupation\": \"Software Engineer\",\n    \"annual_income\": \"1200000\",\n    \"nationality\": \"Indian\",\n    \"blood_group\": \"O+\",\n    \"emergency_contact_name\": \"Rao Sr.\",\n    \"emergency_contact_number\": \"9876500000\",\n    \"preferred_language\": \"en\",\n    \"longitude\": \"77.5946\",\n    \"latitude\": \"12.9716\",\n    \"notes\": \"\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Settings",
+      "description": "Account settings shared across customer / agent / sub-agent mobile users.",
+      "item": [
+        {
+          "name": "Get Settings Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "settings",
+                "profile"
+              ]
+            },
+            "description": "Requires auth (any role: customer/agent/sub_agent). Returns role-specific profile fields.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Settings Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "settings",
+                "profile"
+              ]
+            },
+            "description": "Requires auth. Permitted fields differ by role (see SettingsController#get_permitted_params_for_user).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Asha\",\n  \"last_name\": \"Rao\",\n  \"mobile\": \"9876543210\",\n  \"gender\": \"Female\",\n  \"birth_date\": \"1995-04-12\",\n  \"address\": \"12 MG Road, Bengaluru\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/change_password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "settings",
+                "change_password"
+              ]
+            },
+            "description": "Requires auth. `old_password`/`current_password` are accepted interchangeably; new password must be >= 6 chars.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Password123\",\n  \"new_password\": \"NewPassword456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Terms & Conditions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/terms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "settings",
+                "terms"
+              ]
+            },
+            "description": "Requires auth.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Contact Us",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "settings",
+                "contact"
+              ]
+            },
+            "description": "Requires auth. Returns company support details for all roles (customer, agent, sub-agent) \u2014 the previous customer-only assigned-agent lookup (insurance-policy-derived) has been removed.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Helpdesk Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/settings/helpdesk",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "settings",
+                "helpdesk"
+              ]
+            },
+            "description": "Requires auth. Creates a ClientRequest (support ticket) with status=pending, priority=medium.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Asha Rao\",\n  \"email\": \"asha.rao@example.com\",\n  \"phone_number\": \"9876543210\",\n  \"description\": \"My last delivery was late, please advise.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Delivery Person",
+      "description": "Delivery-person-facing endpoints. Uses {{delivery_token}} \u2014 log in with a DeliveryPerson account first.",
+      "item": [
+        {
+          "name": "Today's Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/today",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "tasks",
+                "today"
+              ]
+            },
+            "description": "Requires delivery_person auth. Merges Bookings + MilkDeliveryTasks for today with route-optimization hints.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Task Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "tasks",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. `id` may be a Booking id or a MilkDeliveryTask id.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Start Task",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/:id/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "tasks",
+                ":id",
+                "start"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. Moves a booking to out_for_delivery / a subscription task to assigned.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Complete Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/:id/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "tasks",
+                ":id",
+                "complete"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. `payment_collected.amount` present marks payment_status=paid on the booking.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Delivered to security guard\",\n  \"payment_collected\": {\n    \"amount\": \"150\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Location (live tracking)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/tasks/:id/update_location",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "tasks",
+                ":id",
+                "update_location"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. Returns distance/ETA to the customer for this task.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": \"12.9720\",\n  \"longitude\": \"77.5950\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Mark Done",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bulk_mark_done",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "bulk_mark_done"
+              ]
+            },
+            "description": "Requires delivery_person auth. Each id is looked up as a Booking first, then a MilkDeliveryTask.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_ids\": [\n    101,\n    102,\n    103\n  ],\n  \"completed_at\": \"2026-08-17T10:30:00+05:30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Update (status per delivery)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bulk_update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "bulk_update"
+              ]
+            },
+            "description": "Requires delivery_person auth. `updates[].status` is either 'delivered' or 'failed'; booking_id required per entry.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"updates\": [\n    {\n      \"booking_id\": 101,\n      \"status\": \"delivered\",\n      \"delivered_at\": \"2026-08-17T10:30:00+05:30\",\n      \"latitude\": \"12.9720\",\n      \"longitude\": \"77.5950\"\n    },\n    {\n      \"booking_id\": 102,\n      \"status\": \"failed\",\n      \"failure_reason\": \"Customer unavailable\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/my_customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "my_customers"
+              ]
+            },
+            "description": "Requires delivery_person auth. Customers derived from this delivery person's Bookings + MilkDeliveryTasks.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Customer Location",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/customers/:id/location",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "customers",
+                ":id",
+                "location"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": \"12.9716\",\n  \"longitude\": \"77.5946\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Customer Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/customers/:id/upload_image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "customers",
+                ":id",
+                "upload_image"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. multipart/form-data upload to Cloudinary; attaches to profile_image/house_image/personal_image.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "Image file (required)"
+                },
+                {
+                  "key": "image_type",
+                  "type": "text",
+                  "value": "profile",
+                  "description": "profile|house|personal"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Products (for delivery-side ordering)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "products"
+              ]
+            },
+            "description": "Requires delivery_person auth. Active, in-stock products with delivery-friendly pricing fields.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Booking (on behalf of customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "bookings"
+              ]
+            },
+            "description": "Requires delivery_person auth. Always created as Cash-on-Delivery, booked_by='delivery_person', assigned to the authenticated delivery person. customer_id, delivery_address and a non-empty items[] array are required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"1\",\n  \"delivery_address\": \"12 MG Road, Bengaluru\",\n  \"notes\": \"Extra bread please\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Banners",
+      "description": "Standalone banner endpoints (BannersController) \u2014 richer than the ecommerce#banners shortcut in folder 2. All public.",
+      "item": [
+        {
+          "name": "List Banners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/banners?location=home",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "home",
+                  "description": "Must be a key from Banner.display_locations",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Banner Locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/banners/locations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "banners",
+                "locations"
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required. Lists valid `location` values for the endpoints above.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Banner Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/banners/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "banners",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required. 404s if the banner isn't currently active.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Track Banner Click",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/banners/:id/track_click",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "banners",
+                ":id",
+                "track_click"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "PUBLIC endpoint - no auth required. Returns the banner's redirect_link for the app to navigate to.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

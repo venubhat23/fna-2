@@ -69,13 +69,19 @@
                   <td><strong>Product:</strong></td>
                   <td><%= @subscription.product.name %></td>
                 </tr>
+                <% if @subscription.product_variant %>
+                  <tr>
+                    <td><strong>Variant:</strong></td>
+                    <td><%= @subscription.product_variant.label %></td>
+                  </tr>
+                <% end %>
                 <tr>
                   <td><strong>Quantity:</strong></td>
                   <td><%= @subscription.quantity %> <%= @subscription.unit %></td>
                 </tr>
                 <tr>
                   <td><strong>Price:</strong></td>
-                  <td>₹<%= @subscription.product.price %> per <%= @subscription.unit %></td>
+                  <td>₹<%= @subscription.product_variant&.effective_price || @subscription.product.price %> per <%= @subscription.unit %></td>
                 </tr>
               </table>
             </div>

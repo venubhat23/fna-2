@@ -1,12 +1,14 @@
 class MilkSubscription < ApplicationRecord
   belongs_to :customer
   belongs_to :product
+  belongs_to :product_variant, optional: true
   belongs_to :delivery_person, optional: true
   has_many :milk_delivery_tasks, foreign_key: 'subscription_id', dependent: :destroy
 
   validates :quantity, presence: true, numericality: { greater_than: 0 }
   validates :start_date, :end_date, presence: true
   validate :end_date_after_start_date
+  validate :product_variant_belongs_to_product
 
   enum :status, { active: 'active', paused: 'paused', expired: 'expired', cancelled: 'cancelled' }
   enum :delivery_pattern, { daily: 'daily', alternate: 'alternate', specific_dates: 'specific_dates' }
@@ -112,7 +114,7 @@ class MilkSubscription < ApplicationRecord
   end
 
   def calculate_total_amount
-    price_per_unit = product&.price || 0
+    price_per_unit = product_variant&.effective_price || product&.price || 0
     (total_quantity * price_per_unit).round(2)
   end
 
@@ -173,5 +175,10 @@ class MilkSubscription < ApplicationRecord
   def end_date_after_start_date
     return unless start_date && end_date
     errors.add(:end_date, 'must be after start date') if end_date < start_date
+  end
+
+  def product_variant_belongs_to_product
+    return unless product_variant && product_id
+    errors.add(:product_variant, 'does not belong to the selected product') if product_variant.product_id != product_id
   end
 end

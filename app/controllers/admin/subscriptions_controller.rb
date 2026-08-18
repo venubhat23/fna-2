@@ -118,6 +118,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     # Show all active products or products suitable for subscriptions
     @products = Product.where(status: 'active').pluck(:name, :id)
     @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
+    @product_variants_by_product = product_variants_lookup
   end
 
   def create
@@ -128,6 +129,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
       @products = Product.where(status: 'active').pluck(:name, :id)
       @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
+      @product_variants_by_product = product_variants_lookup
       render :new
       return
     end
@@ -142,6 +144,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
         subscription_attributes = subscription_params.merge(
           product_id: product_data[:product_id],
+          product_variant_id: product_data[:product_variant_id].presence,
           quantity: product_data[:quantity],
           unit: product_data[:unit] || 'liter',
           created_by: current_user.id
@@ -171,6 +174,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
       @products = Product.where(status: 'active').pluck(:name, :id)
       @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
+      @product_variants_by_product = product_variants_lookup
       render :new
     else
       total_tasks = created_tasks.sum { |ct| ct[:tasks_count] }
@@ -189,6 +193,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
     @products = Product.where(status: 'active').pluck(:name, :id)
     @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
+    @product_variants_by_product = product_variants_lookup
   end
 
   def update
@@ -224,6 +229,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
       @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
       @products = Product.where(status: 'active').pluck(:name, :id)
       @delivery_people = DeliveryPerson.where(status: true).pluck(:first_name, :last_name, :id).map { |f, l, id| ["#{f} #{l}", id] }
+      @product_variants_by_product = product_variants_lookup
       render :edit
     end
   end
@@ -557,10 +563,24 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def subscription_params
     params.require(:milk_subscription).permit(
-      :customer_id, :product_id, :quantity, :unit, :start_date, :end_date,
+      :customer_id, :product_id, :product_variant_id, :quantity, :unit, :start_date, :end_date,
       :delivery_time, :delivery_pattern, :specific_dates, :status,
       :is_active, :delivery_person_id
     )
+  end
+
+  # Variants for all active products, keyed by product_id, for the product-variant
+  # picker on the new/edit subscription forms (JS shows/populates it once a product
+  # is selected).
+  def product_variants_lookup
+    ProductVariant.joins(:product)
+                   .where(products: { status: 'active' })
+                   .ordered
+                   .pluck(:product_id, :id, :weight, :unit, :selling_price)
+                   .each_with_object(Hash.new { |h, k| h[k] = [] }) do |(product_id, id, weight, unit, price), lookup|
+                     weight_label = weight.to_f.to_s.sub(/\.0$/, '')
+                     lookup[product_id] << { id: id, label: "#{weight_label} #{unit}", price: price.to_f }
+                   end
   end
 
   def filter_by_status(subscriptions)

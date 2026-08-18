@@ -633,8 +633,8 @@ module Api
               # Update booking status
               task.update!(
                 status: 'delivered',
-                delivered_at: Time.current,
-                delivery_notes: params.dig(:notes),
+                delivery_time: Time.current,
+                transition_notes: params.dig(:notes),
                 payment_status: params.dig(:payment_collected, :amount) ? 'paid' : task.payment_status
               )
 
@@ -763,7 +763,7 @@ module Api
               else
                 booking.update!(
                   status: 'delivered',
-                  delivered_at: completed_at,
+                  delivery_time: completed_at,
                   delivery_person_id: delivery_person_id
                 )
                 updated_ids << id
@@ -805,11 +805,9 @@ module Api
             elsif update[:status] == 'delivered'
               if booking.update(
                 status: 'delivered',
-                delivered_at: update[:delivered_at] || Time.current,
-                delivery_notes: update[:delivery_notes],
-                delivery_person_id: delivery_person_id,
-                latitude: update[:latitude],
-                longitude: update[:longitude]
+                delivery_time: update[:delivered_at] || Time.current,
+                transition_notes: update[:delivery_notes],
+                delivery_person_id: delivery_person_id
               )
                 results << {
                   booking_id: booking_id,
