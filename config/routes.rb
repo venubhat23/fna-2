@@ -844,11 +844,6 @@ Rails.application.routes.draw do
         get 'ecommerce/profile', to: 'ecommerce#customer_profile'
         put 'ecommerce/profile', to: 'ecommerce#update_profile'
 
-        # Customer Module APIs
-        get 'customer/portfolio', to: 'customer#portfolio'
-        get 'customer/upcoming_installments', to: 'customer#upcoming_installments'
-        get 'customer/upcoming_renewals', to: 'customer#upcoming_renewals'
-
         # Settings Module APIs
         get 'settings/profile', to: 'settings#profile'
         put 'settings/profile', to: 'settings#update_profile'
@@ -856,21 +851,6 @@ Rails.application.routes.draw do
         get 'settings/terms', to: 'settings#terms_and_conditions'
         get 'settings/contact', to: 'settings#contact_us'
         post 'settings/helpdesk', to: 'settings#helpdesk'
-
-        # Agent Dashboard APIs
-        get 'agent/dashboard', to: 'agent#dashboard'
-        get 'agent/customers', to: 'agent#customers'
-        post 'agent/customers', to: 'agent#add_customer'
-        get 'agent/form_data', to: 'agent#form_data'
-        get 'agent/insurance_companies', to: 'agent#insurance_companies'
-
-        # Leads APIs
-        get 'agent/leads', to: 'agent#leads'
-        post 'agent/leads', to: 'agent#add_lead'
-
-        # Commission Distribution APIs
-        get 'agent/commission_distribution', to: 'agent#commission_distribution'
-        get 'agent/commission_summary', to: 'agent#commission_summary'
 
         # Banner APIs
         get 'banners', to: 'banners#index'

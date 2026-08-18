@@ -20,11 +20,6 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
 
     ActiveRecord::Base.transaction do
       if user.update(profile_params)
-        # Handle nominee details update for customers
-        if user.is_a?(Customer) && params[:nominees].present?
-          update_customer_nominees(user, params[:nominees])
-        end
-
         render json: {
           success: true,
           message: 'Profile updated successfully',
@@ -233,16 +228,10 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
 
     # Check user role from token and respond accordingly
     if user.is_a?(Customer)
-      # Customer role - Show assigned agent details
-      agent_info = get_customer_agent(user)
-
+      # Customer role - Show company support details
       render json: {
         success: true,
         data: {
-          agent_name: agent_info[:name],
-          agent_mobile: agent_info[:mobile],
-          agent_email: agent_info[:email],
-          agent_address: agent_info[:address],
           company_info: {
             name: "Atma Nirbhar Farm",
             mobile: "+918431174477",
@@ -339,39 +328,14 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
       2. Privacy Policy
       We are committed to protecting your privacy and personal information.
 
-      3. Policy Management
-      You can view and manage your insurance policies through this application.
+      3. Orders & Subscriptions
+      You can view and manage your orders and subscriptions through this application.
 
       4. Support
       For any queries or support, please contact our customer service team.
 
       Last updated: December 2025
     TERMS
-  end
-
-  def get_customer_agent(customer)
-    # Try to find agent from customer's policies
-    health_policy = HealthInsurance.where(customer: customer).joins(:sub_agent).first
-    life_policy = LifeInsurance.where(customer: customer).joins(:sub_agent).first
-
-    sub_agent = health_policy&.sub_agent || life_policy&.sub_agent
-
-    if sub_agent
-      {
-        name: sub_agent.display_name,
-        mobile: sub_agent.mobile,
-        email: sub_agent.email,
-        address: sub_agent.address || "Not provided"
-      }
-    else
-      # Default company agent
-      {
-        name: "Atma Nirbhar Farm Support Team",
-        mobile: "+918431174477",
-        email: "support@dr-wise.in",
-        address: "123 Insurance Street, Mumbai, Maharashtra, India"
-      }
-    end
   end
 
   def build_profile_data(user)
@@ -411,9 +375,6 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
         marital_status: user.marital_status,
         education: user.education
       })
-
-      # Add nominee details for customers
-      base_data[:nominees] = get_nominee_details(user)
     when SubAgent
       # Get city and state names from IDs using the mapped data
       city_name = nil
@@ -468,60 +429,6 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
     end
 
     base_data
-  end
-
-  def get_nominee_details(customer)
-    # Get all nominees from life insurance policies for this customer
-    life_insurance_nominees = []
-
-    # Fetch life insurance policies with nominees
-    life_insurances = LifeInsurance.includes(:life_insurance_nominees).where(customer: customer)
-
-    life_insurances.each do |policy|
-      policy.life_insurance_nominees.each do |nominee|
-        life_insurance_nominees << {
-          policy_number: policy.policy_number,
-          policy_type: 'life_insurance',
-          nominee_name: nominee.nominee_name,
-          relationship: nominee.relationship,
-          age: nominee.age,
-          share_percentage: nominee.share_percentage
-        }
-      end
-    end
-
-    {
-      life_insurance_nominees: life_insurance_nominees,
-      total_nominees_count: life_insurance_nominees.count
-    }
-  end
-
-  def update_customer_nominees(customer, nominees_params)
-    return unless nominees_params.is_a?(Array)
-
-    nominees_params.each do |nominee_data|
-      policy_number = nominee_data[:policy_number] || nominee_data['policy_number']
-      next unless policy_number.present?
-
-      # Find the life insurance policy
-      life_insurance = LifeInsurance.find_by(customer: customer, policy_number: policy_number)
-      next unless life_insurance
-
-      # Find existing nominee or create new one
-      nominee = life_insurance.life_insurance_nominees.find_by(
-        nominee_name: nominee_data[:nominee_name] || nominee_data['nominee_name']
-      ) || life_insurance.life_insurance_nominees.new
-
-      # Update nominee attributes
-      nominee.assign_attributes(
-        nominee_name: nominee_data[:nominee_name] || nominee_data['nominee_name'],
-        relationship: nominee_data[:relationship] || nominee_data['relationship'],
-        age: nominee_data[:age] || nominee_data['age'],
-        share_percentage: nominee_data[:share_percentage] || nominee_data['share_percentage']
-      )
-
-      nominee.save! if nominee.valid?
-    end
   end
 
   def get_permitted_params_for_user(user)

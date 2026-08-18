@@ -5,7 +5,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/categories
   def categories
-    @categories = Category.active.ordered.includes(image_attachment: :blob)
+    @categories = Category.active_ordered_by_display
+    ActiveRecord::Associations::Preloader.new(records: @categories, associations: { image_attachment: :blob }).call
     product_counts = Product.where(category_id: @categories.map(&:id)).group(:category_id).count
 
     categories_data = @categories.map do |category|
@@ -218,17 +219,23 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     unavailable_products = []
     available_products = []
 
-    booking_params[:booking_items_attributes]&.each do |item_params|
+    booking_items_params = booking_params[:booking_items_attributes] || []
+    products_by_id = Product.active
+                             .where(id: booking_items_params.map { |ip| ip[:product_id] })
+                             .includes(:product_variants)
+                             .index_by { |p| p.id.to_s }
+
+    booking_items_params.each do |item_params|
       product_id = item_params[:product_id]
       variant_id = item_params[:product_variant_id].presence
       quantity = item_params[:quantity].to_i
 
       begin
-        product = Product.active.find(product_id)
+        product = products_by_id[product_id.to_s] or raise ActiveRecord::RecordNotFound
 
         # Check stock availability (variant-specific stock for multi-qty products)
         if product.has_multiple_quantities? && variant_id.present?
-          variant = product.product_variants.find_by(id: variant_id)
+          variant = product.product_variants.to_a.find { |v| v.id.to_s == variant_id.to_s }
           variant_stock = variant ? variant.available_stock.to_i : 0
           if variant_stock < quantity
             unavailable_products << {
@@ -341,9 +348,12 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
         @booking.save!
 
-        # Update product/variant stock
+        # Update product/variant stock. Reuse products_by_id (already loaded above for
+        # availability checks) instead of item.product, which would otherwise issue a
+        # fresh query per item here and again when format_booking_data reads item.product below.
         @booking.booking_items.each do |item|
-          product = item.product
+          product = products_by_id[item.product_id.to_s]
+          item.association(:product).target = product if product
           if product.has_multiple_quantities? && item.product_variant_id.present?
             variant = ProductVariant.find_by(id: item.product_variant_id)
             variant&.update!(available_stock: [variant.available_stock - item.quantity, 0].max)
@@ -397,10 +407,10 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     per_page = [per_page, 50].min
 
     # Mobile API is only for customers
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
-    @bookings = customer.bookings.recent.includes(:booking_items => :product)
+    @bookings = customer.bookings.recent.includes(:franchise, booking_items: :product)
     user_type = 'customer'
 
     # Filter by status if provided, otherwise show all bookings
@@ -440,7 +450,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/orders
   def orders
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
     page = params[:page]&.to_i || 1
@@ -476,7 +486,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/orders/:id
   def order_details
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
     @order = customer.orders.includes(order_items: { product: { image_attachment: :blob, additional_images_attachments: :blob } }).find(params[:id])
@@ -492,7 +502,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/profile
   def customer_profile
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
     # Get statistics
@@ -502,7 +512,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
     # Get recent activity
     recent_orders = customer.orders.recent.limit(5)
-    recent_bookings = customer.bookings.recent.limit(5)
+    recent_bookings = customer.bookings.recent.includes(:franchise).limit(5)
 
     profile_data = {
       id: customer.id,
@@ -557,7 +567,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     Rails.logger.info "Current user: #{@current_user.inspect}"
     Rails.logger.info "Params received: #{params.except(:controller, :action).inspect}"
 
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
     Rails.logger.info "Customer found: #{customer.email}"
@@ -971,6 +981,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @subscription = MilkSubscription.new(milk_subscription_params)
 
     if @subscription.save
+      @subscription.association(:customer).target = customer
       render json: {
         success: true,
         data: format_milk_subscription_data(@subscription),
@@ -1000,7 +1011,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @subscriptions = @subscriptions.where(status: params[:status]) if params[:status].present?
 
     total_count = @subscriptions.count
-    @subscriptions = @subscriptions.offset((page - 1) * per_page).limit(per_page)
+    @subscriptions = @subscriptions.offset((page - 1) * per_page).limit(per_page).to_a
+    @subscriptions.each { |subscription| subscription.association(:customer).target = customer }
 
     subscriptions_data = @subscriptions.map { |subscription| format_milk_subscription_data(subscription) }
 
@@ -1027,6 +1039,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     @subscription = MilkSubscription.where(customer: customer).includes(:milk_delivery_tasks, product: { image_attachment: :blob, additional_images_attachments: :blob }).find(params[:id])
+    @subscription.association(:customer).target = customer
 
     # Get recent delivery tasks from this subscription
     recent_tasks = @subscription.milk_delivery_tasks.includes(:delivery_person).order(delivery_date: :desc).limit(10)
@@ -1061,6 +1074,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     @subscription = MilkSubscription.where(customer: customer).find(params[:id])
+    @subscription.association(:customer).target = customer
 
     if @subscription.status == 'active'
       @subscription.update!(status: 'paused')
@@ -1085,6 +1099,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     @subscription = MilkSubscription.where(customer: customer).find(params[:id])
+    @subscription.association(:customer).target = customer
 
     if @subscription.status == 'paused'
       @subscription.update!(status: 'active')
@@ -1109,6 +1124,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     @subscription = MilkSubscription.where(customer: customer).find(params[:id])
+    @subscription.association(:customer).target = customer
 
     unless @subscription.status == 'cancelled'
       @subscription.update!(status: 'cancelled')
@@ -1273,9 +1289,11 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       all_deliverable = true
       unavailable_products = []
 
+      products_by_id = Product.where(id: product_ids).index_by { |p| p.id.to_s }
+
       product_ids.each do |product_id|
         begin
-          product = Product.find(product_id)
+          product = products_by_id[product_id.to_s] or raise ActiveRecord::RecordNotFound
 
           # Check product availability and delivery rules
           delivery_info = product.delivery_info_for(pincode)
@@ -1371,7 +1389,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # POST /api/v1/mobile/ecommerce/location/save
   def save_location
-    customer = Customer.find_by(email: @current_user&.email) if @current_user
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
     latitude = params[:latitude]

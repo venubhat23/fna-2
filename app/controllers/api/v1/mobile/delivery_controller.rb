@@ -186,13 +186,13 @@ module Api
 
           all_customer_ids = (booking_customer_ids + task_customer_ids).uniq
 
-          customers = Customer.where(id: all_customer_ids).order(:first_name)
+          customers = Customer.where(id: all_customer_ids).order(:first_name).to_a
 
           render json: {
             success: true,
             data: {
               customers: customers.map { |c| format_customer(c) },
-              total: customers.count
+              total: customers.size
             }
           }
         rescue => e
@@ -268,13 +268,13 @@ module Api
 
         # GET /api/v1/mobile/delivery/products
         def products
-          @products = Product.active.in_stock.order(:name)
+          @products = Product.active.in_stock.with_attached_image.order(:name).to_a
 
           render json: {
             success: true,
             data: {
               products: @products.map { |p| format_delivery_product(p) },
-              total: @products.count
+              total: @products.size
             }
           }
         rescue => e
@@ -298,10 +298,14 @@ module Api
           customer = Customer.find_by(id: customer_id)
           return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
 
-          # Resolve products and build nested attributes
+          # Resolve products and build nested attributes - batch-loaded to avoid a
+          # find_by per item (and reused below to avoid a second per-item lookup
+          # when serializing booking.booking_items).
+          products_by_id = Product.where(id: items.map { |item| item[:product_id] }).index_by { |p| p.id.to_s }
+
           nested_items = []
           items.each do |item|
-            product = Product.find_by(id: item[:product_id])
+            product = products_by_id[item[:product_id].to_s]
             unless product
               return render json: { success: false, message: "Product ##{item[:product_id]} not found" }, status: :unprocessable_entity
             end
@@ -328,6 +332,11 @@ module Api
               booking_items_attributes: nested_items
             )
             booking.save!
+          end
+
+          booking.booking_items.each do |bi|
+            product = products_by_id[bi.product_id.to_s]
+            bi.association(:product).target = product if product
           end
 
           render json: {
@@ -429,6 +438,7 @@ module Api
                               .where('DATE(created_at) = ?', Date.current)
                               .where.not(status: ['delivered', 'cancelled'])
                               .includes(booking_items: :product)
+                              .to_a
             else
               bookings = []
             end
@@ -443,7 +453,7 @@ module Api
               subscription_tasks = MilkDeliveryTask.where(
                 delivery_person_id: current_delivery_person_id,
                 delivery_date: Date.current
-              ).includes(:customer, :product)
+              ).includes(:customer, :product).to_a
             else
               subscription_tasks = []
             end
@@ -720,14 +730,18 @@ module Api
           failed_ids = []
           errors = []
 
+          bookings_by_id = Booking.where(id: delivery_ids).index_by(&:id)
+          remaining_ids = delivery_ids - bookings_by_id.keys
+          tasks_by_id = MilkDeliveryTask.where(id: remaining_ids).index_by(&:id)
+
           delivery_ids.each do |id|
             begin
               # Try to find and update booking
-              booking = Booking.find_by(id: id)
+              booking = bookings_by_id[id]
 
               if booking.nil?
                 # Try subscription task
-                task = MilkDeliveryTask.find_by(id: id)
+                task = tasks_by_id[id]
 
                 if task.nil?
                   failed_ids << id
@@ -775,9 +789,11 @@ module Api
           delivered_count = 0
           failed_delivery_count = 0
 
+          bookings_by_id = Booking.where(id: updates.map { |u| u[:booking_id] }).index_by(&:id)
+
           updates.each do |update|
             booking_id = update[:booking_id]
-            booking = Booking.find_by(id: booking_id)
+            booking = bookings_by_id[booking_id.to_i]
 
             if booking.nil?
               results << {
