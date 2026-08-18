@@ -1,12 +1,5 @@
 <% content_for :title, "Shop Products - Dhanvantri Naturals" %>
 
-<!-- Select2 CSS -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-
-<!-- Select2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <style>
   /* Premium Shop Page Styles - Modern Dashboard Aesthetic */
   body {
@@ -801,20 +794,19 @@ function initializeSelect2() {
     templateSelection: formatProductSearchSelection
   });
 
-  $('.product-search-select2').on('select2:select', function(e) {
-    filterProductsByProduct(e.params.data.id);
-  });
+  $('.product-search-select2').on('select2:select', applyFilters);
 
-  $('.product-search-select2').on('select2:clear', function() {
-    showAllProducts();
-  });
+  $('.product-search-select2').on('select2:clear', applyFilters);
 
-  // Category Select2
+  // Category Select2 - minimumResultsForSearch: 0 forces the search box to always
+  // render, even with a handful of categories (Select2 hides it by default under 10
+  // options), since that in-dropdown search is the whole point of switching to Select2.
   $('.category-select2').select2({
     theme: 'bootstrap-5',
     placeholder: 'All Categories',
     allowClear: true,
-    width: '100%'
+    width: '100%',
+    minimumResultsForSearch: 0
   });
 
   // Stock Filter Select2
@@ -826,20 +818,11 @@ function initializeSelect2() {
     minimumResultsForSearch: Infinity // Disable search for simple dropdown
   });
 
-  // Event listeners for Select2 changes
-  $('.category-select2').on('change', function() {
-    const categoryId = $(this).val();
-    if (categoryId === '') {
-      showAllProducts();
-    } else {
-      filterProductsByCategory(categoryId);
-    }
-  });
-
-  $('.stock-select2').on('change', function() {
-    const stockFilter = $(this).val();
-    filterProductsByStock(stockFilter);
-  });
+  // Event listeners for Select2 changes - all three filters combine (AND) via
+  // applyFilters() below, instead of each handler independently show/hiding every
+  // card and clobbering whatever the other filters had already hidden.
+  $('.category-select2').on('change', applyFilters);
+  $('.stock-select2').on('change', applyFilters);
 }
 
 // Rich dropdown row for the product search Select2: thumbnail + name + category + price,
@@ -874,32 +857,48 @@ function formatProductSearchSelection(product) {
   return product.text || 'Search products by name...';
 }
 
-// Narrows the grid to the single selected product from the search dropdown.
-function filterProductsByProduct(productId) {
+// Combined product-name / category / stock filtering. All three read from the
+// live Select2 values and AND together, so picking a category doesn't wipe out
+// an active stock filter (or vice versa) the way three independent
+// show/hide-everything functions used to.
+function applyFilters() {
+  const selectedProductId = $('.product-search-select2').val() || '';
+  const categoryId = $('.category-select2').val() || '';
+  const stockType = $('.stock-select2').val() || 'all';
+
   const products = document.querySelectorAll('.product-grid-item');
   products.forEach(product => {
-    product.style.display = product.dataset.productId == productId ? 'block' : 'none';
+    let visible = true;
+
+    if (selectedProductId && product.dataset.productId !== selectedProductId) {
+      visible = false;
+    }
+
+    if (visible && categoryId && product.dataset.category !== categoryId) {
+      visible = false;
+    }
+
+    if (visible && stockType !== 'all') {
+      const stock = parseInt(product.dataset.stock);
+      if (stockType === 'instock' && !(stock > 0)) visible = false;
+      if (stockType === 'outofstock' && stock !== 0) visible = false;
+      if (stockType === 'lowstock' && !(stock > 0 && stock < 10)) visible = false;
+    }
+
+    product.style.display = visible ? 'block' : 'none';
   });
-  const match = document.querySelector(`.product-grid-item[data-product-id="${productId}"]`);
-  if (match) {
-    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  if (selectedProductId) {
+    const match = document.querySelector(`.product-grid-item[data-product-id="${selectedProductId}"]`);
+    if (match && match.style.display !== 'none') {
+      match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 }
 
 // Initialize filters
 function initializeFilters() {
-  // Category filter dropdown
-  const categoryFilter = document.getElementById('categoryFilter');
-  if (categoryFilter) {
-    categoryFilter.addEventListener('change', function() {
-      const categoryId = this.value;
-      if (categoryId === '') {
-        showAllProducts();
-      } else {
-        filterProductsByCategory(categoryId);
-      }
-    });
-  }
+  applyFilters();
 }
 
 // Quantity controls - matching admin booking design
@@ -1090,74 +1089,13 @@ function updateCartBadge() {
   }));
 }
 
-// Keep the old filter function for backward compatibility (if needed)
-function toggleFilter(type) {
-  const products = document.querySelectorAll('.product-grid-item');
-
-  if (type === 'all') {
-    products.forEach(product => {
-      product.style.display = 'block';
-    });
-  } else if (type === 'instock') {
-    products.forEach(product => {
-      const stock = parseInt(product.dataset.stock);
-      product.style.display = stock > 0 ? 'block' : 'none';
-    });
-  }
-}
-
-// New stock filter function for Select2
-function filterProductsByStock(stockType) {
-  const products = document.querySelectorAll('.product-grid-item');
-
-  products.forEach(product => {
-    const stock = parseInt(product.dataset.stock);
-    let showProduct = false;
-
-    switch(stockType) {
-      case 'all':
-        showProduct = true;
-        break;
-      case 'instock':
-        showProduct = stock > 0;
-        break;
-      case 'outofstock':
-        showProduct = stock === 0;
-        break;
-      case 'lowstock':
-        showProduct = stock > 0 && stock < 10;
-        break;
-    }
-
-    product.style.display = showProduct ? 'block' : 'none';
-  });
-}
-
-// Updated clear all filters function
+// Reset all three Select2 filters and re-show every product.
 function clearAllFilters() {
-  // Clear Select2 filters
-  $('.product-search-select2').val(null).trigger('change');
-  $('.category-select2').val('').trigger('change');
-  $('.stock-select2').val('all').trigger('change');
+  $('.product-search-select2').val(null).trigger('change.select2');
+  $('.category-select2').val('').trigger('change.select2');
+  $('.stock-select2').val('all').trigger('change.select2');
 
-  // Reset to all products
-  showAllProducts();
-}
-
-function filterProductsByCategory(categoryId) {
-  const products = document.querySelectorAll('.product-grid-item');
-
-  products.forEach(product => {
-    const productCategory = product.dataset.category;
-    product.style.display = productCategory == categoryId ? 'block' : 'none';
-  });
-}
-
-function showAllProducts() {
-  const products = document.querySelectorAll('.product-grid-item');
-  products.forEach(product => {
-    product.style.display = 'block';
-  });
+  applyFilters();
 }
 
 // View Toggle Functionality
