@@ -11,12 +11,15 @@
     "defaults"
   ],
   "devDependencies": {
-    "sass": "^1.77.6",
+    "autoprefixer": "^10.4.0",
     "bootstrap": "^5.3.0",
     "bootstrap-icons": "^1.11.0",
+    "nodemon": "^3.0.0",
     "postcss": "^8.4.0",
     "postcss-cli": "^11.0.0",
-    "autoprefixer": "^10.4.0",
-    "nodemon": "^3.0.0"
+    "sass": "^1.77.6"
+  },
+  "dependencies": {
+    "claude": "^0.1.1"
   }
 }

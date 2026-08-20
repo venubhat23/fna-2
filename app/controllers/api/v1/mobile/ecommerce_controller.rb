@@ -1430,6 +1430,39 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     end
   end
 
+  # GET /api/v1/mobile/ecommerce/location
+  def get_location
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
+    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+
+    json_response({
+      success: true,
+      data: {
+        customer_id: customer.id,
+        latitude: customer.latitude,
+        longitude: customer.longitude,
+        address: customer.address,
+        location_obtained_at: customer.location_obtained_at
+      }
+    })
+  end
+
+  # GET /api/v1/mobile/ecommerce/profile/images
+  def get_profile_images
+    customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
+    return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
+
+    json_response({
+      success: true,
+      data: {
+        customer_id: customer.id,
+        profile_image_url: customer.profile_image.attached? ? customer.profile_image.url : nil,
+        personal_image_url: customer.personal_image.attached? ? customer.personal_image.url : nil,
+        house_image_url: customer.house_image.attached? ? customer.house_image.url : nil
+      }
+    })
+  end
+
   private
 
   def set_category

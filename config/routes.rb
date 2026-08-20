@@ -835,7 +835,9 @@ Rails.application.routes.draw do
 
         # Delivery Person - Customers & Products & Bookings
         get  'delivery/my_customers',                    to: 'delivery#my_customers'
+        get  'delivery/customers/:id/location',          to: 'delivery#get_customer_location'
         put  'delivery/customers/:id/location',          to: 'delivery#update_customer_location'
+        get  'delivery/customers/:id/images',            to: 'delivery#get_customer_images'
         post 'delivery/customers/:id/upload_image',      to: 'delivery#upload_customer_image'
         get  'delivery/products',                        to: 'delivery#products'
         post 'delivery/bookings',                        to: 'delivery#create_booking'
@@ -843,6 +845,8 @@ Rails.application.routes.draw do
         # Customer Profile APIs
         get 'ecommerce/profile', to: 'ecommerce#customer_profile'
         put 'ecommerce/profile', to: 'ecommerce#update_profile'
+        get 'ecommerce/location', to: 'ecommerce#get_location'
+        get 'ecommerce/profile/images', to: 'ecommerce#get_profile_images'
 
         # Settings Module APIs
         get 'settings/profile', to: 'settings#profile'

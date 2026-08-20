@@ -266,6 +266,44 @@ module Api
           end
         end
 
+        # GET /api/v1/mobile/delivery/customers/:id/location
+        def get_customer_location
+          customer = Customer.find_by(id: params[:id])
+          return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
+
+          render json: {
+            success: true,
+            data: {
+              customer_id: customer.id,
+              name: customer.display_name,
+              address: customer.address,
+              latitude: customer.latitude,
+              longitude: customer.longitude,
+              location_obtained_at: customer.location_obtained_at
+            }
+          }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # GET /api/v1/mobile/delivery/customers/:id/images
+        def get_customer_images
+          customer = Customer.find_by(id: params[:id])
+          return render json: { success: false, message: "Customer not found" }, status: :not_found unless customer
+
+          render json: {
+            success: true,
+            data: {
+              customer_id: customer.id,
+              profile_image_url: customer.profile_image.attached? ? customer.profile_image.url : nil,
+              personal_image_url: customer.personal_image.attached? ? customer.personal_image.url : nil,
+              house_image_url: customer.house_image.attached? ? customer.house_image.url : nil
+            }
+          }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
         # GET /api/v1/mobile/delivery/products
         def products
           @products = Product.active.in_stock.with_attached_image.order(:name).to_a
