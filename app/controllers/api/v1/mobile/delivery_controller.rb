@@ -310,15 +310,53 @@ module Api
 
         # GET /api/v1/mobile/delivery/products
         def products
-          @products = Product.active.in_stock.with_attached_image.order(:name).to_a
+          page = params[:page]&.to_i || 1
+          per_page = params[:per_page]&.to_i || 20
+          per_page = [per_page, 50].min
+
+          @products = Product.active.in_stock.with_attached_image
+
+          case params[:sort_by]
+          when 'price_low' then @products = @products.order(:price)
+          when 'price_high' then @products = @products.order(price: :desc)
+          when 'name' then @products = @products.order(:name)
+          when 'newest' then @products = @products.recent
+          else @products = @products.order(:name)
+          end
+
+          total_count = @products.count
+          @products = @products.includes(:product_variants)
+                                .offset((page - 1) * per_page).limit(per_page).to_a
 
           render json: {
             success: true,
             data: {
               products: @products.map { |p| format_delivery_product(p) },
-              total: @products.size
+              pagination: {
+                current_page: page,
+                per_page: per_page,
+                total_count: total_count,
+                total_pages: (total_count.to_f / per_page).ceil,
+                has_next_page: page < (total_count.to_f / per_page).ceil,
+                has_prev_page: page > 1
+              },
+              total: total_count
             }
           }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # GET /api/v1/mobile/delivery/products/:id
+        def product_details
+          product = Product.active.includes(:category, :product_variants, image_attachment: :blob).find(params[:id])
+
+          render json: {
+            success: true,
+            data: format_delivery_product(product)
+          }
+        rescue ActiveRecord::RecordNotFound
+          render json: { success: false, message: 'Product not found' }, status: :not_found
         rescue => e
           render json: { success: false, message: e.message }, status: :internal_server_error
         end
@@ -788,7 +826,33 @@ module Api
             unit:           product.unit_type,
             stock:          product.stock,
             min_quantity:   1,
-            image_url:      product.image_url.presence || (product.image.attached? ? product.image.url : nil)
+            image_url:      product.image_url.presence || (product.image.attached? ? product.image.url : nil),
+            has_multiple_quantities: product.has_multiple_quantities?,
+            display_price:  product.display_price.to_f,
+            default_variant_id: product.has_multiple_quantities? ? product.default_variant&.id : nil,
+            variants: product.has_multiple_quantities? ? product.sorted_variants.map { |v| format_delivery_variant(v) } : []
+          }
+        end
+
+        def format_delivery_variant(variant)
+          {
+            id: variant.id,
+            label: variant.label,
+            weight: variant.weight.to_f,
+            unit: variant.unit,
+            buying_price: variant.buying_price&.to_f,
+            selling_price: variant.selling_price.to_f,
+            discount_enabled: variant.discount_enabled,
+            discount_type: variant.discount_type,
+            discount_value: variant.discount_value&.to_f,
+            discount_amount: variant.discount_amount&.to_f,
+            effective_price: variant.effective_price.to_f,
+            gst_percentage: variant.gst_percentage&.to_f,
+            gst_amount: variant.gst_amount&.to_f,
+            price_with_gst: variant.price_with_gst.to_f,
+            available_stock: variant.available_stock.to_f,
+            is_default: variant.is_default,
+            is_in_stock: variant.available_stock > 0
           }
         end
 

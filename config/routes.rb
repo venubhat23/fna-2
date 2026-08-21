@@ -840,6 +840,7 @@ Rails.application.routes.draw do
         get  'delivery/customers/:id/images',            to: 'delivery#get_customer_images'
         post 'delivery/customers/:id/upload_image',      to: 'delivery#upload_customer_image'
         get  'delivery/products',                        to: 'delivery#products'
+        get  'delivery/products/:id',                    to: 'delivery#product_details'
         post 'delivery/bookings',                        to: 'delivery#create_booking'
 
         # Customer Profile APIs
