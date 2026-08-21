@@ -570,7 +570,7 @@ module Api
               pincode: booking.respond_to?(:pincode) ? booking.pincode : nil,
               latitude: booking.respond_to?(:latitude) ? booking.latitude : nil,
               longitude: booking.respond_to?(:longitude) ? booking.longitude : nil
-            },
+            }.merge(format_customer_images(booking.customer)),
             items: booking.respond_to?(:booking_items) && booking.booking_items ? booking.booking_items.map { |item|
               {
                 product_name: item.product&.name,
@@ -602,7 +602,7 @@ module Api
               pincode: subscription.customer&.respond_to?(:pincode) ? subscription.customer&.pincode : nil,
               latitude: subscription.customer&.latitude,
               longitude: subscription.customer&.longitude
-            },
+            }.merge(format_customer_images(subscription.customer)),
             items: [
               {
                 product_name: subscription.product&.name,
@@ -759,6 +759,22 @@ module Api
                                 customer.personal_image.attached? ||
                                 customer.house_image.attached?
           }
+        end
+
+        # Every attached customer image, plus which one is "primary" (profile
+        # image if uploaded, otherwise whichever image was uploaded first).
+        def format_customer_images(customer)
+          return { images: [], primary_image_url: nil } unless customer
+
+          images = []
+          images << { type: 'profile', url: customer.profile_image.url } if customer.profile_image.attached?
+          images << { type: 'house', url: customer.house_image.url } if customer.house_image.attached?
+          images << { type: 'personal', url: customer.personal_image.url } if customer.personal_image.attached?
+
+          primary = images.find { |img| img[:type] == 'profile' } || images.first
+          images.each { |img| img[:is_primary] = img.equal?(primary) }
+
+          { images: images, primary_image_url: primary&.fetch(:url) }
         end
 
         def format_delivery_product(product)
