@@ -1,5 +1,6 @@
 class Customer::PasswordsController < Customer::BaseController
   skip_before_action :authenticate_customer!
+  skip_before_action :ensure_customer_role
   layout 'customer_auth'
 
   def new
@@ -9,29 +10,117 @@ class Customer::PasswordsController < Customer::BaseController
   def create
     # Handle forgot password request
     email = params[:email]&.strip&.downcase
-    customer = Customer.find_by('LOWER(email) = ?', email)
+    @customer = Customer.find_by('LOWER(email) = ?', email)
 
-    if customer
-      # In a real application, you'd send a reset email
-      # For now, we'll show a success message
-      flash[:notice] = 'Password reset instructions have been sent to your email address.'
+    if @customer
+      begin
+        @customer.generate_password_reset_token!
+        CustomerMailer.password_reset_instructions(@customer).deliver_later
+
+        flash[:notice] = 'Password reset instructions have been sent to your email address. Please check your inbox and spam folder.'
+        Rails.logger.info "Password reset email sent to: #{@customer.email}"
+      rescue => e
+        Rails.logger.error "Failed to send password reset email: #{e.message}"
+        flash[:alert] = 'There was an error sending the reset email. Please try again or contact support.'
+      end
     else
-      flash[:alert] = 'No account found with that email address.'
+      # Don't reveal that the email doesn't exist for security
+      flash[:notice] = 'If an account exists with that email address, password reset instructions have been sent.'
+      Rails.logger.info "Password reset attempted for non-existent email: #{email}"
     end
 
     redirect_to customer_forgot_password_path
   end
 
   def edit
-    # Reset password form (would come from email link)
+    # Coming back here after a successful reset — show success state, skip token check
+    return if flash[:reset_success]
+
     @token = params[:token]
-    # In a real app, you'd validate the token here
+    @customer = Customer.find_by_password_reset_token(@token)
+
+    unless @customer
+      flash[:alert] = 'Invalid or expired password reset token. Please request a new password reset.'
+      redirect_to customer_forgot_password_path and return
+    end
+
+    if @customer.password_reset_expired?
+      flash[:alert] = 'Password reset token has expired. Please request a new password reset.'
+      redirect_to customer_forgot_password_path and return
+    end
   end
 
   def update
     # Handle password reset
-    # This is a simplified implementation
-    flash[:notice] = 'Password has been reset successfully. Please log in with your new password.'
-    redirect_to customer_login_path
+    @token = params[:token]
+    @customer = Customer.find_by_password_reset_token(@token)
+
+    unless @customer
+      flash[:alert] = 'Invalid or expired password reset token.'
+      redirect_to customer_forgot_password_path and return
+    end
+
+    if @customer.password_reset_expired?
+      flash[:alert] = 'Password reset token has expired. Please request a new password reset.'
+      redirect_to customer_forgot_password_path and return
+    end
+
+    password = params[:password]
+    password_confirmation = params[:password_confirmation]
+
+    if password.blank?
+      flash[:alert] = 'Password cannot be blank.'
+      render :edit and return
+    end
+
+    if password.length < 6
+      flash[:alert] = 'Password must be at least 6 characters long.'
+      render :edit and return
+    end
+
+    if password != password_confirmation
+      flash[:alert] = 'Password confirmation does not match.'
+      render :edit and return
+    end
+
+    begin
+      @customer.password = password
+      @customer.password_confirmation = password_confirmation
+
+      if @customer.save
+        @customer.clear_password_reset_token!
+
+        # Sync the associated User record so mobile login (Devise path) works with the new password
+        sync_user_password(@customer.email, password)
+
+        begin
+          CustomerMailer.password_changed_notification(@customer).deliver_later
+        rescue => e
+          Rails.logger.error "Failed to send password changed notification: #{e.message}"
+        end
+
+        flash[:reset_success] = true
+        redirect_to customer_reset_password_path
+      else
+        flash[:alert] = @customer.errors.full_messages.join(', ')
+        render :edit
+      end
+    rescue => e
+      Rails.logger.error "Password reset failed: #{e.message}"
+      flash[:alert] = 'There was an error updating your password. Please try again.'
+      render :edit
+    end
+  end
+
+  private
+
+  def sync_user_password(email, new_password)
+    user = User.find_by('LOWER(email) = ?', email.downcase)
+    return unless user
+    user.password = new_password
+    user.save(validate: false)
+    Rails.logger.info "Synced User password for #{email} after customer reset"
+  rescue => e
+    Rails.logger.error "Failed to sync User password for #{email}: #{e.message}"
   end
 end

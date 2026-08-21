@@ -1,5 +1,5 @@
 class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
-  skip_before_action :authorize_request, only: [:login, :register, :forgot_password]
+  skip_before_action :authorize_request, only: [:login, :register, :forgot_password, :reset_password]
 
   # POST /api/v1/mobile/auth/login
   def login
@@ -193,42 +193,91 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
 
   # POST /api/v1/mobile/auth/forgot_password
   def forgot_password
-    login_field = params[:email] || params[:mobile]
+    email = params[:email]&.strip
 
-    if login_field.blank?
+    if email.blank?
       return json_response({
         success: false,
-        message: 'Email or mobile number is required'
+        message: 'Email is required'
       }, :unprocessable_entity)
     end
 
-    # Check in all user types
-    user = User.find_by(email: login_field) || Customer.find_by(email: login_field) || SubAgent.find_by(email: login_field)
+    customer = Customer.find_by('LOWER(email) = ?', email.downcase)
 
-    # If not found by email, try mobile search with formatting
-    unless user
-      user = find_by_mobile_variants(User, login_field) ||
-             find_by_mobile_variants(Customer, login_field) ||
-             find_by_mobile_variants(SubAgent, login_field)
+    unless customer
+      return json_response({
+        success: false,
+        message: 'No account found with that email address'
+      }, :not_found)
     end
 
-    if user
-      # Generate reset token (simplified - you might want to use a proper token system)
-      reset_token = SecureRandom.urlsafe_base64(32)
+    customer.generate_password_reset_token!
 
-      # Here you would typically:
-      # 1. Save the reset token to database with expiry
-      # 2. Send email with reset link
+    begin
+      CustomerMailer.password_reset_instructions(customer).deliver_now
+    rescue => e
+      Rails.logger.error "Forgot password mailer failed for #{customer.email}: #{e.message}"
+    end
 
-      json_response({
-        success: true,
-        message: 'Password reset instructions have been sent to your email'
-      })
+    json_response({
+      success: true,
+      message: 'Password reset instructions have been sent to your email'
+    })
+  end
+
+  # POST /api/v1/mobile/auth/reset_password
+  def reset_password
+    token    = params[:token]
+    password = params[:password]
+    password_confirmation = params[:password_confirmation]
+
+    if token.blank?
+      return json_response({ success: false, message: 'Reset token is required' }, :unprocessable_entity)
+    end
+
+    customer = Customer.find_by_password_reset_token(token)
+
+    unless customer
+      return json_response({ success: false, message: 'Invalid or expired reset token' }, :unprocessable_entity)
+    end
+
+    if customer.password_reset_expired?
+      return json_response({ success: false, message: 'Reset token has expired. Please request a new one.' }, :unprocessable_entity)
+    end
+
+    if password.blank? || password.length < 6
+      return json_response({ success: false, message: 'Password must be at least 6 characters' }, :unprocessable_entity)
+    end
+
+    if password != password_confirmation
+      return json_response({ success: false, message: 'Password confirmation does not match' }, :unprocessable_entity)
+    end
+
+    customer.password = password
+    customer.password_confirmation = password_confirmation
+
+    if customer.save
+      customer.clear_password_reset_token!
+
+      # Sync the associated User record so Devise-based mobile login also accepts the new password
+      begin
+        user = User.find_by('LOWER(email) = ?', customer.email.downcase)
+        if user
+          user.password = password
+          user.save(validate: false)
+        end
+      rescue => e
+        Rails.logger.error "Failed to sync User password for #{customer.email}: #{e.message}"
+      end
+
+      begin
+        CustomerMailer.password_changed_notification(customer).deliver_now
+      rescue => e
+        Rails.logger.error "Password changed notification failed for #{customer.email}: #{e.message}"
+      end
+      json_response({ success: true, message: 'Password has been reset successfully. You can now log in.' })
     else
-      json_response({
-        success: false,
-        message: 'Email address not found'
-      }, :not_found)
+      json_response({ success: false, message: 'Failed to update password', errors: customer.errors.full_messages }, :unprocessable_entity)
     end
   end
 

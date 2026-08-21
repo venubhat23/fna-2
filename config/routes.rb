@@ -788,6 +788,7 @@ Rails.application.routes.draw do
         post 'auth/login', to: 'authentication#login'
         post 'auth/register', to: 'authentication#register'
         post 'auth/forgot_password', to: 'authentication#forgot_password'
+        post 'auth/reset_password', to: 'authentication#reset_password'
 
         # E-commerce Module APIs
         get 'ecommerce/categories', to: 'ecommerce#categories'

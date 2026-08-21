@@ -164,6 +164,40 @@ has_many :pending_amounts, dependent: :destroy
     ""
   end
 
+  # Password reset token support (mobile forgot/reset password flow)
+  def generate_password_reset_token!
+    loop do
+      token = SecureRandom.hex(32)
+      unless Customer.exists?(password_reset_token: token)
+        update_columns(
+          password_reset_token: token,
+          password_reset_sent_at: Time.current
+        )
+        break
+      end
+    end
+  end
+
+  def password_reset_expired?
+    return true unless password_reset_sent_at
+    password_reset_sent_at < 24.hours.ago
+  end
+
+  def clear_password_reset_token!
+    update_columns(
+      password_reset_token: nil,
+      password_reset_sent_at: nil
+    )
+  end
+
+  def self.find_by_password_reset_token(token)
+    return nil if token.blank?
+
+    where(password_reset_token: token)
+      .where('password_reset_sent_at > ?', 24.hours.ago)
+      .first
+  end
+
   private
 
   def handle_password_storage

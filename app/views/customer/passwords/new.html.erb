@@ -1,0 +1,51 @@
+<% content_for :title, 'Forgot Password' %>
+
+<div class="welcome-text">
+  <h1 class="welcome-title">Forgot Password?</h1>
+  <p class="welcome-subtitle">Enter your email and we'll send you instructions to reset your password</p>
+</div>
+
+<%= form_with url: customer_forgot_password_path, method: :post, local: true, class: "needs-validation", novalidate: true do |f| %>
+  <div class="form-group">
+    <%= f.label :email, "Email Address", class: "form-label" %>
+    <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+      <%= f.email_field :email,
+                        class: "form-control",
+                        placeholder: "Enter your email address",
+                        required: true,
+                        autofocus: true %>
+      <div class="invalid-feedback">
+        Please enter your email address.
+      </div>
+    </div>
+  </div>
+
+  <div class="d-grid gap-2 mb-4">
+    <%= f.submit "Send Reset Instructions", class: "btn btn-primary btn-lg" %>
+  </div>
+<% end %>
+
+<div class="auth-links">
+  <%= link_to customer_login_path do %>
+    <i class="bi bi-arrow-left me-1"></i>Back to Sign In
+  <% end %>
+</div>
+
+<script>
+  (function() {
+    'use strict';
+    window.addEventListener('load', function() {
+      var forms = document.getElementsByClassName('needs-validation');
+      var validation = Array.prototype.filter.call(forms, function(form) {
+        form.addEventListener('submit', function(event) {
+          if (form.checkValidity() === false) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+      });
+    }, false);
+  })();
+</script>
