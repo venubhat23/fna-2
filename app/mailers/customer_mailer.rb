@@ -1,5 +1,5 @@
 class CustomerMailer < ApplicationMailer
-  default from: 'atmanirbharfarm@gmail.com'
+  default from: 'maralisanthe@gmail.com'
   layout 'mailer'
 
   def password_reset_instructions(customer)
