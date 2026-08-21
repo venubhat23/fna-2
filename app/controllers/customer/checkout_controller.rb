@@ -11,21 +11,24 @@ class Customer::CheckoutController < Customer::BaseController
     @cart_items = @cart[:items] || []
     @cart_total = calculate_cart_total
     @addresses = current_customer.customer_addresses || []
+    @selected_address = find_selected_address || @addresses.find(&:is_default?) || @addresses.first
+    @delivery_info = delivery_charge_info(@selected_address&.pincode, @cart_total)
   end
 
   def address
     @addresses = current_customer.customer_addresses || []
-    @new_address = CustomerAddress.new
-  end
+    @cart_total = calculate_cart_total
 
-  def create_address
-    @new_address = current_customer.customer_addresses.build(address_params)
+    if request.post?
+      @new_address = current_customer.customer_addresses.build(address_params)
 
-    if @new_address.save
-      redirect_to customer_checkout_payment_path, notice: 'Address added successfully!'
+      if @new_address.save
+        session[:selected_address_id] = @new_address.id
+        redirect_to payment_customer_checkout_index_path, notice: 'Address added successfully!'
+        return
+      end
     else
-      @addresses = current_customer.customer_addresses
-      render :address
+      @new_address = CustomerAddress.new
     end
   end
 
@@ -35,14 +38,28 @@ class Customer::CheckoutController < Customer::BaseController
     @selected_address = find_selected_address
 
     if @selected_address.nil?
-      redirect_to customer_checkout_address_path, alert: 'Please select a delivery address.'
+      redirect_to address_customer_checkout_index_path, alert: 'Please select a delivery address.'
       return
     end
+
+    if @selected_address.pincode.blank?
+      redirect_to address_customer_checkout_index_path, alert: 'This address is missing a pincode. Please add one to continue.'
+      return
+    end
+
+    @delivery_info = delivery_charge_info(@selected_address.pincode, @cart_total)
 
     # Load collect from store settings and available stores
     @collect_from_store_enabled = SystemSetting.collect_from_store_enabled?
     @available_stores = available_stores_for_collection if @collect_from_store_enabled
     @selected_store = find_selected_store if @collect_from_store_enabled
+  end
+
+  # AJAX lookup used on the address form so a customer sees the delivery
+  # charge / free-delivery threshold for a pincode as soon as they type it,
+  # before the address is even saved.
+  def delivery_charge
+    render json: delivery_charge_info(params[:pincode], calculate_cart_total)
   end
 
   def create
@@ -54,7 +71,13 @@ class Customer::CheckoutController < Customer::BaseController
 
     if @selected_address.nil?
       Rails.logger.error "No selected address found"
-      redirect_to customer_checkout_address_path, alert: 'Please select a delivery address.'
+      redirect_to address_customer_checkout_index_path, alert: 'Please select a delivery address.'
+      return
+    end
+
+    if @selected_address.pincode.blank?
+      Rails.logger.error "Selected address ##{@selected_address.id} has no pincode"
+      redirect_to address_customer_checkout_index_path, alert: 'This address is missing a pincode. Please add one to continue.'
       return
     end
 
@@ -229,6 +252,35 @@ class Customer::CheckoutController < Customer::BaseController
     @cart[:items].sum { |item| item['price'].to_f * item['quantity'].to_f }
   end
 
+  # Delivery charge + free-delivery progress for a pincode, given the current
+  # cart/order amount. Returns a plain hash so it renders directly as JSON
+  # from #delivery_charge and drops straight into the views.
+  def delivery_charge_info(pincode, order_amount)
+    charge_record = pincode.present? ? DeliveryCharge.for_pincode(pincode) : nil
+
+    unless charge_record
+      return {
+        serviceable: false, area: nil, charge: 0.0,
+        free_delivery_allowed: false, threshold: 0.0, remaining: 0.0, free_unlocked: false
+      }
+    end
+
+    charge = charge_record.effective_charge_for(order_amount)
+    free_allowed = charge_record.free_delivery_allowed?
+    threshold = charge_record.min_order_for_free_delivery.to_f
+    remaining = free_allowed ? [threshold - order_amount.to_f, 0].max.round(2) : 0.0
+
+    {
+      serviceable: true,
+      area: charge_record.area,
+      charge: charge,
+      free_delivery_allowed: free_allowed,
+      threshold: threshold,
+      remaining: remaining,
+      free_unlocked: free_allowed && charge.zero?
+    }
+  end
+
   def find_selected_address
     address_id = params[:selected_address_id] || session[:selected_address_id]
     return nil if address_id.blank?
@@ -281,6 +333,10 @@ class Customer::CheckoutController < Customer::BaseController
     end
 
     booking = Booking.new(booking_attributes)
+
+    # Delivery charge is recomputed server-side from the selected address's pincode
+    # rather than trusted from the client, since it feeds the order total.
+    booking.shipping_charges = delivery_charge_info(@selected_address.pincode, calculate_cart_total)[:charge]
 
     # Build booking items (like admin controller) - one batch query for all products
     # instead of one Product.find per cart item.

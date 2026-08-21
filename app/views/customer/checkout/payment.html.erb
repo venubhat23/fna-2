@@ -33,7 +33,7 @@
     </div>
   </div>
 
-  <%= form_with url: customer_checkout_path, method: :post, local: true, id: "payment-form" do |form| %>
+  <%= form_with url: customer_checkout_index_path, method: :post, local: true, id: "payment-form" do |form| %>
     <div class="row">
       <!-- Payment & Delivery Options -->
       <div class="col-lg-8">
@@ -41,7 +41,7 @@
         <div class="bg-white rounded shadow-sm p-4 mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">Delivery Address</h5>
-            <%= link_to customer_checkout_address_path, class: "btn btn-outline-primary btn-sm" do %>
+            <%= link_to address_customer_checkout_index_path, class: "btn btn-outline-primary btn-sm" do %>
               <i class="bi bi-pencil me-1"></i>Change
             <% end %>
           </div>
@@ -208,16 +208,42 @@
             <div class="py-2 border-bottom">
               <div class="d-flex justify-content-between">
                 <span>Delivery Charges</span>
-                <span class="text-success">Free</span>
+                <% if @delivery_info[:charge].to_f > 0 %>
+                  <span>₹<%= number_with_precision(@delivery_info[:charge], precision: 2) %></span>
+                <% else %>
+                  <span class="text-success">Free</span>
+                <% end %>
               </div>
             </div>
 
             <div class="py-3">
               <div class="d-flex justify-content-between">
                 <h6 class="mb-0">Total</h6>
-                <h6 class="mb-0">₹<%= @cart_total.round(2) %></h6>
+                <h6 class="mb-0">₹<%= number_with_precision(@cart_total + @delivery_info[:charge].to_f, precision: 2) %></h6>
               </div>
             </div>
+
+            <!-- Attractive free-delivery progress banner -->
+            <% if !@delivery_info[:serviceable] %>
+              <div class="free-delivery-card unserviceable-state mb-3">
+                <div class="fdc-title"><i class="bi bi-exclamation-triangle me-1"></i>Not serviceable yet</div>
+                <div class="fdc-sub mb-0">We couldn't find a delivery charge for this pincode. Delivery may take longer or require confirmation.</div>
+              </div>
+            <% elsif @delivery_info[:free_delivery_allowed] && @delivery_info[:free_unlocked] %>
+              <div class="free-delivery-card unlocked-state mb-3">
+                <div class="fdc-title"><i class="bi bi-emoji-smile-fill me-1"></i>Free Delivery Unlocked 🎉</div>
+                <div class="fdc-sub mb-0">No delivery charges on this order.</div>
+              </div>
+            <% elsif @delivery_info[:free_delivery_allowed] %>
+              <% pct = @delivery_info[:threshold].to_f > 0 ? [(@cart_total / @delivery_info[:threshold].to_f * 100).round, 100].min : 0 %>
+              <div class="free-delivery-card progress-state mb-3">
+                <div class="fdc-title"><i class="bi bi-truck me-1"></i>₹<%= number_with_precision(@delivery_info[:remaining], precision: 0) %> away from FREE Delivery!</div>
+                <div class="fdc-sub mb-0">Add more items to unlock free delivery (min. order ₹<%= number_with_precision(@delivery_info[:threshold], precision: 0) %>).</div>
+                <div class="fdc-progress-track">
+                  <div class="fdc-progress-fill" style="width:<%= pct %>%"></div>
+                </div>
+              </div>
+            <% end %>
 
             <!-- Place Order Button -->
             <div class="d-grid">
@@ -236,6 +262,31 @@
     </div>
   <% end %>
 </div>
+
+<style>
+.free-delivery-card {
+  border-radius: 14px;
+  padding: 16px 18px;
+  color: #fff;
+}
+.free-delivery-card.progress-state {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5f6d 100%);
+  box-shadow: 0 6px 18px rgba(255, 95, 109, 0.28);
+}
+.free-delivery-card.unlocked-state {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.3);
+}
+.free-delivery-card.unserviceable-state {
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffe69c;
+}
+.free-delivery-card .fdc-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.free-delivery-card .fdc-sub { font-size: 0.82rem; opacity: 0.92; margin-bottom: 10px; }
+.free-delivery-card .fdc-progress-track { background: rgba(255,255,255,0.35); border-radius: 999px; height: 8px; overflow: hidden; }
+.free-delivery-card .fdc-progress-fill { background: #fff; height: 100%; border-radius: 999px; }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

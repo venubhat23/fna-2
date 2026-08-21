@@ -1,0 +1,333 @@
+<% content_for :title, 'Delivery Address' %>
+
+<div class="container py-4">
+  <h1 class="mb-4">
+    <i class="bi bi-geo-alt me-2"></i>Delivery Address
+  </h1>
+
+  <!-- Checkout Steps -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-center">
+        <div class="d-flex align-items-center">
+          <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-check"></i>
+          </div>
+          <div class="bg-primary" style="width: 50px; height: 2px;"></div>
+          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-geo-alt"></i>
+          </div>
+          <div class="bg-secondary" style="width: 50px; height: 2px;"></div>
+          <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-credit-card"></i>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-center mt-2">
+        <div class="d-flex" style="width: 300px;">
+          <small class="text-success fw-semibold" style="width: 100px;">Cart Review</small>
+          <small class="text-primary fw-semibold" style="width: 100px; text-align: center;">Address</small>
+          <small class="text-muted" style="width: 100px; text-align: right;">Payment</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Existing Addresses -->
+      <% if @addresses.any? %>
+        <div class="bg-white rounded shadow-sm p-4 mb-4">
+          <h5 class="mb-3">Your Saved Addresses</h5>
+          <div class="row">
+            <% selected_id = (session[:selected_address_id].presence || @addresses.find(&:is_default?)&.id).to_i %>
+            <% @addresses.each do |address| %>
+              <div class="col-md-6 mb-3">
+                <div class="border rounded p-3 address-option">
+                  <div class="form-check">
+                    <input class="form-check-input address-radio" type="radio" name="selected_address_id"
+                           value="<%= address.id %>" id="address_<%= address.id %>"
+                           data-pincode="<%= address.pincode %>"
+                           <%= 'checked' if address.id == selected_id %>>
+                    <label class="form-check-label w-100" for="address_<%= address.id %>">
+                      <strong><%= address.name %></strong>
+                      <span class="badge bg-secondary ms-2"><%= address.address_type.to_s.humanize %></span>
+                      <br>
+                      <small class="text-muted">
+                        <%= address.address %><br>
+                        <% if address.landmark.present? %><%= address.landmark %><br><% end %>
+                        <%= address.city %>, <%= address.state %> - <%= address.pincode %><br>
+                        <i class="bi bi-phone"></i> <%= address.mobile %>
+                      </small>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          <div class="text-end">
+            <button type="button" id="continue-with-saved-btn" class="btn btn-primary">
+              Deliver to This Address <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Add New Address -->
+      <div class="bg-white rounded shadow-sm p-4">
+        <h5 class="mb-3"><i class="bi bi-plus-circle me-2"></i>Add New Address</h5>
+
+        <% if @new_address&.errors&.any? %>
+          <div class="alert alert-danger">
+            <ul class="mb-0">
+              <% @new_address.errors.full_messages.each do |msg| %>
+                <li><%= msg %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <%= form_with model: @new_address, url: address_customer_checkout_index_path, method: :post, local: true, id: "new-address-form" do |form| %>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= form.label :name, "Full Name", class: "form-label" %>
+              <%= form.text_field :name, class: "form-control", required: true %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :mobile, "Mobile Number", class: "form-label" %>
+              <%= form.text_field :mobile, class: "form-control", required: true, pattern: "[0-9]{10}", maxlength: 10 %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :address_type, "Address Type", class: "form-label" %>
+              <%= form.select :address_type, [['Home', 'home'], ['Work', 'work'], ['Other', 'other']], {}, class: "form-select" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :pincode, class: "form-label" do %>
+                Pincode <span class="text-danger">*</span>
+              <% end %>
+              <%= form.text_field :pincode, class: "form-control", id: "pincode-input", required: true, pattern: "[0-9]{6}", maxlength: 6, autocomplete: "postal-code", title: "Enter a 6-digit pincode" %>
+              <div class="form-text">Required — used to calculate delivery charges.</div>
+            </div>
+            <div class="col-12">
+              <%= form.label :address, "Address", class: "form-label" %>
+              <%= form.text_area :address, class: "form-control", rows: 2, required: true %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :landmark, "Landmark (Optional)", class: "form-label" %>
+              <%= form.text_field :landmark, class: "form-control" %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :city, "City", class: "form-label" %>
+              <%= form.text_field :city, class: "form-control", required: true %>
+            </div>
+            <div class="col-md-6">
+              <%= form.label :state, "State", class: "form-label" %>
+              <%= form.text_field :state, class: "form-control" %>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check">
+                <%= form.check_box :is_default, class: "form-check-input" %>
+                <%= form.label :is_default, "Set as default address", class: "form-check-label" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live delivery-charge preview for the pincode being typed -->
+          <div id="pincode-delivery-preview" class="mt-3"></div>
+
+          <div class="d-grid mt-4">
+            <%= form.submit "Save Address & Continue", class: "btn btn-primary btn-lg" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <div class="checkout-sidebar">
+        <div class="bg-white rounded shadow-sm p-4 mb-3">
+          <h5 class="mb-3">Order Total</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>₹<%= number_with_precision(@cart_total, precision: 2) %></span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Delivery Charge</span>
+            <span id="sidebar-delivery-charge">—</span>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between fw-bold fs-5">
+            <span>Total</span>
+            <span class="text-success" id="sidebar-total">₹<%= number_with_precision(@cart_total, precision: 2) %></span>
+          </div>
+        </div>
+
+        <!-- Attractive free-delivery progress banner -->
+        <div id="free-delivery-banner"></div>
+
+        <div class="d-grid gap-2 mt-3">
+          <%= link_to customer_shop_path, class: "btn btn-outline-primary" do %>
+            <i class="bi bi-cart-plus me-1"></i>Continue Shopping
+          <% end %>
+          <%= link_to customer_cart_path, class: "btn btn-outline-secondary" do %>
+            <i class="bi bi-arrow-left me-1"></i>Back to Cart
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.address-option:has(.address-radio:checked) { border-color: #0d6efd !important; background-color: #f0f6ff; }
+
+.free-delivery-card {
+  border-radius: 14px;
+  padding: 18px 20px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.free-delivery-card.progress-state {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5f6d 100%);
+  box-shadow: 0 6px 18px rgba(255, 95, 109, 0.28);
+}
+.free-delivery-card.unlocked-state {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.3);
+}
+.free-delivery-card.flat-state {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);
+}
+.free-delivery-card.unserviceable-state {
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffe69c;
+  box-shadow: none;
+}
+.free-delivery-card .fdc-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+.free-delivery-card .fdc-sub {
+  font-size: 0.85rem;
+  opacity: 0.92;
+  margin-bottom: 10px;
+}
+.free-delivery-card .fdc-progress-track {
+  background: rgba(255,255,255,0.35);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+.free-delivery-card .fdc-progress-fill {
+  background: #fff;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+</style>
+
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+const cartTotal = <%= @cart_total.to_f %>;
+
+function renderDeliveryInfo(info) {
+  const sidebarCharge = document.getElementById('sidebar-delivery-charge');
+  const sidebarTotal = document.getElementById('sidebar-total');
+  const banner = document.getElementById('free-delivery-banner');
+
+  if (!info.serviceable) {
+    sidebarCharge.textContent = '—';
+    sidebarTotal.textContent = `₹${cartTotal.toFixed(2)}`;
+    banner.innerHTML = `
+      <div class="free-delivery-card unserviceable-state">
+        <div class="fdc-title"><i class="bi bi-exclamation-triangle me-1"></i>Not serviceable yet</div>
+        <div class="fdc-sub mb-0">We couldn't find delivery charges for this pincode. Please double-check the pincode or try another address.</div>
+      </div>`;
+    return;
+  }
+
+  const charge = Number(info.charge);
+  const total = cartTotal + charge;
+  sidebarCharge.textContent = charge > 0 ? `₹${charge.toFixed(2)}` : 'Free';
+  sidebarCharge.className = charge > 0 ? '' : 'text-success fw-semibold';
+  sidebarTotal.textContent = `₹${total.toFixed(2)}`;
+
+  if (!info.free_delivery_allowed) {
+    banner.innerHTML = `
+      <div class="free-delivery-card flat-state">
+        <div class="fdc-title"><i class="bi bi-truck me-1"></i>Delivery Charge: ₹${charge.toFixed(2)}</div>
+        <div class="fdc-sub mb-0">${info.area ? 'Delivering to ' + info.area : 'A flat delivery charge applies to this area.'}</div>
+      </div>`;
+    return;
+  }
+
+  if (info.free_unlocked) {
+    banner.innerHTML = `
+      <div class="free-delivery-card unlocked-state">
+        <div class="fdc-title"><i class="bi bi-emoji-smile-fill me-1"></i>Yay! You've unlocked FREE Delivery 🎉</div>
+        <div class="fdc-sub mb-0">No delivery charges on this order.</div>
+      </div>`;
+    return;
+  }
+
+  const remaining = Number(info.remaining);
+  const threshold = Number(info.threshold);
+  const pct = threshold > 0 ? Math.min(100, Math.round((cartTotal / threshold) * 100)) : 0;
+
+  banner.innerHTML = `
+    <div class="free-delivery-card progress-state">
+      <div class="fdc-title"><i class="bi bi-truck me-1"></i>₹${remaining.toFixed(0)} away from FREE Delivery!</div>
+      <div class="fdc-sub mb-0">Shop for ₹${remaining.toFixed(0)} more to unlock free delivery (min. order ₹${threshold.toFixed(0)}). Right now delivery is ₹${charge.toFixed(2)}.</div>
+      <div class="fdc-progress-track">
+        <div class="fdc-progress-fill" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+}
+
+function fetchDeliveryInfo(pincode) {
+  if (!pincode || pincode.length !== 6) return;
+  fetch(`<%= delivery_charge_customer_checkout_index_path %>?pincode=${encodeURIComponent(pincode)}`, {
+    headers: { 'Accept': 'application/json' }
+  }).then(r => r.json()).then(renderDeliveryInfo).catch(() => {});
+}
+
+// Update banner when an existing saved address is chosen
+document.querySelectorAll('.address-radio').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    fetchDeliveryInfo(radio.dataset.pincode);
+  });
+});
+
+// Continue with a previously-saved address (no new address form needed)
+const continueBtn = document.getElementById('continue-with-saved-btn');
+if (continueBtn) {
+  continueBtn.addEventListener('click', function() {
+    const checked = document.querySelector('.address-radio:checked');
+    if (!checked) return;
+    window.location.href = `<%= payment_customer_checkout_index_path %>?selected_address_id=${checked.value}`;
+  });
+}
+
+// Debounced live lookup as the pincode is typed in the new-address form
+const pincodeInput = document.getElementById('pincode-input');
+let pincodeDebounce;
+if (pincodeInput) {
+  pincodeInput.addEventListener('input', function() {
+    clearTimeout(pincodeDebounce);
+    const val = pincodeInput.value.trim();
+    pincodeDebounce = setTimeout(() => fetchDeliveryInfo(val), 400);
+  });
+}
+
+// Initial load: use whichever saved address is currently checked
+document.addEventListener('DOMContentLoaded', function() {
+  const checked = document.querySelector('.address-radio:checked');
+  if (checked) {
+    fetchDeliveryInfo(checked.dataset.pincode);
+  }
+});
+</script>

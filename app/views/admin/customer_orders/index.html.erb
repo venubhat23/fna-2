@@ -1,4 +1,5 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -44,6 +45,7 @@
       <table class="table table-hover mb-0" id="coTable">
         <thead class="table-light">
           <tr>
+            <th class="border-0" style="width:36px"></th>
             <th class="border-0 fw-semibold" style="width:60px">#</th>
             <th class="border-0 fw-semibold">Customer Name</th>
             <th class="border-0 fw-semibold">Customer ID</th>
@@ -52,12 +54,12 @@
             <th class="border-0 fw-semibold" style="width:120px">Actions</th>
           </tr>
         </thead>
-        <tbody id="coTableBody">
-          <% row_counter = 0 %>
-          <% @delivery_groups.each do |delivery_person, customers| %>
-            <% next if customers.empty? %>
+        <% row_counter = 0 %>
+        <% @delivery_groups.each do |delivery_person, customers| %>
+          <% next if customers.empty? %>
+          <tbody>
             <tr class="table-light">
-              <td colspan="6" class="fw-semibold py-2">
+              <td colspan="7" class="fw-semibold py-2">
                 <% if delivery_person %>
                   <i class="bi bi-truck text-primary me-1"></i><%= delivery_person.full_name %>
                   <span class="text-muted fw-normal">(<%= customers.size %> customer<%= 's' if customers.size != 1 %>)</span>
@@ -67,13 +69,18 @@
                 <% end %>
               </td>
             </tr>
+          </tbody>
+          <tbody class="sortable-group" data-delivery-person-id="<%= delivery_person&.id %>">
             <% customers.each do |customer| %>
               <% row_counter += 1 %>
               <tr data-customer-id="<%= customer.id %>"
                   data-row-number="<%= customer.row_number.to_s %>"
                   data-name="<%= customer.display_name.downcase %>"
                   data-mobile="<%= customer.mobile.to_s.downcase %>">
-                <td class="align-middle text-muted"><%= row_counter %></td>
+                <td class="align-middle text-muted drag-handle" title="Drag to reorder">
+                  <i class="bi bi-grip-vertical"></i>
+                </td>
+                <td class="align-middle text-muted row-counter-cell"><%= row_counter %></td>
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
                     <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-2" style="width:34px;height:34px;min-width:34px;">
@@ -114,8 +121,8 @@
                 </td>
               </tr>
             <% end %>
-          <% end %>
-        </tbody>
+          </tbody>
+        <% end %>
       </table>
     </div>
 
@@ -138,7 +145,7 @@ document.getElementById('rowFilter').addEventListener('change', filterTable);
 function filterTable() {
   const term = document.getElementById('coSearch').value.toLowerCase();
   const filter = document.getElementById('rowFilter').value;
-  document.querySelectorAll('#coTableBody tr').forEach(function(row) {
+  document.querySelectorAll('#coTable tbody tr[data-customer-id]').forEach(function(row) {
     const name = row.dataset.name || '';
     const mobile = row.dataset.mobile || '';
     const id = row.dataset.customerId || '';
@@ -212,7 +219,7 @@ document.querySelectorAll('.clear-btn').forEach(function(btn) {
 
 // Bulk save
 document.getElementById('saveAllBtn').addEventListener('click', function() {
-  const rows = document.querySelectorAll('#coTableBody tr');
+  const rows = document.querySelectorAll('#coTable tbody tr[data-customer-id]');
   const updates = [];
   rows.forEach(function(row) {
     const input = row.querySelector('.row-number-input');
@@ -247,6 +254,50 @@ document.getElementById('saveAllBtn').addEventListener('click', function() {
   });
 });
 
+// Drag and drop reordering (scoped to each delivery person's group)
+document.querySelectorAll('.sortable-group').forEach(function(tbody) {
+  new Sortable(tbody, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onEnd: function() {
+      renumberGroup(tbody);
+    }
+  });
+});
+
+function renumberGroup(tbody) {
+  const rows = Array.from(tbody.querySelectorAll('tr[data-customer-id]'));
+  const updates = [];
+
+  rows.forEach(function(row, idx) {
+    const newNumber = String(idx + 1);
+    const input = row.querySelector('.row-number-input');
+    const counterCell = row.querySelector('.row-counter-cell');
+
+    if (input) {
+      input.value = newNumber;
+      input.dataset.original = newNumber;
+    }
+    if (counterCell) counterCell.textContent = newNumber;
+    row.dataset.rowNumber = newNumber;
+
+    updates.push({ id: row.dataset.customerId, row_number: newNumber });
+  });
+
+  fetch('/admin/customer_orders/bulk_update', {
+    method: 'POST',
+    headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ customers: updates })
+  }).then(r => r.json()).then(function(data) {
+    if (data.success) {
+      showToast('Order updated!', 'success');
+    } else {
+      showToast(data.message || 'Failed to save new order.', 'error');
+    }
+  });
+}
+
 function saveRowNumber(customerId, rowNumber, callback) {
   fetch(`/admin/customer_orders/${customerId}`, {
     method: 'PATCH',
@@ -272,4 +323,8 @@ function showToast(message, type) {
 .row-number-input::-webkit-inner-spin-button,
 .row-number-input::-webkit-outer-spin-button { opacity: 1; }
 .row-number-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.15rem rgba(13,110,253,.15); }
+.drag-handle { cursor: grab; }
+.drag-handle:active { cursor: grabbing; }
+.sortable-ghost { opacity: 0.4; background-color: #e7f1ff; }
+.sortable-group tr.sortable-chosen { background-color: #f8f9fa; }
 </style>

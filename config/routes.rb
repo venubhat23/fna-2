@@ -1037,6 +1037,7 @@ Rails.application.routes.draw do
         post :payment
         get :confirmation
         post :cart_order
+        get :delivery_charge
       end
     end
 

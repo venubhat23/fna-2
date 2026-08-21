@@ -74,7 +74,7 @@
               <div class="col-md-6 mb-3">
                 <div class="border rounded p-3">
                   <div class="form-check">
-                    <input class="form-check-input" type="radio" name="selected_address_id" value="<%= address.id %>" id="address_<%= address.id %>" <%= 'checked' if address.is_default? %>>
+                    <input class="form-check-input address-radio" type="radio" name="selected_address_id" value="<%= address.id %>" id="address_<%= address.id %>" data-pincode="<%= address.pincode %>" <%= 'checked' if @selected_address&.id == address.id %>>
                     <label class="form-check-label w-100" for="address_<%= address.id %>">
                       <strong><%= address.name %></strong>
                       <span class="badge bg-secondary ms-2"><%= address.address_type.humanize %></span>
@@ -125,11 +125,13 @@
 
           <div class="d-flex justify-content-between mb-2">
             <span>Shipping</span>
-            <span>
-              <% if @cart_total >= 500 %>
-                <span class="text-success">Free</span>
+            <span id="sidebar-delivery-charge">
+              <% if !@delivery_info[:serviceable] %>
+                <span class="text-muted">—</span>
+              <% elsif @delivery_info[:charge].to_f > 0 %>
+                ₹<%= number_with_precision(@delivery_info[:charge], precision: 2) %>
               <% else %>
-                ₹50
+                <span class="text-success">Free</span>
               <% end %>
             </span>
           </div>
@@ -143,15 +145,44 @@
 
           <div class="d-flex justify-content-between fw-bold fs-5 mb-4">
             <span>Total</span>
-            <span class="text-success">₹<%= @cart_total >= 500 ? @cart_total : @cart_total + 50 %></span>
+            <span class="text-success" id="sidebar-total">₹<%= number_with_precision(@cart_total + @delivery_info[:charge].to_f, precision: 2) %></span>
+          </div>
+
+          <!-- Attractive free-delivery progress banner -->
+          <div id="free-delivery-banner" class="mb-3">
+            <% if !@delivery_info[:serviceable] %>
+              <div class="free-delivery-card unserviceable-state">
+                <div class="fdc-title"><i class="bi bi-info-circle me-1"></i>Select an address to see delivery charges</div>
+                <div class="fdc-sub mb-0">We'll show delivery charges and free-delivery eligibility once a pincode is selected.</div>
+              </div>
+            <% elsif @delivery_info[:free_delivery_allowed] && @delivery_info[:free_unlocked] %>
+              <div class="free-delivery-card unlocked-state">
+                <div class="fdc-title"><i class="bi bi-emoji-smile-fill me-1"></i>Free Delivery Unlocked 🎉</div>
+                <div class="fdc-sub mb-0">No delivery charges on this order.</div>
+              </div>
+            <% elsif @delivery_info[:free_delivery_allowed] %>
+              <% pct = @delivery_info[:threshold].to_f > 0 ? [(@cart_total / @delivery_info[:threshold].to_f * 100).round, 100].min : 0 %>
+              <div class="free-delivery-card progress-state">
+                <div class="fdc-title"><i class="bi bi-truck me-1"></i>₹<%= number_with_precision(@delivery_info[:remaining], precision: 0) %> away from FREE Delivery!</div>
+                <div class="fdc-sub mb-0">Add more items to unlock free delivery (min. order ₹<%= number_with_precision(@delivery_info[:threshold], precision: 0) %>).</div>
+                <div class="fdc-progress-track">
+                  <div class="fdc-progress-fill" style="width:<%= pct %>%"></div>
+                </div>
+              </div>
+            <% else %>
+              <div class="free-delivery-card flat-state">
+                <div class="fdc-title"><i class="bi bi-truck me-1"></i>Delivery Charge: ₹<%= number_with_precision(@delivery_info[:charge], precision: 2) %></div>
+                <div class="fdc-sub mb-0">A flat delivery charge applies to this area.</div>
+              </div>
+            <% end %>
           </div>
 
           <% if @addresses.any? %>
             <div class="d-grid">
-              <%= link_to payment_customer_checkout_index_path, class: "btn btn-primary btn-lg", onclick: "setSelectedAddress()" do %>
+              <button type="button" id="continue-to-payment-btn" class="btn btn-primary btn-lg">
                 Continue to Payment
                 <i class="bi bi-arrow-right ms-2"></i>
-              <% end %>
+              </button>
             </div>
           <% end %>
 
@@ -166,13 +197,113 @@
   </div>
 </div>
 
+<style>
+.free-delivery-card {
+  border-radius: 14px;
+  padding: 16px 18px;
+  color: #fff;
+}
+.free-delivery-card.progress-state {
+  background: linear-gradient(135deg, #ff8a3d 0%, #ff5f6d 100%);
+  box-shadow: 0 6px 18px rgba(255, 95, 109, 0.28);
+}
+.free-delivery-card.unlocked-state {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.3);
+}
+.free-delivery-card.flat-state {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);
+}
+.free-delivery-card.unserviceable-state {
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffe69c;
+}
+.free-delivery-card .fdc-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.free-delivery-card .fdc-sub { font-size: 0.82rem; opacity: 0.92; margin-bottom: 10px; }
+.free-delivery-card .fdc-progress-track { background: rgba(255,255,255,0.35); border-radius: 999px; height: 8px; overflow: hidden; }
+.free-delivery-card .fdc-progress-fill { background: #fff; height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+</style>
+
 <script>
+const cartTotal = <%= @cart_total.to_f %>;
+
 function setSelectedAddress() {
   const selectedAddress = document.querySelector('input[name="selected_address_id"]:checked');
   if (selectedAddress) {
     sessionStorage.setItem('selected_address_id', selectedAddress.value);
   }
 }
+
+// The selected address has to reach the server (query param), not just
+// browser sessionStorage, since #payment/#create read it from params/session.
+const continueToPaymentBtn = document.getElementById('continue-to-payment-btn');
+if (continueToPaymentBtn) {
+  continueToPaymentBtn.addEventListener('click', function() {
+    const selectedAddress = document.querySelector('input[name="selected_address_id"]:checked');
+    if (!selectedAddress) {
+      alert('Please select a delivery address.');
+      return;
+    }
+    setSelectedAddress();
+    window.location.href = `<%= payment_customer_checkout_index_path %>?selected_address_id=${selectedAddress.value}`;
+  });
+}
+
+function renderDeliveryBanner(info) {
+  const chargeEl = document.getElementById('sidebar-delivery-charge');
+  const totalEl = document.getElementById('sidebar-total');
+  const banner = document.getElementById('free-delivery-banner');
+  const charge = Number(info.charge || 0);
+  const total = cartTotal + (info.serviceable ? charge : 0);
+
+  totalEl.textContent = `₹${total.toFixed(2)}`;
+
+  if (!info.serviceable) {
+    chargeEl.innerHTML = '<span class="text-muted">—</span>';
+    banner.innerHTML = `
+      <div class="free-delivery-card unserviceable-state">
+        <div class="fdc-title"><i class="bi bi-exclamation-triangle me-1"></i>Not serviceable yet</div>
+        <div class="fdc-sub mb-0">We couldn't find a delivery charge for this pincode.</div>
+      </div>`;
+    return;
+  }
+
+  chargeEl.innerHTML = charge > 0 ? `₹${charge.toFixed(2)}` : '<span class="text-success">Free</span>';
+
+  if (!info.free_delivery_allowed) {
+    banner.innerHTML = `
+      <div class="free-delivery-card flat-state">
+        <div class="fdc-title"><i class="bi bi-truck me-1"></i>Delivery Charge: ₹${charge.toFixed(2)}</div>
+        <div class="fdc-sub mb-0">A flat delivery charge applies to this area.</div>
+      </div>`;
+  } else if (info.free_unlocked) {
+    banner.innerHTML = `
+      <div class="free-delivery-card unlocked-state">
+        <div class="fdc-title"><i class="bi bi-emoji-smile-fill me-1"></i>Free Delivery Unlocked 🎉</div>
+        <div class="fdc-sub mb-0">No delivery charges on this order.</div>
+      </div>`;
+  } else {
+    const remaining = Number(info.remaining);
+    const threshold = Number(info.threshold);
+    const pct = threshold > 0 ? Math.min(100, Math.round((cartTotal / threshold) * 100)) : 0;
+    banner.innerHTML = `
+      <div class="free-delivery-card progress-state">
+        <div class="fdc-title"><i class="bi bi-truck me-1"></i>₹${remaining.toFixed(0)} away from FREE Delivery!</div>
+        <div class="fdc-sub mb-0">Add more items to unlock free delivery (min. order ₹${threshold.toFixed(0)}).</div>
+        <div class="fdc-progress-track"><div class="fdc-progress-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }
+}
+
+document.querySelectorAll('.address-radio').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    fetch(`<%= delivery_charge_customer_checkout_index_path %>?pincode=${encodeURIComponent(radio.dataset.pincode)}`, {
+      headers: { 'Accept': 'application/json' }
+    }).then(r => r.json()).then(renderDeliveryBanner).catch(() => {});
+  });
+});
 
 // Auto-select default address if any
 document.addEventListener('DOMContentLoaded', function() {

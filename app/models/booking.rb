@@ -161,7 +161,7 @@ class Booking < ApplicationRecord
 
     self.subtotal = items_total.round(2)
     self.tax_amount = total_gst.round(2)
-    self.total_amount = (items_total + total_gst - current_discount).round(2)
+    self.total_amount = (items_total + total_gst - current_discount + shipping_charges.to_f).round(2)
   end
 
   def calculate_totals!
