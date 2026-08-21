@@ -131,10 +131,32 @@
                         <!-- Address Selection -->
                         <div class="checkout-step" id="address-step">
                           <h5 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Delivery Address</h5>
+
+                          <!-- Shown once the customer confirms which saved address to use -->
+                          <div id="address-confirm-banner" class="address-confirm-card mb-3" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-start">
+                              <div>
+                                <div class="fw-semibold text-success mb-1"><i class="fas fa-check-circle me-1"></i>Delivering to this address</div>
+                                <div id="address-confirm-details" class="small text-muted"></div>
+                              </div>
+                              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeAddress()">Change</button>
+                            </div>
+                          </div>
+
                           <div id="address-list">
                             <!-- Addresses will be loaded here -->
                           </div>
-                          <button class="btn btn-outline-primary" onclick="showAddAddressForm()">
+
+                          <div id="address-confirm-actions" class="mb-3" style="display: none;">
+                            <button type="button" class="btn btn-success" onclick="confirmSelectedAddress()">
+                              <i class="fas fa-check me-1"></i>Deliver to This Address
+                            </button>
+                          </div>
+
+                          <!-- Pincode-based delivery charge / free-delivery preview -->
+                          <div id="delivery-info-banner" class="mb-3"></div>
+
+                          <button class="btn btn-outline-primary" id="add-address-toggle-btn" onclick="showAddAddressForm()">
                             <i class="fas fa-plus me-2"></i>Add New Address
                           </button>
 
@@ -153,14 +175,13 @@
                               <div class="row">
                                 <div class="col-md-6">
                                   <select class="form-control mb-2" name="address_type" required>
-                                    <option value="">Address Type</option>
-                                    <option value="home">Home</option>
+                                    <option value="home" selected>Home</option>
                                     <option value="office">Office</option>
                                     <option value="other">Other</option>
                                   </select>
                                 </div>
                                 <div class="col-md-6">
-                                  <input type="text" class="form-control mb-2" name="pincode" placeholder="Pincode" required>
+                                  <input type="text" class="form-control mb-2" name="pincode" id="cart-pincode-input" placeholder="Pincode" required pattern="[0-9]{6}" maxlength="6" title="Enter a 6-digit pincode">
                                 </div>
                               </div>
                               <textarea class="form-control mb-2" name="address" placeholder="Address" rows="2" required></textarea>
@@ -213,7 +234,7 @@
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                               <span>Delivery:</span>
-                              <span class="text-success">Free</span>
+                              <span id="delivery-charge-amount">&mdash;</span>
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between fw-bold">
@@ -224,6 +245,17 @@
                         </div>
                       </div>
                       <div class="checkout-footer">
+                        <div id="order-confirm-panel" class="order-confirm-card mb-2" style="display: none;">
+                          <div class="mb-2">Ready to place your order for <strong id="confirm-total-amount">₹0</strong>?</div>
+                          <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary flex-fill" onclick="cancelOrderConfirm()">
+                              <i class="fas fa-arrow-left me-1"></i>Keep Shopping
+                            </button>
+                            <button type="button" class="btn btn-success flex-fill" onclick="reallyPlaceOrder()">
+                              <i class="fas fa-check me-1"></i>Yes, Proceed
+                            </button>
+                          </div>
+                        </div>
                         <button class="btn btn-success btn-lg w-100" id="place-order-btn" onclick="placeOrder()">
                           <i class="fas fa-check me-2"></i>Place Order
                         </button>
@@ -934,6 +966,71 @@
           overflow-y: visible;
         }
       }
+
+      /* Delivery charge / free-delivery banner (attractive gradient cards) */
+      .free-delivery-card {
+        border-radius: 14px;
+        padding: 16px 18px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+      }
+      .free-delivery-card.progress-state {
+        background: linear-gradient(135deg, #ff8a3d 0%, #ff5f6d 100%);
+        box-shadow: 0 6px 18px rgba(255, 95, 109, 0.28);
+      }
+      .free-delivery-card.unlocked-state {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        box-shadow: 0 6px 18px rgba(34, 197, 94, 0.3);
+      }
+      .free-delivery-card.flat-state {
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);
+      }
+      .free-delivery-card.unserviceable-state {
+        background: #fff3cd;
+        color: #664d03;
+        border: 1px solid #ffe69c;
+        box-shadow: none;
+      }
+      .free-delivery-card .fdc-title {
+        font-weight: 700;
+        font-size: 1.02rem;
+        margin-bottom: 4px;
+      }
+      .free-delivery-card .fdc-sub {
+        font-size: 0.83rem;
+        opacity: 0.92;
+        margin-bottom: 8px;
+      }
+      .free-delivery-card .fdc-progress-track {
+        background: rgba(255,255,255,0.35);
+        border-radius: 999px;
+        height: 9px;
+        overflow: hidden;
+      }
+      .free-delivery-card .fdc-progress-fill {
+        background: #fff;
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.4s ease;
+      }
+
+      /* Confirmed delivery-address card */
+      .address-confirm-card {
+        border: 1px solid #b7ebc6;
+        background: #f0fdf4;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+
+      /* Final "continue vs. proceed" confirmation card */
+      .order-confirm-card {
+        border: 1px solid #cfe2ff;
+        background: #f2f7ff;
+        border-radius: 10px;
+        padding: 14px;
+      }
     </style>
 
     <!-- Enhanced Application Scripts -->
@@ -1109,6 +1206,9 @@
       let currentView = 'cart'; // cart, checkout, success
       let selectedAddress = null;
       let customerAddresses = [];
+      let addressConfirmed = false;
+      let cartSubtotal = 0;
+      let lastDeliveryInfo = null;
 
       // Cart Modal Functions
       function openCartModal() {
@@ -1132,6 +1232,7 @@
         document.getElementById('checkout-view').style.display = 'none';
         document.getElementById('processing-view').style.display = 'none';
         document.getElementById('success-view').style.display = 'none';
+        cancelOrderConfirm();
       }
 
       function showCartView() {
@@ -1148,6 +1249,7 @@
         document.getElementById('processing-view').style.display = 'none';
         document.getElementById('success-view').style.display = 'none';
         currentView = 'checkout';
+        cancelOrderConfirm();
         loadAddresses();
         loadCheckoutSummary();
       }
@@ -1301,6 +1403,8 @@
 
         if (customerAddresses.length === 0) {
           addressContainer.innerHTML = '<p class="text-muted">No saved addresses. Please add a new address.</p>';
+          updateAddressStepUI();
+          showAddAddressForm();
           return;
         }
 
@@ -1335,10 +1439,114 @@
         });
 
         addressContainer.innerHTML = addressesHtml;
+        updateAddressStepUI();
+        if (selectedAddress && !addressConfirmed) {
+          fetchDeliveryInfoFor(selectedAddress.pincode);
+        }
       }
 
       function selectAddress(addressId) {
         selectedAddress = customerAddresses.find(addr => addr.id == addressId);
+        addressConfirmed = false;
+        updateAddressStepUI();
+        if (selectedAddress) fetchDeliveryInfoFor(selectedAddress.pincode);
+      }
+
+      // Requires an explicit confirmation before a saved address is used for delivery,
+      // rather than silently trusting whichever one is checked/default.
+      function confirmSelectedAddress() {
+        if (!selectedAddress) return;
+        addressConfirmed = true;
+        updateAddressStepUI();
+        showToast('Delivery address confirmed', 'success');
+      }
+
+      function changeAddress() {
+        addressConfirmed = false;
+        updateAddressStepUI();
+      }
+
+      function updateAddressStepUI() {
+        const hasAddresses = customerAddresses.length > 0;
+        const confirmed = addressConfirmed && !!selectedAddress;
+
+        document.getElementById('address-list').style.display = (hasAddresses && !confirmed) ? 'block' : 'none';
+        document.getElementById('address-confirm-actions').style.display = (hasAddresses && !confirmed) ? 'block' : 'none';
+        document.getElementById('address-confirm-banner').style.display = confirmed ? 'block' : 'none';
+
+        const addToggleBtn = document.getElementById('add-address-toggle-btn');
+        if (addToggleBtn) addToggleBtn.style.display = confirmed ? 'none' : 'inline-block';
+
+        if (confirmed) {
+          document.getElementById('address-confirm-details').innerHTML =
+            `<strong>${selectedAddress.name}</strong> &middot; ${selectedAddress.address}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}<br>📞 ${selectedAddress.mobile}`;
+        }
+      }
+
+      // Pincode-based delivery charge / free-delivery lookup, shared by the saved-address
+      // flow (fetched on select/confirm) and the new-address form (fetched as pincode is typed).
+      function fetchDeliveryInfoFor(pincode) {
+        if (!pincode || pincode.length !== 6) return;
+        fetch(`<%= delivery_charge_customer_checkout_index_path %>?pincode=${encodeURIComponent(pincode)}`, {
+          headers: { 'Accept': 'application/json' }
+        }).then(r => r.json()).then(renderDeliveryBanner).catch(() => {});
+      }
+
+      function renderDeliveryBanner(info) {
+        lastDeliveryInfo = info;
+        const banner = document.getElementById('delivery-info-banner');
+        const chargeLine = document.getElementById('delivery-charge-amount');
+        const finalTotalEl = document.getElementById('final-total');
+        if (!banner || !chargeLine || !finalTotalEl) return;
+
+        if (!info.serviceable) {
+          chargeLine.textContent = '—';
+          chargeLine.className = '';
+          finalTotalEl.textContent = `₹${cartSubtotal.toFixed(2)}`;
+          banner.innerHTML = `
+            <div class="free-delivery-card unserviceable-state">
+              <div class="fdc-title"><i class="fas fa-exclamation-triangle me-1"></i>Not serviceable yet</div>
+              <div class="fdc-sub mb-0">We couldn't find delivery charges for this pincode. Please double-check it or try another address.</div>
+            </div>`;
+          return;
+        }
+
+        const charge = Number(info.charge);
+        const total = cartSubtotal + charge;
+        chargeLine.textContent = charge > 0 ? `₹${charge.toFixed(2)}` : 'Free';
+        chargeLine.className = charge > 0 ? '' : 'text-success fw-semibold';
+        finalTotalEl.textContent = `₹${total.toFixed(2)}`;
+
+        if (!info.free_delivery_allowed) {
+          banner.innerHTML = `
+            <div class="free-delivery-card flat-state">
+              <div class="fdc-title"><i class="fas fa-truck me-1"></i>Delivery Charge: ₹${charge.toFixed(2)}</div>
+              <div class="fdc-sub mb-0">${info.area ? 'Delivering to ' + info.area : 'A flat delivery charge applies to this area.'}</div>
+            </div>`;
+          return;
+        }
+
+        if (info.free_unlocked) {
+          banner.innerHTML = `
+            <div class="free-delivery-card unlocked-state">
+              <div class="fdc-title"><i class="fas fa-grin-stars me-1"></i>Yay! You've unlocked FREE Delivery 🎉</div>
+              <div class="fdc-sub mb-0">No delivery charges on this order.</div>
+            </div>`;
+          return;
+        }
+
+        const remaining = Number(info.remaining);
+        const threshold = Number(info.threshold);
+        const pct = threshold > 0 ? Math.min(100, Math.round((cartSubtotal / threshold) * 100)) : 0;
+
+        banner.innerHTML = `
+          <div class="free-delivery-card progress-state">
+            <div class="fdc-title"><i class="fas fa-truck me-1"></i>₹${remaining.toFixed(0)} away from FREE Delivery!</div>
+            <div class="fdc-sub mb-0">Shop for ₹${remaining.toFixed(0)} more to unlock free delivery (min. order ₹${threshold.toFixed(0)}). Right now delivery is ₹${charge.toFixed(2)}.</div>
+            <div class="fdc-progress-track">
+              <div class="fdc-progress-fill" style="width:${pct}%"></div>
+            </div>
+          </div>`;
       }
 
       function showAddAddressForm() {
@@ -1427,12 +1635,40 @@
             }
             return response.json();
           })
-          .then(() => {
+          .then(data => {
             hideAddAddressForm();
+
+            if (!isEditing) {
+              // A freshly-added address is what the customer just asked to deliver to -
+              // select and confirm it rather than leaving the previous default checked.
+              selectedAddress = data;
+              addressConfirmed = true;
+            } else if (selectedAddress && selectedAddress.id === data.id) {
+              selectedAddress = data;
+            }
+
             loadAddresses();
+
+            if (selectedAddress && selectedAddress.id === data.id) {
+              updateAddressStepUI();
+              fetchDeliveryInfoFor(data.pincode);
+            }
+
+            showToast(isEditing ? 'Address updated' : 'Address added and selected for delivery', 'success');
           })
           .catch(err => alert(err.message || 'Could not save address. Please try again.'));
       });
+
+      // Live delivery-charge preview as the pincode is typed in the new-address form
+      let cartPincodeDebounce;
+      const cartPincodeInput = document.getElementById('cart-pincode-input');
+      if (cartPincodeInput) {
+        cartPincodeInput.addEventListener('input', function() {
+          clearTimeout(cartPincodeDebounce);
+          const val = cartPincodeInput.value.trim();
+          cartPincodeDebounce = setTimeout(() => fetchDeliveryInfoFor(val), 400);
+        });
+      }
 
       // Checkout Functions
       function loadCheckoutSummary() {
@@ -1458,16 +1694,41 @@
         });
 
         summaryContainer.innerHTML = itemsHtml;
-        document.getElementById('subtotal-amount').textContent = `₹${(total || 0).toFixed(2)}`;
-        document.getElementById('final-total').textContent = `₹${(total || 0).toFixed(2)}`;
+        cartSubtotal = total || 0;
+        document.getElementById('subtotal-amount').textContent = `₹${cartSubtotal.toFixed(2)}`;
+        document.getElementById('final-total').textContent = `₹${cartSubtotal.toFixed(2)}`;
+
+        // Re-render with the latest subtotal so the delivery charge / free-delivery
+        // progress bar stays accurate if the cart changed since the last lookup.
+        if (lastDeliveryInfo) renderDeliveryBanner(lastDeliveryInfo);
       }
 
+      function cancelOrderConfirm() {
+        const panel = document.getElementById('order-confirm-panel');
+        const btn = document.getElementById('place-order-btn');
+        if (panel) panel.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+      }
+
+      // "Place Order" first asks the customer to confirm rather than booking immediately.
       function placeOrder() {
-        if (!selectedAddress) {
-          alert('Please select a delivery address');
+        if (!selectedAddress || !addressConfirmed) {
+          showToast('Please confirm your delivery address first', 'error');
           return;
         }
 
+        const cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
+        if (cart.length === 0) {
+          showToast('Your cart is empty', 'error');
+          return;
+        }
+
+        document.getElementById('confirm-total-amount').textContent = document.getElementById('final-total').textContent;
+        document.getElementById('place-order-btn').style.display = 'none';
+        document.getElementById('order-confirm-panel').style.display = 'block';
+      }
+
+      function reallyPlaceOrder() {
         const cart = JSON.parse(localStorage.getItem('customerCart') || '[]');
         if (cart.length === 0) {
           alert('Your cart is empty');
@@ -1565,6 +1826,7 @@
             const placeOrderBtn = document.getElementById('place-order-btn');
             placeOrderBtn.disabled = false;
             placeOrderBtn.innerHTML = '<i class="fas fa-check me-2"></i>Place Order';
+            document.getElementById('order-confirm-panel').style.display = 'none';
 
             alert('Failed to place order. Please try again.');
           }
