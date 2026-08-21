@@ -2,7 +2,11 @@ class Customer::AddressesController < Customer::BaseController
   before_action :find_address, only: [:show, :edit, :update, :destroy]
 
   def index
-    @addresses = current_customer.customer_addresses.order(:is_default, :created_at)
+    @addresses = current_customer.customer_addresses.order(is_default: :desc, created_at: :desc)
+    respond_to do |format|
+      format.html
+      format.json { render json: @addresses.map { |a| serialize_address(a) } }
+    end
   end
 
   def show
@@ -23,10 +27,14 @@ class Customer::AddressesController < Customer::BaseController
       @address.is_default = true
     end
 
-    if @address.save
-      redirect_to customer_addresses_path, notice: 'Address added successfully!'
-    else
-      render :new
+    respond_to do |format|
+      if @address.save
+        format.html { redirect_to customer_addresses_path, notice: 'Address added successfully!' }
+        format.json { render json: serialize_address(@address), status: :created }
+      else
+        format.html { render :new }
+        format.json { render json: { errors: @address.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -39,10 +47,14 @@ class Customer::AddressesController < Customer::BaseController
       current_customer.customer_addresses.where.not(id: @address.id).update_all(is_default: false)
     end
 
-    if @address.update(address_params)
-      redirect_to customer_addresses_path, notice: 'Address updated successfully!'
-    else
-      render :edit
+    respond_to do |format|
+      if @address.update(address_params)
+        format.html { redirect_to customer_addresses_path, notice: 'Address updated successfully!' }
+        format.json { render json: serialize_address(@address) }
+      else
+        format.html { render :edit }
+        format.json { render json: { errors: @address.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -55,7 +67,10 @@ class Customer::AddressesController < Customer::BaseController
       current_customer.customer_addresses.first.update(is_default: true)
     end
 
-    redirect_to customer_addresses_path, notice: 'Address deleted successfully!'
+    respond_to do |format|
+      format.html { redirect_to customer_addresses_path, notice: 'Address deleted successfully!' }
+      format.json { head :no_content }
+    end
   end
 
   private
@@ -63,7 +78,25 @@ class Customer::AddressesController < Customer::BaseController
   def find_address
     @address = current_customer.customer_addresses.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    redirect_to customer_addresses_path, alert: 'Address not found.'
+    respond_to do |format|
+      format.html { redirect_to customer_addresses_path, alert: 'Address not found.' }
+      format.json { render json: { error: 'Address not found.' }, status: :not_found }
+    end
+  end
+
+  def serialize_address(address)
+    {
+      id: address.id,
+      name: address.name,
+      mobile: address.mobile,
+      address: address.address,
+      address_type: address.address_type,
+      landmark: address.landmark,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      is_default: address.is_default
+    }
   end
 
   def address_params

@@ -16,7 +16,6 @@ class DeliveryPerson < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :mobile, presence: true, uniqueness: true
   validate :mobile_number_format
-  validates :vehicle_type, presence: true
   validates :vehicle_number, presence: true, uniqueness: { case_sensitive: false }
   validates :license_number, presence: true, uniqueness: { case_sensitive: false }
   validates :address, presence: true, length: { minimum: 10 }
