@@ -1,12 +1,22 @@
 class DeliveryCharge < ApplicationRecord
-  validates :pincode, presence: true, uniqueness: true
+  before_validation { self.pincode = pincode.to_s.gsub(/[^0-9]/, '') }
+
+  validates :pincode, presence: true, uniqueness: true, format: { with: /\A\d{6}\z/, message: 'must be a 6-digit pincode' }
   validates :charge_amount, presence: true, numericality: { greater_than_or_equal_to: 0 }
 
   scope :active, -> { where(is_active: true) }
   scope :inactive, -> { where(is_active: false) }
 
+  # Matches on digits-only rather than an exact DB string comparison so a
+  # stray whitespace/invisible character on an already-stored pincode (which
+  # renders identically to the clean value in the admin table, since HTML
+  # collapses whitespace) doesn't silently make an otherwise-active zone
+  # look unserviceable to the customer-facing lookup.
   def self.for_pincode(pincode)
-    find_by(pincode: pincode, is_active: true)
+    normalized = pincode.to_s.gsub(/[^0-9]/, '')
+    return nil if normalized.blank?
+
+    active.detect { |charge| charge.pincode.to_s.gsub(/[^0-9]/, '') == normalized }
   end
 
   def self.charge_for_pincode(pincode)

@@ -413,11 +413,11 @@
                           </span>
                         </div>
                       <% end %>
-                      <% if booking.booked_by == 'delivery_person' && booking.delivery_person.present? %>
+                      <% if booking.delivery_person.present? %>
                         <div class="mt-1">
-                          <span class="badge" style="background-color: #fff3cd; color: #856404; border: 1px solid #ffc107;">
+                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
                             <i class="bi bi-person-badge me-1"></i>
-                            &#9733; Booked by: <%= booking.delivery_person.full_name %>
+                            Delivery: <%= booking.delivery_person.full_name %><% if booking.booked_by == 'delivery_person' %> &#9733;<% end %>
                           </span>
                         </div>
                       <% end %>

@@ -1499,6 +1499,9 @@
         const finalTotalEl = document.getElementById('final-total');
         if (!banner || !chargeLine || !finalTotalEl) return;
 
+        const placeOrderBtn = document.getElementById('place-order-btn');
+        if (placeOrderBtn) placeOrderBtn.style.display = info.serviceable ? 'block' : 'none';
+
         if (!info.serviceable) {
           chargeLine.textContent = '—';
           chargeLine.className = '';
@@ -1707,13 +1710,18 @@
         const panel = document.getElementById('order-confirm-panel');
         const btn = document.getElementById('place-order-btn');
         if (panel) panel.style.display = 'none';
-        if (btn) btn.style.display = 'block';
+        if (btn) btn.style.display = (lastDeliveryInfo && !lastDeliveryInfo.serviceable) ? 'none' : 'block';
       }
 
       // "Place Order" first asks the customer to confirm rather than booking immediately.
       function placeOrder() {
         if (!selectedAddress || !addressConfirmed) {
           showToast('Please confirm your delivery address first', 'error');
+          return;
+        }
+
+        if (lastDeliveryInfo && !lastDeliveryInfo.serviceable) {
+          showToast('This address is not serviceable yet. Please try another address.', 'error');
           return;
         }
 
