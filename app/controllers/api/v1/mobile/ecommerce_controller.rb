@@ -1406,7 +1406,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     }
 
     update_params[:address] = address if address.present?
-    # Note: Customer model doesn't have pincode column, so we don't store it
+    update_params[:pincode] = pincode if pincode.present?
 
     if customer.update(update_params)
       json_response({
@@ -1416,7 +1416,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
           latitude: customer.latitude.to_f,
           longitude: customer.longitude.to_f,
           address: customer.address,
-          pincode: pincode, # Return the provided pincode parameter
+          pincode: customer.pincode,
           location_saved_at: customer.location_obtained_at
         },
         message: 'Location saved successfully'
@@ -1442,6 +1442,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         latitude: customer.latitude,
         longitude: customer.longitude,
         address: customer.address,
+        pincode: customer.pincode,
         location_obtained_at: customer.location_obtained_at
       }
     })

@@ -5,6 +5,13 @@ class ApplicationController < ActionController::Base
   # Include exception handler for API
   include ExceptionHandler
 
+  # Sets ActiveStorage::Current.url_options from the current request. Needed
+  # any time a controller calls attachment.url directly (as the mobile API
+  # does for customer images) - the Disk service can't build a URL without
+  # it, and Rails only wires this up automatically inside ActiveStorage's
+  # own controllers, not custom ones. See ActiveStorage::SetCurrent.
+  include ActiveStorage::SetCurrent
+
   # Security headers and cache control
   before_action :set_cache_control_headers
   before_action :ensure_session_security
