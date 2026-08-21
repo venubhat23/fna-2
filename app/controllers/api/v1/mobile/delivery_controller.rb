@@ -186,7 +186,11 @@ module Api
 
           all_customer_ids = (booking_customer_ids + task_customer_ids).uniq
 
-          customers = Customer.where(id: all_customer_ids).order(:first_name).to_a
+          customers = Customer.where(id: all_customer_ids)
+                               .with_attached_profile_image
+                               .with_attached_personal_image
+                               .with_attached_house_image
+                               .order(:first_name).to_a
 
           render json: {
             success: true,
@@ -750,7 +754,10 @@ module Api
             address:     customer.address,
             latitude:    customer.latitude,
             longitude:   customer.longitude,
-            whatsapp:    customer.whatsapp_number
+            whatsapp:    customer.whatsapp_number,
+            is_image_uploaded: customer.profile_image.attached? ||
+                                customer.personal_image.attached? ||
+                                customer.house_image.attached?
           }
         end
 
