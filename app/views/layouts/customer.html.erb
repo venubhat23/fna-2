@@ -153,6 +153,13 @@
                             </button>
                           </div>
 
+                          <!-- Delivery is only checked when the customer explicitly asks -->
+                          <div id="delivery-validate-actions" class="mb-3" style="display: none;">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="validateSelectedAddressDelivery()">
+                              <i class="fas fa-truck me-1"></i>Validate Delivery for This Pincode
+                            </button>
+                          </div>
+
                           <!-- Pincode-based delivery charge / free-delivery preview -->
                           <div id="delivery-info-banner" class="mb-3"></div>
 
@@ -1440,16 +1447,13 @@
 
         addressContainer.innerHTML = addressesHtml;
         updateAddressStepUI();
-        if (selectedAddress && !addressConfirmed) {
-          fetchDeliveryInfoFor(selectedAddress.pincode);
-        }
       }
 
       function selectAddress(addressId) {
         selectedAddress = customerAddresses.find(addr => addr.id == addressId);
         addressConfirmed = false;
+        resetDeliveryValidation();
         updateAddressStepUI();
-        if (selectedAddress) fetchDeliveryInfoFor(selectedAddress.pincode);
       }
 
       // Requires an explicit confirmation before a saved address is used for delivery,
@@ -1463,7 +1467,26 @@
 
       function changeAddress() {
         addressConfirmed = false;
+        resetDeliveryValidation();
         updateAddressStepUI();
+      }
+
+      // Delivery serviceability is only checked when the customer clicks "Validate" —
+      // not shown by default just because an address is selected/confirmed.
+      function resetDeliveryValidation() {
+        lastDeliveryInfo = null;
+        const banner = document.getElementById('delivery-info-banner');
+        if (banner) banner.innerHTML = '';
+        const placeOrderBtn = document.getElementById('place-order-btn');
+        if (placeOrderBtn) placeOrderBtn.style.display = 'block';
+      }
+
+      function validateSelectedAddressDelivery() {
+        if (!selectedAddress) {
+          showToast('Please select a delivery address first', 'error');
+          return;
+        }
+        fetchDeliveryInfoFor(selectedAddress.pincode);
       }
 
       function updateAddressStepUI() {
@@ -1473,6 +1496,9 @@
         document.getElementById('address-list').style.display = (hasAddresses && !confirmed) ? 'block' : 'none';
         document.getElementById('address-confirm-actions').style.display = (hasAddresses && !confirmed) ? 'block' : 'none';
         document.getElementById('address-confirm-banner').style.display = confirmed ? 'block' : 'none';
+
+        const validateActions = document.getElementById('delivery-validate-actions');
+        if (validateActions) validateActions.style.display = selectedAddress ? 'block' : 'none';
 
         const addToggleBtn = document.getElementById('add-address-toggle-btn');
         if (addToggleBtn) addToggleBtn.style.display = confirmed ? 'none' : 'inline-block';
@@ -1485,11 +1511,17 @@
 
       // Pincode-based delivery charge / free-delivery lookup, shared by the saved-address
       // flow (fetched on select/confirm) and the new-address form (fetched as pincode is typed).
+      // Tagged with a request token so a slower response for a previously-selected pincode
+      // can't land after (and overwrite) the result for whatever is selected now.
+      let deliveryInfoRequestId = 0;
       function fetchDeliveryInfoFor(pincode) {
         if (!pincode || pincode.length !== 6) return;
+        const requestId = ++deliveryInfoRequestId;
         fetch(`<%= delivery_charge_customer_checkout_index_path %>?pincode=${encodeURIComponent(pincode)}`, {
           headers: { 'Accept': 'application/json' }
-        }).then(r => r.json()).then(renderDeliveryBanner).catch(() => {});
+        }).then(r => r.json()).then(info => {
+          if (requestId === deliveryInfoRequestId) renderDeliveryBanner(info);
+        }).catch(() => {});
       }
 
       function renderDeliveryBanner(info) {

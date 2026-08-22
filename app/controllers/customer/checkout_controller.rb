@@ -5,7 +5,11 @@ class Customer::CheckoutController < Customer::BaseController
   CHECKOUT_LOCAL_CACHE = LocalTtlCache.new
 
   before_action :initialize_cart
-  before_action :check_cart_not_empty, except: [:confirmation, :cart_order]
+  # delivery_charge is excluded: it's a pure pincode -> charge/free-delivery lookup called
+  # via AJAX from the header cart-modal, whose cart lives in localStorage rather than
+  # session[:cart] (nothing syncs the two), so session[:cart] is always empty there and
+  # this guard would otherwise redirect every lookup instead of returning JSON.
+  before_action :check_cart_not_empty, except: [:confirmation, :cart_order, :delivery_charge]
 
   def show
     @cart_items = @cart[:items] || []
