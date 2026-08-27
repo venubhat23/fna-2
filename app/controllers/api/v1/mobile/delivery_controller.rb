@@ -312,6 +312,7 @@ module Api
 
         # GET /api/v1/mobile/delivery/products
         def products
+          paginate = params[:page].present? || params[:per_page].present?
           page = params[:page]&.to_i || 1
           per_page = params[:per_page]&.to_i || 20
           per_page = [per_page, 50].min
@@ -338,22 +339,36 @@ module Api
 
           total_count = @products.count
           total_count = total_count.is_a?(Hash) ? total_count.keys.count : total_count
-          @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
+          @products = paginate ? @products.offset((page - 1) * per_page).limit(per_page) : @products
+          @products = preload_product_listing(@products)
 
           products_data = @products.map { |product| format_product_data(product) }
+
+          pagination_data = if paginate
+            {
+              current_page: page,
+              per_page: per_page,
+              total_count: total_count,
+              total_pages: (total_count.to_f / per_page).ceil,
+              has_next_page: page < (total_count.to_f / per_page).ceil,
+              has_prev_page: page > 1
+            }
+          else
+            {
+              current_page: 1,
+              per_page: total_count,
+              total_count: total_count,
+              total_pages: total_count.zero? ? 0 : 1,
+              has_next_page: false,
+              has_prev_page: false
+            }
+          end
 
           render json: {
             success: true,
             data: {
               products: products_data,
-              pagination: {
-                current_page: page,
-                per_page: per_page,
-                total_count: total_count,
-                total_pages: (total_count.to_f / per_page).ceil,
-                has_next_page: page < (total_count.to_f / per_page).ceil,
-                has_prev_page: page > 1
-              },
+              pagination: pagination_data,
               applied_filters: {
                 category_id: params[:category_id],
                 min_price: params[:min_price],

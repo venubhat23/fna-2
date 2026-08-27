@@ -953,6 +953,37 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get My Location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/location",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "location"
+              ]
+            },
+            "description": "Requires customer auth. Returns the logged-in customer's own saved latitude/longitude/address. Self-service counterpart of Save Location.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -1440,6 +1471,38 @@
               ]
             },
             "description": "Requires customer auth. Includes stats + last 5 orders/bookings.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Profile Images",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/ecommerce/profile/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "ecommerce",
+                "profile",
+                "images"
+              ]
+            },
+            "description": "Requires customer auth. Returns profile_image_url / personal_image_url / house_image_url for the logged-in customer (null if not attached).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2141,6 +2204,46 @@
           }
         },
         {
+          "name": "Get Customer Location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/customers/:id/location",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "customers",
+                ":id",
+                "location"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. Returns the customer's saved latitude/longitude and when it was last obtained. NOTE: customers table has no pincode column, so pincode is not returned.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Upload Customer Image",
           "request": {
             "method": "POST",
@@ -2185,6 +2288,46 @@
                 }
               ]
             },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Images",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/mobile/delivery/customers/:id/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "delivery",
+                "customers",
+                ":id",
+                "images"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Requires delivery_person auth. Returns profile_image_url / personal_image_url / house_image_url for whichever image types are attached (null if not attached).",
             "auth": {
               "type": "bearer",
               "bearer": [

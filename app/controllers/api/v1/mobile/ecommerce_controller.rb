@@ -49,6 +49,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/products
   def products
+    paginate = params[:page].present? || params[:per_page].present?
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
@@ -78,22 +79,36 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     # Handle count for grouped queries (like rating sort)
     total_count = @products.count
     total_count = total_count.is_a?(Hash) ? total_count.keys.count : total_count
-    @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
+    @products = paginate ? @products.offset((page - 1) * per_page).limit(per_page) : @products
+    @products = preload_product_listing(@products)
 
     products_data = @products.map { |product| format_product_data(product) }
+
+    pagination_data = if paginate
+      {
+        current_page: page,
+        per_page: per_page,
+        total_count: total_count,
+        total_pages: (total_count.to_f / per_page).ceil,
+        has_next_page: page < (total_count.to_f / per_page).ceil,
+        has_prev_page: page > 1
+      }
+    else
+      {
+        current_page: 1,
+        per_page: total_count,
+        total_count: total_count,
+        total_pages: total_count.zero? ? 0 : 1,
+        has_next_page: false,
+        has_prev_page: false
+      }
+    end
 
     json_response({
       success: true,
       data: {
         products: products_data,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
-        },
+        pagination: pagination_data,
         applied_filters: {
           category_id: params[:category_id],
           min_price: params[:min_price],
@@ -108,6 +123,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/categories/:id/products
   def category_products
+    paginate = params[:page].present? || params[:per_page].present?
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
@@ -133,22 +149,36 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
     count_result = @products.count
     total_count = count_result.is_a?(Hash) ? count_result.keys.count : count_result
-    @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
+    @products = paginate ? @products.offset((page - 1) * per_page).limit(per_page) : @products
+    @products = preload_product_listing(@products)
 
     products_data = @products.map { |product| format_product_data(product) }
+
+    pagination_data = if paginate
+      {
+        current_page: page,
+        per_page: per_page,
+        total_count: total_count,
+        total_pages: (total_count.to_f / per_page).ceil,
+        has_next_page: page < (total_count.to_f / per_page).ceil,
+        has_prev_page: page > 1
+      }
+    else
+      {
+        current_page: 1,
+        per_page: total_count,
+        total_count: total_count,
+        total_pages: total_count.zero? ? 0 : 1,
+        has_next_page: false,
+        has_prev_page: false
+      }
+    end
 
     json_response({
       success: true,
       data: {
         products: products_data,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
-        },
+        pagination: pagination_data,
         category: {
           id: @category.id,
           name: @category.name
@@ -404,6 +434,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/bookings
   def bookings
+    paginate = params[:page].present? || params[:per_page].present?
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
@@ -428,23 +459,36 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     # If no status filter is provided, show all bookings (no additional filtering needed)
 
     total_count = @bookings.count
-    @bookings = @bookings.offset((page - 1) * per_page).limit(per_page)
+    @bookings = paginate ? @bookings.offset((page - 1) * per_page).limit(per_page) : @bookings
 
     bookings_data = @bookings.map { |booking| format_booking_data(booking) }
+
+    pagination_data = if paginate
+      {
+        current_page: page,
+        per_page: per_page,
+        total_count: total_count,
+        total_pages: (total_count.to_f / per_page).ceil,
+        has_next_page: page < (total_count.to_f / per_page).ceil,
+        has_prev_page: page > 1
+      }
+    else
+      {
+        current_page: 1,
+        per_page: total_count,
+        total_count: total_count,
+        total_pages: total_count.zero? ? 0 : 1,
+        has_next_page: false,
+        has_prev_page: false
+      }
+    end
 
     json_response({
       success: true,
       data: {
         bookings: bookings_data,
         user_type: user_type,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
-        }
+        pagination: pagination_data
       },
       message: 'Bookings retrieved successfully'
     })
@@ -455,6 +499,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     customer = current_customer || (Customer.find_by(email: @current_user&.email) if @current_user)
     return json_response({ success: false, message: 'Customer not found' }, :not_found) unless customer
 
+    paginate = params[:page].present? || params[:per_page].present?
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
@@ -465,22 +510,35 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @orders = @orders.where(status: params[:status]) if params[:status].present?
 
     total_count = @orders.count
-    @orders = @orders.offset((page - 1) * per_page).limit(per_page)
+    @orders = paginate ? @orders.offset((page - 1) * per_page).limit(per_page) : @orders
 
     orders_data = @orders.map { |order| format_order_data(order) }
+
+    pagination_data = if paginate
+      {
+        current_page: page,
+        per_page: per_page,
+        total_count: total_count,
+        total_pages: (total_count.to_f / per_page).ceil,
+        has_next_page: page < (total_count.to_f / per_page).ceil,
+        has_prev_page: page > 1
+      }
+    else
+      {
+        current_page: 1,
+        per_page: total_count,
+        total_count: total_count,
+        total_pages: total_count.zero? ? 0 : 1,
+        has_next_page: false,
+        has_prev_page: false
+      }
+    end
 
     json_response({
       success: true,
       data: {
         orders: orders_data,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
-        }
+        pagination: pagination_data
       },
       message: 'Orders retrieved successfully'
     })
@@ -666,6 +724,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       }, :bad_request)
     end
 
+    paginate = params[:page].present? || params[:per_page].present?
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
@@ -696,22 +755,36 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       count_result = @products.count
       total_count = count_result.is_a?(Hash) ? count_result.keys.count : count_result
 
-      @products = preload_product_listing(@products.offset((page - 1) * per_page).limit(per_page))
+      @products = paginate ? @products.offset((page - 1) * per_page).limit(per_page) : @products
+      @products = preload_product_listing(@products)
       products_data = @products.map { |product| format_product_data(product) }
+
+      pagination_data = if paginate
+        {
+          current_page: page,
+          per_page: per_page,
+          total_count: total_count,
+          total_pages: (total_count.to_f / per_page).ceil,
+          has_next_page: page < (total_count.to_f / per_page).ceil,
+          has_prev_page: page > 1
+        }
+      else
+        {
+          current_page: 1,
+          per_page: total_count,
+          total_count: total_count,
+          total_pages: total_count.zero? ? 0 : 1,
+          has_next_page: false,
+          has_prev_page: false
+        }
+      end
 
       json_response({
         success: true,
         data: {
           products: products_data,
           search_query: query,
-          pagination: {
-            current_page: page,
-            per_page: per_page,
-            total_count: total_count,
-            total_pages: (total_count.to_f / per_page).ceil,
-            has_next_page: page < (total_count.to_f / per_page).ceil,
-            has_prev_page: page > 1
-          },
+          pagination: pagination_data,
           applied_filters: {
             category_id: params[:category_id],
             min_price: params[:min_price],
@@ -1003,6 +1076,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     customer = @current_user if @current_user.is_a?(Customer)
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
+    paginate = params[:page].present? || params[:per_page].present?
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
@@ -1013,23 +1087,37 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @subscriptions = @subscriptions.where(status: params[:status]) if params[:status].present?
 
     total_count = @subscriptions.count
-    @subscriptions = @subscriptions.offset((page - 1) * per_page).limit(per_page).to_a
+    @subscriptions = paginate ? @subscriptions.offset((page - 1) * per_page).limit(per_page) : @subscriptions
+    @subscriptions = @subscriptions.to_a
     @subscriptions.each { |subscription| subscription.association(:customer).target = customer }
 
     subscriptions_data = @subscriptions.map { |subscription| format_milk_subscription_data(subscription) }
+
+    pagination_data = if paginate
+      {
+        current_page: page,
+        per_page: per_page,
+        total_count: total_count,
+        total_pages: (total_count.to_f / per_page).ceil,
+        has_next_page: page < (total_count.to_f / per_page).ceil,
+        has_prev_page: page > 1
+      }
+    else
+      {
+        current_page: 1,
+        per_page: total_count,
+        total_count: total_count,
+        total_pages: total_count.zero? ? 0 : 1,
+        has_next_page: false,
+        has_prev_page: false
+      }
+    end
 
     render json: {
       success: true,
       data: {
         subscriptions: subscriptions_data,
-        pagination: {
-          current_page: page,
-          per_page: per_page,
-          total_count: total_count,
-          total_pages: (total_count.to_f / per_page).ceil,
-          has_next_page: page < (total_count.to_f / per_page).ceil,
-          has_prev_page: page > 1
-        }
+        pagination: pagination_data
       },
       message: 'Subscriptions retrieved successfully'
     }
