@@ -10,12 +10,11 @@ class Banner < ApplicationRecord
   after_commit :clear_local_cache
 
   # Validations
-  validates :title, presence: true, length: { maximum: 255 }
-  validates :description, length: { maximum: 500 }
-  validates :display_start_date, :display_end_date, :display_location, presence: true
-  validates :display_location, inclusion: { in: ['dashboard', 'login', 'home', 'sidebar'] }
-  validates :status, inclusion: { in: [true, false] }
-  validates :display_order, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :title, length: { maximum: 255 }, allow_nil: true
+  validates :description, length: { maximum: 500 }, allow_nil: true
+  validates :display_location, inclusion: { in: ['dashboard', 'login', 'home', 'sidebar'] }, allow_nil: true
+  validates :status, inclusion: { in: [true, false] }, allow_nil: true
+  validates :display_order, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :redirect_link, format: { with: URI::regexp }, allow_blank: true
 
   # Custom validation for date range
