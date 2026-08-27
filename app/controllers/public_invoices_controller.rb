@@ -125,6 +125,19 @@ class PublicInvoicesController < ApplicationController
     @invoices = Kaminari.paginate_array(@invoices).page(params[:page]).per(25)
   end
 
+  def share_app_link
+    @customers = Customer.where.not(mobile: [nil, ''])
+
+    if params[:customer_name].present?
+      search_term = "%#{params[:customer_name].strip.downcase}%"
+      @customers = @customers.where("LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(CONCAT(first_name, ' ', last_name)) LIKE ?", search_term, search_term, search_term)
+    end
+
+    @customers = @customers.order(:first_name, :last_name)
+    @total_customer_count = @customers.count
+    @customers = @customers.page(params[:page]).per(25)
+  end
+
   def complete
     @invoice = Invoice.find(params[:id])
 

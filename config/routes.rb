@@ -44,6 +44,9 @@ Rails.application.routes.draw do
   patch '/invoices_public/:id/complete', to: 'public_invoices#complete', as: 'public_invoice_complete'
   delete '/invoices_public/:id', to: 'public_invoices#destroy', as: 'public_invoice_delete'
 
+  # Public share-app-link list (no authentication required)
+  get '/share_app_link', to: 'public_invoices#share_app_link', as: 'share_app_link'
+
   # Test route for booking invoices controller
   get '/test_invoice', to: 'booking_invoices#test'
 

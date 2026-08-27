@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share App Link - Atma Nirbhar Farm</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-attachment: fixed;
+    }
+
+    .main-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 25px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      margin: 15px;
+      overflow: hidden;
+      min-height: calc(100vh - 30px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-section {
+      background: linear-gradient(135deg, #5a4ec9 0%, #667eea 50%, #764ba2 100%);
+      color: white;
+      padding: 40px 30px;
+      text-align: center;
+    }
+
+    .header-icon {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      padding: 15px;
+      margin-bottom: 15px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-icon i { font-size: 2rem; }
+
+    .header-section h1 {
+      margin: 0;
+      font-size: 2.4rem;
+      font-weight: 800;
+      text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+      letter-spacing: -0.5px;
+    }
+
+    .header-section .subtitle {
+      margin-top: 15px;
+      font-size: 1.1rem;
+      opacity: 0.95;
+      font-weight: 400;
+    }
+
+    .customer-count {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: inline-block;
+      margin-top: 5px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .filters-section {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 25px 35px;
+      border-bottom: 1px solid rgba(90, 78, 201, 0.1);
+    }
+
+    .filter-input {
+      padding: 12px 15px;
+      border: 2px solid rgba(90, 78, 201, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 1rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .filter-input:focus {
+      outline: none;
+      border-color: #5a4ec9;
+      box-shadow: 0 0 0 3px rgba(90, 78, 201, 0.1);
+    }
+
+    .btn-filter {
+      background: linear-gradient(135deg, #5a4ec9 0%, #667eea 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    .customer-list { padding: 35px; background: rgba(248, 249, 250, 0.9); }
+
+    .customer-item {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      padding: 22px 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      border-left: 6px solid #5a4ec9;
+    }
+
+    .customer-name { font-size: 1.2rem; font-weight: 700; color: #333; margin: 0; }
+    .customer-phone { color: #666; font-size: 0.95rem; margin-top: 4px; }
+
+    .btn-whatsapp {
+      background: linear-gradient(135deg, #25d366 0%, #20c997 50%, #128c7e 100%);
+      border: none;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 15px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .btn-whatsapp:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4); color: white; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+    .empty-state i { font-size: 4rem; margin-bottom: 20px; color: #ddd; }
+
+    @media (max-width: 768px) {
+      .customer-item { flex-direction: column; align-items: flex-start; }
+      .btn-whatsapp { width: 100%; justify-content: center; }
+      .filters-section { padding: 20px 15px; }
+      .filter-input { max-width: 100%; margin-bottom: 10px; }
+      .btn-filter { margin-left: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <div class="header-section">
+      <div class="header-icon"><i class="fas fa-mobile-alt"></i></div>
+      <h1>Share App Link</h1>
+      <p class="subtitle">
+        Atma Nirbhar Farm -
+        <span class="customer-count"><%= @total_customer_count %> Customers</span>
+      </p>
+    </div>
+
+    <div class="filters-section">
+      <form method="GET" action="/share_app_link">
+        <input
+          type="text"
+          name="customer_name"
+          class="filter-input"
+          placeholder="Search by customer name..."
+          value="<%= params[:customer_name] %>"
+          style="display:inline-block; width:auto; min-width:250px;"
+        />
+        <button type="submit" class="btn-filter"><i class="fas fa-search"></i> Search</button>
+      </form>
+    </div>
+
+    <div class="customer-list">
+      <% if @customers.any? %>
+        <% @customers.each do |customer| %>
+          <% customer_name = [customer.first_name, customer.last_name].compact.join(' ').presence || 'Customer' %>
+          <div class="customer-item">
+            <div>
+              <p class="customer-name"><i class="fas fa-user me-2"></i><%= customer_name %></p>
+              <p class="customer-phone"><i class="fas fa-phone me-2"></i><%= customer.mobile %></p>
+            </div>
+            <button class="btn-whatsapp" onclick="shareAppLink('<%= customer.mobile %>', '<%= j(customer_name) %>')">
+              <i class="fab fa-whatsapp"></i>
+              App Link
+            </button>
+          </div>
+        <% end %>
+        <div class="d-flex justify-content-center mt-4">
+          <%= paginate @customers, theme: 'twitter-bootstrap-5' %>
+        </div>
+      <% else %>
+        <div class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <h3>No Customers Found</h3>
+          <p>There are no customers available at the moment.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <script>
+    const APP_LINK = 'https://play.google.com/store/apps/details?id=com.atmanirbharfarm.android';
+    const SUPPORT_NUMBER = '9008860329';
+
+    function shareAppLink(phoneNumber, customerName) {
+      const message = `🌾 *ATMA NIRBHAR FARM* 🌾
+_Fresh from our farm, straight to your home_
+
+Dear *${customerName}*, 🙏
+
+Great news! Our new *Android app* is officially here — and you're one of our valued customers getting *exclusive early access*. 🎉
+
+📲 *Why you'll love the app:*
+✅ Book fresh farm products in seconds
+✅ Track your orders in real time
+✅ Get member-only offers & discounts
+✅ Faster, easier reordering — anytime, anywhere
+
+⬇️ *Download now:*
+${APP_LINK}
+
+🔐 *Your login details*
+👤 Username: *${phoneNumber}*
+🔑 Password: *atma@123*
+
+_(Please change your password after logging in for security)_
+
+💚 As a token of appreciation for our loyal customers like you, we're expanding with more products and better service — all made simpler through the app.
+
+📞 Questions or need help? We're just a call away: *${SUPPORT_NUMBER}*
+
+Thank you for trusting Atma Nirbhar Farm. We can't wait to serve you better! ✨
+
+Warm regards,
+*Team Atma Nirbhar Farm* 🌱`;
+
+      let cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (!cleanPhone.startsWith('91')) {
+        cleanPhone = '91' + cleanPhone.replace(/^0/, '');
+      }
+
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+    }
+  </script>
+</body>
+</html>
