@@ -507,21 +507,47 @@ class Admin::CustomersController < Admin::ApplicationController
         # Delete associated records in proper order to avoid foreign key constraints
         deleted_items = []
 
-        # 1. Delete milk delivery tasks (child of milk_subscriptions)
+        # 0a. Delete invoice items (child of invoices and milk_delivery_tasks)
+        if ActiveRecord::Base.connection.table_exists?('invoice_items')
+          invoice_items_count = ActiveRecord::Base.connection.execute(<<~SQL).first['count'].to_i
+            SELECT COUNT(*) FROM invoice_items
+            WHERE invoice_id IN (SELECT id FROM invoices WHERE customer_id = #{@customer.id})
+               OR milk_delivery_task_id IN (SELECT id FROM milk_delivery_tasks WHERE customer_id = #{@customer.id})
+          SQL
+          if invoice_items_count > 0
+            ActiveRecord::Base.connection.execute(<<~SQL)
+              DELETE FROM invoice_items
+              WHERE invoice_id IN (SELECT id FROM invoices WHERE customer_id = #{@customer.id})
+                 OR milk_delivery_task_id IN (SELECT id FROM milk_delivery_tasks WHERE customer_id = #{@customer.id})
+            SQL
+            deleted_items << "#{invoice_items_count} invoice item(s)"
+          end
+        end
+
+        # 0b. Delete sale items (child of bookings)
+        if ActiveRecord::Base.connection.table_exists?('sale_items')
+          sale_items_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM sale_items WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = #{@customer.id})").first['count'].to_i
+          if sale_items_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM sale_items WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = #{@customer.id})")
+            deleted_items << "#{sale_items_count} sale item(s)"
+          end
+        end
+
+        # 0c. Delete wallet transactions (child of customer_wallets)
+        if ActiveRecord::Base.connection.table_exists?('wallet_transactions')
+          wallet_txn_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM wallet_transactions WHERE customer_wallet_id IN (SELECT id FROM customer_wallets WHERE customer_id = #{@customer.id})").first['count'].to_i
+          if wallet_txn_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM wallet_transactions WHERE customer_wallet_id IN (SELECT id FROM customer_wallets WHERE customer_id = #{@customer.id})")
+            deleted_items << "#{wallet_txn_count} wallet transaction(s)"
+          end
+        end
+
+        # 1. Delete milk delivery tasks (child of milk_subscriptions; invoice_items no longer reference them)
         if ActiveRecord::Base.connection.table_exists?('milk_delivery_tasks')
           tasks_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM milk_delivery_tasks WHERE customer_id = #{@customer.id}").first['count'].to_i
           if tasks_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM milk_delivery_tasks WHERE customer_id = #{@customer.id}")
             deleted_items << "#{tasks_count} delivery task(s)"
-          end
-        end
-
-        # 2. Delete booking schedules (referenced by bookings and has customer_id)
-        if ActiveRecord::Base.connection.table_exists?('booking_schedules')
-          schedules_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM booking_schedules WHERE customer_id = #{@customer.id}").first['count'].to_i
-          if schedules_count > 0
-            ActiveRecord::Base.connection.execute("DELETE FROM booking_schedules WHERE customer_id = #{@customer.id}")
-            deleted_items << "#{schedules_count} booking schedule(s)"
           end
         end
 
@@ -534,12 +560,21 @@ class Admin::CustomersController < Admin::ApplicationController
           end
         end
 
-        # 4. Delete bookings
+        # 4. Delete bookings (sale_items already cleared above)
         if ActiveRecord::Base.connection.table_exists?('bookings')
           bookings_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM bookings WHERE customer_id = #{@customer.id}").first['count'].to_i
           if bookings_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM bookings WHERE customer_id = #{@customer.id}")
             deleted_items << "#{bookings_count} booking(s)"
+          end
+        end
+
+        # 2. Delete booking schedules (must run after bookings, since bookings reference booking_schedule_id)
+        if ActiveRecord::Base.connection.table_exists?('booking_schedules')
+          schedules_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM booking_schedules WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if schedules_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM booking_schedules WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{schedules_count} booking schedule(s)"
           end
         end
 
