@@ -4,8 +4,11 @@ class CopyFromLastMonth
   #
   # Phase 1: copies every MilkSubscription that had delivery tasks in the
   # prior month (e.g. July when you pass 8) into the target month, with a
-  # fresh subscription record and one MilkDeliveryTask per copied July task,
-  # each shifted by 1 month and forced to status 'pending'.
+  # subscription record and one MilkDeliveryTask per copied July task, each
+  # shifted by 1 month and forced to status 'pending'. If a target-month
+  # subscription for that customer/product already exists (e.g. from a run
+  # that got interrupted partway through copying tasks), it's reused rather
+  # than duplicated — only the still-missing tasks get added to it.
   #
   # Phase 2: catches customers who wouldn't be picked up by phase 1 at all —
   # e.g. a customer added to CustomerFormat after last month's tasks were
@@ -40,6 +43,7 @@ class CopyFromLastMonth
                           .pluck(:subscription_id)
 
     created_subscriptions = 0
+    resumed_subscriptions = 0
     created_tasks = 0
     skipped_subscriptions = 0
     created_format_subscriptions = 0
@@ -61,26 +65,40 @@ class CopyFromLastMonth
       end
 
       begin
-        new_sub = MilkSubscription.new(
-          customer_id:        source_sub.customer_id,
-          product_id:         source_sub.product_id,
-          quantity:           source_sub.quantity,
-          unit:                source_sub.unit,
-          start_date:         target_start,
-          end_date:           [source_sub.end_date + 1.month, target_end].min,
-          delivery_time:      source_sub.delivery_time,
-          delivery_pattern:   source_sub.delivery_pattern,
-          specific_dates:     source_sub.specific_dates,
-          delivery_person_id: source_sub.delivery_person_id,
-          status:             'active',
-          is_active:          true,
-          created_by:         source_sub.created_by
+        # A prior interrupted run may have already created this month's subscription
+        # for this customer/product before dying partway through copying its tasks.
+        # Reuse it instead of creating a duplicate — only the still-missing tasks
+        # (already filtered into tasks_to_copy above) get added below.
+        existing_sub = MilkSubscription.find_by(
+          customer_id: source_sub.customer_id,
+          product_id:  source_sub.product_id,
+          start_date:  target_start
         )
 
-        # Skip the pattern-based auto-generation callback; we copy the real
-        # prior-month tasks 1:1 below instead of re-deriving them from the pattern.
-        new_sub.define_singleton_method(:generate_all_delivery_tasks) { true }
-        new_sub.save!
+        if existing_sub
+          new_sub = existing_sub
+        else
+          new_sub = MilkSubscription.new(
+            customer_id:        source_sub.customer_id,
+            product_id:         source_sub.product_id,
+            quantity:           source_sub.quantity,
+            unit:                source_sub.unit,
+            start_date:         target_start,
+            end_date:           [source_sub.end_date + 1.month, target_end].min,
+            delivery_time:      source_sub.delivery_time,
+            delivery_pattern:   source_sub.delivery_pattern,
+            specific_dates:     source_sub.specific_dates,
+            delivery_person_id: source_sub.delivery_person_id,
+            status:             'active',
+            is_active:          true,
+            created_by:         source_sub.created_by
+          )
+
+          # Skip the pattern-based auto-generation callback; we copy the real
+          # prior-month tasks 1:1 below instead of re-deriving them from the pattern.
+          new_sub.define_singleton_method(:generate_all_delivery_tasks) { true }
+          new_sub.save!
+        end
 
         tasks_to_copy.each do |t|
           new_sub.milk_delivery_tasks.create!(
@@ -95,7 +113,7 @@ class CopyFromLastMonth
           created_tasks += 1
         end
 
-        created_subscriptions += 1
+        existing_sub ? (resumed_subscriptions += 1) : (created_subscriptions += 1)
       rescue => e
         reason = e.is_a?(ActiveRecord::RecordInvalid) ? e.record.errors.full_messages.join(', ') : e.message
         failure = "Subscription ##{source_sub.id} (customer_id: #{source_sub.customer_id}, " \
@@ -171,7 +189,7 @@ class CopyFromLastMonth
 
     print_summary(
       source_start, target_start,
-      created_subscriptions, created_tasks, skipped_subscriptions,
+      created_subscriptions, resumed_subscriptions, created_tasks, skipped_subscriptions,
       created_format_subscriptions, created_format_tasks, skipped_formats,
       failures
     )
@@ -179,6 +197,7 @@ class CopyFromLastMonth
     {
       success: failures.empty?,
       subscriptions: created_subscriptions,
+      resumed_subscriptions: resumed_subscriptions,
       tasks: created_tasks,
       skipped: skipped_subscriptions,
       format_subscriptions: created_format_subscriptions,
@@ -247,7 +266,7 @@ class CopyFromLastMonth
 
   def self.print_summary(
     source_start, target_start,
-    created_subscriptions, created_tasks, skipped_subscriptions,
+    created_subscriptions, resumed_subscriptions, created_tasks, skipped_subscriptions,
     created_format_subscriptions, created_format_tasks, skipped_formats,
     failures
   )
@@ -259,6 +278,7 @@ class CopyFromLastMonth
     puts "Target month:          #{target_start.strftime('%B %Y')}"
     puts "-- Phase 1: copied from last month's tasks --"
     puts "Subscriptions copied:  #{created_subscriptions}"
+    puts "Subscriptions resumed: #{resumed_subscriptions} (already existed from an earlier run; missing tasks added, no duplicate created)"
     puts "Delivery tasks copied: #{created_tasks}"
     puts "Subscriptions skipped: #{skipped_subscriptions} (already had copies)"
     puts "-- Phase 2: filled in from Customer Format --"

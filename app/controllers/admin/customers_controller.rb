@@ -624,6 +624,69 @@ class Admin::CustomersController < Admin::ApplicationController
           end
         end
 
+        # 13. Delete client requests
+        if ActiveRecord::Base.connection.table_exists?('client_requests')
+          client_requests_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM client_requests WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if client_requests_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM client_requests WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{client_requests_count} client request(s)"
+          end
+        end
+
+        # 14. Delete customer wallet
+        if ActiveRecord::Base.connection.table_exists?('customer_wallets')
+          wallets_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM customer_wallets WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if wallets_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM customer_wallets WHERE customer_id = #{@customer.id}")
+            deleted_items << "wallet"
+          end
+        end
+
+        # 14b. Delete device tokens
+        if ActiveRecord::Base.connection.table_exists?('device_tokens')
+          device_tokens_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM device_tokens WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if device_tokens_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM device_tokens WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{device_tokens_count} device token(s)"
+          end
+        end
+
+        # 14c. Delete notifications
+        if ActiveRecord::Base.connection.table_exists?('notifications')
+          notifications_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM notifications WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if notifications_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM notifications WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{notifications_count} notification(s)"
+          end
+        end
+
+        # 14d. Delete pending amounts
+        if ActiveRecord::Base.connection.table_exists?('pending_amounts')
+          pending_amounts_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM pending_amounts WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if pending_amounts_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM pending_amounts WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{pending_amounts_count} pending amount(s)"
+          end
+        end
+
+        # 14e. Delete product ratings
+        if ActiveRecord::Base.connection.table_exists?('product_ratings')
+          product_ratings_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM product_ratings WHERE customer_id = #{@customer.id}").first['count'].to_i
+          if product_ratings_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM product_ratings WHERE customer_id = #{@customer.id}")
+            deleted_items << "#{product_ratings_count} product rating(s)"
+          end
+        end
+
+        # 14f. Delete referrals (both as referred customer and as referring customer)
+        if ActiveRecord::Base.connection.table_exists?('referrals')
+          referrals_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM referrals WHERE customer_id = #{@customer.id} OR referring_customer_id = #{@customer.id}").first['count'].to_i
+          if referrals_count > 0
+            ActiveRecord::Base.connection.execute("DELETE FROM referrals WHERE customer_id = #{@customer.id} OR referring_customer_id = #{@customer.id}")
+            deleted_items << "#{referrals_count} referral(s)"
+          end
+        end
+
         # 16. Delete associated User account if exists
         if @customer.email.present?
           user = User.find_by(email: @customer.email, user_type: 'customer')
