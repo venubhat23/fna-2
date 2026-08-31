@@ -19,6 +19,11 @@ class Store < ApplicationRecord
   # Custom validation for maximum stores limit
   validate :check_maximum_stores_limit, on: :create
 
+  # Numbers pasted from a phone often carry spaces, dashes, or a +91/91/0 country
+  # prefix (e.g. "+91 98765 43210") - strip that noise before validating so a
+  # genuinely valid 10-digit number isn't rejected just for its formatting.
+  before_validation :normalize_contact_mobile
+
   # Scopes
   scope :active, -> { where(status: true) }
   scope :inactive, -> { where(status: false) }
@@ -57,6 +62,14 @@ class Store < ApplicationRecord
   end
 
   private
+
+  def normalize_contact_mobile
+    return if contact_mobile.blank?
+
+    cleaned = contact_mobile.to_s.gsub(/[\s\-()]/, '')
+    cleaned = cleaned.sub(/\A(\+91|91|0)(?=\d{10}\z)/, '')
+    self.contact_mobile = cleaned
+  end
 
   def check_maximum_stores_limit
     if Store.count >= MAX_STORES_LIMIT

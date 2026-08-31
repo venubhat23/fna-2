@@ -108,8 +108,8 @@
             <% @categories.each do |category| %>
               <tr>
                 <td class="align-middle">
-                  <% if category.image.attached? %>
-                    <%= image_tag category.image, class: "rounded", style: "width: 50px; height: 50px; object-fit: cover;",
+                  <% if category.has_image? %>
+                    <%= image_tag category.display_image_url, class: "rounded", style: "width: 50px; height: 50px; object-fit: cover;",
                         onerror: "this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';" %>
                     <div class="bg-light rounded align-items-center justify-content-center d-none" style="width: 50px; height: 50px;">
                       <i class="bi bi-image text-muted"></i>

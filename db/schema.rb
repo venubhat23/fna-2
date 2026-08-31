@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_21_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_31_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -244,6 +244,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_21_090000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "image_backup_url"
+    t.string "image_url"
     t.index ["display_order"], name: "index_categories_on_display_order"
     t.index ["name"], name: "index_categories_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["status"], name: "index_categories_on_status"

@@ -675,6 +675,7 @@ Rails.application.routes.draw do
       end
       collection do
         get :search
+        post :upload_cloudinary_image
       end
     end
 

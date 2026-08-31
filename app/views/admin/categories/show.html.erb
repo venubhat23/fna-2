@@ -26,8 +26,8 @@
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-transparent border-0">
         <div class="d-flex align-items-center">
-          <% if @category.image.attached? %>
-            <%= image_tag @category.image, class: "avatar-lg rounded me-3", style: "width: 60px; height: 60px; object-fit: cover;",
+          <% if @category.has_image? %>
+            <%= image_tag @category.display_image_url, class: "avatar-lg rounded me-3", style: "width: 60px; height: 60px; object-fit: cover;",
                 onerror: "this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';" %>
             <div class="avatar-lg bg-primary-subtle rounded-circle align-items-center justify-content-center me-3 d-none">
               <i class="bi bi-tag text-primary fs-1"></i>

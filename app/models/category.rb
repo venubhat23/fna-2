@@ -13,8 +13,8 @@ class Category < ApplicationRecord
   validates :name, presence: true, uniqueness: { case_sensitive: false }
   validates :display_order, presence: true, numericality: { greater_than_or_equal_to: 0 }
 
-  # Store image URL as backup when image is attached
-  after_commit :backup_image_url, if: :saved_change_to_id?
+  # Store a resolved image URL as backup whenever the image changes
+  after_commit :backup_image_url, if: -> { saved_change_to_id? || saved_change_to_image_url? }
   after_commit :clear_active_categories_cache
 
   scope :active, -> { where(status: true) }
@@ -55,8 +55,12 @@ class Category < ApplicationRecord
   end
 
   def display_image_url
-    if image.attached?
+    if image_url.present?
+      cloudinary_image_url
+    elsif image.attached?
       Rails.application.routes.url_helpers.rails_blob_url(image, only_path: true)
+    elsif image_backup_url.present?
+      image_backup_url
     else
       # Return a default category image URL
       "/assets/category-placeholder.png"
@@ -64,7 +68,37 @@ class Category < ApplicationRecord
   end
 
   def has_image?
-    image.attached?
+    image_url.present? || image.attached?
+  end
+
+  # Cloudinary helper methods - mirrors Product#cloudinary_image_url. image_url stores
+  # the Cloudinary public_id returned by the upload_cloudinary_image action.
+  def cloudinary_image_url(transformation = {})
+    return nil unless image_url.present?
+
+    begin
+      unless Cloudinary.config.cloud_name.present?
+        Rails.logger.warn "Cloudinary not properly configured. Returning original image URL."
+        return image_url
+      end
+
+      default_transformations = {
+        width: 600,
+        height: 600,
+        crop: :fill,
+        quality: :auto,
+        fetch_format: :auto
+      }
+
+      Cloudinary::Utils.cloudinary_url(image_url, default_transformations.merge(transformation))
+    rescue => e
+      Rails.logger.error "Error generating Cloudinary URL for category #{id}: #{e.message}"
+      image_url
+    end
+  end
+
+  def cloudinary_thumbnail_url(size = 150)
+    cloudinary_image_url(width: size, height: size, crop: :fill)
   end
 
   private
@@ -75,7 +109,7 @@ class Category < ApplicationRecord
   end
 
   def backup_image_url
-    if image.attached?
+    if image_url.present? || image.attached?
       update_column(:image_backup_url, display_image_url)
     end
   rescue => e

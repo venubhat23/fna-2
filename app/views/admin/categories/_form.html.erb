@@ -97,28 +97,38 @@
       <div class="card-body pt-3">
         <div class="row g-3">
           <div class="col-md-6">
-            <%= form.label :image, class: "form-label fw-medium" %>
-            <%= form.file_field :image, class: "form-control", accept: "image/*", id: "category-image-input" %>
+            <label class="form-label fw-medium">Upload Image</label>
+            <input type="file" id="category-image-input" class="d-none" accept="image/*">
+            <div>
+              <button type="button" class="btn btn-primary" id="category-image-btn"
+                      onclick="document.getElementById('category-image-input').click()">
+                <i class="bi bi-cloud-arrow-up me-1"></i> Choose Image
+              </button>
+            </div>
             <div class="form-text">
               <i class="bi bi-info-circle me-1"></i>
-              Upload an image for this category (JPG, PNG, GIF - Max 2MB)
+              Uploaded to Cloudinary (JPG, PNG, GIF, WebP). First choose an image, then save the category.
             </div>
+
+            <%# Cloudinary public_id is stored here and persisted with the category %>
+            <%= form.hidden_field :image_url, id: "category-image-url" %>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-medium">
-              <span id="preview-label"><%= @category.image.attached? ? 'Current Image' : 'Image Preview' %></span>
+              <span id="preview-label"><%= @category.has_image? ? 'Current Image' : 'Image Preview' %></span>
             </label>
             <div class="image-preview-container p-3 border border-2 border-dashed rounded bg-light text-center" id="image-preview-container">
-              <% if @category.image.attached? %>
-                <%= image_tag @category.image, class: "img-thumbnail shadow-sm", id: "image-preview", style: "max-width: 150px; max-height: 150px;" %>
-              <% else %>
-                <div id="no-preview" class="text-muted">
-                  <i class="bi bi-image fs-1 d-block mb-2"></i>
-                  <small>No image selected</small>
-                </div>
-                <img id="image-preview" class="img-thumbnail shadow-sm d-none" style="max-width: 150px; max-height: 150px;" alt="Image preview">
-              <% end %>
+              <div id="no-preview" class="text-muted <%= 'd-none' if @category.has_image? %>">
+                <i class="bi bi-image fs-1 d-block mb-2"></i>
+                <small>No image selected</small>
+              </div>
+              <%= tag.img id: "image-preview",
+                    class: "img-thumbnail shadow-sm #{'d-none' unless @category.has_image?}",
+                    style: "max-width: 150px; max-height: 150px;",
+                    src: (@category.display_image_url if @category.has_image?),
+                    alt: "Image preview" %>
+              <div id="upload-status" class="small mt-2"></div>
             </div>
           </div>
         </div>
@@ -146,41 +156,84 @@
 <% end %>
 
 <script>
+// Category image upload via Cloudinary - mirrors the product form's Cloudinary flow.
 document.addEventListener('DOMContentLoaded', function() {
-  const imageInput = document.getElementById('category-image-input');
+  const imageInput   = document.getElementById('category-image-input');
   const imagePreview = document.getElementById('image-preview');
-  const noPreview = document.getElementById('no-preview');
+  const noPreview    = document.getElementById('no-preview');
   const previewLabel = document.getElementById('preview-label');
+  const imageUrlField = document.getElementById('category-image-url');
+  const uploadBtn    = document.getElementById('category-image-btn');
+  const uploadStatus = document.getElementById('upload-status');
+  const form         = imageInput ? imageInput.closest('form') : null;
+  const csrfToken    = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-  if (imageInput) {
-    imageInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
+  let isUploading = false;
 
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
+  if (!imageInput) return;
 
-        reader.onload = function(e) {
-          // Show the image preview
-          imagePreview.src = e.target.result;
-          imagePreview.classList.remove('d-none');
+  imageInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
 
-          // Hide the "no preview" message if it exists
-          if (noPreview) {
-            noPreview.classList.add('d-none');
-          }
+    // Instant local preview while the upload runs
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      imagePreview.src = ev.target.result;
+      imagePreview.classList.remove('d-none');
+      if (noPreview) noPreview.classList.add('d-none');
+      previewLabel.textContent = 'Image Preview';
+    };
+    reader.readAsDataURL(file);
 
-          // Update the label
-          previewLabel.textContent = 'Image Preview';
-        };
+    uploadToCloudinary(file);
+  });
 
-        reader.readAsDataURL(file);
-      } else if (!file) {
-        // If no file is selected, show the "no preview" message
-        imagePreview.classList.add('d-none');
-        if (noPreview) {
-          noPreview.classList.remove('d-none');
+  function uploadToCloudinary(file) {
+    isUploading = true;
+    const originalBtn = uploadBtn.innerHTML;
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading...';
+    uploadStatus.textContent = '';
+    uploadStatus.className = 'small mt-2 text-muted';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    fetch('<%= upload_cloudinary_image_admin_categories_path %>', {
+      method: 'POST',
+      body: formData,
+      headers: { 'X-CSRF-Token': csrfToken }
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          imageUrlField.value = data.public_id;
+          imagePreview.src = data.thumbnail_url || data.url;
+          uploadStatus.textContent = '✓ Uploaded';
+          uploadStatus.className = 'small mt-2 text-success';
+        } else {
+          throw new Error(data.error || 'Upload failed');
         }
-        previewLabel.textContent = 'Image Preview';
+      })
+      .catch(function(err) {
+        uploadStatus.textContent = '✗ ' + err.message;
+        uploadStatus.className = 'small mt-2 text-danger';
+        imageUrlField.value = '';
+      })
+      .finally(function() {
+        isUploading = false;
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalBtn;
+      });
+  }
+
+  // Don't let the category save mid-upload (would persist a blank image_url)
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      if (isUploading) {
+        e.preventDefault();
+        alert('Please wait for the image upload to finish.');
       }
     });
   }

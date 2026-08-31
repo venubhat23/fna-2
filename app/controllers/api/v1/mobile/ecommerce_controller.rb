@@ -16,7 +16,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         id: category.id,
         name: category.name,
         description: category.description,
-        image_url: category.image.attached? ? url_for(category.image) : nil,
+        image_url: category.has_image? ? category.display_image_url : nil,
         products_count: product_counts[category.id] || 0,
         display_order: category.display_order
       }
@@ -35,7 +35,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       id: @category.id,
       name: @category.name,
       description: @category.description,
-      image_url: @category.image.attached? ? url_for(@category.image) : nil,
+      image_url: @category.has_image? ? @category.display_image_url : nil,
       products_count: @category.products_count,
       display_order: @category.display_order
     }
