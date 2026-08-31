@@ -48,7 +48,7 @@ class Banner < ApplicationRecord
   end
 
   def display_location_humanized
-    display_location.humanize
+    display_location.present? ? display_location.humanize : 'Not set'
   end
 
   # Cloudinary helper methods
