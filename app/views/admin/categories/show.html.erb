@@ -109,8 +109,8 @@
                   <tr>
                     <td class="align-middle">
                       <div class="d-flex align-items-center">
-                        <% if product.main_image %>
-                          <%= image_tag product.main_image, class: "avatar-xs rounded me-2", style: "width: 30px; height: 30px; object-fit: cover;" %>
+                        <% if product.main_image_url.present? %>
+                          <%= image_tag product.main_image_url, class: "avatar-xs rounded me-2", style: "width: 30px; height: 30px; object-fit: cover;" %>
                         <% else %>
                           <div class="avatar-xs bg-primary-subtle rounded me-2 d-flex align-items-center justify-content-center">
                             <i class="bi bi-image text-primary"></i>
