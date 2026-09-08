@@ -50,6 +50,7 @@
             <th class="border-0 fw-semibold">Customer Name</th>
             <th class="border-0 fw-semibold">Customer ID</th>
             <th class="border-0 fw-semibold">Contact Number</th>
+            <th class="border-0 fw-semibold" style="width:220px">Delivery Person</th>
             <th class="border-0 fw-semibold" style="width:160px">Row Number</th>
             <th class="border-0 fw-semibold" style="width:120px">Actions</th>
           </tr>
@@ -59,7 +60,7 @@
           <% next if customers.empty? %>
           <tbody>
             <tr class="table-light">
-              <td colspan="7" class="fw-semibold py-2">
+              <td colspan="8" class="fw-semibold py-2">
                 <% if delivery_person %>
                   <i class="bi bi-truck text-primary me-1"></i><%= delivery_person.full_name %>
                   <span class="text-muted fw-normal">(<%= customers.size %> customer<%= 's' if customers.size != 1 %>)</span>
@@ -100,6 +101,16 @@
                   <% else %>
                     <span class="text-muted small">—</span>
                   <% end %>
+                </td>
+                <td class="align-middle">
+                  <select class="form-select form-select-sm delivery-person-select"
+                          data-customer-id="<%= customer.id %>"
+                          data-original="<%= delivery_person&.id %>">
+                    <option value="">— Unassigned —</option>
+                    <% @delivery_people.each do |dp| %>
+                      <option value="<%= dp.id %>" <%= 'selected' if delivery_person && delivery_person.id == dp.id %>><%= dp.full_name %></option>
+                    <% end %>
+                  </select>
                 </td>
                 <td class="align-middle">
                   <input type="number" min="1"
@@ -309,6 +320,43 @@ function saveRowNumber(customerId, rowNumber, callback) {
   });
 }
 
+// Delivery person assignment (Select2)
+if (window.jQuery && jQuery.fn.select2) {
+  jQuery('.delivery-person-select').select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'Select delivery person',
+    allowClear: true
+  });
+}
+
+document.querySelectorAll('.delivery-person-select').forEach(function(sel) {
+  sel.addEventListener('change', function() {
+    const customerId = sel.dataset.customerId;
+    const deliveryPersonId = sel.value;
+
+    fetch(`/admin/customer_orders/${customerId}/assign_delivery_person`, {
+      method: 'PATCH',
+      headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ delivery_person_id: deliveryPersonId })
+    }).then(r => r.json()).then(function(data) {
+      if (data.success) {
+        sel.dataset.original = deliveryPersonId;
+        showToast(data.message + ' Refreshing…', 'success');
+        setTimeout(function() { window.location.reload(); }, 900);
+      } else {
+        showToast(data.message || 'Failed to assign delivery person.', 'error');
+        // revert to previous selection
+        if (window.jQuery) {
+          jQuery(sel).val(sel.dataset.original || '').trigger('change.select2');
+        } else {
+          sel.value = sel.dataset.original || '';
+        }
+      }
+    });
+  });
+});
+
 function showToast(message, type) {
   const iconMap = { success: 'success', error: 'error', info: 'info' };
   Swal.fire({
@@ -327,4 +375,12 @@ function showToast(message, type) {
 .drag-handle:active { cursor: grabbing; }
 .sortable-ghost { opacity: 0.4; background-color: #e7f1ff; }
 .sortable-group tr.sortable-chosen { background-color: #f8f9fa; }
+.delivery-person-select + .select2-container { min-width: 200px; }
+.delivery-person-select + .select2-container .select2-selection--single {
+  height: calc(1.5em + 0.5rem + 2px);
+  padding: 0.15rem 0;
+  font-size: .875rem;
+}
+.delivery-person-select + .select2-container .select2-selection__rendered { line-height: 1.7; }
+.delivery-person-select + .select2-container .select2-selection__arrow { height: 100%; }
 </style>

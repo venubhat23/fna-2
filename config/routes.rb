@@ -181,6 +181,7 @@ Rails.application.routes.draw do
       end
       member do
         patch :update
+        patch :assign_delivery_person
         delete :clear_row_number
       end
     end

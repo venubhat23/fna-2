@@ -8,6 +8,34 @@ class Admin::CustomerOrdersController < Admin::ApplicationController
     assigned_groups = grouped.sort_by { |delivery_person, _| delivery_person.full_name }
 
     @delivery_groups = assigned_groups + [[nil, unassigned]]
+
+    @delivery_people = DeliveryPerson.where(status: true).order(:first_name, :last_name)
+  end
+
+  # Assigns (or clears) the delivery person for every subscription / task / format
+  # belonging to a customer, so the customer moves between delivery groups.
+  def assign_delivery_person
+    customer = Customer.find(params[:id])
+    delivery_person_id = params[:delivery_person_id].presence
+
+    if delivery_person_id && !DeliveryPerson.exists?(id: delivery_person_id)
+      return render json: { success: false, message: 'Delivery person not found.' }, status: :unprocessable_entity
+    end
+
+    ActiveRecord::Base.transaction do
+      customer.milk_subscriptions.update_all(delivery_person_id: delivery_person_id)
+      customer.milk_delivery_tasks.update_all(delivery_person_id: delivery_person_id)
+      SubscriptionTemplate.where(customer_id: customer.id).update_all(delivery_person_id: delivery_person_id) if defined?(SubscriptionTemplate)
+      # customer_formats.delivery_person_id is NOT NULL, so only touch it when assigning.
+      if delivery_person_id && defined?(CustomerFormat)
+        CustomerFormat.where(customer_id: customer.id).update_all(delivery_person_id: delivery_person_id)
+      end
+    end
+
+    name = delivery_person_id ? DeliveryPerson.find_by(id: delivery_person_id)&.full_name : nil
+    render json: { success: true, message: name ? "Assigned to #{name}." : 'Delivery person removed.', delivery_person_name: name }
+  rescue => e
+    render json: { success: false, message: e.message }, status: :unprocessable_entity
   end
 
   def update
