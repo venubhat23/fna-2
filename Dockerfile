@@ -1,10 +1,12 @@
 # syntax=docker/dockerfile:1
 
-# Rails 8 app — Ruby 3.2.0, Postgres, Solid Queue/Cache/Cable, cssbundling-rails
+# Rails 8 app — Ruby 3.2, Postgres, Solid Queue/Cache/Cable, cssbundling-rails
 # (sass/postcss), wkhtmltopdf-binary + ImageMagick for PDF/image processing.
 
-ARG RUBY_VERSION=3.2.0
-FROM ruby:$RUBY_VERSION-slim AS base
+# NB: pin to a bookworm-based tag. The old 3.2.0-slim is Debian bullseye, which
+# is EOL — its apt Release files have expired, so `apt-get update` fails.
+ARG RUBY_VERSION=3.2.11
+FROM ruby:$RUBY_VERSION-slim-bookworm AS base
 
 WORKDIR /rails
 
