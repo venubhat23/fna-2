@@ -34,6 +34,15 @@
           <option value="unassigned">Row Number Not Assigned</option>
         </select>
       </div>
+      <div class="col-md-4">
+        <select id="deliveryFilter" class="form-select form-select-sm">
+          <option value="">All Delivery People</option>
+          <option value="unassigned">— Unassigned —</option>
+          <% @delivery_people.each do |dp| %>
+            <option value="<%= dp.id %>"><%= dp.full_name %></option>
+          <% end %>
+        </select>
+      </div>
     </div>
   </div>
 </div>
@@ -77,7 +86,8 @@
               <tr data-customer-id="<%= customer.id %>"
                   data-row-number="<%= customer.row_number.to_s %>"
                   data-name="<%= customer.display_name.downcase %>"
-                  data-mobile="<%= customer.mobile.to_s.downcase %>">
+                  data-mobile="<%= customer.mobile.to_s.downcase %>"
+                  data-delivery-person-id="<%= delivery_person&.id %>">
                 <td class="align-middle text-muted drag-handle" title="Drag to reorder">
                   <i class="bi bi-grip-vertical"></i>
                 </td>
@@ -152,22 +162,48 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
 // Search + filter
 document.getElementById('coSearch').addEventListener('input', filterTable);
 document.getElementById('rowFilter').addEventListener('change', filterTable);
+document.getElementById('deliveryFilter').addEventListener('change', filterTable);
+
+// Searchable Select2 dropdown for the delivery-person filter
+if (window.jQuery && jQuery.fn.select2) {
+  jQuery('#deliveryFilter').select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'Filter by delivery person',
+    allowClear: true
+  }).on('change', filterTable);
+}
 
 function filterTable() {
   const term = document.getElementById('coSearch').value.toLowerCase();
   const filter = document.getElementById('rowFilter').value;
-  document.querySelectorAll('#coTable tbody tr[data-customer-id]').forEach(function(row) {
-    const name = row.dataset.name || '';
-    const mobile = row.dataset.mobile || '';
-    const id = row.dataset.customerId || '';
-    const rowNum = row.dataset.rowNumber;
+  const delivery = document.getElementById('deliveryFilter').value;
 
-    const matchSearch = !term || name.includes(term) || mobile.includes(term) || id.includes(term);
-    const matchFilter = !filter ||
-      (filter === 'assigned' && rowNum && rowNum !== '') ||
-      (filter === 'unassigned' && (!rowNum || rowNum === ''));
+  document.querySelectorAll('#coTable tbody.sortable-group').forEach(function(group) {
+    const groupId = group.dataset.deliveryPersonId || '';
+    const matchDelivery = !delivery ||
+      (delivery === 'unassigned' ? groupId === '' : groupId === delivery);
 
-    row.style.display = matchSearch && matchFilter ? '' : 'none';
+    let visibleCount = 0;
+    group.querySelectorAll('tr[data-customer-id]').forEach(function(row) {
+      const name = row.dataset.name || '';
+      const mobile = row.dataset.mobile || '';
+      const id = row.dataset.customerId || '';
+      const rowNum = row.dataset.rowNumber;
+
+      const matchSearch = !term || name.includes(term) || mobile.includes(term) || id.includes(term);
+      const matchFilter = !filter ||
+        (filter === 'assigned' && rowNum && rowNum !== '') ||
+        (filter === 'unassigned' && (!rowNum || rowNum === ''));
+
+      const show = matchSearch && matchFilter && matchDelivery;
+      row.style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    });
+
+    // Hide the group's header row (previous tbody) when nothing in the group is visible
+    const header = group.previousElementSibling;
+    if (header) header.style.display = visibleCount > 0 ? '' : 'none';
   });
 }
 
