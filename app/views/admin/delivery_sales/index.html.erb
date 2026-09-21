@@ -1,0 +1,197 @@
+<% content_for :title, "Milk Sales Report" %>
+<%
+  liters = ->(value) { number_with_precision(value, precision: 1, strip_insignificant_zeros: true, delimiter: ',') }
+  max_by = ->(period) { [@people.map { |p| p[period][:liters] }.max.to_f, 0.1].max }
+  maxes = { day: max_by.(:day), week: max_by.(:week), month: max_by.(:month) }
+  medals = ['🥇', '🥈', '🥉']
+  palette = %w[#6366f1 #10b981 #f59e0b #ec4899 #06b6d4 #8b5cf6 #94a3b8]
+  today = Date.current
+  period_cards = [
+    { key: :day,   title: @date == today ? 'Today' : @date.strftime('%-d %b %Y'), sub: @date.strftime('%A'),                                                    icon: 'bi-sun-fill',            color: '#f59e0b' },
+    { key: :week,  title: 'This Week',  sub: "#{@week_start.strftime('%-d %b')} – #{@week_end.strftime('%-d %b')}",   icon: 'bi-calendar-week-fill',  color: '#10b981' },
+    { key: :month, title: 'This Month', sub: @date.strftime('%B %Y'),                                                  icon: 'bi-calendar-month-fill', color: '#6366f1' }
+  ]
+%>
+
+<style>
+  .ds-card { background: rgba(128,128,128,.08); border: 1px solid rgba(128,128,128,.18); border-radius: 16px; }
+  .ds-kpi { position: relative; overflow: hidden; padding: 1.25rem 1.5rem; height: 100%; }
+  .ds-kpi::after { content: ""; position: absolute; right: -30px; top: -30px; width: 120px; height: 120px; border-radius: 50%; background: var(--kpi-color); opacity: .12; }
+  .ds-kpi-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.25rem; background: var(--kpi-color); box-shadow: 0 6px 16px -4px var(--kpi-color); }
+  .ds-kpi-value { font-size: 2.25rem; font-weight: 700; line-height: 1.1; }
+  .ds-kpi-value small { font-size: 1rem; font-weight: 500; opacity: .6; }
+  .ds-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #fff; flex: none; }
+  .ds-bar { height: 6px; border-radius: 999px; background: rgba(128,128,128,.2); overflow: hidden; margin-top: 4px; min-width: 90px; }
+  .ds-bar > span { display: block; height: 100%; border-radius: inherit; }
+  .ds-table th { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; opacity: .7; font-weight: 600; border-bottom-width: 1px; }
+  .ds-table td { vertical-align: middle; }
+  .ds-rank { width: 2.25rem; text-align: center; font-weight: 600; }
+  .ds-period-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+  .ds-chart-wrap { position: relative; height: 340px; }
+  .ds-empty { padding: 3rem 1rem; text-align: center; opacity: .7; }
+</style>
+
+<!-- Header + date navigation -->
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="mb-1"><i class="bi bi-bar-chart-line-fill me-2" style="color:#10b981"></i>Milk Sales Report</h2>
+    <p class="text-muted mb-0">Litres of milk delivered by each delivery person – per day, week and month</p>
+  </div>
+  <%= form_with url: admin_delivery_sales_path, method: :get, class: "d-flex align-items-center gap-2" do %>
+    <%= link_to admin_delivery_sales_path(date: (@date - 1).iso8601), class: "btn btn-outline-secondary", title: "Previous day" do %><i class="bi bi-chevron-left"></i><% end %>
+    <%= date_field_tag :date, @date.iso8601, class: "form-control", max: today.iso8601, onchange: "this.form.submit()" %>
+    <%= link_to admin_delivery_sales_path(date: (@date + 1).iso8601), class: "btn btn-outline-secondary #{'disabled' if @date >= today}", title: "Next day" do %><i class="bi bi-chevron-right"></i><% end %>
+    <%= link_to "Today", admin_delivery_sales_path, class: "btn btn-outline-primary" %>
+  <% end %>
+</div>
+
+<!-- KPI cards -->
+<div class="row g-3 mb-4">
+  <% period_cards.each do |card| %>
+    <div class="col-12 col-md-4">
+      <div class="ds-card ds-kpi" style="--kpi-color: <%= card[:color] %>">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="text-muted small text-uppercase fw-semibold"><%= card[:title] %></div>
+            <div class="text-muted small"><%= card[:sub] %></div>
+          </div>
+          <div class="ds-kpi-icon"><i class="bi <%= card[:icon] %>"></i></div>
+        </div>
+        <div class="ds-kpi-value mt-3"><%= liters.(@totals[card[:key]]) %> <small>litres</small></div>
+        <div class="text-muted small mt-1"><i class="bi bi-truck me-1"></i><%= number_with_delimiter(@delivery_counts[card[:key]]) %> deliveries</div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-xl-6">
+    <div class="ds-card p-3 p-md-4 h-100">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h5 class="mb-0">Litres by delivery person</h5>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Period">
+          <button type="button" class="btn btn-outline-secondary ds-period-btn" data-period="day">Day</button>
+          <button type="button" class="btn btn-outline-secondary ds-period-btn" data-period="week">Week</button>
+          <button type="button" class="btn btn-outline-secondary ds-period-btn active" data-period="month">Month</button>
+        </div>
+      </div>
+      <div class="ds-chart-wrap"><canvas id="dsRankingChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-6">
+    <div class="ds-card p-3 p-md-4 h-100">
+      <h5 class="mb-3">Last <%= Admin::DeliverySalesController::TREND_DAYS %> days</h5>
+      <div class="ds-chart-wrap"><canvas id="dsTrendChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard -->
+<div class="ds-card p-3 p-md-4 mb-4">
+  <h5 class="mb-3"><i class="bi bi-trophy-fill me-2" style="color:#f59e0b"></i>Delivery person leaderboard</h5>
+  <% if @people.empty? %>
+    <div class="ds-empty"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No delivery people found.</div>
+  <% else %>
+    <div class="table-responsive">
+      <table class="table ds-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ds-rank">#</th>
+            <th>Delivery person</th>
+            <% period_cards.each do |card| %>
+              <th style="min-width:150px"><%= card[:key] == :day ? (@date == today ? 'Today' : @date.strftime('%-d %b')) : card[:title] %></th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% @people.each_with_index do |person, index| %>
+            <tr>
+              <td class="ds-rank"><%= person[:month][:liters].positive? ? (medals[index] || index + 1) : '–' %></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="ds-avatar" style="background: <%= palette[index % (palette.size - 1)] %>"><%= person[:name].first(1).upcase %></div>
+                  <div>
+                    <div class="fw-semibold"><%= person[:name] %></div>
+                    <div class="text-muted small"><%= person[:mobile] %><%= raw ' · <span class="text-danger">inactive</span>' unless person[:active] %></div>
+                  </div>
+                </div>
+              </td>
+              <% period_cards.each do |card| %>
+                <% cell = person[card[:key]] %>
+                <td>
+                  <div class="fw-semibold"><%= liters.(cell[:liters]) %> L <span class="text-muted small fw-normal">· <%= cell[:deliveries] %> deliveries</span></div>
+                  <div class="ds-bar"><span style="width: <%= (cell[:liters] / maxes[card[:key]] * 100).round %>%; background: <%= card[:color] %>"></span></div>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+  <p class="text-muted small mt-3 mb-0">
+    <i class="bi bi-info-circle me-1"></i>Counts delivery tasks marked <strong>delivered</strong> or <strong>completed</strong>. Weeks run Monday–Sunday. Tasks with no delivery person assigned are not included.
+  </p>
+</div>
+
+<script type="application/json" id="dsChartData"><%= raw json_escape(@chart_data.merge(palette: palette).to_json) %></script>
+<script>
+(function () {
+  if (typeof Chart === 'undefined') return;
+
+  var data = JSON.parse(document.getElementById('dsChartData').textContent);
+  var textColor = getComputedStyle(document.body).color;
+  var gridColor = 'rgba(128,128,128,.2)';
+  var periodColors = { day: '#f59e0b', week: '#10b981', month: '#6366f1' };
+  var period = 'month';
+
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+
+  ['dsRankingChart', 'dsTrendChart'].forEach(function (id) {
+    var existing = Chart.getChart(id);
+    if (existing) existing.destroy();
+  });
+
+  var ranking = new Chart(document.getElementById('dsRankingChart'), {
+    type: 'bar',
+    data: {
+      labels: data.ranking.labels,
+      datasets: [{ label: 'Litres', data: data.ranking[period], backgroundColor: periodColors[period], borderRadius: 6, maxBarThickness: 28 }]
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return ' ' + c.parsed.x + ' L'; } } } },
+      scales: { x: { beginAtZero: true, title: { display: true, text: 'Litres' } }, y: { grid: { display: false } } }
+    }
+  });
+
+  document.querySelectorAll('.ds-period-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      period = btn.dataset.period;
+      document.querySelectorAll('.ds-period-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      ranking.data.datasets[0].data = data.ranking[period];
+      ranking.data.datasets[0].backgroundColor = periodColors[period];
+      ranking.update();
+    });
+  });
+
+  new Chart(document.getElementById('dsTrendChart'), {
+    type: 'bar',
+    data: {
+      labels: data.trend.labels,
+      datasets: data.trend.series.map(function (s, i) {
+        return { label: s.label, data: s.data, backgroundColor: data.palette[i % data.palette.length], borderRadius: 4 };
+      })
+    },
+    options: {
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+      scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Litres' } } }
+    }
+  });
+})();
+</script>

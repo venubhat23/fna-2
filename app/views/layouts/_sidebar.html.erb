@@ -528,6 +528,19 @@
             <div class="nav-indicator"></div>
           <% end %>
         </li>
+
+        <!-- Milk Sales by Delivery Person -->
+        <li class="nav-item">
+          <%= link_to admin_delivery_sales_path, class: "nav-link-modern #{'active' if request.path.include?('/admin/delivery_sales')}" do %>
+            <div class="nav-icon-modern">
+              <div class="icon-bg gradient-green">
+                <i class="bi bi-bar-chart-line-fill"></i>
+              </div>
+            </div>
+            <span class="nav-text">Milk Sales Report</span>
+            <div class="nav-indicator"></div>
+          <% end %>
+        </li>
         <% end %>
 
         <!-- Invoices -->

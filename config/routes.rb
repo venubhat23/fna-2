@@ -375,6 +375,9 @@ Rails.application.routes.draw do
       end
     end
 
+    # Milk sales per delivery person (day / week / month)
+    get 'delivery_sales', to: 'delivery_sales#index', as: :delivery_sales
+
     # Subscription Management
     resources :subscriptions do
       member do
