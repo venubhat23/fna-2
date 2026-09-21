@@ -2287,7 +2287,10 @@ function cttShowResult(ok, title, text) {
 }
 
 function openCompleteTillToday() {
-  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('completeTillTodayModal'));
+  const modalEl = document.getElementById('completeTillTodayModal');
+  // Re-parent to <body> so an ancestor's stacking context can't put the backdrop above the modal
+  if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   cttShow('cttLoading');
   cttSetButtons({ cancel: true });
   modal.show();
