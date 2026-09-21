@@ -38,6 +38,13 @@
       <span class="spinner-border spinner-border-sm me-1 d-none" id="generateDailyTasksSpinner"></span>
       <span id="generateDailyTasksText">Generate Daily Tasks</span>
     </button>
+    <button type="button"
+            class="btn btn-warning me-2"
+            id="completeTillTodayBtn"
+            onclick="openCompleteTillToday()">
+      <i class="bi bi-calendar-check me-1"></i>
+      Complete Till Today
+    </button>
     <%= link_to new_admin_subscription_path, class: "btn btn-primary" do %>
       <i class="bi bi-plus-lg me-1"></i>
       Create New Subscription
@@ -1083,6 +1090,83 @@
 </style>
 
 <!-- Initialize Select2 and Modal Functions -->
+<!-- Complete Till Today Modal -->
+<div class="modal fade" id="completeTillTodayModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content ctt-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title"><i class="bi bi-calendar-check me-2"></i>Complete Till Today</h5>
+        <button type="button" class="btn-close" id="cttCloseBtn" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Step 1: loading preview -->
+        <div id="cttLoading" class="text-center py-4">
+          <div class="spinner-border text-warning mb-3"></div>
+          <div class="text-muted">Checking pending deliveries…</div>
+        </div>
+
+        <!-- Step 2: preview -->
+        <div id="cttPreview" class="d-none">
+          <div class="ctt-range mb-3">
+            <i class="bi bi-calendar-range me-2"></i>
+            <strong id="cttStart"></strong> <span class="mx-1">to</span> <strong id="cttEnd"></strong>
+          </div>
+          <div class="row g-2 text-center mb-3">
+            <div class="col-4"><div class="ctt-stat"><div class="ctt-stat-num" id="cttCustomers">0</div><small>Customers</small></div></div>
+            <div class="col-4"><div class="ctt-stat"><div class="ctt-stat-num" id="cttTasks">0</div><small>Delivery tasks</small></div></div>
+            <div class="col-4"><div class="ctt-stat"><div class="ctt-stat-num" id="cttSubs">0</div><small>Subscriptions</small></div></div>
+          </div>
+          <p class="mb-1">All <strong>pending</strong> and <strong>assigned</strong> delivery tasks in this range will be marked as <strong>completed</strong>. This cannot be undone in bulk.</p>
+          <p class="text-muted mb-0"><i class="bi bi-clock me-1"></i>Estimated time: <strong id="cttEstimate"></strong></p>
+        </div>
+
+        <!-- Step 3: progress -->
+        <div id="cttProgress" class="d-none text-center py-2">
+          <div class="ctt-percent"><span id="cttPercent">0</span><small>%</small></div>
+          <div class="progress ctt-bar mb-3">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="cttBar" style="width: 0%"></div>
+          </div>
+          <div class="fw-semibold mb-1"><span id="cttDone">0</span> / <span id="cttTotal">0</span> tasks completed</div>
+          <div class="text-muted small">
+            <i class="bi bi-hourglass-split me-1"></i><span id="cttEta">Calculating time left…</span>
+            <span class="mx-1">·</span>
+            <i class="bi bi-stopwatch me-1"></i>Elapsed <span id="cttElapsed">0s</span>
+          </div>
+          <div class="text-muted small mt-3">Please keep this window open until it finishes.</div>
+        </div>
+
+        <!-- Step 4: result -->
+        <div id="cttResult" class="d-none text-center py-3">
+          <div class="ctt-result-icon mb-2" id="cttResultIcon"></div>
+          <h5 id="cttResultTitle" class="mb-1"></h5>
+          <div class="text-muted" id="cttResultText"></div>
+        </div>
+
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-secondary" id="cttCancelBtn" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success d-none" id="cttStartBtn" onclick="startCompleteTillToday()">
+          <i class="bi bi-check-all me-1"></i>Complete All
+        </button>
+        <button type="button" class="btn btn-primary d-none" id="cttDoneBtn" onclick="window.location.reload()">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.ctt-content { border-radius: 16px; }
+.ctt-range { background: #fff8e1; border: 1px solid #ffe08a; border-radius: 10px; padding: 10px 14px; text-align: center; }
+.ctt-stat { background: #f6f8fb; border-radius: 10px; padding: 12px 6px; }
+.ctt-stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.ctt-percent { font-size: 4rem; font-weight: 800; line-height: 1; color: #198754; margin-bottom: 12px; }
+.ctt-percent small { font-size: 1.6rem; font-weight: 600; margin-left: 2px; }
+.ctt-bar { height: 16px; border-radius: 8px; }
+.ctt-bar .progress-bar { transition: width .4s ease; }
+.ctt-result-icon { font-size: 3.5rem; line-height: 1; }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof $ !== 'undefined' && $.fn.select2) {
@@ -2166,5 +2250,123 @@ function bulkCompleteSubscriptions() {
     btn.disabled = false;
     spinner.classList.add('d-none');
   });
+}
+// ---- Complete Till Today (1st of this month -> today) ----
+let cttState = { total: 0, done: 0, running: false, startedAt: 0, timer: null };
+
+function cttShow(step) {
+  ['cttLoading', 'cttPreview', 'cttProgress', 'cttResult'].forEach(id =>
+    document.getElementById(id).classList.toggle('d-none', id !== step));
+}
+
+function cttFormatDuration(seconds) {
+  seconds = Math.max(0, Math.round(seconds));
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
+function cttFormatDate(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function cttSetButtons({ start = false, cancel = false, done = false, close = true }) {
+  document.getElementById('cttStartBtn').classList.toggle('d-none', !start);
+  document.getElementById('cttCancelBtn').classList.toggle('d-none', !cancel);
+  document.getElementById('cttDoneBtn').classList.toggle('d-none', !done);
+  document.getElementById('cttCloseBtn').classList.toggle('d-none', !close);
+}
+
+function cttShowResult(ok, title, text) {
+  document.getElementById('cttResultIcon').innerHTML = ok
+    ? '<i class="bi bi-check-circle-fill text-success"></i>'
+    : '<i class="bi bi-exclamation-triangle-fill text-danger"></i>';
+  document.getElementById('cttResultTitle').textContent = title;
+  document.getElementById('cttResultText').textContent = text;
+  cttShow('cttResult');
+  cttSetButtons({ done: true, close: false });
+}
+
+function openCompleteTillToday() {
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('completeTillTodayModal'));
+  cttShow('cttLoading');
+  cttSetButtons({ cancel: true });
+  modal.show();
+
+  fetch('/admin/subscriptions/complete_till_today_preview', { headers: { 'Accept': 'application/json' } })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) throw new Error(data.message || 'Could not load preview');
+      cttState.total = data.total_tasks;
+      document.getElementById('cttStart').textContent = cttFormatDate(data.start_date);
+      document.getElementById('cttEnd').textContent = cttFormatDate(data.end_date);
+      document.getElementById('cttCustomers').textContent = data.customers;
+      document.getElementById('cttTasks').textContent = data.total_tasks;
+      document.getElementById('cttSubs').textContent = data.subscriptions;
+
+      if (data.total_tasks === 0) {
+        cttShowResult(true, 'Nothing to complete', 'There are no pending delivery tasks between these dates.');
+        return;
+      }
+      document.getElementById('cttEstimate').textContent = `roughly ${cttFormatDuration(data.estimated_seconds)}`;
+      cttShow('cttPreview');
+      cttSetButtons({ start: true, cancel: true });
+    })
+    .catch(err => cttShowResult(false, 'Could not load preview', err.message));
+}
+
+function cttRender() {
+  const pct = cttState.total ? Math.min(100, Math.floor(cttState.done / cttState.total * 100)) : 100;
+  document.getElementById('cttPercent').textContent = pct;
+  document.getElementById('cttBar').style.width = pct + '%';
+  document.getElementById('cttDone').textContent = Math.min(cttState.done, cttState.total);
+  document.getElementById('cttTotal').textContent = cttState.total;
+
+  const elapsed = (Date.now() - cttState.startedAt) / 1000;
+  document.getElementById('cttElapsed').textContent = cttFormatDuration(elapsed);
+  if (cttState.done > 0 && cttState.done < cttState.total) {
+    const left = elapsed / cttState.done * (cttState.total - cttState.done);
+    document.getElementById('cttEta').textContent = `about ${cttFormatDuration(left)} left`;
+  }
+}
+
+async function startCompleteTillToday() {
+  cttState.done = 0;
+  cttState.running = true;
+  cttState.startedAt = Date.now();
+  cttShow('cttProgress');
+  cttSetButtons({ close: false });
+  document.getElementById('cttEta').textContent = 'Calculating time left…';
+  cttRender();
+  cttState.timer = setInterval(cttRender, 500);
+  window.onbeforeunload = () => 'Tasks are still being completed.';
+
+  const csrf = document.querySelector('meta[name="csrf-token"]').content;
+  try {
+    let remaining = cttState.total;
+    while (remaining > 0) {
+      const res = await fetch('/admin/subscriptions/complete_till_today', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Batch failed');
+      cttState.done += data.completed;
+      remaining = data.remaining;
+      // Stop if the server made no progress, to avoid looping forever.
+      if (data.completed === 0 && remaining > 0) throw new Error(`${remaining} task(s) could not be completed.`);
+      cttRender();
+    }
+    cttState.done = cttState.total;
+    cttRender();
+    clearInterval(cttState.timer);
+    const took = cttFormatDuration((Date.now() - cttState.startedAt) / 1000);
+    cttShowResult(true, 'All done!', `${cttState.total} delivery tasks marked as completed in ${took}.`);
+  } catch (err) {
+    clearInterval(cttState.timer);
+    cttShowResult(false, 'Stopped before finishing', `${err.message} ${cttState.done} of ${cttState.total} tasks were completed. You can run it again to finish the rest.`);
+  } finally {
+    cttState.running = false;
+    window.onbeforeunload = null;
+  }
 }
 </script>

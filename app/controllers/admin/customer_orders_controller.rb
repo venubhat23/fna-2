@@ -1,9 +1,24 @@
 class Admin::CustomerOrdersController < Admin::ApplicationController
   def index
+    @month = params[:month].presence || Date.current.strftime('%Y-%m')
     @customers = Customer.all.order(:row_number, :first_name, :last_name)
                           .includes(milk_subscriptions: :delivery_person)
 
-    grouped = @customers.group_by(&:assigned_delivery_person)
+    month_start = parse_month(@month)
+    if month_start
+      # Only customers with a (non-cancelled) subscription overlapping the month, and the
+      # delivery person is taken from those subscriptions rather than from all history.
+      @month_label = month_start.strftime('%B %Y')
+      month_subs = MilkSubscription.where.not(status: 'cancelled')
+                                   .for_date_range(month_start, month_start.end_of_month)
+                                   .includes(:delivery_person).to_a.group_by(&:customer_id)
+      @customers = @customers.where(id: month_subs.keys)
+      grouped = @customers.group_by { |c| delivery_person_for(month_subs[c.id]) }
+    else
+      @month = 'all'
+      grouped = @customers.group_by(&:assigned_delivery_person)
+    end
+
     unassigned = grouped.delete(nil) || []
     assigned_groups = grouped.sort_by { |delivery_person, _| delivery_person.full_name }
 
@@ -73,5 +88,20 @@ class Admin::CustomerOrdersController < Admin::ApplicationController
     @customer = Customer.find(params[:id])
     @customer.update_column(:row_number, nil)
     render json: { success: true, message: 'Row number cleared.' }
+  end
+
+  private
+
+  def parse_month(value)
+    return nil if value == 'all'
+    Date.strptime(value, '%Y-%m')
+  rescue ArgumentError, TypeError
+    Date.current.beginning_of_month
+  end
+
+  # Same preference as Customer#assigned_delivery_person, limited to the given subscriptions.
+  def delivery_person_for(subs)
+    active = subs.find { |s| s.status == 'active' && s.delivery_person_id.present? }
+    (active || subs.find { |s| s.delivery_person_id.present? })&.delivery_person
   end
 end

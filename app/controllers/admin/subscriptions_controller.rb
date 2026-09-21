@@ -461,6 +461,50 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     end
   end
 
+  # Tasks per request for complete_till_today. The UI calls it repeatedly so it can
+  # show a real percentage; each call is a couple of round trips to the remote DB.
+  COMPLETE_TILL_TODAY_BATCH_SIZE = 200
+  # Rough seconds per batch, used only for the up-front time estimate (the UI switches
+  # to a measured ETA after the first batch).
+  COMPLETE_TILL_TODAY_SECONDS_PER_BATCH = 1.5
+
+  # Preview for "Complete Till Today": what would be completed (1st of this month -> today).
+  def complete_till_today_preview
+    tasks = complete_till_today_scope
+    total_tasks, customers, subscriptions = tasks.pick(
+      Arel.sql('COUNT(*)'),
+      Arel.sql('COUNT(DISTINCT customer_id)'),
+      Arel.sql('COUNT(DISTINCT subscription_id)')
+    )
+    batches = (total_tasks.to_f / COMPLETE_TILL_TODAY_BATCH_SIZE).ceil
+
+    render json: {
+      success: true,
+      start_date: complete_till_today_range.begin.iso8601,
+      end_date: complete_till_today_range.end.iso8601,
+      total_tasks: total_tasks,
+      customers: customers,
+      subscriptions: subscriptions,
+      batch_size: COMPLETE_TILL_TODAY_BATCH_SIZE,
+      estimated_seconds: [(batches * COMPLETE_TILL_TODAY_SECONDS_PER_BATCH).ceil, 1].max
+    }
+  end
+
+  # Completes the next batch of pending/assigned tasks (1st of this month -> today).
+  # Completed tasks drop out of the scope, so callers just repeat until remaining == 0.
+  def complete_till_today
+    ids = complete_till_today_scope.order(:id).limit(COMPLETE_TILL_TODAY_BATCH_SIZE).pluck(:id)
+    completed = ids.empty? ? 0 : MilkDeliveryTask.where(id: ids, status: %w[pending assigned])
+                                                  .update_all(status: 'completed', completed_at: Time.current, updated_at: Time.current)
+    remaining = complete_till_today_scope.count
+
+    Rails.logger.info "Complete till today: #{completed} tasks completed, #{remaining} remaining"
+    render json: { success: true, completed: completed, remaining: remaining }
+  rescue => e
+    Rails.logger.error "Complete till today error: #{e.message}"
+    render json: { success: false, message: "Error completing tasks: #{e.message}" }, status: :internal_server_error
+  end
+
   # Bulk complete subscriptions and their pending daily tasks
   def bulk_complete
     subscription_ids = params[:subscription_ids]
@@ -772,6 +816,14 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     end
 
     dates.sort
+  end
+
+  def complete_till_today_range
+    Date.current.beginning_of_month..Date.current
+  end
+
+  def complete_till_today_scope
+    MilkDeliveryTask.where(status: %w[pending assigned], delivery_date: complete_till_today_range)
   end
 
   def check_sidebar_permission

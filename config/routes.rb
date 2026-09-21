@@ -391,6 +391,8 @@ Rails.application.routes.draw do
         get :expired
         post :generate_all_daily_tasks
         post :bulk_complete
+        get :complete_till_today_preview
+        post :complete_till_today
         delete :delete_all
       end
     end
