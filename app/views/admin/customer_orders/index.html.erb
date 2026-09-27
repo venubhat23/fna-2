@@ -226,6 +226,14 @@ document.querySelectorAll('.save-btn').forEach(function(btn) {
     const customerId = row.dataset.customerId;
     const input = row.querySelector('.row-number-input');
     const rowNumber = input.value.trim();
+    const position = parseInt(rowNumber, 10);
+
+    // A numeric value moves the row to that position in its delivery group and
+    // shifts the others down (e.g. 38 -> 2 makes old 2 become 3, and so on).
+    if (position > 0) {
+      moveRowToPosition(row, position);
+      return;
+    }
 
     saveRowNumber(customerId, rowNumber, function(success) {
       if (success) {
@@ -324,6 +332,19 @@ document.querySelectorAll('.sortable-group').forEach(function(tbody) {
     }
   });
 });
+
+function moveRowToPosition(row, position) {
+  const tbody = row.closest('tbody.sortable-group');
+  const others = Array.from(tbody.querySelectorAll('tr[data-customer-id]')).filter(r => r !== row);
+  const target = others[Math.min(position, others.length + 1) - 1];
+
+  if (target) {
+    tbody.insertBefore(row, target);
+  } else {
+    tbody.appendChild(row);
+  }
+  renumberGroup(tbody);
+}
 
 function renumberGroup(tbody) {
   const rows = Array.from(tbody.querySelectorAll('tr[data-customer-id]'));
