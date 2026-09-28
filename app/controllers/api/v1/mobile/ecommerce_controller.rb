@@ -5,6 +5,10 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   before_action :set_category, only: [:category_details, :category_products]
   before_action :set_product, only: [:product_details, :check_delivery]
 
+  # Delivery tasks a customer may pause. Pausing sets them to 'paused' (hidden from the delivery
+  # person, never invoiced); resuming sets them back to 'pending'.
+  PAUSABLE_TASK_STATUSES = %w[pending assigned].freeze
+
   # GET /api/v1/mobile/ecommerce/categories
   def categories
     @categories = Category.active_ordered_by_display
@@ -1158,54 +1162,145 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     render json: { success: false, message: 'Subscription not found' }, status: :not_found
   end
 
+  # GET /api/v1/mobile/ecommerce/my_subscriptions?month=YYYY-MM
+  # The customer's subscriptions running in the month (default: current month), each with the
+  # assigned delivery person and a day-by-day calendar of its delivery tasks.
+  def my_subscriptions
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
+
+    month_start = parse_subscription_month(params[:month])
+    month_end = month_start.end_of_month
+
+    subscriptions = MilkSubscription.where(customer: customer)
+                                    .where.not(status: 'cancelled')
+                                    .for_date_range(month_start, month_end)
+                                    .includes(:delivery_person, :product, :product_variant)
+                                    .order(:start_date)
+                                    .to_a
+    tasks_by_subscription = MilkDeliveryTask.where(subscription_id: subscriptions.map(&:id), delivery_date: month_start..month_end)
+                                            .includes(:delivery_person)
+                                            .group_by(&:subscription_id)
+
+    render json: {
+      success: true,
+      data: {
+        month: month_start.strftime('%Y-%m'),
+        month_label: month_start.strftime('%B %Y'),
+        subscriptions: subscriptions.map do |subscription|
+          format_subscription_month(subscription, tasks_by_subscription[subscription.id] || [], month_start, month_end)
+        end
+      },
+      message: 'Subscriptions retrieved successfully'
+    }
+  end
+
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/pause
+  # Body (all optional): { "resume_date": "2026-09-15" } (pause from today until then),
+  # { "date": "2026-09-10" }, { "dates": [...] } or { "from": "2026-09-10", "to": "2026-09-15" }.
+  # Marks the pending delivery tasks on those days 'paused' so the delivery person no longer sees
+  # them and they are not billed. With no dates the whole subscription is paused from today to its
+  # end date. Past days and delivered tasks are never touched.
   def pause_subscription
     customer = @current_user if @current_user.is_a?(Customer)
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     @subscription = MilkSubscription.where(customer: customer).find(params[:id])
     @subscription.association(:customer).target = customer
+    whole = subscription_dates_param_blank?
 
-    if @subscription.status == 'active'
-      @subscription.update!(status: 'paused')
-      render json: {
-        success: true,
-        data: format_milk_subscription_data(@subscription),
-        message: 'Subscription paused successfully'
-      }
-    else
-      render json: {
+    allowed = whole ? %w[active] : %w[active paused]
+    unless allowed.include?(@subscription.status)
+      return render json: {
         success: false,
         message: "Cannot pause subscription. Current status: #{@subscription.status}"
       }, status: :unprocessable_entity
     end
+
+    dates = requested_subscription_dates(@subscription)
+    tasks = @subscription.milk_delivery_tasks.where(delivery_date: dates, status: PAUSABLE_TASK_STATUSES)
+    paused_dates = tasks.order(:delivery_date).pluck(:delivery_date)
+
+    MilkSubscription.transaction do
+      tasks.update_all(status: 'paused', updated_at: Time.current)
+      @subscription.update!(status: 'paused', is_active: false) if whole
+    end
+
+    render json: {
+      success: true,
+      data: format_milk_subscription_data(@subscription).merge(
+        paused_dates: paused_dates.map(&:iso8601),
+        paused_deliveries: paused_dates.size
+      ),
+      message: whole ? 'Subscription paused successfully' : "#{paused_dates.size} deliveries paused"
+    }
   rescue ActiveRecord::RecordNotFound
     render json: { success: false, message: 'Subscription not found' }, status: :not_found
+  rescue ArgumentError
+    render json: { success: false, message: 'Invalid date. Use YYYY-MM-DD' }, status: :unprocessable_entity
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/resume
+  # Body: { "resume_date": "2026-09-15" } (or "date") - restart deliveries from that day to the end
+  # date: every paused task in that range goes back to pending and the subscription is active.
+  # { "dates": [...] } or { "from", "to" } resume only those days. No body = resume from today.
   def resume_subscription
     customer = @current_user if @current_user.is_a?(Customer)
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
     @subscription = MilkSubscription.where(customer: customer).find(params[:id])
     @subscription.association(:customer).target = customer
+    resume_from = params[:resume_date].presence || params[:date].presence
+    whole = resume_from.present? || subscription_dates_param_blank?
 
-    if @subscription.status == 'paused'
-      @subscription.update!(status: 'active')
-      render json: {
-        success: true,
-        data: format_milk_subscription_data(@subscription),
-        message: 'Subscription resumed successfully'
-      }
-    else
-      render json: {
+    allowed = resume_from || !whole ? %w[active paused] : %w[paused]
+    unless allowed.include?(@subscription.status)
+      return render json: {
         success: false,
         message: "Cannot resume subscription. Current status: #{@subscription.status}"
       }, status: :unprocessable_entity
     end
+
+    dates = if resume_from
+              from = [Date.iso8601(resume_from.to_s), @subscription.start_date, Date.current].max
+              from <= @subscription.end_date ? (from..@subscription.end_date).to_a : []
+            else
+              requested_subscription_dates(@subscription)
+            end
+    tasks = @subscription.milk_delivery_tasks.where(delivery_date: dates, status: 'paused')
+    resumed_dates = tasks.order(:delivery_date).pluck(:delivery_date)
+
+    MilkSubscription.transaction do
+      tasks.update_all(status: 'pending', updated_at: Time.current)
+      @subscription.update!(status: 'active', is_active: true) if whole
+    end
+
+    render json: {
+      success: true,
+      data: format_milk_subscription_data(@subscription).merge(
+        resumed_dates: resumed_dates.map(&:iso8601),
+        resumed_deliveries: resumed_dates.size
+      ),
+      message: whole ? 'Subscription resumed successfully' : "#{resumed_dates.size} deliveries resumed"
+    }
   rescue ActiveRecord::RecordNotFound
     render json: { success: false, message: 'Subscription not found' }, status: :not_found
+  rescue ArgumentError
+    render json: { success: false, message: 'Invalid date. Use YYYY-MM-DD' }, status: :unprocessable_entity
+  end
+
+  # PUT /api/v1/mobile/ecommerce/subscriptions/pause
+  # { "dates": ["2026-09-29", "2026-09-30"] } (or { "date": "2026-09-29" })
+  # Pauses the customer's deliveries on those days across all their subscriptions - no subscription
+  # id needed. Optional "subscription_id" limits it to one subscription.
+  def pause_deliveries
+    change_deliveries_on_dates(PAUSABLE_TASK_STATUSES, 'paused')
+  end
+
+  # PUT /api/v1/mobile/ecommerce/subscriptions/resume
+  # Same body as pause_deliveries; paused deliveries on those days go back to pending.
+  def resume_deliveries
+    change_deliveries_on_dates(%w[paused], 'pending')
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/cancel
@@ -1759,6 +1854,135 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     else
       'daily'
     end
+  end
+
+  def change_deliveries_on_dates(from_statuses, to_status)
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
+
+    if params[:dates].blank? && params[:date].blank?
+      return render json: { success: false, message: 'dates (array of YYYY-MM-DD) is required' }, status: :unprocessable_entity
+    end
+
+    subscriptions = MilkSubscription.where(customer: customer, status: %w[active paused])
+    subscriptions = subscriptions.where(id: params[:subscription_id]) if params[:subscription_id].present?
+
+    changed = []
+    MilkSubscription.transaction do
+      subscriptions.each do |subscription|
+        dates = requested_subscription_dates(subscription)
+        next if dates.empty?
+
+        tasks = subscription.milk_delivery_tasks.where(delivery_date: dates, status: from_statuses)
+        changed += tasks.order(:delivery_date).pluck(:id, :delivery_date).map do |task_id, date|
+          { subscription_id: subscription.id, task_id: task_id, date: date.iso8601 }
+        end
+        tasks.update_all(status: to_status, updated_at: Time.current)
+      end
+    end
+
+    verb = to_status == 'paused' ? 'paused' : 'resumed'
+    render json: {
+      success: true,
+      message: "#{changed.size} deliveries #{verb}",
+      data: {
+        dates: changed.map { |c| c[:date] }.uniq.sort,
+        "#{verb}_deliveries": changed.size,
+        deliveries: changed
+      }
+    }
+  rescue ArgumentError
+    render json: { success: false, message: 'Invalid date. Use YYYY-MM-DD' }, status: :unprocessable_entity
+  end
+
+  def parse_subscription_month(value)
+    value.present? ? Date.strptime(value, '%Y-%m') : Date.current.beginning_of_month
+  rescue ArgumentError
+    Date.current.beginning_of_month
+  end
+
+  def subscription_dates_param_blank?
+    %i[date dates from to resume_date].all? { |key| params[key].blank? }
+  end
+
+  # Days a pause/resume applies to, always clipped to today onward and to the subscription period:
+  #   date        - that one day
+  #   dates       - those days
+  #   resume_date - today (or `from`) up to the day before resume_date ("pause until")
+  #   from / to   - that range
+  #   nothing     - today through the end date
+  # Raises ArgumentError on a malformed date.
+  def requested_subscription_dates(subscription)
+    first = [subscription.start_date, Date.current].max
+    last = subscription.end_date
+
+    if params[:date].present? || params[:dates].present?
+      Array(params[:dates].presence || params[:date]).map { |d| Date.iso8601(d.to_s) }.uniq.select { |d| d.between?(first, last) }
+    else
+      from = params[:from].present? ? [Date.iso8601(params[:from].to_s), first].max : first
+      to = if params[:resume_date].present?
+             [Date.iso8601(params[:resume_date].to_s) - 1, last].min
+           elsif params[:to].present?
+             [Date.iso8601(params[:to].to_s), last].min
+           else
+             last
+           end
+      from <= to ? (from..to).to_a : []
+    end
+  end
+
+  def format_delivery_person(person)
+    return nil unless person
+    { id: person.id, name: person.display_name, mobile: person.mobile }
+  end
+
+  def format_subscription_month(subscription, tasks, month_start, month_end)
+    from = [subscription.start_date, month_start].max
+    to = [subscription.end_date, month_end].min
+    today = Date.current
+    resumable = %w[active paused].include?(subscription.status)
+
+    days = tasks.select { |task| task.delivery_date.between?(from, to) }.sort_by(&:delivery_date).map do |task|
+      {
+        date: task.delivery_date.iso8601,
+        quantity: task.quantity.to_f,
+        unit: task.unit || subscription.unit,
+        status: task.status,
+        task_id: task.id,
+        delivery_person: format_delivery_person(task.delivery_person),
+        can_pause: task.delivery_date >= today && PAUSABLE_TASK_STATUSES.include?(task.status),
+        can_resume: resumable && task.delivery_date >= today && task.status == 'paused'
+      }
+    end
+
+    delivered = days.select { |d| %w[delivered completed].include?(d[:status]) }
+    price = subscription.product_variant&.effective_price || subscription.product&.selling_price
+
+    {
+      id: subscription.id,
+      status: subscription.status,
+      product: {
+        id: subscription.product&.id,
+        name: subscription.product&.name,
+        price: price&.to_f
+      },
+      quantity: subscription.quantity.to_f,
+      unit: subscription.unit,
+      delivery_time: subscription.delivery_time,
+      delivery_pattern: subscription.delivery_pattern,
+      start_date: subscription.start_date,
+      end_date: subscription.end_date,
+      period: { from: from.iso8601, to: to.iso8601 },
+      delivery_person: format_delivery_person(subscription.delivery_person || subscription.current_delivery_person),
+      summary: {
+        total_days: days.size,
+        delivered_days: delivered.size,
+        delivered_quantity: delivered.sum { |d| d[:quantity] }.round(2),
+        pending_days: days.count { |d| %w[pending assigned].include?(d[:status]) },
+        paused_days: days.count { |d| d[:status] == 'paused' }
+      },
+      days: days
+    }
   end
 
   def format_milk_subscription_data(subscription)

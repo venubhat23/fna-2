@@ -125,6 +125,7 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
 
       # Get delivery person statistics
       delivery_stats = get_delivery_person_statistics(delivery_person)
+      delivery_counts = get_delivery_person_counts(delivery_person)
 
       json_response({
         success: true,
@@ -155,7 +156,8 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
             deliveries_this_month: delivery_stats[:deliveries_this_month],
             average_rating: delivery_stats[:average_rating],
             vehicle_info: delivery_person.vehicle_info
-          }
+          },
+          delivery_counts: delivery_counts
         }
       })
       return
@@ -664,6 +666,59 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
         }
       }
     end
+  end
+
+  # Assigned vs delivered for today, this week (Mon-Sun) and this month.
+  # Same task sources as /delivery/tasks/today: bookings by created_at date and
+  # subscription tasks by delivery_date, cancelled ones excluded.
+  def get_delivery_person_counts(delivery_person)
+    today = Date.current
+    week_start = today.beginning_of_week(:monday)
+    week_end = week_start + 6
+    month_start = today.beginning_of_month
+    month_end = today.end_of_month
+    from = [week_start, month_start].min
+    to = [week_end, month_end].max
+
+    daily = Hash.new { |h, k| h[k] = { assigned: 0, delivered: 0 } }
+
+    Booking.where(delivery_person_id: delivery_person.id)
+           .where.not(status: 'cancelled')
+           .where(created_at: from.beginning_of_day..to.end_of_day)
+           .group(Arel.sql('DATE(created_at)'))
+           .pluck(Arel.sql('DATE(created_at)'), Arel.sql('COUNT(*)'),
+                  Arel.sql("COUNT(*) FILTER (WHERE status = 'delivered')"))
+           .each do |day, assigned, delivered|
+             daily[day][:assigned] += assigned
+             daily[day][:delivered] += delivered
+           end
+
+    MilkDeliveryTask.where(delivery_person_id: delivery_person.id, delivery_date: from..to)
+                    .where.not(status: %w[cancelled paused])
+                    .group(:delivery_date)
+                    .pluck(:delivery_date, Arel.sql('COUNT(*)'),
+                           Arel.sql("COUNT(*) FILTER (WHERE status IN ('delivered', 'completed'))"))
+                    .each do |day, assigned, delivered|
+                      daily[day][:assigned] += assigned
+                      daily[day][:delivered] += delivered
+                    end
+
+    sum_for = lambda do |range|
+      cells = daily.select { |day, _| range.cover?(day) }.values
+      assigned = cells.sum { |c| c[:assigned] }
+      delivered = cells.sum { |c| c[:delivered] }
+      { assigned: assigned, delivered: delivered, pending: assigned - delivered }
+    end
+
+    {
+      today: sum_for.call(today..today).merge(date: today.iso8601),
+      week: sum_for.call(week_start..week_end).merge(from: week_start.iso8601, to: week_end.iso8601),
+      month: sum_for.call(month_start..month_end).merge(month: month_start.strftime('%Y-%m'), label: month_start.strftime('%B %Y'))
+    }
+  rescue => e
+    Rails.logger.error "Delivery counts calculation error: #{e.message}"
+    empty = { assigned: 0, delivered: 0, pending: 0 }
+    { today: empty, week: empty, month: empty }
   end
 
   def get_delivery_person_statistics(delivery_person)

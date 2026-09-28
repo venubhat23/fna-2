@@ -824,6 +824,9 @@ Rails.application.routes.draw do
         # Subscription APIs
         post 'ecommerce/subscriptions', to: 'ecommerce#create_subscription'
         get 'ecommerce/subscriptions', to: 'ecommerce#subscriptions'
+        get 'ecommerce/my_subscriptions', to: 'ecommerce#my_subscriptions'
+        put 'ecommerce/subscriptions/pause', to: 'ecommerce#pause_deliveries'
+        put 'ecommerce/subscriptions/resume', to: 'ecommerce#resume_deliveries'
         get 'ecommerce/subscriptions/:id', to: 'ecommerce#subscription_details'
         put 'ecommerce/subscriptions/:id/pause', to: 'ecommerce#pause_subscription'
         put 'ecommerce/subscriptions/:id/resume', to: 'ecommerce#resume_subscription'
@@ -841,11 +844,13 @@ Rails.application.routes.draw do
         post 'delivery/tasks/:id/start', to: 'delivery#start_task'
         post 'delivery/tasks/:id/complete', to: 'delivery#complete_task'
         post 'delivery/tasks/:id/update_location', to: 'delivery#update_location'
+        post 'delivery/tasks/bulk_action', to: 'delivery#bulk_task_action'
         post 'delivery/bulk_mark_done', to: 'delivery#bulk_mark_done'
         post 'delivery/bulk_update', to: 'delivery#bulk_update'
 
         # Delivery Person - Customers & Products & Bookings
         get  'delivery/my_customers',                    to: 'delivery#my_customers'
+        get  'delivery/summary',                         to: 'delivery#summary'
         get  'delivery/customers/:id/location',          to: 'delivery#get_customer_location'
         put  'delivery/customers/:id/location',          to: 'delivery#update_customer_location'
         get  'delivery/customers/:id/images',            to: 'delivery#get_customer_images'

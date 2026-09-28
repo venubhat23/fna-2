@@ -6,17 +6,21 @@ module Api
 
         before_action :authenticate_delivery_person!
 
+        # A task counts as delivered once it is marked delivered/completed (same as admin delivery sales).
+        DELIVERED_STATUSES = %w[delivered completed].freeze
+
         # GET /api/v1/mobile/delivery/tasks/today
         def tasks_today
           begin
             tasks = get_todays_tasks
+            formatted_tasks = format_tasks(tasks)
 
             render json: {
               success: true,
               data: {
                 summary: task_summary(tasks),
-                tasks: format_tasks(tasks),
-                route_optimization: route_optimization(tasks)
+                tasks: formatted_tasks,
+                route_optimization: route_optimization(tasks, formatted_tasks)
               }
             }
           rescue => e
@@ -172,33 +176,148 @@ module Api
           end
         end
 
-        # GET /api/v1/mobile/delivery/my_customers
+        # POST /api/v1/mobile/delivery/tasks/bulk_action
+        # { "operation": "complete" | "delete", "tasks": [{ "id": 94355, "type": "subscription" }, { "id": 12, "type": "order" }] }
+        # Checkbox actions on the tasks/today list. Types come from that list, so a booking and a
+        # subscription task sharing an id can't be confused. Only the caller's own tasks are touched.
+        # "delete" cancels the task (kept for history/invoices) and it drops out of tasks/today.
+        # Tasks the customer paused are hidden from tasks/today too.
+        def bulk_task_action
+          operation = params[:operation].to_s
+          unless %w[complete delete].include?(operation)
+            return render json: { success: false, message: "operation must be 'complete' or 'delete'" }, status: :unprocessable_entity
+          end
+
+          tasks = params[:tasks]
+          if tasks.blank? || !tasks.is_a?(Array)
+            return render json: { success: false, message: "tasks (array of {id, type}) is required" }, status: :bad_request
+          end
+
+          requested = tasks.map { |t| { id: t[:id].to_i, type: t[:type].to_s } }.uniq
+          ids_of = ->(type) { requested.select { |t| t[:type] == type }.map { |t| t[:id] } }
+
+          records = {}
+          Booking.where(id: ids_of.call('order'), delivery_person_id: current_delivery_person_id)
+                 .each { |b| records[[b.id, 'order']] = b }
+          MilkDeliveryTask.where(id: ids_of.call('subscription'), delivery_person_id: current_delivery_person_id)
+                          .each { |t| records[[t.id, 'subscription']] = t }
+
+          updated = []
+          failed = []
+          now = Time.current
+
+          requested.each do |req|
+            record = records[[req[:id], req[:type]]]
+            error = if !%w[order subscription].include?(req[:type])
+                      "Invalid type (use 'order' or 'subscription')"
+                    elsif record.nil?
+                      "Task not found"
+                    else
+                      apply_task_operation(record, operation, now)
+                    end
+
+            if error
+              failed << req.merge(error: error)
+            else
+              updated << req.merge(status: record.is_a?(Booking) ? map_booking_status(record.status) : record.status)
+            end
+          rescue => e
+            failed << req.merge(error: e.message)
+          end
+
+          verb = operation == 'complete' ? 'completed' : 'deleted'
+          render json: {
+            success: updated.any?,
+            message: "#{updated.size} of #{requested.size} tasks #{verb}",
+            data: { operation: operation, updated_count: updated.size, failed_count: failed.size, updated: updated, failed: failed }
+          }, status: updated.any? ? :ok : :unprocessable_entity
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # GET /api/v1/mobile/delivery/my_customers?month=YYYY-MM|all
+        # Mirrors /admin/customer_orders: customers are grouped by the delivery person on their
+        # (non-cancelled) subscriptions running in the month, ordered by row_number.
         def my_customers
-          booking_customer_ids = Booking
-            .where(delivery_person_id: current_delivery_person_id)
-            .where.not(customer_id: nil)
-            .distinct
-            .pluck(:customer_id)
+          month_start = parse_customer_month(params[:month])
+          me = current_delivery_person_id
 
-          task_customer_ids = MilkDeliveryTask
-            .where(delivery_person_id: current_delivery_person_id)
-            .where.not(customer_id: nil)
-            .distinct
-            .pluck(:customer_id)
+          if month_start
+            month_end = month_start.end_of_month
+            candidate_ids = MilkSubscription.where(delivery_person_id: me)
+                                            .where.not(status: 'cancelled')
+                                            .for_date_range(month_start, month_end)
+                                            .distinct.pluck(:customer_id)
+            month_subs = MilkSubscription.where(customer_id: candidate_ids)
+                                         .where.not(status: 'cancelled')
+                                         .for_date_range(month_start, month_end)
+                                         .to_a.group_by(&:customer_id)
+            customer_ids = month_subs.select { |_, subs| subscription_delivery_person_id(subs) == me }.keys
+          else
+            candidate_ids = MilkSubscription.where(delivery_person_id: me).distinct.pluck(:customer_id)
+            all_subs = MilkSubscription.where(customer_id: candidate_ids).to_a.group_by(&:customer_id)
+            customer_ids = all_subs.select { |_, subs| subscription_delivery_person_id(subs) == me }.keys
+          end
 
-          all_customer_ids = (booking_customer_ids + task_customer_ids).uniq
-
-          customers = Customer.where(id: all_customer_ids)
-                               .with_attached_profile_image
-                               .with_attached_personal_image
-                               .with_attached_house_image
-                               .order(:first_name).to_a
+          customers = Customer.where(id: customer_ids)
+                              .with_attached_profile_image
+                              .with_attached_personal_image
+                              .with_attached_house_image
+                              .order(:row_number, :first_name, :last_name).to_a
 
           render json: {
             success: true,
             data: {
-              customers: customers.map { |c| format_customer(c) },
+              month: month_start ? month_start.strftime('%Y-%m') : 'all',
+              month_label: month_start&.strftime('%B %Y'),
+              customers: customers.each_with_index.map { |c, i| format_customer(c).merge(serial: i + 1) },
               total: customers.size
+            }
+          }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # GET /api/v1/mobile/delivery/summary?date=YYYY-MM-DD
+        # Liters delivered by the logged-in delivery person for the day, its week (Mon-Sun)
+        # and its month, plus a day-by-day breakdown of the month.
+        # Same rules as /admin/delivery_sales: only delivered/completed tasks, ml converted to liters.
+        def summary
+          date = parse_summary_date(params[:date])
+          week_start = date.beginning_of_week(:monday)
+          week_end = week_start + 6
+          month_start = date.beginning_of_month
+          month_end = date.end_of_month
+
+          rows = MilkDeliveryTask
+            .where(delivery_person_id: current_delivery_person_id,
+                   status: DELIVERED_STATUSES,
+                   delivery_date: [month_start, week_start].min..[month_end, week_end].max)
+            .group(:delivery_date, :unit)
+            .pluck(:delivery_date, :unit, Arel.sql('SUM(quantity)'), Arel.sql('COUNT(*)'))
+
+          daily = Hash.new { |h, k| h[k] = { liters: 0.0, deliveries: 0 } }
+          rows.each do |day, unit, qty, count|
+            daily[day][:liters] += quantity_in_liters(qty, unit)
+            daily[day][:deliveries] += count
+          end
+
+          sum_for = lambda do |range|
+            cells = daily.select { |day, _| range.cover?(day) }.values
+            { liters: cells.sum { |c| c[:liters] }.round(2), deliveries: cells.sum { |c| c[:deliveries] } }
+          end
+
+          render json: {
+            success: true,
+            data: {
+              date: date.iso8601,
+              day: sum_for.call(date..date),
+              week: sum_for.call(week_start..week_end).merge(from: week_start.iso8601, to: week_end.iso8601),
+              month: sum_for.call(month_start..month_end).merge(month: month_start.strftime('%Y-%m'), label: month_start.strftime('%B %Y')),
+              daily: (month_start..month_end).map do |day|
+                cell = daily.fetch(day, { liters: 0.0, deliveries: 0 })
+                { date: day.iso8601, liters: cell[:liters].round(2), deliveries: cell[:deliveries] }
+              end
             }
           }
         rescue => e
@@ -522,6 +641,55 @@ module Api
 
         private
 
+        # Returns an error string, or nil on success.
+        def apply_task_operation(record, operation, now)
+          if record.is_a?(Booking)
+            return "Task is cancelled" if record.status == 'cancelled'
+            if operation == 'complete'
+              return "Already completed" if record.status == 'delivered'
+              record.update!(status: 'delivered', delivery_time: now)
+            else
+              return "Cannot delete a delivered task" if record.status == 'delivered'
+              record.update!(status: 'cancelled')
+            end
+          else
+            return "Task is cancelled" if record.status == 'cancelled'
+            if operation == 'complete'
+              return "Already completed" if DELIVERED_STATUSES.include?(record.status)
+              record.update!(status: 'completed', completed_at: now)
+            else
+              return "Cannot delete a delivered task" if DELIVERED_STATUSES.include?(record.status)
+              record.update!(status: 'cancelled')
+            end
+          end
+          nil
+        end
+
+        def parse_customer_month(value)
+          return nil if value == 'all'
+          return Date.current.beginning_of_month if value.blank?
+          Date.strptime(value, '%Y-%m')
+        rescue ArgumentError, TypeError
+          Date.current.beginning_of_month
+        end
+
+        def parse_summary_date(value)
+          value.present? ? Date.iso8601(value) : Date.current
+        rescue ArgumentError
+          Date.current
+        end
+
+        # Same preference as Customer#assigned_delivery_person: active subscription first.
+        def subscription_delivery_person_id(subs)
+          active = subs.find { |s| s.status == 'active' && s.delivery_person_id.present? }
+          (active || subs.find { |s| s.delivery_person_id.present? })&.delivery_person_id
+        end
+
+        def quantity_in_liters(quantity, unit)
+          liters = quantity.to_f
+          %w[ml millilitre milliliter].include?(unit.to_s.downcase.strip) ? liters / 1000.0 : liters
+        end
+
         def authenticate_delivery_person!
           # Implement your authentication logic here
           # This should check for valid delivery person JWT token
@@ -556,7 +724,7 @@ module Api
               bookings = Booking.where(delivery_person_id: current_delivery_person_id)
                               .where('DATE(created_at) = ?', Date.current)
                               .where.not(status: 'cancelled')
-                              .includes(booking_items: :product)
+                              .includes(:customer, booking_items: :product)
                               .to_a
             else
               bookings = []
@@ -572,7 +740,7 @@ module Api
               subscription_tasks = MilkDeliveryTask.where(
                 delivery_person_id: current_delivery_person_id,
                 delivery_date: Date.current
-              ).includes(:customer, :product).to_a
+              ).where.not(status: %w[cancelled paused]).includes(:customer, :product).to_a
             else
               subscription_tasks = []
             end
@@ -613,25 +781,23 @@ module Api
         end
 
         def format_tasks(tasks)
-          formatted_tasks = []
+          entries = Array(tasks[:bookings]).map { |b| [b.customer, format_booking_task(b)] } +
+                    Array(tasks[:subscriptions]).map { |t| [t.customer, format_subscription_task(t)] }
 
-          # Format booking tasks
-          Array(tasks[:bookings]).each do |booking|
-            formatted_tasks << format_booking_task(booking)
-          end
-
-          # Format subscription tasks
-          Array(tasks[:subscriptions]).each do |subscription|
-            formatted_tasks << format_subscription_task(subscription)
-          end
-
-          # Pending/in-progress tasks first, completed ones pushed to the bottom.
-          # sort_by isn't guaranteed stable, so pair with the original index to
-          # keep relative order within each group.
-          formatted_tasks
+          # Pending/in-progress tasks first, completed ones pushed to the bottom. Within each
+          # group, follow the customer order from /admin/customer_orders (row_number, then
+          # name; customers without a row number last). The index keeps the sort stable.
+          entries
             .each_with_index
-            .sort_by { |task, index| [task[:status] == 'completed' ? 1 : 0, index] }
-            .map(&:first)
+            .sort_by do |(customer, task), index|
+              row = customer&.row_number
+              [task[:status] == 'completed' ? 1 : 0,
+               row.nil? ? 1 : 0, row.to_i,
+               customer&.first_name.to_s.downcase, customer&.last_name.to_s.downcase,
+               index]
+            end
+            .each_with_index
+            .map { |((customer, task), _), i| task.merge(row_number: customer&.row_number, serial: i + 1) }
         end
 
         def format_booking_task(booking)
@@ -708,23 +874,14 @@ module Api
           end
         end
 
-        def route_optimization(tasks)
+        def route_optimization(tasks, formatted_tasks)
           total_tasks = tasks[:bookings].count + tasks[:subscriptions].count
 
           {
-            suggested_sequence: suggest_route_sequence(tasks),
+            suggested_sequence: formatted_tasks.first(3).map { |t| t[:id] },
             estimated_completion_time: "#{(total_tasks * 15)} minutes",
             total_distance: "#{(total_tasks * 2)} km"
           }
-        end
-
-        def suggest_route_sequence(tasks)
-          # Simple implementation - return task IDs
-          # In production, implement actual route optimization algorithm
-          task_ids = []
-          task_ids += tasks[:bookings].pluck(:id)
-          task_ids += tasks[:subscriptions].pluck(:id)
-          task_ids.first(3)
         end
 
         def find_task(task_id)
@@ -832,6 +989,7 @@ module Api
             latitude:    customer.latitude,
             longitude:   customer.longitude,
             whatsapp:    customer.whatsapp_number,
+            row_number:  customer.row_number,
             is_image_uploaded: customer.profile_image.attached? ||
                                 customer.personal_image.attached? ||
                                 customer.house_image.attached?
