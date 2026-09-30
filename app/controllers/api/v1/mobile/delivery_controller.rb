@@ -177,9 +177,9 @@ module Api
         end
 
         # POST /api/v1/mobile/delivery/tasks/bulk_action
-        # { "operation": "complete" | "delete", "tasks": [{ "id": 94355, "type": "subscription" }, { "id": 12, "type": "order" }] }
-        # Checkbox actions on the tasks/today list. Types come from that list, so a booking and a
-        # subscription task sharing an id can't be confused. Only the caller's own tasks are touched.
+        # { "operation": "complete" | "delete", "task_ids": [94355, 12] }
+        # Checkbox actions on the tasks/today list. Each id is looked up as a subscription delivery
+        # task first, then as a booking (order). Only the caller's own tasks are touched.
         # "delete" cancels the task (kept for history/invoices) and it drops out of tasks/today.
         # Tasks the customer paused are hidden from tasks/today too.
         def bulk_task_action
@@ -188,41 +188,34 @@ module Api
             return render json: { success: false, message: "operation must be 'complete' or 'delete'" }, status: :unprocessable_entity
           end
 
-          tasks = params[:tasks]
-          if tasks.blank? || !tasks.is_a?(Array)
-            return render json: { success: false, message: "tasks (array of {id, type}) is required" }, status: :bad_request
+          task_ids = params[:task_ids]
+          if task_ids.blank? || !task_ids.is_a?(Array)
+            return render json: { success: false, message: "task_ids (array of task ids) is required" }, status: :bad_request
           end
 
-          requested = tasks.map { |t| { id: t[:id].to_i, type: t[:type].to_s } }.uniq
-          ids_of = ->(type) { requested.select { |t| t[:type] == type }.map { |t| t[:id] } }
-
-          records = {}
-          Booking.where(id: ids_of.call('order'), delivery_person_id: current_delivery_person_id)
-                 .each { |b| records[[b.id, 'order']] = b }
-          MilkDeliveryTask.where(id: ids_of.call('subscription'), delivery_person_id: current_delivery_person_id)
-                          .each { |t| records[[t.id, 'subscription']] = t }
+          requested = task_ids.map(&:to_i).select(&:positive?).uniq
+          subscription_tasks = MilkDeliveryTask.where(id: requested, delivery_person_id: current_delivery_person_id).index_by(&:id)
+          bookings = Booking.where(id: requested - subscription_tasks.keys, delivery_person_id: current_delivery_person_id).index_by(&:id)
 
           updated = []
           failed = []
           now = Time.current
 
-          requested.each do |req|
-            record = records[[req[:id], req[:type]]]
-            error = if !%w[order subscription].include?(req[:type])
-                      "Invalid type (use 'order' or 'subscription')"
-                    elsif record.nil?
-                      "Task not found"
-                    else
-                      apply_task_operation(record, operation, now)
-                    end
+          requested.each do |id|
+            record = subscription_tasks[id] || bookings[id]
+            unless record
+              failed << { id: id, error: "Task not found" }
+              next
+            end
 
-            if error
-              failed << req.merge(error: error)
+            type = record.is_a?(Booking) ? 'order' : 'subscription'
+            if (error = apply_task_operation(record, operation, now))
+              failed << { id: id, type: type, error: error }
             else
-              updated << req.merge(status: record.is_a?(Booking) ? map_booking_status(record.status) : record.status)
+              updated << { id: id, type: type, status: record.is_a?(Booking) ? map_booking_status(record.status) : record.status }
             end
           rescue => e
-            failed << req.merge(error: e.message)
+            failed << { id: id, error: e.message }
           end
 
           verb = operation == 'complete' ? 'completed' : 'deleted'

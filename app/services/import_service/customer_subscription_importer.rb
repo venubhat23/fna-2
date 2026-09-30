@@ -305,9 +305,8 @@ module ImportService
 
     # Generate a secure password for auto-creation
     def generate_secure_password(customer)
-      # Generate password in format: Welcome@123
-      # This is the default generic password requested
-      "Welcome@123"
+      # Default password for imported customer logins
+      "atma@123"
     end
   end
 end

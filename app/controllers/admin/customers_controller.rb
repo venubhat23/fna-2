@@ -829,7 +829,7 @@ class Admin::CustomersController < Admin::ApplicationController
     begin
       ActiveRecord::Base.transaction do
         # Generate password
-        generated_password = "Welcome@123"
+        generated_password = "atma@123"
 
         # Store password in customer record
         @customer.update!(auto_generated_password: generated_password)
@@ -936,21 +936,9 @@ class Admin::CustomersController < Admin::ApplicationController
 
   private
 
-  # Generate a secure password for auto-creation
+  # Default password for auto-created customer logins
   def generate_secure_password
-    # Generate password in format: first 4 letters of name + @ + current year
-    # Example: PRAMOD becomes PRAM@2024
-
-    # Get first name - use first_name from customer
-    first_name = @customer.first_name.to_s.strip.upcase
-
-    # Get first 4 characters of name, pad with 'X' if less than 4 characters
-    name_part = first_name[0..3].ljust(4, 'X')
-
-    # Use current year since birth_date column doesn't exist
-    year_part = Date.current.year.to_s
-
-    "#{name_part}@#{year_part}"
+    "atma@123"
   end
 
   def set_customer

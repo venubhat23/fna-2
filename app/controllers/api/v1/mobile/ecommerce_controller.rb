@@ -8,6 +8,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   # Delivery tasks a customer may pause. Pausing sets them to 'paused' (hidden from the delivery
   # person, never invoiced); resuming sets them back to 'pending'.
   PAUSABLE_TASK_STATUSES = %w[pending assigned].freeze
+  CANCELLABLE_TASK_STATUSES = %w[pending assigned paused].freeze
 
   # GET /api/v1/mobile/ecommerce/categories
   def categories
@@ -1195,6 +1196,67 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     }
   end
 
+  # GET /api/v1/mobile/ecommerce/old_subscriptions?page=1&per_page=20
+  # The customer's past subscriptions - those that ended before the current month (any status),
+  # newest first, each with a delivery summary. Current-month ones come from my_subscriptions.
+  def old_subscriptions
+    customer = @current_user if @current_user.is_a?(Customer)
+    return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
+
+    page = [params[:page].to_i, 1].max
+    per_page = (params[:per_page].presence || 20).to_i.clamp(1, 50)
+
+    scope = MilkSubscription.where(customer: customer).where('end_date < ?', Date.current.beginning_of_month)
+    total_count = scope.count
+    subscriptions = scope.includes(:delivery_person, :product, :product_variant)
+                         .order(end_date: :desc, id: :desc)
+                         .offset((page - 1) * per_page).limit(per_page).to_a
+
+    counts = MilkDeliveryTask.where(subscription_id: subscriptions.map(&:id)).group(:subscription_id, :status).count
+    delivered_qty = MilkDeliveryTask.where(subscription_id: subscriptions.map(&:id), status: %w[delivered completed])
+                                    .group(:subscription_id).sum(:quantity)
+    total_pages = (total_count.to_f / per_page).ceil
+
+    render json: {
+      success: true,
+      data: {
+        subscriptions: subscriptions.map do |subscription|
+          by_status = counts.select { |(id, _), _| id == subscription.id }.transform_keys(&:last)
+          price = subscription.product_variant&.effective_price || subscription.product&.selling_price
+          {
+            id: subscription.id,
+            status: subscription.status,
+            product: { id: subscription.product&.id, name: subscription.product&.name, price: price&.to_f },
+            quantity: subscription.quantity.to_f,
+            unit: subscription.unit,
+            delivery_time: subscription.delivery_time,
+            delivery_pattern: subscription.delivery_pattern,
+            start_date: subscription.start_date,
+            end_date: subscription.end_date,
+            delivery_person: format_delivery_person(subscription.delivery_person),
+            summary: {
+              total_days: by_status.values.sum,
+              delivered_days: by_status.values_at('delivered', 'completed').compact.sum,
+              delivered_quantity: delivered_qty[subscription.id].to_f.round(2),
+              paused_days: by_status['paused'].to_i,
+              cancelled_days: by_status['cancelled'].to_i,
+              missed_days: by_status['missed'].to_i
+            }
+          }
+        end,
+        pagination: {
+          current_page: page,
+          per_page: per_page,
+          total_count: total_count,
+          total_pages: total_pages,
+          has_next_page: page < total_pages,
+          has_prev_page: page > 1
+        }
+      },
+      message: 'Old subscriptions retrieved successfully'
+    }
+  end
+
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/pause
   # Body (all optional): { "resume_date": "2026-09-15" } (pause from today until then),
   # { "date": "2026-09-10" }, { "dates": [...] } or { "from": "2026-09-10", "to": "2026-09-15" }.
@@ -1290,7 +1352,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/pause
-  # { "dates": ["2026-09-29", "2026-09-30"] } (or { "date": "2026-09-29" })
+  # { "dates": ["2026-09-29", "2026-09-30"] } (or { "date": "2026-09-29" }), or a range:
+  # { "start_date": "2026-10-01", "end_date": "2026-10-10" } (no end_date = until the subscription ends).
   # Pauses the customer's deliveries on those days across all their subscriptions - no subscription
   # id needed. Optional "subscription_id" limits it to one subscription.
   def pause_deliveries
@@ -1299,8 +1362,17 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/resume
   # Same body as pause_deliveries; paused deliveries on those days go back to pending.
+  # { "start_date": "2026-10-05" } alone resumes everything paused from that day on.
   def resume_deliveries
     change_deliveries_on_dates(%w[paused], 'pending')
+  end
+
+  # PUT /api/v1/mobile/ecommerce/subscriptions/cancel
+  # Same body as pause_deliveries, e.g. { "subscription_id": 12, "from": "2026-10-05", "to": "2026-10-08" }.
+  # Cancels only the delivery tasks on those days; the subscription and its other days stay as they are.
+  # Cancelled days are not delivered or billed and cannot be resumed. Past and delivered days are never touched.
+  def cancel_deliveries
+    change_deliveries_on_dates(CANCELLABLE_TASK_STATUSES, 'cancelled')
   end
 
   # PUT /api/v1/mobile/ecommerce/subscriptions/:id/cancel
@@ -1860,8 +1932,17 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     customer = @current_user if @current_user.is_a?(Customer)
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    if params[:dates].blank? && params[:date].blank?
-      return render json: { success: false, message: 'dates (array of YYYY-MM-DD) is required' }, status: :unprocessable_entity
+    if %i[dates date start_date end_date from to].all? { |key| params[key].blank? }
+      return render json: {
+        success: false,
+        message: 'Send dates (array of YYYY-MM-DD) or start_date / end_date'
+      }, status: :unprocessable_entity
+    end
+
+    range_start = params[:start_date].presence || params[:from].presence
+    range_end = params[:end_date].presence || params[:to].presence
+    if range_start && range_end && Date.iso8601(range_end.to_s) < Date.iso8601(range_start.to_s)
+      return render json: { success: false, message: 'end_date must be on or after start_date' }, status: :unprocessable_entity
     end
 
     subscriptions = MilkSubscription.where(customer: customer, status: %w[active paused])
@@ -1881,7 +1962,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       end
     end
 
-    verb = to_status == 'paused' ? 'paused' : 'resumed'
+    verb = { 'paused' => 'paused', 'cancelled' => 'cancelled' }.fetch(to_status, 'resumed')
     render json: {
       success: true,
       message: "#{changed.size} deliveries #{verb}",
@@ -1902,28 +1983,30 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
   end
 
   def subscription_dates_param_blank?
-    %i[date dates from to resume_date].all? { |key| params[key].blank? }
+    %i[date dates from to start_date end_date resume_date].all? { |key| params[key].blank? }
   end
 
   # Days a pause/resume applies to, always clipped to today onward and to the subscription period:
   #   date        - that one day
   #   dates       - those days
   #   resume_date - today (or `from`) up to the day before resume_date ("pause until")
-  #   from / to   - that range
+  #   from / to   - that range (start_date / end_date are aliases)
   #   nothing     - today through the end date
   # Raises ArgumentError on a malformed date.
   def requested_subscription_dates(subscription)
     first = [subscription.start_date, Date.current].max
     last = subscription.end_date
+    range_start = params[:start_date].presence || params[:from].presence
+    range_end = params[:end_date].presence || params[:to].presence
 
     if params[:date].present? || params[:dates].present?
       Array(params[:dates].presence || params[:date]).map { |d| Date.iso8601(d.to_s) }.uniq.select { |d| d.between?(first, last) }
     else
-      from = params[:from].present? ? [Date.iso8601(params[:from].to_s), first].max : first
+      from = range_start ? [Date.iso8601(range_start.to_s), first].max : first
       to = if params[:resume_date].present?
              [Date.iso8601(params[:resume_date].to_s) - 1, last].min
-           elsif params[:to].present?
-             [Date.iso8601(params[:to].to_s), last].min
+           elsif range_end
+             [Date.iso8601(range_end.to_s), last].min
            else
              last
            end
@@ -1951,7 +2034,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         task_id: task.id,
         delivery_person: format_delivery_person(task.delivery_person),
         can_pause: task.delivery_date >= today && PAUSABLE_TASK_STATUSES.include?(task.status),
-        can_resume: resumable && task.delivery_date >= today && task.status == 'paused'
+        can_resume: resumable && task.delivery_date >= today && task.status == 'paused',
+        can_cancel: resumable && task.delivery_date >= today && CANCELLABLE_TASK_STATUSES.include?(task.status)
       }
     end
 
@@ -1979,7 +2063,8 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         delivered_days: delivered.size,
         delivered_quantity: delivered.sum { |d| d[:quantity] }.round(2),
         pending_days: days.count { |d| %w[pending assigned].include?(d[:status]) },
-        paused_days: days.count { |d| d[:status] == 'paused' }
+        paused_days: days.count { |d| d[:status] == 'paused' },
+        cancelled_days: days.count { |d| d[:status] == 'cancelled' }
       },
       days: days
     }
