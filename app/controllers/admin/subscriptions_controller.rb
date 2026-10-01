@@ -3,6 +3,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   before_action :check_sidebar_permission
 
   LIST_STATE_PARAMS = %i[page status start_date end_date month customer_id delivery_person_id].freeze
+  PER_PAGE = 10
 
   # See lib/local_ttl_cache.rb - Rails.cache is Solid Cache here (same remote Postgres
   # as the primary DB), so a Rails.cache "hit" still pays a network round trip. This
@@ -10,70 +11,22 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   LOCAL_CACHE = LocalTtlCache.new
 
   def index
-    # Filtering/stats run on the bare join; the associations are eager_loaded only on
-    # the paginated page query below, so the COUNT/GROUP BY queries stay lean.
-    @filtered_subscriptions = MilkSubscription.joins(:customer)
-    @filtered_subscriptions = filter_by_status(@filtered_subscriptions)
-    @filtered_subscriptions = filter_by_date_range(@filtered_subscriptions)
-    @filtered_subscriptions = filter_by_month(@filtered_subscriptions)
-    @filtered_subscriptions = filter_by_customer(@filtered_subscriptions)
-    @filtered_subscriptions = filter_by_delivery_person(@filtered_subscriptions)
-
-    # Calculate stats based on filtered data
-    @stats = calculate_filtered_subscription_stats(@filtered_subscriptions)
-
-    # Paginate the filtered subscriptions, ordered by the customer's row number.
-    # eager_load (all belongs_to) folds customer/product/delivery_person into this one
-    # query instead of 3 extra preload round trips. (:delivery_person is MilkSubscription's
-    # own belongs_to, not the one nested under milk_delivery_tasks - see the batched
-    # @delivery_tasks_count_by_subscription lookup below for task counts.)
-    @subscriptions = @filtered_subscriptions
-                        .eager_load(:customer, :product, :delivery_person)
-                        .order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc)
-                        .page(params[:page]).per(10)
-    # The view paginates with total_pages: from this instead of letting Kaminari run
-    # its own SELECT COUNT - @stats[:total] already is that count.
-    @total_pages = (@stats[:total] / 10.0).ceil
-
-    # Batch the status breakdown (total/completed/pending/paused/rate), per-subscription
-    # task count, and average task quantity that the view needs per row, all from a
-    # single GROUP BY (subscription_id, status) query - instead of calling
-    # subscription.subscription_summary/current_average_quantity per row (6+ uncached
-    # queries per row, the actual source of the ~95-query, ~10s page loads) or even the
-    # 3 separate batched queries this replaces. Each query here is a full network round
-    # trip to the remote Postgres instance (~150-500ms/query - see logs from 2026-08-01
-    # 08:11), so cutting query count matters more than usual for this app.
-    task_status_counts = Hash.new { |h, k| h[k] = Hash.new(0) }
-    task_count_by_subscription = Hash.new(0)
-    quantity_sum_by_subscription = Hash.new(0.0)
-
-    MilkDeliveryTask.where(subscription_id: @subscriptions.map(&:id))
-                     .group(:subscription_id, :status)
-                     .pluck(:subscription_id, :status, Arel.sql('COUNT(*)'), Arel.sql('COALESCE(SUM(quantity), 0)'))
-                     .each do |subscription_id, status, count, quantity_sum|
-                       task_status_counts[subscription_id][status] = count
-                       task_count_by_subscription[subscription_id] += count
-                       quantity_sum_by_subscription[subscription_id] += quantity_sum.to_f
-                     end
-
-    @delivery_tasks_count_by_subscription = task_count_by_subscription
-
-    @subscription_summaries = @subscriptions.each_with_object({}) do |subscription, hash|
-      counts = task_status_counts[subscription.id]
-      total = task_count_by_subscription[subscription.id]
-      completed = counts['completed']
-      current_average_quantity = total.positive? ? (quantity_sum_by_subscription[subscription.id] / total).round(2) : subscription.quantity
-      hash[subscription.id] = {
-        total_deliveries: total,
-        completed: completed,
-        pending: counts['pending'],
-        paused: counts['paused'],
-        completion_rate: total.zero? ? 0 : (completed.to_f / total * 100).round(2),
-        current_average_quantity: current_average_quantity,
-        has_quantity_changes: total.positive? && current_average_quantity != subscription.quantity,
-        daily_tasks_status: (counts['pending'] + counts['assigned']).zero? ? 'Ct' : 'PD'
-      }
+    # Stats, page rows and per-row summaries for this filter/page, from memory when
+    # the same view was built recently and nothing it reads has been written since -
+    # see lib/admin_subscriptions_cache.rb. Date.current is in the key because the
+    # "today" stats and the month filter's year depend on it.
+    page_data = AdminSubscriptionsCache.fetch(Date.current, *list_state_params.values_at(*LIST_STATE_PARAMS)) do
+      build_index_page_data
     end
+
+    @stats = page_data[:stats]
+    @subscription_summaries = page_data[:summaries]
+    @delivery_tasks_count_by_subscription = page_data[:task_counts]
+    # PaginatableArray carries offset/total_count so the view's paginate and
+    # "Showing x - y of z" work without Kaminari running its own SELECT COUNT.
+    @subscriptions = Kaminari::PaginatableArray.new(
+      page_data[:rows], limit: PER_PAGE, offset: page_data[:offset], total_count: @stats[:total]
+    )
 
     # For filter options - cached, since this page does a full reload on every filter
     # change (status/month/customer/delivery person), and these lists rarely change.
@@ -715,44 +668,113 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     }
   end
 
-  def calculate_filtered_subscription_stats(filtered_subscriptions)
-    # Subquery instead of a separate .pluck(:id) round trip - the subscription_id IN
-    # (SELECT ...) clauses below get folded into their own single query either way.
+  # Builds everything #index needs from the DB. The four queries below don't depend
+  # on each other, so they're all started at once with load_async/async_* and run in
+  # parallel on the async query executor (config/application.rb) - on the cross-region
+  # DB that's one round trip of wall time instead of four.
+  def build_index_page_data
+    filtered = MilkSubscription.joins(:customer)
+    filtered = filter_by_status(filtered)
+    filtered = filter_by_date_range(filtered)
+    filtered = filter_by_month(filtered)
+    filtered = filter_by_customer(filtered)
+    filtered = filter_by_delivery_person(filtered)
+
+    # Ordered by the customer's row number; id breaks ties so the page-rows query and
+    # the page_ids subquery below always agree on which 10 rows are on this page.
+    page = filtered.order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc, id: :desc)
+                   .page(params[:page]).per(PER_PAGE)
+
+    # eager_load (all belongs_to) folds customer/product/delivery_person into the page
+    # query. (:delivery_person is MilkSubscription's own belongs_to, not the one nested
+    # under milk_delivery_tasks - task counts come from task_rows below.)
+    rows = page.eager_load(:customer, :product, :delivery_person).load_async
+
+    # Status breakdown, task count and average quantity per row from one GROUP BY
+    # (subscription_id, status), instead of subscription_summary/current_average_quantity
+    # per row (6+ queries per row - the original ~95-query, ~10s page loads).
+    task_rows = MilkDeliveryTask.where(subscription_id: page.select(:id))
+                                .group(:subscription_id, :status)
+                                .async_pluck(:subscription_id, :status, Arel.sql('COUNT(*)'), Arel.sql('COALESCE(SUM(quantity), 0)'))
+
+    stats = filtered_subscription_stats_async(filtered)
+
+    task_status_counts = Hash.new { |h, k| h[k] = Hash.new(0) }
+    task_counts = Hash.new(0)
+    quantity_sums = Hash.new(0.0)
+    task_rows.value.each do |subscription_id, status, count, quantity_sum|
+      task_status_counts[subscription_id][status] = count
+      task_counts[subscription_id] += count
+      quantity_sums[subscription_id] += quantity_sum.to_f
+    end
+
+    records = rows.to_a
+    summaries = records.each_with_object({}) do |subscription, hash|
+      counts = task_status_counts[subscription.id]
+      total = task_counts[subscription.id]
+      completed = counts['completed']
+      current_average_quantity = total.positive? ? (quantity_sums[subscription.id] / total).round(2) : subscription.quantity
+      hash[subscription.id] = {
+        total_deliveries: total,
+        completed: completed,
+        pending: counts['pending'],
+        paused: counts['paused'],
+        completion_rate: total.zero? ? 0 : (completed.to_f / total * 100).round(2),
+        current_average_quantity: current_average_quantity,
+        has_quantity_changes: total.positive? && current_average_quantity != subscription.quantity,
+        daily_tasks_status: (counts['pending'] + counts['assigned']).zero? ? 'Ct' : 'PD'
+      }
+    end
+
+    {
+      rows: records,
+      offset: page.offset_value,
+      stats: stats.call,
+      summaries: summaries,
+      # Plain hash (no default proc) - the view does [id] || 0.
+      task_counts: task_counts.to_h
+    }
+  end
+
+  # Starts the stats queries and returns a lambda that waits for them and builds the
+  # stats hash, so the caller can fire other queries in between.
+  def filtered_subscription_stats_async(filtered_subscriptions)
+    # Subquery instead of a separate .pluck(:id) round trip.
     subscription_ids = filtered_subscriptions.select(:id)
 
     # Single GROUP BY replaces 4 separate COUNT queries
-    status_counts = filtered_subscriptions.group(:status).count
-    total = status_counts.values.sum
-    active = status_counts['active'].to_i
-    paused = status_counts['paused'].to_i
-    expired = status_counts['expired'].to_i
+    status_counts = filtered_subscriptions.group(:status).async_count
 
     # Today's deliveries, pending-today and distinct active delivery people with
-    # pending/assigned tasks, all from one query (was two separate round trips).
+    # pending/assigned tasks, all from one query.
     today = MilkDeliveryTask.connection.quote(Date.current)
-    today_deliveries, pending_today, assigned_delivery_people = MilkDeliveryTask
+    task_stats = MilkDeliveryTask
       .left_joins(:delivery_person)
       .where(subscription_id: subscription_ids)
       .where("milk_delivery_tasks.delivery_date = #{today} OR milk_delivery_tasks.status IN ('pending', 'assigned')")
-      .pick(
+      .async_pick(
         Arel.sql("COUNT(*) FILTER (WHERE milk_delivery_tasks.delivery_date = #{today})"),
         Arel.sql("COUNT(*) FILTER (WHERE milk_delivery_tasks.delivery_date = #{today} AND milk_delivery_tasks.status = 'pending')"),
         Arel.sql("COUNT(DISTINCT milk_delivery_tasks.delivery_person_id) FILTER (WHERE milk_delivery_tasks.status IN ('pending', 'assigned') AND delivery_people.status = TRUE)")
-      ).map(&:to_i)
+      )
 
     # Total delivery people remains global
     total_delivery_people = LOCAL_CACHE.fetch('admin_subscriptions_active_delivery_people_count', 5.minutes) { DeliveryPerson.where(status: true).count }
 
-    {
-      total: total,
-      active: active,
-      paused: paused,
-      expired: expired,
-      today_deliveries: today_deliveries,
-      pending_today: pending_today,
-      total_delivery_people: total_delivery_people,
-      assigned_delivery_people: assigned_delivery_people
-    }
+    lambda do
+      counts = status_counts.value
+      today_deliveries, pending_today, assigned_delivery_people = task_stats.value.map(&:to_i)
+      {
+        total: counts.values.sum,
+        active: counts['active'].to_i,
+        paused: counts['paused'].to_i,
+        expired: counts['expired'].to_i,
+        today_deliveries: today_deliveries,
+        pending_today: pending_today,
+        total_delivery_people: total_delivery_people,
+        assigned_delivery_people: assigned_delivery_people
+      }
+    end
   end
 
   def generate_delivery_tasks_for_subscription(subscription)

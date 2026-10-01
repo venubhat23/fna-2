@@ -1,7 +1,8 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # + 4 for the async query executor threads (config.active_record.global_executor_concurrency)
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 }.to_i + 4 %>
 
 development:
   primary: &primary_development

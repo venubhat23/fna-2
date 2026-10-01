@@ -38,6 +38,13 @@ module DemoFarmAdmin
     # in config/environments, which are processed later.
     #
     config.time_zone = "Asia/Kolkata"
+
+    # Lets load_async/async_count/async_pluck/async_pick run independent queries in
+    # parallel (e.g. Admin::SubscriptionsController#index) - each query is a round trip
+    # to the cross-region DB, so overlapping them cuts page time. Each executor thread
+    # uses its own DB connection; config/database.yml sizes the pool for it.
+    config.active_record.async_query_executor = :global_thread_pool
+    config.active_record.global_executor_concurrency = 4
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Don't generate system test files.

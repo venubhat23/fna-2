@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_31_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_01_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -605,11 +605,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_31_120000) do
     t.datetime "invoiced_at"
     t.index ["customer_id", "delivery_date"], name: "index_milk_delivery_tasks_on_customer_id_and_delivery_date"
     t.index ["customer_id"], name: "index_milk_delivery_tasks_on_customer_id"
+    t.index ["delivery_date", "subscription_id"], name: "idx_mdt_delivery_date_subscription"
     t.index ["delivery_date"], name: "index_milk_delivery_tasks_on_delivery_date"
     t.index ["delivery_person_id", "delivery_date"], name: "idx_on_delivery_person_id_delivery_date_8b580f1b82"
+    t.index ["delivery_person_id", "subscription_id"], name: "idx_mdt_delivery_person_subscription"
     t.index ["delivery_person_id"], name: "index_milk_delivery_tasks_on_delivery_person_id"
     t.index ["product_id"], name: "index_milk_delivery_tasks_on_product_id"
     t.index ["status"], name: "index_milk_delivery_tasks_on_status"
+    t.index ["subscription_id", "status"], name: "idx_mdt_subscription_status_incl_qty", include: ["quantity"]
     t.index ["subscription_id"], name: "index_milk_delivery_tasks_on_subscription_id"
   end
 

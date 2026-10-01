@@ -13,6 +13,8 @@
 # state lives per-worker-process, a value written on one worker is only
 # picked up by other workers once their own copy expires.
 class LocalTtlCache
+  MAX_ENTRIES_BEFORE_PRUNE = 200
+
   def initialize
     @store = {}
     @mutex = Mutex.new
@@ -28,6 +30,7 @@ class LocalTtlCache
       return entry[:value] if entry && entry[:expires_at] > now
       value = yield
       @store[key] = { value: value, expires_at: now + ttl }
+      prune(now) if @store.size > MAX_ENTRIES_BEFORE_PRUNE
       value
     end
   end
@@ -39,5 +42,13 @@ class LocalTtlCache
 
   def delete(key)
     @mutex.synchronize { @store.delete(key) }
+  end
+
+  private
+
+  # Expired entries are otherwise never removed, which matters for callers with
+  # many distinct keys (e.g. one per filter combination). Called under @mutex.
+  def prune(now)
+    @store.delete_if { |_key, entry| entry[:expires_at] <= now }
   end
 end
