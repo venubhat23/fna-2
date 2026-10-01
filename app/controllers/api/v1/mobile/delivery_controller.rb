@@ -9,6 +9,13 @@ module Api
         # A task counts as delivered once it is marked delivered/completed (same as admin delivery sales).
         DELIVERED_STATUSES = %w[delivered completed].freeze
 
+        # Preloaded for format_customer_images - otherwise each customer costs 3 attachment queries.
+        CUSTOMER_IMAGE_PRELOADS = [
+          { profile_image_attachment: :blob },
+          { house_image_attachment: :blob },
+          { personal_image_attachment: :blob }
+        ].freeze
+
         # GET /api/v1/mobile/delivery/tasks/today
         def tasks_today
           begin
@@ -727,14 +734,21 @@ module Api
           @current_delivery_person&.id
         end
 
+        # Same rows as `DATE(created_at) = date` (created_at is stored in UTC), but as a range so
+        # the (delivery_person_id, created_at) index can be used.
+        def utc_day_range(date)
+          start = Time.utc(date.year, date.month, date.day)
+          start...(start + 1.day)
+        end
+
         def get_todays_tasks
           # Get all bookings/orders assigned to current delivery person for today
           begin
             if defined?(Booking) && Booking.column_names.include?('delivery_person_id')
               bookings = Booking.where(delivery_person_id: current_delivery_person_id)
-                              .where('DATE(created_at) = ?', Date.current)
+                              .where(created_at: utc_day_range(Date.current))
                               .where.not(status: 'cancelled')
-                              .includes(:customer, booking_items: :product)
+                              .includes(customer: CUSTOMER_IMAGE_PRELOADS, booking_items: :product)
                               .to_a
             else
               bookings = []
@@ -750,7 +764,7 @@ module Api
               subscription_tasks = MilkDeliveryTask.where(
                 delivery_person_id: current_delivery_person_id,
                 delivery_date: Date.current
-              ).where.not(status: %w[cancelled paused]).includes(:customer, :product).to_a
+              ).where.not(status: %w[cancelled paused]).includes(:product, customer: CUSTOMER_IMAGE_PRELOADS).to_a
             else
               subscription_tasks = []
             end
@@ -959,7 +973,7 @@ module Api
           next_task = Booking.where(
             delivery_person_id: current_delivery_person_id,
             status: ['ordered_and_delivery_pending', 'confirmed']
-          ).where('DATE(created_at) = ?', Date.current).first
+          ).where(created_at: utc_day_range(Date.current)).first
 
           next_task&.id || MilkDeliveryTask.where(
             delivery_person_id: current_delivery_person_id,

@@ -1086,7 +1086,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     per_page = params[:per_page]&.to_i || 20
     per_page = [per_page, 50].min
 
-    @subscriptions = MilkSubscription.where(customer: customer).includes(:milk_delivery_tasks, product: { image_attachment: :blob, additional_images_attachments: :blob })
+    # Only the product is read by format_milk_subscription_data - preloading every delivery
+    # task of every subscription here was pure overhead.
+    @subscriptions = MilkSubscription.where(customer: customer).includes(:product)
 
     # Filter by status if provided
     @subscriptions = @subscriptions.where(status: params[:status]) if params[:status].present?
@@ -1133,7 +1135,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     customer = @current_user if @current_user.is_a?(Customer)
     return render json: { success: false, message: 'Customer not found' }, status: :not_found unless customer
 
-    @subscription = MilkSubscription.where(customer: customer).includes(:milk_delivery_tasks, product: { image_attachment: :blob, additional_images_attachments: :blob }).find(params[:id])
+    @subscription = MilkSubscription.where(customer: customer).includes(:product).find(params[:id])
     @subscription.association(:customer).target = customer
 
     # Get recent delivery tasks from this subscription
@@ -1408,6 +1410,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
                     .current
                     .by_location(location)
                     .ordered
+                    .includes(banner_image_attachment: :blob)
 
     banners_data = @banners.map do |banner|
       {

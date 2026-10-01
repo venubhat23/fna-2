@@ -1,4 +1,5 @@
 class CopyFromLastMonth
+  RUN_LOCK_KEY = GenerateFromCustomerFormat::RUN_LOCK_KEY
   # Usage in rails console:
   #   CopyFromLastMonth.month(8)
   #
@@ -51,6 +52,12 @@ class CopyFromLastMonth
     skipped_formats = 0
     failures = []
 
+    unless acquire_run_lock!
+      puts "Another GenerateFromCustomerFormat / CopyFromLastMonth run is in progress - not starting a second one."
+      return { success: false, failures: ['another run is in progress'] }
+    end
+
+    begin
     MilkSubscription.where(id: subscription_ids).find_each do |source_sub|
       source_tasks = source_sub.milk_delivery_tasks.where(delivery_date: source_start..source_end)
 
@@ -100,17 +107,24 @@ class CopyFromLastMonth
           new_sub.save!
         end
 
-        tasks_to_copy.each do |t|
-          new_sub.milk_delivery_tasks.create!(
-            customer_id:        t.customer_id,
-            product_id:         t.product_id,
-            quantity:           t.quantity,
-            unit:               t.unit,
-            delivery_date:      t.delivery_date + 1.month,
-            delivery_person_id: t.delivery_person_id,
-            status:             'pending'
-          )
-          created_tasks += 1
+        # Same re-check-under-lock as GenerateFromCustomerFormat (see there).
+        MilkSubscription.transaction do
+          new_sub.lock!
+          tasks_to_copy.each do |t|
+            next if MilkDeliveryTask.exists?(customer_id: t.customer_id, product_id: t.product_id,
+                                             delivery_date: t.delivery_date + 1.month)
+
+            new_sub.milk_delivery_tasks.create!(
+              customer_id:        t.customer_id,
+              product_id:         t.product_id,
+              quantity:           t.quantity,
+              unit:               t.unit,
+              delivery_date:      t.delivery_date + 1.month,
+              delivery_person_id: t.delivery_person_id,
+              status:             'pending'
+            )
+            created_tasks += 1
+          end
         end
 
         existing_sub ? (resumed_subscriptions += 1) : (created_subscriptions += 1)
@@ -163,17 +177,22 @@ class CopyFromLastMonth
         new_sub.define_singleton_method(:generate_all_delivery_tasks) { true }
         new_sub.save!
 
-        task_dates.each do |date|
-          new_sub.milk_delivery_tasks.create!(
-            customer_id:        cf.customer_id,
-            product_id:         cf.product_id,
-            quantity:           cf.quantity,
-            unit:               'liter',
-            delivery_date:      date,
-            delivery_person_id: cf.delivery_person_id,
-            status:             'pending'
-          )
-          created_format_tasks += 1
+        MilkSubscription.transaction do
+          new_sub.lock!
+          task_dates.each do |date|
+            next if MilkDeliveryTask.exists?(customer_id: cf.customer_id, product_id: cf.product_id, delivery_date: date)
+
+            new_sub.milk_delivery_tasks.create!(
+              customer_id:        cf.customer_id,
+              product_id:         cf.product_id,
+              quantity:           cf.quantity,
+              unit:               'liter',
+              delivery_date:      date,
+              delivery_person_id: cf.delivery_person_id,
+              status:             'pending'
+            )
+            created_format_tasks += 1
+          end
         end
 
         created_format_subscriptions += 1
@@ -185,6 +204,10 @@ class CopyFromLastMonth
         puts "  [FAILED] #{failure}"
         recover_connection!
       end
+    end
+
+    ensure
+      release_run_lock!
     end
 
     print_summary(
@@ -206,6 +229,21 @@ class CopyFromLastMonth
       failures: failures
     }
   end
+
+  # Session-level Postgres advisory lock so two runs can't overlap. Overlapping runs each
+  # computed the same "missing" dates and both inserted them - that is how October 2026 ended
+  # up with two tasks per day from the 6th onward. Returns false if another run holds it.
+  def self.acquire_run_lock!
+    ActiveRecord::Base.connection.select_value("SELECT pg_try_advisory_lock(#{RUN_LOCK_KEY})")
+  end
+  private_class_method :acquire_run_lock!
+
+  def self.release_run_lock!
+    ActiveRecord::Base.connection.select_value("SELECT pg_advisory_unlock(#{RUN_LOCK_KEY})")
+  rescue => e
+    puts "  [WARN] could not release run lock: #{e.message}"
+  end
+  private_class_method :release_run_lock!
 
   # Re-establishes the DB connection if the last error left it dead, so the
   # next iteration doesn't just immediately fail again on the same stale

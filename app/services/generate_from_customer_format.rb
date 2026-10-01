@@ -1,4 +1,6 @@
 class GenerateFromCustomerFormat
+  # Shared with CopyFromLastMonth: both write the same month's tasks, so only one may run at a time.
+  RUN_LOCK_KEY = 7_204_311
   # Usage in rails console:
   #   GenerateFromCustomerFormat.month           # current month/year
   #   GenerateFromCustomerFormat.month(9)        # month 9 of the current year
@@ -41,6 +43,12 @@ class GenerateFromCustomerFormat
     skipped_formats = 0
     failures = []
 
+    unless acquire_run_lock!
+      puts "Another GenerateFromCustomerFormat / CopyFromLastMonth run is in progress - not starting a second one."
+      return { success: false, failures: ['another run is in progress'] }
+    end
+
+    begin
     CustomerFormat.active.includes(:customer, :product, :delivery_person).find_each do |cf|
       wanted_dates = calculate_task_dates(cf, target_start, target_end)
 
@@ -95,17 +103,26 @@ class GenerateFromCustomerFormat
           new_sub.save!
         end
 
-        missing_dates.each do |date|
-          new_sub.milk_delivery_tasks.create!(
-            customer_id:        cf.customer_id,
-            product_id:         cf.product_id,
-            quantity:           cf.quantity,
-            unit:               'liter',
-            delivery_date:      date,
-            delivery_person_id: cf.delivery_person_id,
-            status:             'pending'
-          )
-          created_tasks += 1
+        # Re-check right before inserting, with the subscription row locked, and commit this
+        # format's tasks together - a dropped connection rolls back the whole format instead of
+        # leaving it half-filled, and nothing that appeared since missing_dates was computed
+        # gets a second copy.
+        MilkSubscription.transaction do
+          new_sub.lock!
+          taken = MilkDeliveryTask.where(customer_id: cf.customer_id, product_id: cf.product_id,
+                                         delivery_date: missing_dates).pluck(:delivery_date)
+          (missing_dates - taken).each do |date|
+            new_sub.milk_delivery_tasks.create!(
+              customer_id:        cf.customer_id,
+              product_id:         cf.product_id,
+              quantity:           cf.quantity,
+              unit:               'liter',
+              delivery_date:      date,
+              delivery_person_id: cf.delivery_person_id,
+              status:             'pending'
+            )
+            created_tasks += 1
+          end
         end
 
         existing_sub ? (resumed_subscriptions += 1) : (created_subscriptions += 1)
@@ -117,6 +134,10 @@ class GenerateFromCustomerFormat
         puts "  [FAILED] #{failure}"
         recover_connection!
       end
+    end
+
+    ensure
+      release_run_lock!
     end
 
     print_summary(
@@ -134,6 +155,21 @@ class GenerateFromCustomerFormat
       failures: failures
     }
   end
+
+  # Session-level Postgres advisory lock so two runs can't overlap. Overlapping runs each
+  # computed the same "missing" dates and both inserted them - that is how October 2026 ended
+  # up with two tasks per day from the 6th onward. Returns false if another run holds it.
+  def self.acquire_run_lock!
+    ActiveRecord::Base.connection.select_value("SELECT pg_try_advisory_lock(#{RUN_LOCK_KEY})")
+  end
+  private_class_method :acquire_run_lock!
+
+  def self.release_run_lock!
+    ActiveRecord::Base.connection.select_value("SELECT pg_advisory_unlock(#{RUN_LOCK_KEY})")
+  rescue => e
+    puts "  [WARN] could not release run lock: #{e.message}"
+  end
+  private_class_method :release_run_lock!
 
   # Re-establishes the DB connection if the last error left it dead, so the
   # next iteration doesn't just immediately fail again on the same stale
