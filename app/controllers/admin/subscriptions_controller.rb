@@ -10,15 +10,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   LOCAL_CACHE = LocalTtlCache.new
 
   def index
-    # :delivery_person here is MilkSubscription's own belongs_to, not the one nested
-    # under milk_delivery_tasks - preloading the latter was pulling in every delivery
-    # task row (potentially hundreds per subscription) just to call .count on it in
-    # the view, which ignores preloaded data and re-queries per row anyway. See the
-    # batched @delivery_tasks_count_by_subscription lookup below instead.
-    @subscriptions = MilkSubscription.joins(:customer).includes(:customer, :product, :delivery_person)
-
-    # Apply filters
-    @filtered_subscriptions = @subscriptions
+    # Filtering/stats run on the bare join; the associations are eager_loaded only on
+    # the paginated page query below, so the COUNT/GROUP BY queries stay lean.
+    @filtered_subscriptions = MilkSubscription.joins(:customer)
     @filtered_subscriptions = filter_by_status(@filtered_subscriptions)
     @filtered_subscriptions = filter_by_date_range(@filtered_subscriptions)
     @filtered_subscriptions = filter_by_month(@filtered_subscriptions)
@@ -28,10 +22,18 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     # Calculate stats based on filtered data
     @stats = calculate_filtered_subscription_stats(@filtered_subscriptions)
 
-    # Paginate the filtered subscriptions, ordered by the customer's row number
+    # Paginate the filtered subscriptions, ordered by the customer's row number.
+    # eager_load (all belongs_to) folds customer/product/delivery_person into this one
+    # query instead of 3 extra preload round trips. (:delivery_person is MilkSubscription's
+    # own belongs_to, not the one nested under milk_delivery_tasks - see the batched
+    # @delivery_tasks_count_by_subscription lookup below for task counts.)
     @subscriptions = @filtered_subscriptions
+                        .eager_load(:customer, :product, :delivery_person)
                         .order(Arel.sql('customers.row_number ASC NULLS LAST'), created_at: :desc)
                         .page(params[:page]).per(10)
+    # The view paginates with total_pages: from this instead of letting Kaminari run
+    # its own SELECT COUNT - @stats[:total] already is that count.
+    @total_pages = (@stats[:total] / 10.0).ceil
 
     # Batch the status breakdown (total/completed/pending/paused/rate), per-subscription
     # task count, and average task quantity that the view needs per row, all from a
@@ -725,24 +727,18 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     paused = status_counts['paused'].to_i
     expired = status_counts['expired'].to_i
 
-    # Today's deliveries and pending-today, from a single GROUP BY instead of two counts
-    today_status_counts = MilkDeliveryTask
+    # Today's deliveries, pending-today and distinct active delivery people with
+    # pending/assigned tasks, all from one query (was two separate round trips).
+    today = MilkDeliveryTask.connection.quote(Date.current)
+    today_deliveries, pending_today, assigned_delivery_people = MilkDeliveryTask
+      .left_joins(:delivery_person)
       .where(subscription_id: subscription_ids)
-      .for_today
-      .group(:status)
-      .count
-    today_deliveries = today_status_counts.values.sum
-    pending_today = today_status_counts['pending'].to_i
-
-    # Count delivery people assigned to filtered subscriptions
-    assigned_delivery_people = MilkDeliveryTask
-      .joins(:delivery_person)
-      .where(subscription_id: subscription_ids)
-      .where(status: ['pending', 'assigned'])
-      .where(delivery_people: { status: true })
-      .select(:delivery_person_id)
-      .distinct
-      .count
+      .where("milk_delivery_tasks.delivery_date = #{today} OR milk_delivery_tasks.status IN ('pending', 'assigned')")
+      .pick(
+        Arel.sql("COUNT(*) FILTER (WHERE milk_delivery_tasks.delivery_date = #{today})"),
+        Arel.sql("COUNT(*) FILTER (WHERE milk_delivery_tasks.delivery_date = #{today} AND milk_delivery_tasks.status = 'pending')"),
+        Arel.sql("COUNT(DISTINCT milk_delivery_tasks.delivery_person_id) FILTER (WHERE milk_delivery_tasks.status IN ('pending', 'assigned') AND delivery_people.status = TRUE)")
+      ).map(&:to_i)
 
     # Total delivery people remains global
     total_delivery_people = LOCAL_CACHE.fetch('admin_subscriptions_active_delivery_people_count', 5.minutes) { DeliveryPerson.where(status: true).count }

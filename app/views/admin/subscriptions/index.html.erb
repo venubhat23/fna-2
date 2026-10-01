@@ -493,11 +493,11 @@
         <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
           <div>
             <small class="text-muted">
-              Showing <%= @subscriptions.offset_value + 1 %> - <%= [@subscriptions.offset_value + @subscriptions.length, @subscriptions.total_count].min %> of <%= @subscriptions.total_count %> subscriptions
+              Showing <%= @subscriptions.offset_value + 1 %> - <%= [@subscriptions.offset_value + @subscriptions.length, @stats[:total]].min %> of <%= @stats[:total] %> subscriptions
             </small>
           </div>
           <div>
-            <%= paginate @subscriptions %>
+            <%= paginate @subscriptions, total_pages: @total_pages %>
           </div>
         </div>
       <% end %>
