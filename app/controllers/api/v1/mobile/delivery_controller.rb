@@ -188,23 +188,40 @@ module Api
             return render json: { success: false, message: "operation must be 'complete' or 'delete'" }, status: :unprocessable_entity
           end
 
-          task_ids = params[:task_ids]
-          if task_ids.blank? || !task_ids.is_a?(Array)
-            return render json: { success: false, message: "task_ids (array of task ids) is required" }, status: :bad_request
+          # Accepts either `tasks: [{ id:, type: 'subscription'|'order' }]` (mobile app) or `task_ids: [..]`.
+          entries =
+            if params[:tasks].is_a?(Array)
+              params[:tasks].filter_map do |t|
+                t = t.respond_to?(:permit) ? t.permit(:id, :type) : t
+                id = t[:id].to_i
+                next unless id.positive?
+                type = t[:type].to_s
+                [id, %w[subscription order].include?(type) ? type : nil]
+              end
+            elsif params[:task_ids].is_a?(Array)
+              params[:task_ids].map { |id| [id.to_i, nil] }.select { |id, _| id.positive? }
+            end
+          if entries.blank?
+            return render json: { success: false, message: "tasks (array of { id, type }) or task_ids (array of task ids) is required" }, status: :bad_request
           end
 
-          requested = task_ids.map(&:to_i).select(&:positive?).uniq
-          subscription_tasks = MilkDeliveryTask.where(id: requested, delivery_person_id: current_delivery_person_id).index_by(&:id)
-          bookings = Booking.where(id: requested - subscription_tasks.keys, delivery_person_id: current_delivery_person_id).index_by(&:id)
+          entries = entries.uniq
+          subscription_tasks = MilkDeliveryTask.where(id: entries.reject { |_, t| t == 'order' }.map(&:first), delivery_person_id: current_delivery_person_id).index_by(&:id)
+          bookings = Booking.where(id: entries.reject { |_, t| t == 'subscription' }.map(&:first), delivery_person_id: current_delivery_person_id).index_by(&:id)
 
           updated = []
           failed = []
           now = Time.current
 
-          requested.each do |id|
-            record = subscription_tasks[id] || bookings[id]
+          entries.each do |id, requested_type|
+            record =
+              case requested_type
+              when 'subscription' then subscription_tasks[id]
+              when 'order' then bookings[id]
+              else subscription_tasks[id] || bookings[id]
+              end
             unless record
-              failed << { id: id, error: "Task not found" }
+              failed << { id: id, type: requested_type, error: "Task not found" }.compact
               next
             end
 
@@ -221,7 +238,7 @@ module Api
           verb = operation == 'complete' ? 'completed' : 'deleted'
           render json: {
             success: updated.any?,
-            message: "#{updated.size} of #{requested.size} tasks #{verb}",
+            message: "#{updated.size} of #{entries.size} tasks #{verb}",
             data: { operation: operation, updated_count: updated.size, failed_count: failed.size, updated: updated, failed: failed }
           }, status: updated.any? ? :ok : :unprocessable_entity
         rescue => e
