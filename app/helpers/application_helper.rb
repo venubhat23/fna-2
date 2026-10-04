@@ -1,4 +1,14 @@
 module ApplicationHelper
+  INLINE_FILE_CACHE = Concurrent::Map.new
+
+  # Contents of a static file under Rails.root, read from disk once per process
+  # instead of on every render (re-read each time in development so edits show up).
+  def cached_file_read(*path_parts)
+    path = Rails.root.join(*path_parts).to_s
+    return File.read(path) if Rails.env.development?
+    INLINE_FILE_CACHE.compute_if_absent(path) { File.read(path).freeze }
+  end
+
   # Permission checking helpers
   def current_user_can?(module_name, action = 'read')
     return true if current_user&.admin? || current_user&.user_type == 'admin'

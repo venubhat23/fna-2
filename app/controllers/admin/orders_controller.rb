@@ -154,22 +154,22 @@ class Admin::OrdersController < Admin::ApplicationController
   end
 
   def processing
-    @orders = Order.processing.includes(:customer).page(params[:page])
+    @orders = Order.processing.includes(:customer, :order_items).page(params[:page])
     render :index
   end
 
   def shipped
-    @orders = Order.shipped.includes(:customer).page(params[:page])
+    @orders = Order.shipped.includes(:customer, :order_items).page(params[:page])
     render :index
   end
 
   def delivered
-    @orders = Order.delivered.includes(:customer).page(params[:page])
+    @orders = Order.delivered.includes(:customer, :order_items).page(params[:page])
     render :index
   end
 
   def cancelled
-    @orders = Order.cancelled.includes(:customer).page(params[:page])
+    @orders = Order.cancelled.includes(:customer, :order_items).page(params[:page])
     render :index
   end
 

@@ -89,14 +89,15 @@ class Admin::NotesController < ApplicationController
   def calculate_note_stats
     all_notes = Note.all
 
-    {
-      total_notes: all_notes.count,
-      total_amount: all_notes.sum(:amount),
-      pending_count: all_notes.where(status: 'pending').count,
-      completed_count: all_notes.where(status: 'completed').count,
-      cancelled_count: all_notes.where(status: 'cancelled').count,
-      pending_amount: all_notes.where(status: 'pending').sum(:amount),
-      completed_amount: all_notes.where(status: 'completed').sum(:amount)
-    }
+    # One round trip for all seven aggregates (see BatchAggregate).
+    BatchAggregate.call(
+      total_notes: [all_notes, :count],
+      total_amount: [all_notes, :sum, :amount],
+      pending_count: [all_notes.where(status: 'pending'), :count],
+      completed_count: [all_notes.where(status: 'completed'), :count],
+      cancelled_count: [all_notes.where(status: 'cancelled'), :count],
+      pending_amount: [all_notes.where(status: 'pending'), :sum, :amount],
+      completed_amount: [all_notes.where(status: 'completed'), :sum, :amount]
+    )
   end
 end

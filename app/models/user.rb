@@ -14,27 +14,34 @@ class User < ApplicationRecord
   def self.find_for_database_authentication(warden_conditions)
     conditions = warden_conditions.dup
     if login = conditions.delete(:login)
-      # Try email first
-      user = where(conditions.to_hash).where(["lower(email) = :value", { :value => login.downcase }]).first
+      # Email match wins; otherwise the mobile number in any of the accepted formats.
+      # All candidates are fetched in one query (ordered by id, like .first) and the
+      # same preference order as before is applied in Ruby.
+      formatted_mobile = format_mobile_number(login)
+      scope = where(conditions.to_hash)
+      candidates = if formatted_mobile
+        scope.where("lower(email) = :email OR REPLACE(REPLACE(mobile, ' ', ''), '+91', '') = :mobile",
+                    email: login.downcase, mobile: formatted_mobile)
+      else
+        # If format_mobile_number returns nil, try direct mobile search as fallback
+        scope.where("lower(email) = :email OR mobile = :mobile", email: login.downcase, mobile: login)
+      end.order(:id).to_a
 
-      # If not found by email, try mobile number with flexible formatting
-      unless user
-        formatted_mobile = format_mobile_number(login)
-        if formatted_mobile
-          # Try multiple mobile format variations
-          user = where(conditions.to_hash).where(mobile: formatted_mobile).first ||
-                 where(conditions.to_hash).where(mobile: "+91#{formatted_mobile}").first ||
-                 where(conditions.to_hash).where(mobile: "+91 #{formatted_mobile}").first ||
-                 where(conditions.to_hash).where(mobile: "#{formatted_mobile[0..4]} #{formatted_mobile[5..9]}").first ||
-                 where(conditions.to_hash).where(mobile: "+91 #{formatted_mobile[0..4]} #{formatted_mobile[5..9]}").first ||
-                 where(conditions.to_hash).where("REPLACE(REPLACE(mobile, ' ', ''), '+91', '') = ?", formatted_mobile).first
-        else
-          # If format_mobile_number returns nil, try direct mobile search as fallback
-          user = where(conditions.to_hash).where(mobile: login).first
+      user = candidates.find { |u| u.email.to_s.downcase == login.downcase }
+      if user.nil? && formatted_mobile
+        preferred_formats = [
+          formatted_mobile,
+          "+91#{formatted_mobile}",
+          "+91 #{formatted_mobile}",
+          "#{formatted_mobile[0..4]} #{formatted_mobile[5..9]}",
+          "+91 #{formatted_mobile[0..4]} #{formatted_mobile[5..9]}"
+        ]
+        preferred_formats.each do |format|
+          user = candidates.find { |u| u.mobile == format }
+          break if user
         end
       end
-
-      user
+      user || candidates.find { |u| u.email.to_s.downcase != login.downcase }
     else
       if conditions.has_key?(:email)
         where(conditions.to_hash).first
@@ -43,6 +50,14 @@ class User < ApplicationRecord
       end
     end
   end
+  # Devise reloads the signed-in user from the session on every request, and the
+  # sidebar / Ability then read user.role right away. Joining the role in here
+  # makes that one round trip instead of two. Same contract as Devise's default.
+  def self.serialize_from_session(key, salt)
+    record = eager_load(:role).find_by(id: Array(key).first)
+    record if record && record.authenticatable_salt == salt
+  end
+
   include PgSearch::Model
 
   # Associations

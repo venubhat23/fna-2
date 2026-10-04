@@ -3,7 +3,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   before_action :authenticate_customer!, except: [:products, :banners, :featured_products, :check_delivery_pincode]
   before_action :set_category, only: [:category_details, :category_products]
-  before_action :set_product, only: [:product_details, :check_delivery]
+  # product_details loads its own product (with stock + preloads) and renders the same
+  # 404 when it's missing, so the before_action lookup would only be a wasted round trip.
+  before_action :set_product, only: [:check_delivery]
 
   # Delivery tasks a customer may pause. Pausing sets them to 'paused' (hidden from the delivery
   # person, never invoiced); resuming sets them back to 'pending'.
@@ -911,8 +913,11 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
                        .joins("LEFT JOIN stock_batches ON stock_batches.product_id = products.id AND stock_batches.status = 'active' AND stock_batches.quantity_remaining > 0")
                        .select("products.*, COALESCE(SUM(stock_batches.quantity_remaining), 0) AS cached_stock")
                        .group("products.id")
-                       .includes(:category, :product_reviews, :approved_reviews, :product_variants, image_attachment: :blob, additional_images_attachments: :blob)
+                       .includes(:category, :approved_reviews, :product_variants, image_attachment: :blob, additional_images_attachments: :blob)
                        .find(params[:id])
+
+    # Started now so it overlaps with the related-products queries below.
+    recent_reviews = @product.product_reviews.approved.recent.limit(10).includes(:customer).load_async
 
     # Get related products from same category
     related_products = preload_product_listing(
@@ -921,9 +926,6 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
              .where.not(id: @product.id)
              .limit(5)
     )
-
-    # Get recent reviews
-    recent_reviews = @product.product_reviews.approved.recent.limit(10).includes(:customer)
 
     product_data = format_product_data(@product).merge({
       related_products: related_products.map { |p| format_product_data(p) },

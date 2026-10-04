@@ -145,7 +145,7 @@
                 <td>
                   <span class="badge bg-primary">
                     <i class="bi bi-people me-1"></i>
-                    <%= distributor.assigned_sub_agents.count %>
+                    <%= @assigned_sub_agent_counts[distributor.id].to_i %>
                   </span>
                 </td>
                 <td>

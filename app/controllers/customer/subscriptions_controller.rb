@@ -2,8 +2,9 @@ class Customer::SubscriptionsController < Customer::BaseController
   before_action :find_subscription, only: [:show, :edit, :update, :pause, :resume, :cancel, :destroy]
 
   def index
-    @active_subscriptions = current_customer.milk_subscriptions.includes(:product).where(is_active: true)
-    @paused_subscriptions = current_customer.milk_subscriptions.includes(:product).where(is_active: false)
+    # One query, split in memory (the view counts both lists per row).
+    @active_subscriptions, @paused_subscriptions =
+      current_customer.milk_subscriptions.includes(:product).where(is_active: [true, false]).to_a.partition(&:is_active)
   end
 
   def show

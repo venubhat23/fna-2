@@ -26,12 +26,18 @@ module ConfigurablePagination
     @show_pagination = total_count > per_page
 
     # Only apply pagination if needed
-    if @show_pagination
+    paginated = if @show_pagination
       records.page(params[:page]).per(per_page)
     else
       # Return all records without pagination if count is less than or equal to items per page
       records.page(1).per(total_count > 0 ? total_count : 1)
     end
+
+    # Hand Kaminari the count we already have so total_count / total_pages in the
+    # view don't run the same COUNT again. Kaminari clears this on reset, so any
+    # further chaining (e.g. .includes) safely falls back to its own count.
+    paginated.instance_variable_set(:@total_count, total_count) if total_count.is_a?(Integer)
+    paginated
   end
 
   # Helper method to check if pagination should be shown

@@ -25,6 +25,13 @@ class Admin::PendingAmountsController < ApplicationController
       Customer.order(:first_name, :last_name).to_a
     end
     @new_pending_amount = PendingAmount.new
+
+    # Stat cards: same relations the view used to count one by one, in one round trip.
+    @pending_stats = BatchCount.call(
+      pending: @pending_amounts.where(status: :pending),
+      resolved: @pending_amounts.where(status: :resolved),
+      total: @pending_amounts
+    )
   end
 
   def create

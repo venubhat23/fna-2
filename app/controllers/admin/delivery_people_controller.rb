@@ -36,9 +36,14 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
     end
 
     # Statistics for cards
-    @total_delivery_people = DeliveryPerson.count
-    @active_delivery_people = DeliveryPerson.active.count
-    @inactive_delivery_people = DeliveryPerson.inactive.count
+    people_counts = BatchCount.call(
+      total: DeliveryPerson.all,
+      active: DeliveryPerson.active,
+      inactive: DeliveryPerson.inactive
+    )
+    @total_delivery_people = people_counts[:total]
+    @active_delivery_people = people_counts[:active]
+    @inactive_delivery_people = people_counts[:inactive]
     @vehicle_types_count = DeliveryPerson.group(:vehicle_type).count
     @total_filtered_count = @delivery_people.respond_to?(:total_count) ? @delivery_people.total_count : @delivery_people.count
 

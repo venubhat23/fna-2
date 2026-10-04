@@ -742,32 +742,33 @@ module Api
         end
 
         def get_todays_tasks
+          # Both main queries are started with load_async up front so their round trips
+          # to the remote DB overlap; each is then materialized inside its own rescue.
+          bookings_relation = if defined?(Booking) && Booking.column_names.include?('delivery_person_id')
+            Booking.where(delivery_person_id: current_delivery_person_id)
+                   .where(created_at: utc_day_range(Date.current))
+                   .where.not(status: 'cancelled')
+                   .includes(customer: CUSTOMER_IMAGE_PRELOADS, booking_items: :product)
+                   .load_async
+          end
+          # Also get subscription deliveries for today (including completed ones)
+          tasks_relation = if defined?(MilkDeliveryTask) && MilkDeliveryTask.column_names.include?('delivery_person_id')
+            MilkDeliveryTask.where(
+              delivery_person_id: current_delivery_person_id,
+              delivery_date: Date.current
+            ).where.not(status: %w[cancelled paused]).includes(:product, customer: CUSTOMER_IMAGE_PRELOADS).load_async
+          end
+
           # Get all bookings/orders assigned to current delivery person for today
           begin
-            if defined?(Booking) && Booking.column_names.include?('delivery_person_id')
-              bookings = Booking.where(delivery_person_id: current_delivery_person_id)
-                              .where(created_at: utc_day_range(Date.current))
-                              .where.not(status: 'cancelled')
-                              .includes(customer: CUSTOMER_IMAGE_PRELOADS, booking_items: :product)
-                              .to_a
-            else
-              bookings = []
-            end
+            bookings = bookings_relation ? bookings_relation.to_a : []
           rescue => e
             Rails.logger.error "Error fetching bookings: #{e.message}"
             bookings = []
           end
 
-          # Also get subscription deliveries for today (including completed ones)
           begin
-            if defined?(MilkDeliveryTask) && MilkDeliveryTask.column_names.include?('delivery_person_id')
-              subscription_tasks = MilkDeliveryTask.where(
-                delivery_person_id: current_delivery_person_id,
-                delivery_date: Date.current
-              ).where.not(status: %w[cancelled paused]).includes(:product, customer: CUSTOMER_IMAGE_PRELOADS).to_a
-            else
-              subscription_tasks = []
-            end
+            subscription_tasks = tasks_relation ? tasks_relation.to_a : []
           rescue => e
             Rails.logger.error "Error fetching subscription tasks: #{e.message}"
             subscription_tasks = []

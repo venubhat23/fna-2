@@ -50,7 +50,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">With Products</h6>
-            <h4 class="mb-0"><%= @categories.joins(:products).distinct.count %></h4>
+            <h4 class="mb-0"><%= @categories.count { |c| @product_counts[c.id].to_i > 0 } %></h4>
           </div>
           <div class="text-info">
             <i class="bi bi-box fs-2"></i>
@@ -65,7 +65,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Empty Categories</h6>
-            <h4 class="mb-0"><%= @categories.left_joins(:products).where(products: { id: nil }).count %></h4>
+            <h4 class="mb-0"><%= @categories.count { |c| @product_counts[c.id].to_i.zero? } %></h4>
           </div>
           <div class="text-warning">
             <i class="bi bi-inbox fs-2"></i>
@@ -128,7 +128,7 @@
                     <div>
                       <h6 class="mb-0"><%= category.name %></h6>
                       <small class="text-muted">
-                        <%= category.products_count %> products
+                        <%= @product_counts[category.id].to_i %> products
                       </small>
                     </div>
                   </div>
@@ -138,7 +138,7 @@
                 </td>
                 <td class="align-middle">
                   <span class="badge bg-primary-subtle text-primary">
-                    <%= category.products_count %> products
+                    <%= @product_counts[category.id].to_i %> products
                   </span>
                 </td>
                 <td class="align-middle">
@@ -181,9 +181,9 @@
                             class: "dropdown-item text-danger delete-category-btn",
                             data: {
                               turbo_method: :delete,
-                              turbo_confirm: "Are you sure you want to delete '#{category.name}'?#{category.products_count > 0 ? "\n\nThis will also permanently delete #{category.products_count} product(s) in this category." : ""}\n\nThis action cannot be undone.",
+                              turbo_confirm: "Are you sure you want to delete '#{category.name}'?#{@product_counts[category.id].to_i > 0 ? "\n\nThis will also permanently delete #{@product_counts[category.id].to_i} product(s) in this category." : ""}\n\nThis action cannot be undone.",
                               category_name: category.name,
-                              products_count: category.products_count
+                              products_count: @product_counts[category.id].to_i
                             } do %>
                           <i class="bi bi-trash me-2"></i>
                           Delete Category

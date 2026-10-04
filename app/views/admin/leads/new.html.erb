@@ -724,10 +724,10 @@
 
 <!-- Include Location Data and Form Enhancements -->
 <script>
-<%= File.read(Rails.root.join('app/assets/javascripts/location_data.js')).html_safe %>
+<%= cached_file_read('app/assets/javascripts/location_data.js').html_safe %>
 </script>
 <script>
-<%= File.read(Rails.root.join('app/assets/javascripts/form_enhancements.js')).html_safe %>
+<%= cached_file_read('app/assets/javascripts/form_enhancements.js').html_safe %>
 </script>
 
 <!-- Form Validation Script -->

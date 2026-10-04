@@ -242,11 +242,11 @@
           24/7 Support
         </div>
       </div>
-      <% if current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count&.> 0 %>
+      <% if customer_sidebar_counts[:open_requests] > 0 %>
       <div class="text-center">
         <div class="badge bg-danger fs-6 px-3 py-2 text-white">
           <i class="bi bi-exclamation-triangle me-1"></i>
-          <%= current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count %> Active Requests
+          <%= customer_sidebar_counts[:open_requests] %> Active Requests
         </div>
       </div>
       <% end %>
@@ -267,8 +267,8 @@
           <%= link_to customer_client_requests_path, class: "btn btn-outline-primary btn-lg w-100 shadow-sm hover-lift" do %>
             <i class="bi bi-list-check me-2"></i>
             View My Requests
-            <% if current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count&.> 0 %>
-              <span class="badge bg-danger ms-2 text-white"><%= current_customer&.client_requests&.where(status: ['pending', 'in_progress'])&.count %></span>
+            <% if customer_sidebar_counts[:open_requests] > 0 %>
+              <span class="badge bg-danger ms-2 text-white"><%= customer_sidebar_counts[:open_requests] %></span>
             <% end %>
           <% end %>
         </div>

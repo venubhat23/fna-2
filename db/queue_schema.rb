@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_04_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -111,6 +111,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "share_token"
+    t.index "EXTRACT(month FROM invoice_date), EXTRACT(year FROM invoice_date)", name: "idx_booking_invoices_invoice_month_year"
     t.index ["booking_id"], name: "index_booking_invoices_on_booking_id"
     t.index ["customer_id"], name: "index_booking_invoices_on_customer_id"
     t.index ["invoice_number"], name: "index_booking_invoices_on_invoice_number", unique: true
@@ -221,6 +222,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.index ["courier_service"], name: "index_bookings_on_courier_service"
     t.index ["created_at"], name: "index_bookings_on_created_at"
     t.index ["customer_id"], name: "index_bookings_on_customer_id"
+    t.index ["delivery_person_id", "created_at"], name: "index_bookings_on_delivery_person_id_and_created_at"
     t.index ["delivery_person_id"], name: "index_bookings_on_delivery_person_id"
     t.index ["delivery_time"], name: "index_bookings_on_delivery_time"
     t.index ["expected_delivery_date"], name: "index_bookings_on_expected_delivery_date"
@@ -230,6 +232,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.index ["stage_updated_by"], name: "index_bookings_on_stage_updated_by"
     t.index ["status"], name: "index_bookings_on_status"
     t.index ["store_id"], name: "index_bookings_on_store_id"
+    t.index ["subscription_id"], name: "index_bookings_on_subscription_id"
     t.index ["tracking_number"], name: "index_bookings_on_tracking_number"
     t.index ["user_id"], name: "index_bookings_on_user_id"
   end
@@ -243,6 +246,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "image_backup_url"
+    t.string "image_url"
     t.index ["display_order"], name: "index_categories_on_display_order"
     t.index ["name"], name: "index_categories_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["status"], name: "index_categories_on_status"
@@ -377,11 +381,34 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.boolean "status", default: true, null: false
     t.boolean "is_registered_by_mobile"
     t.integer "row_number"
+    t.string "pincode"
+    t.string "password_reset_token"
+    t.datetime "password_reset_sent_at"
     t.index ["created_at"], name: "index_customers_on_created_at"
+    t.index ["email"], name: "index_customers_on_email"
+    t.index ["first_name"], name: "idx_customers_first_name_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["last_name"], name: "idx_customers_last_name_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["latitude", "longitude"], name: "index_customers_on_location"
+    t.index ["mobile"], name: "idx_customers_mobile_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["mobile"], name: "index_customers_on_mobile"
+    t.index ["password_reset_token"], name: "index_customers_on_password_reset_token", unique: true
+    t.index ["pincode"], name: "index_customers_on_pincode"
     t.index ["row_number"], name: "index_customers_on_row_number"
     t.index ["status"], name: "index_customers_on_status"
     t.index ["whatsapp_number"], name: "index_customers_on_whatsapp_number"
+  end
+
+  create_table "delivery_charges", force: :cascade do |t|
+    t.string "pincode", null: false
+    t.string "area"
+    t.decimal "charge_amount", precision: 10, scale: 2, default: "0.0"
+    t.boolean "is_active", default: true
+    t.boolean "free_delivery_allowed", default: false, null: false
+    t.decimal "min_order_for_free_delivery", precision: 10, scale: 2, default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_active"], name: "index_delivery_charges_on_is_active"
+    t.index ["pincode"], name: "index_delivery_charges_on_pincode", unique: true
   end
 
   create_table "delivery_people", force: :cascade do |t|
@@ -524,8 +551,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.decimal "paid_amount", precision: 10, scale: 2, default: "0.0"
     t.integer "month"
     t.integer "year"
+    t.index "EXTRACT(month FROM invoice_date), EXTRACT(year FROM invoice_date)", name: "idx_invoices_invoice_month_year"
     t.index ["created_at"], name: "index_invoices_on_created_at"
     t.index ["customer_id"], name: "index_invoices_on_customer_id"
+    t.index ["invoice_date"], name: "index_invoices_on_invoice_date"
     t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
     t.index ["month", "year"], name: "index_invoices_on_month_and_year"
     t.index ["month"], name: "index_invoices_on_month"
@@ -562,6 +591,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.decimal "annual_income"
     t.string "business_job"
     t.index ["affiliate_id"], name: "index_leads_on_affiliate_id"
+    t.index ["contact_number"], name: "index_leads_on_contact_number"
+    t.index ["current_stage"], name: "index_leads_on_current_stage"
+    t.index ["email"], name: "index_leads_on_email"
+    t.index ["lead_source"], name: "index_leads_on_lead_source"
   end
 
   create_table "milk_delivery_tasks", force: :cascade do |t|
@@ -582,11 +615,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.datetime "invoiced_at"
     t.index ["customer_id", "delivery_date"], name: "index_milk_delivery_tasks_on_customer_id_and_delivery_date"
     t.index ["customer_id"], name: "index_milk_delivery_tasks_on_customer_id"
+    t.index ["delivery_date", "subscription_id"], name: "idx_mdt_delivery_date_subscription"
     t.index ["delivery_date"], name: "index_milk_delivery_tasks_on_delivery_date"
     t.index ["delivery_person_id", "delivery_date"], name: "idx_on_delivery_person_id_delivery_date_8b580f1b82"
+    t.index ["delivery_person_id", "subscription_id"], name: "idx_mdt_delivery_person_subscription"
     t.index ["delivery_person_id"], name: "index_milk_delivery_tasks_on_delivery_person_id"
     t.index ["product_id"], name: "index_milk_delivery_tasks_on_product_id"
     t.index ["status"], name: "index_milk_delivery_tasks_on_status"
+    t.index ["subscription_id", "status"], name: "idx_mdt_subscription_status_incl_qty", include: ["quantity"]
     t.index ["subscription_id"], name: "index_milk_delivery_tasks_on_subscription_id"
   end
 
@@ -607,9 +643,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "delivery_person_id"
+    t.bigint "product_variant_id"
+    t.index ["customer_id", "product_id", "start_date"], name: "idx_milk_subs_customer_product_start"
     t.index ["customer_id"], name: "index_milk_subscriptions_on_customer_id"
     t.index ["delivery_person_id"], name: "index_milk_subscriptions_on_delivery_person_id"
     t.index ["product_id"], name: "index_milk_subscriptions_on_product_id"
+    t.index ["product_variant_id"], name: "index_milk_subscriptions_on_product_variant_id"
     t.index ["start_date", "end_date"], name: "idx_milk_subscriptions_dates"
     t.index ["status"], name: "idx_milk_subscriptions_status"
   end
@@ -713,6 +752,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.datetime "booking_date"
     t.integer "booking_id"
     t.index ["booking_id"], name: "index_orders_on_booking_id"
+    t.index ["created_at"], name: "index_orders_on_created_at"
     t.index ["customer_id"], name: "index_orders_on_customer_id"
     t.index ["status"], name: "index_orders_on_status"
     t.index ["user_id"], name: "index_orders_on_user_id"
@@ -1150,6 +1190,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["aadhar_no"], name: "index_sub_agents_on_aadhar_no", unique: true
+    t.index ["distributor_id"], name: "index_sub_agents_on_distributor_id"
     t.index ["email"], name: "index_sub_agents_on_email", unique: true
     t.index ["mobile"], name: "index_sub_agents_on_mobile", unique: true
     t.index ["pan_no"], name: "index_sub_agents_on_pan_no", unique: true
@@ -1288,6 +1329,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.index ["is_active"], name: "index_users_on_is_active"
     t.index ["mobile"], name: "index_users_on_mobile", unique: true
     t.index ["pan_no"], name: "index_users_on_pan_no", unique: true
+    t.index ["reporting_manager_id"], name: "index_users_on_reporting_manager_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
     t.index ["role_id"], name: "index_users_on_role_id"
@@ -1376,6 +1418,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
     t.json "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["customer_wallet_id", "created_at"], name: "idx_wallet_txns_wallet_created_at"
     t.index ["customer_wallet_id"], name: "index_wallet_transactions_on_customer_wallet_id"
     t.index ["reference_number"], name: "index_wallet_transactions_on_reference_number", unique: true
     t.index ["transaction_type"], name: "index_wallet_transactions_on_transaction_type"
@@ -1420,6 +1463,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_16_100000) do
   add_foreign_key "milk_delivery_tasks", "products"
   add_foreign_key "milk_subscriptions", "customers"
   add_foreign_key "milk_subscriptions", "delivery_people", name: "fk_milk_subscriptions_delivery_person"
+  add_foreign_key "milk_subscriptions", "product_variants"
   add_foreign_key "milk_subscriptions", "products"
   add_foreign_key "notes", "users", column: "created_by_user_id"
   add_foreign_key "notifications", "customers"

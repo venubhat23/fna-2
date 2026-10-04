@@ -3,7 +3,7 @@ class Admin::Settings::UserRolesController < Admin::Settings::BaseController
   before_action :set_user, only: [:show, :edit, :update, :destroy, :toggle_status]
 
   def index
-    @users = User.where(user_type: ['admin', 'agent']).order(:created_at)
+    @users = User.includes(:role).where(user_type: ['admin', 'agent']).order(:created_at)
     @users = @users.where("first_name ILIKE ? OR last_name ILIKE ? OR email ILIKE ?", "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%") if params[:search].present?
     @users = paginate_records(@users)
   end

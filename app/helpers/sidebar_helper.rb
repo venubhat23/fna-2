@@ -13,4 +13,24 @@ module SidebarHelper
   rescue StandardError
     0
   end
+
+  # Customer sidebar badge counts, fetched in a single
+  # round trip and memoized for the request (the support page reuses
+  # :open_requests). Values are always fresh — only the query count changes.
+  def customer_sidebar_counts
+    @customer_sidebar_counts ||= begin
+      customer = current_customer
+      if customer
+        BatchCount.call(
+          active_orders: customer.bookings.where(status: %w[confirmed processing packed shipped out_for_delivery]),
+          unpaid_invoices: customer.bookings.where.not(invoice_number: [nil, '']).where(payment_status: [:unpaid, nil]),
+          active_subscriptions: customer.milk_subscriptions.where(is_active: true),
+          pending_referrals: customer.referrals.pending,
+          open_requests: customer.client_requests.where(status: %w[pending in_progress])
+        )
+      else
+        Hash.new(0)
+      end
+    end
+  end
 end

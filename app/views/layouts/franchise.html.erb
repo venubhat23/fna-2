@@ -290,7 +290,7 @@
 
     <!-- Global Form Enhancement Script -->
     <script>
-<%= File.read(Rails.root.join('app/assets/javascripts/form_enhancements.js')).html_safe rescue '' %>
+<%= cached_file_read('app/assets/javascripts/form_enhancements.js').html_safe rescue '' %>
     </script>
   </body>
 </html>

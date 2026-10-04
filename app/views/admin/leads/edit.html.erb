@@ -557,7 +557,7 @@
 
 <!-- Include Location Data -->
 <script>
-<%= File.read(Rails.root.join('app/assets/javascripts/location_data.js')).html_safe %>
+<%= cached_file_read('app/assets/javascripts/location_data.js').html_safe %>
 </script>
 
 <!-- Form Validation Script -->

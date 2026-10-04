@@ -14,12 +14,12 @@ class Admin::CouponsController < Admin::ApplicationController
                end
     @coupons = paginate_records(@coupons.order(created_at: :desc))
 
-    @stats = {
-      total: Coupon.count,
-      active: Coupon.active.count,
-      expired: Coupon.expired.count,
-      upcoming: Coupon.upcoming.count
-    }
+    @stats = BatchCount.call(
+      total: Coupon.all,
+      active: Coupon.active,
+      expired: Coupon.expired,
+      upcoming: Coupon.upcoming
+    )
   end
 
   def show

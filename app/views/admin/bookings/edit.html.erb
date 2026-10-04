@@ -1,3 +1,5 @@
+<%# Product list loaded once for every item row's dropdown and the new-item template. %>
+<% booking_product_options = Product.select(:id, :name, :price).to_a %>
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
@@ -102,7 +104,7 @@
                       <div class="col-md-5">
                         <label class="form-label small">Product</label>
                         <%= item_form.select :product_id,
-                            options_for_select(Product.all.map { |p| ["#{p.name} - ₹#{p.price}", p.id] }, item.product_id),
+                            options_for_select(booking_product_options.map { |p| ["#{p.name} - ₹#{p.price}", p.id] }, item.product_id),
                             { prompt: 'Select Product' },
                             { class: 'form-select', onchange: 'updateItemPrice(this)', data: { index: index } } %>
                       </div>
@@ -151,7 +153,7 @@
                   <label class="form-label small">Product</label>
                   <select class="form-select" name="booking[booking_items_attributes][INDEX][product_id]" onchange="updateItemPrice(this)">
                     <option value="">Select Product</option>
-                    <% Product.all.each do |product| %>
+                    <% booking_product_options.each do |product| %>
                       <option value="<%= product.id %>" data-price="<%= product.price %>">
                         <%= product.name %> - ₹<%= number_with_delimiter(product.price) %>
                       </option>
@@ -410,7 +412,7 @@
 
 <!-- JavaScript -->
 <script>
-let itemIndex = <%= @booking.booking_items.count %>;
+let itemIndex = <%= @booking.booking_items.size %>;
 
 // Add new booking item
 function addBookingItem() {

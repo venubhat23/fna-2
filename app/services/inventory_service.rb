@@ -171,21 +171,28 @@ class InventoryService
   end
 
   # Get vendor stock summary
-  def vendor_stock_summary(vendor_id)
-    vendor = Vendor.find(vendor_id)
+  # Accepts a Vendor (saves re-finding it) or a vendor id. Two queries, run in
+  # parallel: the active batches and the per-product totals.
+  def vendor_stock_summary(vendor_or_id)
+    vendor = vendor_or_id.is_a?(Vendor) ? vendor_or_id : Vendor.find(vendor_or_id)
     batches = vendor.stock_batches.active
+    grouped = batches.joins(:product)
+                     .group('products.id', 'products.name')
+                     .async_sum(:quantity_remaining)
+    batch_list = batches.to_a
+    grouped = grouped.value
+    quantity_type = StockBatch.type_for_attribute('quantity_remaining')
 
     {
-      vendor_id: vendor_id,
+      vendor_id: vendor.id,
       vendor_name: vendor.name,
-      total_products: batches.joins(:product).distinct.count('products.id'),
-      total_quantity: batches.sum(:quantity_remaining),
-      total_value: batches.sum { |b| b.quantity_remaining * b.purchase_price },
-      batches_count: batches.count,
-      products_summary: batches.joins(:product)
-                              .group('products.id', 'products.name')
-                              .sum(:quantity_remaining)
-                              .map do |product_data, quantity|
+      # products.id per group == the distinct product ids
+      total_products: grouped.size,
+      # Same value/type as batches.sum(:quantity_remaining), including 0.0 for no rows
+      total_quantity: quantity_type.deserialize(batch_list.sum(0) { |b| b.quantity_remaining || 0 }),
+      total_value: batch_list.sum { |b| b.quantity_remaining * b.purchase_price },
+      batches_count: batch_list.size,
+      products_summary: grouped.map do |product_data, quantity|
         product_id, product_name = product_data
         {
           product_id: product_id,

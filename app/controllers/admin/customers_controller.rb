@@ -10,8 +10,16 @@ class Admin::CustomersController < Admin::ApplicationController
 
   # GET /admin/customers
   def index
-    # Check if policies_count column exists for optimized queries
-    has_counter_cache = Customer.column_names.include?('policies_count')
+    # Every customer, once, with just the columns the page shows. Feeds the
+    # customer filter dropdown and both subscribed / not-subscribed lists (which
+    # used to be three separate full-table loads). Started async so it overlaps
+    # with the count queries below.
+    @customer_filter_options = Customer
+      .select(:id, :first_name, :middle_name, :last_name, :mobile, :email)
+      .select("EXISTS (SELECT 1 FROM milk_subscriptions ms WHERE ms.customer_id = customers.id AND ms.status = 'active' AND ms.is_active = TRUE) AS subscribed")
+      .order(:first_name, :last_name)
+      .load_async
+    @filter_delivery_people = DeliveryPerson.active.order(:first_name, :last_name).load_async
 
     # Check if search is active first
     search_active = params[:search].present? && params[:search].strip.length >= 4
@@ -40,11 +48,10 @@ class Admin::CustomersController < Admin::ApplicationController
     # Filter by status - removed (status column doesn't exist in customers table)
     # All customers are considered active since there's no status field
 
-    # Get total count before pagination for display purposes
-    @total_filtered_count = @customers.count
-
     # Order and paginate using configurable pagination
     @customers = paginate_records(@customers.order(created_at: :desc))
+    # Total count before pagination for display purposes (paginate_records already counted it)
+    @total_filtered_count = @total_record_count
 
     # Calculate statistics
     # Create a separate scope for statistics to avoid pg_search GROUP BY issues
@@ -87,7 +94,7 @@ class Admin::CustomersController < Admin::ApplicationController
       customer_ids = Set.new
 
       # Check milk_subscriptions
-      if ActiveRecord::Base.connection.table_exists?('milk_subscriptions')
+      if ActiveRecord::Base.connection.schema_cache.data_source_exists?('milk_subscriptions')
         subscription_customer_ids = ActiveRecord::Base.connection.execute(
           "SELECT DISTINCT customer_id FROM milk_subscriptions WHERE delivery_person_id = #{delivery_person_id}"
         ).map { |row| row['customer_id'] }.compact
@@ -95,7 +102,7 @@ class Admin::CustomersController < Admin::ApplicationController
       end
 
       # Check subscription_templates
-      if ActiveRecord::Base.connection.table_exists?('subscription_templates')
+      if ActiveRecord::Base.connection.schema_cache.data_source_exists?('subscription_templates')
         template_customer_ids = ActiveRecord::Base.connection.execute(
           "SELECT DISTINCT customer_id FROM subscription_templates WHERE delivery_person_id = #{delivery_person_id}"
         ).map { |row| row['customer_id'] }.compact
@@ -103,7 +110,7 @@ class Admin::CustomersController < Admin::ApplicationController
       end
 
       # Check milk_delivery_tasks
-      if ActiveRecord::Base.connection.table_exists?('milk_delivery_tasks')
+      if ActiveRecord::Base.connection.schema_cache.data_source_exists?('milk_delivery_tasks')
         task_customer_ids = ActiveRecord::Base.connection.execute(
           "SELECT DISTINCT customer_id FROM milk_delivery_tasks WHERE delivery_person_id = #{delivery_person_id}"
         ).map { |row| row['customer_id'] }.compact
@@ -111,7 +118,7 @@ class Admin::CustomersController < Admin::ApplicationController
       end
 
       # Check bookings
-      if ActiveRecord::Base.connection.table_exists?('bookings')
+      if ActiveRecord::Base.connection.schema_cache.data_source_exists?('bookings')
         booking_customer_ids = ActiveRecord::Base.connection.execute(
           "SELECT DISTINCT customer_id FROM bookings WHERE delivery_person_id = #{delivery_person_id}"
         ).map { |row| row['customer_id'] }.compact
@@ -128,21 +135,21 @@ class Admin::CustomersController < Admin::ApplicationController
       end
     end
 
-    # Calculate subscription stats
-    subscribed_customer_ids = []
-    if ActiveRecord::Base.connection.table_exists?('milk_subscriptions')
-      subscribed_customer_ids = MilkSubscription.where(status: 'active', is_active: true).distinct.pluck(:customer_id).compact
-    end
+    # Customers with an active subscription, as a subquery (no id list round trip).
+    # NULL customer_ids are excluded so the NOT IN below behaves like the old .compact.
+    subscribed_customer_ids = MilkSubscription.where(status: 'active', is_active: true)
+                                              .where.not(customer_id: nil)
+                                              .select(:customer_id)
 
-    # Calculate filtered stats
-    @stats = {
-      total_customers: stats_scope.count,
-      active_customers: stats_scope.where(status: true).count,
-      new_this_month: stats_scope.where(created_at: Time.current.beginning_of_month..Time.current.end_of_month).count,
-      customers_with_orders: stats_scope.joins(:orders).distinct.count,
-      subscribed_customers: stats_scope.where(id: subscribed_customer_ids).count,
-      not_subscribed_customers: stats_scope.where.not(id: subscribed_customer_ids).count
-    }
+    # Calculate filtered stats (all six counts in one round trip)
+    @stats = BatchCount.call(
+      total_customers: stats_scope,
+      active_customers: stats_scope.where(status: true),
+      new_this_month: stats_scope.where(created_at: Time.current.beginning_of_month..Time.current.end_of_month),
+      customers_with_orders: stats_scope.joins(:orders).distinct,
+      subscribed_customers: stats_scope.where(id: subscribed_customer_ids),
+      not_subscribed_customers: stats_scope.where.not(id: subscribed_customer_ids)
+    )
 
     @total_customers = @stats[:total_customers]
     @active_customers = @stats[:active_customers]
@@ -151,12 +158,8 @@ class Admin::CustomersController < Admin::ApplicationController
     @subscribed_count = @stats[:subscribed_customers]
     @not_subscribed_count = @stats[:not_subscribed_customers]
 
-    @subscribed_customers_list = Customer.where(id: subscribed_customer_ids)
-                                         .select(:id, :first_name, :last_name, :middle_name, :mobile)
-                                         .order(:first_name, :last_name)
-    @not_subscribed_customers_list = Customer.where.not(id: subscribed_customer_ids)
-                                             .select(:id, :first_name, :last_name, :middle_name, :mobile)
-                                             .order(:first_name, :last_name)
+    @subscribed_customers_list, @not_subscribed_customers_list =
+      @customer_filter_options.to_a.partition { |customer| customer.read_attribute(:subscribed) }
 
     # Handle AJAX requests
     respond_to do |format|
@@ -172,8 +175,21 @@ class Admin::CustomersController < Admin::ApplicationController
     @policies = []
     @family_members = []
     @uploaded_documents = []
-    @customer_bookings_count = @customer.bookings.count
-    @customer_orders_count = @customer.orders.count
+
+    # Started async so these overlap with the counts below.
+    @recent_bookings = @customer.bookings.order(created_at: :desc).limit(5).load_async
+    login_user_candidates = login_user_candidates_for(@customer)&.load_async
+
+    counts = BatchCount.call(
+      bookings: @customer.bookings,
+      orders: @customer.orders,
+      booking_schedules: @customer.booking_schedules
+    )
+    @customer_bookings_count = counts[:bookings]
+    @customer_orders_count = counts[:orders]
+    @customer_booking_schedules_count = counts[:booking_schedules]
+
+    @login_user = pick_login_user(@customer, login_user_candidates&.to_a || [])
   end
 
   # GET /admin/customers/:id/policy_chart
@@ -508,7 +524,7 @@ class Admin::CustomersController < Admin::ApplicationController
         deleted_items = []
 
         # 0a. Delete invoice items (child of invoices and milk_delivery_tasks)
-        if ActiveRecord::Base.connection.table_exists?('invoice_items')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('invoice_items')
           invoice_items_count = ActiveRecord::Base.connection.execute(<<~SQL).first['count'].to_i
             SELECT COUNT(*) FROM invoice_items
             WHERE invoice_id IN (SELECT id FROM invoices WHERE customer_id = #{@customer.id})
@@ -525,7 +541,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 0b. Delete sale items (child of bookings)
-        if ActiveRecord::Base.connection.table_exists?('sale_items')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('sale_items')
           sale_items_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM sale_items WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = #{@customer.id})").first['count'].to_i
           if sale_items_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM sale_items WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = #{@customer.id})")
@@ -534,7 +550,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 0c. Delete wallet transactions (child of customer_wallets)
-        if ActiveRecord::Base.connection.table_exists?('wallet_transactions')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('wallet_transactions')
           wallet_txn_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM wallet_transactions WHERE customer_wallet_id IN (SELECT id FROM customer_wallets WHERE customer_id = #{@customer.id})").first['count'].to_i
           if wallet_txn_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM wallet_transactions WHERE customer_wallet_id IN (SELECT id FROM customer_wallets WHERE customer_id = #{@customer.id})")
@@ -543,7 +559,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 1. Delete milk delivery tasks (child of milk_subscriptions; invoice_items no longer reference them)
-        if ActiveRecord::Base.connection.table_exists?('milk_delivery_tasks')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('milk_delivery_tasks')
           tasks_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM milk_delivery_tasks WHERE customer_id = #{@customer.id}").first['count'].to_i
           if tasks_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM milk_delivery_tasks WHERE customer_id = #{@customer.id}")
@@ -552,7 +568,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 3. Delete booking invoices
-        if ActiveRecord::Base.connection.table_exists?('booking_invoices')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('booking_invoices')
           booking_invoices_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM booking_invoices WHERE customer_id = #{@customer.id}").first['count'].to_i
           if booking_invoices_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM booking_invoices WHERE customer_id = #{@customer.id}")
@@ -561,7 +577,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 4. Delete bookings (sale_items already cleared above)
-        if ActiveRecord::Base.connection.table_exists?('bookings')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('bookings')
           bookings_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM bookings WHERE customer_id = #{@customer.id}").first['count'].to_i
           if bookings_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM bookings WHERE customer_id = #{@customer.id}")
@@ -570,7 +586,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 2. Delete booking schedules (must run after bookings, since bookings reference booking_schedule_id)
-        if ActiveRecord::Base.connection.table_exists?('booking_schedules')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('booking_schedules')
           schedules_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM booking_schedules WHERE customer_id = #{@customer.id}").first['count'].to_i
           if schedules_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM booking_schedules WHERE customer_id = #{@customer.id}")
@@ -579,7 +595,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 5. Delete orders
-        if ActiveRecord::Base.connection.table_exists?('orders')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('orders')
           orders_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM orders WHERE customer_id = #{@customer.id}").first['count'].to_i
           if orders_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM orders WHERE customer_id = #{@customer.id}")
@@ -588,7 +604,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 6. Delete subscription templates
-        if ActiveRecord::Base.connection.table_exists?('subscription_templates')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('subscription_templates')
           templates_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM subscription_templates WHERE customer_id = #{@customer.id}").first['count'].to_i
           if templates_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM subscription_templates WHERE customer_id = #{@customer.id}")
@@ -597,7 +613,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 7. Delete customer formats
-        if ActiveRecord::Base.connection.table_exists?('customer_formats')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('customer_formats')
           formats_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM customer_formats WHERE customer_id = #{@customer.id}").first['count'].to_i
           if formats_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM customer_formats WHERE customer_id = #{@customer.id}")
@@ -606,7 +622,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 8. Delete milk subscriptions
-        if ActiveRecord::Base.connection.table_exists?('milk_subscriptions')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('milk_subscriptions')
           subscriptions_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM milk_subscriptions WHERE customer_id = #{@customer.id}").first['count'].to_i
           if subscriptions_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM milk_subscriptions WHERE customer_id = #{@customer.id}")
@@ -615,7 +631,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 9. Delete product reviews
-        if ActiveRecord::Base.connection.table_exists?('product_reviews')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('product_reviews')
           reviews_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM product_reviews WHERE customer_id = #{@customer.id}").first['count'].to_i
           if reviews_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM product_reviews WHERE customer_id = #{@customer.id}")
@@ -624,7 +640,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 10. Delete invoices
-        if ActiveRecord::Base.connection.table_exists?('invoices')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('invoices')
           invoices_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM invoices WHERE customer_id = #{@customer.id}").first['count'].to_i
           if invoices_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM invoices WHERE customer_id = #{@customer.id}")
@@ -633,7 +649,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 11. Delete customer addresses
-        if ActiveRecord::Base.connection.table_exists?('customer_addresses')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('customer_addresses')
           addresses_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM customer_addresses WHERE customer_id = #{@customer.id}").first['count'].to_i
           if addresses_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM customer_addresses WHERE customer_id = #{@customer.id}")
@@ -642,7 +658,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 12. Delete wishlists
-        if ActiveRecord::Base.connection.table_exists?('wishlists')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('wishlists')
           wishlists_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM wishlists WHERE customer_id = #{@customer.id}").first['count'].to_i
           if wishlists_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM wishlists WHERE customer_id = #{@customer.id}")
@@ -651,7 +667,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 15. Delete carts if exists
-        if ActiveRecord::Base.connection.table_exists?('carts')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('carts')
           carts_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM carts WHERE customer_id = #{@customer.id}").first['count'].to_i
           if carts_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM carts WHERE customer_id = #{@customer.id}")
@@ -660,7 +676,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 13. Delete client requests
-        if ActiveRecord::Base.connection.table_exists?('client_requests')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('client_requests')
           client_requests_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM client_requests WHERE customer_id = #{@customer.id}").first['count'].to_i
           if client_requests_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM client_requests WHERE customer_id = #{@customer.id}")
@@ -669,7 +685,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 14. Delete customer wallet
-        if ActiveRecord::Base.connection.table_exists?('customer_wallets')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('customer_wallets')
           wallets_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM customer_wallets WHERE customer_id = #{@customer.id}").first['count'].to_i
           if wallets_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM customer_wallets WHERE customer_id = #{@customer.id}")
@@ -678,7 +694,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 14b. Delete device tokens
-        if ActiveRecord::Base.connection.table_exists?('device_tokens')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('device_tokens')
           device_tokens_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM device_tokens WHERE customer_id = #{@customer.id}").first['count'].to_i
           if device_tokens_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM device_tokens WHERE customer_id = #{@customer.id}")
@@ -687,7 +703,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 14c. Delete notifications
-        if ActiveRecord::Base.connection.table_exists?('notifications')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('notifications')
           notifications_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM notifications WHERE customer_id = #{@customer.id}").first['count'].to_i
           if notifications_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM notifications WHERE customer_id = #{@customer.id}")
@@ -696,7 +712,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 14d. Delete pending amounts
-        if ActiveRecord::Base.connection.table_exists?('pending_amounts')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('pending_amounts')
           pending_amounts_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM pending_amounts WHERE customer_id = #{@customer.id}").first['count'].to_i
           if pending_amounts_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM pending_amounts WHERE customer_id = #{@customer.id}")
@@ -705,7 +721,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 14e. Delete product ratings
-        if ActiveRecord::Base.connection.table_exists?('product_ratings')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('product_ratings')
           product_ratings_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM product_ratings WHERE customer_id = #{@customer.id}").first['count'].to_i
           if product_ratings_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM product_ratings WHERE customer_id = #{@customer.id}")
@@ -714,7 +730,7 @@ class Admin::CustomersController < Admin::ApplicationController
         end
 
         # 14f. Delete referrals (both as referred customer and as referring customer)
-        if ActiveRecord::Base.connection.table_exists?('referrals')
+        if ActiveRecord::Base.connection.schema_cache.data_source_exists?('referrals')
           referrals_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM referrals WHERE customer_id = #{@customer.id} OR referring_customer_id = #{@customer.id}").first['count'].to_i
           if referrals_count > 0
             ActiveRecord::Base.connection.execute("DELETE FROM referrals WHERE customer_id = #{@customer.id} OR referring_customer_id = #{@customer.id}")
@@ -943,6 +959,25 @@ class Admin::CustomersController < Admin::ApplicationController
 
   def set_customer
     @customer = Customer.find(params[:id])
+  end
+
+  # The customer's login User can be stored under their email, a
+  # "<mobile>@noemail.local" placeholder email, or their mobile. All three are
+  # fetched in one query; pick_login_user applies the lookup preference order.
+  def login_user_candidates_for(customer)
+    scopes = []
+    scopes << User.where(email: customer.email) if customer.email.present?
+    if customer.mobile.present?
+      scopes << User.where(email: "#{customer.mobile}@noemail.local", user_type: 'customer')
+      scopes << User.where(mobile: customer.mobile, user_type: 'customer')
+    end
+    scopes.reduce { |combined, scope| combined.or(scope) }
+  end
+
+  def pick_login_user(customer, candidates)
+    (customer.email.present? && candidates.find { |u| u.email == customer.email }) ||
+      (customer.mobile.present? && (candidates.find { |u| u.email == "#{customer.mobile}@noemail.local" && u.user_type == 'customer' } ||
+                                    candidates.find { |u| u.mobile == customer.mobile && u.user_type == 'customer' })) || nil
   end
 
   def customer_params

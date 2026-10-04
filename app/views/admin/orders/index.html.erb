@@ -162,7 +162,7 @@
                 <td class="align-middle">
                   <% if order.respond_to?(:order_items) && order.order_items.present? %>
                     <span class="badge bg-info-subtle text-info">
-                      <%= pluralize(order.order_items.sum(:quantity), 'item') %>
+                      <%= pluralize(order.order_items.sum(&:quantity), 'item') %>
                     </span>
                   <% else %>
                     <span class="badge bg-secondary-subtle text-secondary">N/A</span>

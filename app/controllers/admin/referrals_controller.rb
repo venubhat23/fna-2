@@ -35,15 +35,16 @@ class Admin::ReferralsController < ApplicationController
     @referrals = @referrals.limit(25).offset((params[:page]&.to_i || 0) * 25)
 
     # Calculate statistics
-    @stats = {
-      total: Referral.count,
-      customer_referrals: Referral.customer_referrals.count,
-      affiliate_referrals: Referral.affiliate_referrals.count,
-      pending: Referral.pending.count,
-      registered: Referral.registered.count,
-      converted: Referral.converted.count,
-      conversion_rate: calculate_conversion_rate
-    }
+    @stats = BatchCount.call(
+      total: Referral.all,
+      customer_referrals: Referral.customer_referrals,
+      affiliate_referrals: Referral.affiliate_referrals,
+      pending: Referral.pending,
+      registered: Referral.registered,
+      converted: Referral.converted
+    )
+    # Same formula as calculate_conversion_rate, reusing the counts above.
+    @stats[:conversion_rate] = @stats[:total].zero? ? 0 : ((@stats[:converted].to_f / @stats[:total]) * 100).round(2)
   end
 
   # GET /admin/referrals/1

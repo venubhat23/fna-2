@@ -3,8 +3,7 @@ class Admin::CategoriesController < Admin::ApplicationController
   before_action :authenticate_user!
 
   def index
-    @categories = Category.includes(:products)
-                         .order(:display_order, :name)
+    @categories = Category.order(:display_order, :name)
 
     if params[:search].present?
       @categories = @categories.where('name ILIKE ?', "%#{params[:search]}%")
@@ -15,6 +14,10 @@ class Admin::CategoriesController < Admin::ApplicationController
     end
 
     @categories = @categories.page(params[:page]).per(20)
+
+    # Product count per category on this page in one grouped query, instead of
+    # preloading every product row just to count them.
+    @product_counts = Product.where(category_id: @categories.map(&:id)).group(:category_id).count
   end
 
   def show

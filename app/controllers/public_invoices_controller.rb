@@ -123,6 +123,7 @@ class PublicInvoicesController < ApplicationController
 
     @total_invoice_count = @invoices.size
     @invoices = Kaminari.paginate_array(@invoices).page(params[:page]).per(25)
+    Invoice.preload_related_bookings(@invoices.to_a)
   end
 
   def share_app_link

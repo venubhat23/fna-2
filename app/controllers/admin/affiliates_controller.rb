@@ -9,11 +9,11 @@ class Admin::AffiliatesController < Admin::ApplicationController
     @affiliates = @affiliates.where(status: params[:status]) if params[:status].present?
     @affiliates = paginate_records(@affiliates.order(:first_name))
 
-    @stats = {
-      total: Affiliate.count,
-      active: Affiliate.active.count,
-      inactive: Affiliate.inactive.count
-    }
+    @stats = BatchCount.call(
+      total: Affiliate.all,
+      active: Affiliate.active,
+      inactive: Affiliate.inactive
+    )
   end
 
   def show

@@ -19,16 +19,20 @@ class Admin::DistributorsController < Admin::ApplicationController
       @distributors = @distributors.inactive
     end
 
-    # Get total count before pagination for display purposes
-    @total_filtered_count = @distributors.count
-
     # Order and paginate using configurable pagination
     @distributors = paginate_records(@distributors.order(created_at: :desc))
+    @total_filtered_count = @total_record_count
 
-    # Statistics
-    @total_distributors = Distributor.count
-    @active_distributors = Distributor.active.count
-    @inactive_distributors = Distributor.inactive.count
+    # Assigned sub-agent count per distributor on this page, in one grouped query.
+    @assigned_sub_agent_counts = DistributorAssignment.joins(:sub_agent)
+                                                      .where(distributor_id: @distributors.map(&:id))
+                                                      .group(:distributor_id).count
+
+    # Statistics (one grouped query instead of three counts)
+    status_counts = Distributor.group(:status).count
+    @active_distributors = status_counts['active'].to_i
+    @inactive_distributors = status_counts['inactive'].to_i
+    @total_distributors = status_counts.values.sum
   end
 
   # GET /admin/distributors/1

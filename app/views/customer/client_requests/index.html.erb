@@ -35,7 +35,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Pending</h6>
-            <h4 class="mb-0"><%= @client_requests.where(status: 'pending').count %></h4>
+            <h4 class="mb-0"><%= @client_requests.count { |r| r.status == 'pending' } %></h4>
           </div>
           <div class="text-warning">
             <i class="bi bi-clock fs-2"></i>
@@ -50,7 +50,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">In Progress</h6>
-            <h4 class="mb-0"><%= @client_requests.where(status: 'in_progress').count %></h4>
+            <h4 class="mb-0"><%= @client_requests.count { |r| r.status == 'in_progress' } %></h4>
           </div>
           <div class="text-info">
             <i class="bi bi-gear fs-2"></i>
@@ -65,7 +65,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Resolved</h6>
-            <h4 class="mb-0"><%= @client_requests.where(status: ['resolved', 'closed']).count %></h4>
+            <h4 class="mb-0"><%= @client_requests.count { |r| %w[resolved closed].include?(r.status) } %></h4>
           </div>
           <div class="text-success">
             <i class="bi bi-check-circle fs-2"></i>

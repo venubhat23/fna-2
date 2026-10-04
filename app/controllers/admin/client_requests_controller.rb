@@ -17,13 +17,13 @@ class Admin::ClientRequestsController < Admin::ApplicationController
     @client_requests = @client_requests.page(params[:page]).per(20)
 
     # Statistics for dashboard cards
-    @stats = {
-      total: ClientRequest.count,
-      pending: ClientRequest.pending.count,
-      in_progress: ClientRequest.in_progress.count,
-      resolved: ClientRequest.resolved.count,
-      closed: ClientRequest.closed.count
-    }
+    @stats = BatchCount.call(
+      total: ClientRequest.all,
+      pending: ClientRequest.pending,
+      in_progress: ClientRequest.in_progress,
+      resolved: ClientRequest.resolved,
+      closed: ClientRequest.closed
+    )
   end
 
   def show

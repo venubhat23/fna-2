@@ -9,11 +9,14 @@ class Admin::FranchisesController < Admin::ApplicationController
     @franchises = @franchises.where(status: params[:status]) if params[:status].present?
     @franchises = paginate_records(@franchises.order(:name))
 
-    @stats = {
-      total: Franchise.count,
-      active: Franchise.where(status: true).count,
-      inactive: Franchise.where(status: false).count
-    }
+    # The view's four stat cards, counted over the same (paginated) relation they
+    # always used, in one round trip.
+    @stats = BatchCount.call(
+      total: @franchises,
+      active: @franchises.where(status: true),
+      inactive: @franchises.where(status: false),
+      new_this_month: @franchises.where('created_at >= ?', 1.month.ago)
+    )
   end
 
   def show

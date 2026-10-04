@@ -40,7 +40,7 @@ class Admin::VendorsController < Admin::ApplicationController
 
   def show
     @purchases = @vendor.vendor_purchases.includes(:vendor_purchase_items).recent.limit(10)
-    @stock_summary = InventoryService.new.vendor_stock_summary(@vendor.id)
+    @stock_summary = InventoryService.new.vendor_stock_summary(@vendor)
   end
 
   def new

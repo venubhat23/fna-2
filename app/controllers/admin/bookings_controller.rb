@@ -93,6 +93,7 @@ class Admin::BookingsController < Admin::ApplicationController
     @products = Product.active
                        .includes(
                          :category,
+                         :product_variants,
                          image_attachment: :blob,
                          additional_images_attachments: :blob
                        )
@@ -205,7 +206,14 @@ class Admin::BookingsController < Admin::ApplicationController
   end
 
   def show
-    @booking_items = @booking.booking_items.includes(product: [:category, image_attachment: :blob, additional_images_attachments: :blob])
+    # Preload onto @booking itself: the view walks both @booking_items and
+    # @booking.booking_items (tax summary), which used to load the items and
+    # their products twice.
+    ActiveRecord::Associations::Preloader.new(
+      records: [@booking],
+      associations: [:user, :store, { booking_items: { product: [:category, { image_attachment: :blob, additional_images_attachments: :blob }] } }]
+    ).call
+    @booking_items = @booking.booking_items
   end
 
   def edit
@@ -502,8 +510,12 @@ class Admin::BookingsController < Admin::ApplicationController
 
   # AJAX endpoints
   def search_products
+    # cached_stock is the same sum Product#total_batch_stock would run per product
+    # (stock_batches.active), computed in this one query instead.
     @products = Product.active
                        .where("name ILIKE ? OR sku ILIKE ?", "%#{params[:q]}%", "%#{params[:q]}%")
+                       .select("products.*, COALESCE((SELECT SUM(sb.quantity_remaining) FROM stock_batches sb WHERE sb.product_id = products.id AND sb.status = 'active' AND sb.quantity_remaining > 0), 0) AS cached_stock")
+                       .includes(image_attachment: :blob)
                        .limit(10)
 
     render json: @products.map { |p|

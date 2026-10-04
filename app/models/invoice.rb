@@ -120,7 +120,35 @@ class Invoice < ApplicationRecord
     payment_status == 'partially_paid' || (paid_amount && paid_amount > 0 && paid_amount < total_amount)
   end
 
+  # Resolves related_booking for many invoices in at most three queries instead of
+  # up to three per invoice. Same lookup order as #related_booking.
+  def self.preload_related_bookings(invoices)
+    invoices = invoices.select { |inv| inv.is_a?(Invoice) }
+    return if invoices.empty?
+
+    numbers = invoices.map(&:invoice_number).compact_blank.uniq
+    by_invoice_number = numbers.any? ? Booking.where(invoice_number: numbers).index_by(&:invoice_number) : {}
+
+    leftovers = invoices.reject { |inv| inv.invoice_number.present? && by_invoice_number[inv.invoice_number] }
+    ActiveRecord::Associations::Preloader.new(records: leftovers, associations: :invoice_items).call if leftovers.any?
+    booking_numbers = leftovers.to_h do |inv|
+      item = inv.invoice_items.find { |i| i.description.to_s.match?(/Booking #/) }
+      m = item&.description&.match(/Booking #(\w+)/)
+      [inv, m && m[1]]
+    end
+    by_booking_number = booking_numbers.values.compact.any? ? Booking.where(booking_number: booking_numbers.values.compact.uniq).index_by(&:booking_number) : {}
+
+    invoices.each do |inv|
+      booking = (inv.invoice_number.present? && by_invoice_number[inv.invoice_number]) ||
+                (booking_numbers[inv] && by_booking_number[booking_numbers[inv]])
+      inv.instance_variable_set(:@related_booking, booking || nil)
+      inv.instance_variable_set(:@related_booking_preloaded, true)
+    end
+  end
+
   def related_booking
+    return @related_booking if @related_booking_preloaded
+
     @related_booking ||= begin
       (invoice_number.present? && Booking.find_by(invoice_number: invoice_number)) ||
         begin

@@ -34,21 +34,29 @@ class Admin::InvoiceCheckController < ApplicationController
     current_year = Date.current.year
     @year_options = ((current_year - 2)..(current_year + 2)).to_a
 
-    # Get customers based on subscription data
-    customers_with_subscriptions = get_customers_for_check
-    customer_ids = customers_with_subscriptions.map(&:id)
+    # Get customers based on subscription data. The invoice lookups below filter by the
+    # same customer set as a subquery rather than an id list, so all of these (and the
+    # stats) can be started async and overlap instead of waiting on each other.
+    customers_with_subscriptions = get_customers_for_check.load_async
+    customer_ids = get_customers_for_check.unscope(:includes, :order).select(:id)
 
     # Batch-preload invoice/booking-invoice existence for all customers in 2 queries
     # instead of check_invoice_exists' up-to-2-queries-per-customer inside the loop below.
-    regular_invoices_by_customer = Invoice.joins(:invoice_items)
+    regular_invoices = Invoice.joins(:invoice_items)
       .where(customer_id: customer_ids)
       .where("EXTRACT(month FROM invoice_date) = ? AND EXTRACT(year FROM invoice_date) = ?", @selected_month, @selected_year)
       .distinct
-      .index_by(&:customer_id)
+      .load_async
 
-    booking_invoices_by_customer = BookingInvoice.where(customer_id: customer_ids)
+    booking_invoices = BookingInvoice.where(customer_id: customer_ids)
       .where("EXTRACT(month FROM invoice_date) = ? AND EXTRACT(year FROM invoice_date) = ?", @selected_month, @selected_year)
-      .index_by(&:customer_id)
+      .load_async
+
+    # Calculate invoice statistics for this month
+    @invoice_stats = calculate_invoice_stats_for_month(@selected_month, @selected_year, @selected_delivery_person_id)
+
+    regular_invoices_by_customer = regular_invoices.index_by(&:customer_id)
+    booking_invoices_by_customer = booking_invoices.index_by(&:customer_id)
 
     @customers_data = customers_with_subscriptions.map do |customer|
       invoice = regular_invoices_by_customer[customer.id] || booking_invoices_by_customer[customer.id]
@@ -64,9 +72,6 @@ class Admin::InvoiceCheckController < ApplicationController
         has_subscriptions: total_amount > 0
       }
     end
-
-    # Calculate invoice statistics for this month
-    @invoice_stats = calculate_invoice_stats_for_month(@selected_month, @selected_year, @selected_delivery_person_id)
 
     render :index
   end
@@ -255,22 +260,25 @@ class Admin::InvoiceCheckController < ApplicationController
 
     # If delivery person is selected, filter by customers with subscriptions from that delivery person
     if delivery_person_id.present?
+      # Subquery instead of a pluck round trip; NULLs excluded like the old .compact.
       customer_ids = MilkSubscription.where(delivery_person_id: delivery_person_id, is_active: true)
-                                    .distinct
-                                    .pluck(:customer_id)
-                                    .compact
+                                    .where.not(customer_id: nil)
+                                    .select(:customer_id)
 
       regular_invoices = regular_invoices.where(customer_id: customer_ids)
       booking_invoices = booking_invoices.where(customer_id: customer_ids)
     end
 
-    # Calculate totals - 1 aggregate query per table instead of a separate count + sum.
-    regular_count, regular_amount = regular_invoices.pick(
+    # Calculate totals - 1 aggregate query per table instead of a separate count + sum,
+    # both started async so they run concurrently.
+    regular_totals = regular_invoices.async_pick(
       Arel.sql("COUNT(*)"), Arel.sql("COALESCE(SUM(total_amount), 0)")
     )
-    booking_count, booking_amount = booking_invoices.pick(
+    booking_totals = booking_invoices.async_pick(
       Arel.sql("COUNT(*)"), Arel.sql("COALESCE(SUM(total_amount), 0)")
     )
+    regular_count, regular_amount = regular_totals.value
+    booking_count, booking_amount = booking_totals.value
 
     {
       total_count: regular_count + booking_count,

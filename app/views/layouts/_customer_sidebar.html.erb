@@ -1,3 +1,10 @@
+<%# Badge counts: one round trip for all five (see SidebarHelper#customer_sidebar_counts). %>
+<% sidebar_counts = customer_sidebar_counts
+   sidebar_active_orders_count = sidebar_counts[:active_orders]
+   sidebar_unpaid_invoices_count = sidebar_counts[:unpaid_invoices]
+   sidebar_active_subscriptions_count = sidebar_counts[:active_subscriptions]
+   sidebar_pending_referrals_count = sidebar_counts[:pending_referrals]
+   sidebar_open_requests_count = sidebar_counts[:open_requests] %>
 <style>
 /* Modern Customer Sidebar - Perfectly Matching Admin Design */
 .customer-sidebar {
@@ -389,8 +396,8 @@
               </div>
             </div>
             <span class="customer-nav-text">My Orders</span>
-            <% if current_customer && current_customer.bookings.where(status: ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery']).count > 0 %>
-              <span class="customer-nav-badge"><%= current_customer.bookings.where(status: ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery']).count %></span>
+            <% if sidebar_active_orders_count > 0 %>
+              <span class="customer-nav-badge"><%= sidebar_active_orders_count %></span>
             <% end %>
             <div class="nav-indicator"></div>
           <% end %>
@@ -405,8 +412,8 @@
               </div>
             </div>
             <span class="customer-nav-text">My Invoices</span>
-            <% if current_customer && current_customer.bookings.where.not(invoice_number: [nil, '']).where(payment_status: [:unpaid, nil]).count > 0 %>
-              <span class="customer-nav-badge"><%= current_customer.bookings.where.not(invoice_number: [nil, '']).where(payment_status: [:unpaid, nil]).count %></span>
+            <% if sidebar_unpaid_invoices_count > 0 %>
+              <span class="customer-nav-badge"><%= sidebar_unpaid_invoices_count %></span>
             <% end %>
             <div class="nav-indicator"></div>
           <% end %>
@@ -421,8 +428,8 @@
               </div>
             </div>
             <span class="customer-nav-text">Subscriptions</span>
-            <% if current_customer && current_customer.milk_subscriptions.where(is_active: true).count > 0 %>
-              <span class="customer-nav-badge"><%= current_customer.milk_subscriptions.where(is_active: true).count %></span>
+            <% if sidebar_active_subscriptions_count > 0 %>
+              <span class="customer-nav-badge"><%= sidebar_active_subscriptions_count %></span>
             <% end %>
             <div class="nav-indicator"></div>
           <% end %>
@@ -464,8 +471,8 @@
               </div>
             </div>
             <span class="customer-nav-text">Refer Friends</span>
-            <% if current_customer && current_customer.referrals.pending.count > 0 %>
-              <span class="customer-nav-badge"><%= current_customer.referrals.pending.count %></span>
+            <% if sidebar_pending_referrals_count > 0 %>
+              <span class="customer-nav-badge"><%= sidebar_pending_referrals_count %></span>
             <% end %>
             <div class="nav-indicator"></div>
           <% end %>
@@ -480,8 +487,8 @@
               </div>
             </div>
             <span class="customer-nav-text">Support</span>
-            <% if current_customer && current_customer.client_requests.where(status: ['pending', 'in_progress']).count > 0 %>
-              <span class="customer-nav-badge"><%= current_customer.client_requests.where(status: ['pending', 'in_progress']).count %></span>
+            <% if sidebar_open_requests_count > 0 %>
+              <span class="customer-nav-badge"><%= sidebar_open_requests_count %></span>
             <% end %>
             <div class="nav-indicator"></div>
           <% end %>

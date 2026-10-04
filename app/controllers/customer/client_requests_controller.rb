@@ -2,7 +2,8 @@ class Customer::ClientRequestsController < Customer::ApplicationController
   before_action :authenticate_customer!
 
   def index
-    @client_requests = current_customer.client_requests.order(created_at: :desc)
+    # Loaded once; the view's stat cards and row loop all count in memory.
+    @client_requests = current_customer.client_requests.order(created_at: :desc).to_a
   end
 
   def show

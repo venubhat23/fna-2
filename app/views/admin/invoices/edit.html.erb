@@ -1,3 +1,5 @@
+<%# Loaded once for every line item's dropdown and the new-line template (was one query per row). %>
+<% invoice_product_options = Product.active.order(:name).to_a %>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="mb-1">Edit Invoice</h2>
@@ -87,7 +89,7 @@
                     <label class="form-label">Product</label>
                     <select name="invoice[invoice_items_attributes][<%= index %>][product_id]" class="form-select product-select" data-current-product="<%= item.product_id %>" onchange="updateProductPrice(this)">
                       <option value="">Select Product...</option>
-                      <% Product.active.includes(:category).order(:name).each do |product| %>
+                      <% invoice_product_options.each do |product| %>
                         <option value="<%= product.id %>"
                                 data-price="<%= product.selling_price %>"
                                 data-description="<%= product.name %>"
@@ -164,7 +166,7 @@
                     <label class="form-label">Product</label>
                     <select name="" class="form-select product-select" onchange="updateProductPrice(this)">
                       <option value="">Select Product...</option>
-                      <% Product.active.includes(:category).order(:name).each do |product| %>
+                      <% invoice_product_options.each do |product| %>
                         <option value="<%= product.id %>"
                                 data-price="<%= product.selling_price %>"
                                 data-description="<%= product.name %>">

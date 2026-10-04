@@ -20,7 +20,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Total Franchises</h6>
-            <h4 class="mb-0"><%= @franchises.count %></h4>
+            <h4 class="mb-0"><%= @stats[:total] %></h4>
           </div>
           <div class="text-primary">
             <i class="bi bi-shop fs-2"></i>
@@ -35,7 +35,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Active Franchises</h6>
-            <h4 class="mb-0"><%= @franchises.where(status: true).count %></h4>
+            <h4 class="mb-0"><%= @stats[:active] %></h4>
           </div>
           <div class="text-success">
             <i class="bi bi-shop-window fs-2"></i>
@@ -50,7 +50,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Inactive Franchises</h6>
-            <h4 class="mb-0"><%= @franchises.where(status: false).count %></h4>
+            <h4 class="mb-0"><%= @stats[:inactive] %></h4>
           </div>
           <div class="text-danger">
             <i class="bi bi-x-circle fs-2"></i>
@@ -65,7 +65,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">This Month</h6>
-            <h4 class="mb-0"><%= @franchises.where('created_at >= ?', 1.month.ago).count %></h4>
+            <h4 class="mb-0"><%= @stats[:new_this_month] %></h4>
           </div>
           <div class="text-info">
             <i class="bi bi-calendar-plus fs-2"></i>

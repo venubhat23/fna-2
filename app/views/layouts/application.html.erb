@@ -322,7 +322,7 @@
 
     <!-- Global Form Enhancement Script -->
     <script>
-<%= File.read(Rails.root.join('app/assets/javascripts/form_enhancements.js')).html_safe %>
+<%= cached_file_read('app/assets/javascripts/form_enhancements.js').html_safe %>
     </script>
   </body>
 </html>

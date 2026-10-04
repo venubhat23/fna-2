@@ -611,7 +611,7 @@ class Product < ApplicationRecord
     end
 
     # Fallback to regular stock if stock_batches table doesn't exist
-    return stock if !ActiveRecord::Base.connection.table_exists?('stock_batches')
+    return stock if !ActiveRecord::Base.connection.schema_cache.data_source_exists?('stock_batches')
     stock_batches.active.sum(:quantity_remaining)
   rescue
     stock

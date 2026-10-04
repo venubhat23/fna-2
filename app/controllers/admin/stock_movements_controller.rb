@@ -3,7 +3,7 @@ class Admin::StockMovementsController < Admin::ApplicationController
   before_action :set_stock_movement, only: [:show]
 
   def index
-    @stock_movements = StockMovement.includes(:product)
+    @stock_movements = StockMovement.includes(product: [image_attachment: :blob, additional_images_attachments: :blob])
 
     # Apply filters
     if params[:product_id].present?

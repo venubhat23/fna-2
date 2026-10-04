@@ -6,8 +6,23 @@ class Franchise::DashboardController < Franchise::BaseController
 
     # Analytics data - one grouped query for counts, one for sums, instead of
     # ~10 separate per-status count/sum queries
-    status_counts = @bookings.group(:status).count
-    status_sums = @bookings.group(:status).sum(:total_amount)
+    # All of the page's aggregates are started async so their round trips to the
+    # remote DB overlap; each is read back with .value where it's needed.
+    status_counts_promise = @bookings.group(:status).async_count
+    status_sums_promise = @bookings.group(:status).async_sum(:total_amount)
+    this_month_revenue_promise = @bookings.where(
+      status: [:delivered, :completed],
+      created_at: Date.current.beginning_of_month..Date.current.end_of_month
+    ).async_sum(:total_amount)
+    today_bookings_promise = @bookings.where(created_at: Date.current.all_day).async_count
+    today_revenue_promise = @bookings.where(
+      status: [:delivered, :completed],
+      created_at: Date.current.all_day
+    ).async_sum(:total_amount)
+    @recent_bookings = @bookings.recent.limit(5).load_async
+
+    status_counts = status_counts_promise.value
+    status_sums = status_sums_promise.value
 
     @total_bookings = status_counts.values.sum
     @draft_bookings = status_counts['draft'] || 0
@@ -21,20 +36,11 @@ class Franchise::DashboardController < Franchise::BaseController
     # Revenue analytics
     @total_revenue = %w[delivered completed].sum { |s| status_sums[s] || 0 }
     @pending_revenue = status_sums.reject { |s, _| %w[cancelled returned].include?(s) }.values.sum
-    @this_month_revenue = @bookings.where(
-      status: [:delivered, :completed],
-      created_at: Date.current.beginning_of_month..Date.current.end_of_month
-    ).sum(:total_amount) || 0
+    @this_month_revenue = this_month_revenue_promise.value || 0
 
     # Today's statistics
-    @today_bookings = @bookings.where(created_at: Date.current.all_day).count
-    @today_revenue = @bookings.where(
-      status: [:delivered, :completed],
-      created_at: Date.current.all_day
-    ).sum(:total_amount) || 0
-
-    # Recent bookings
-    @recent_bookings = @bookings.recent.limit(5)
+    @today_bookings = today_bookings_promise.value
+    @today_revenue = today_revenue_promise.value || 0
 
     # Average order value - reuse the aggregates computed above instead of 2-3 more queries
     @average_order_value = @delivered_bookings > 0 ? (@total_revenue / @delivered_bookings) : 0

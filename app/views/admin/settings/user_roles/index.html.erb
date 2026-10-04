@@ -20,7 +20,7 @@
         <div class="d-flex justify-content-between">
           <div>
             <h6 class="text-muted mb-2">Total Users</h6>
-            <h3 class="mb-0 text-primary"><%= number_with_delimiter(@users.count) %></h3>
+            <h3 class="mb-0 text-primary"><%= number_with_delimiter(@users.to_a.size) %></h3>
           </div>
           <div class="bg-primary bg-opacity-10 rounded p-3">
             <i class="bi bi-people text-primary fs-4"></i>

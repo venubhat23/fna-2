@@ -93,9 +93,10 @@ class Admin::PermissionsController < Admin::ApplicationController
     @modules = Permission.modules_list
 
     # Current assignments matrix
-    @assignments = {}
-    @roles.each do |role|
-      @assignments[role.id] = role.permissions.pluck(:id)
+    # Built from the already-preloaded permission -> roles join instead of one query per role.
+    @assignments = @roles.to_h { |role| [role.id, []] }
+    @permissions.each do |permission|
+      permission.roles.each { |role| @assignments[role.id] << permission.id if @assignments.key?(role.id) }
     end
   end
 
@@ -134,9 +135,9 @@ class Admin::PermissionsController < Admin::ApplicationController
     end
 
     # Role assignments for this module
-    @role_assignments = {}
-    @roles.each do |role|
-      @role_assignments[role.id] = role.permissions.where(module_name: @module_name).pluck(:action_type)
+    @role_assignments = @roles.to_h { |role| [role.id, []] }
+    @permissions.each do |permission|
+      permission.roles.each { |role| @role_assignments[role.id] << permission.action_type if @role_assignments.key?(role.id) }
     end
   end
 

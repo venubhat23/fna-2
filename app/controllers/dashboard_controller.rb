@@ -16,6 +16,7 @@ class DashboardController < ApplicationController
     end
 
     authorize! :read, :dashboard
+    load_dashboard_lists
     load_ecommerce_dashboard_data
   end
 
@@ -525,8 +526,9 @@ class DashboardController < ApplicationController
       '65+' => 0
     }
 
-    Customer.where.not(birth_date: nil).find_each do |customer|
-      age = ((Date.current - customer.birth_date) / 365.25).to_i
+    # Only the birth_date column is needed - plucking it avoids instantiating every Customer.
+    Customer.where.not(birth_date: nil).pluck(:birth_date).each do |birth_date|
+      age = ((Date.current - birth_date) / 365.25).to_i
       case age
       when 18..25
         age_groups['18-25'] += 1
@@ -651,6 +653,15 @@ class DashboardController < ApplicationController
     @customer_location
   ].freeze
 
+  # The small lists on the index page. Started with load_async before the stats load so
+  # their round trips to the remote DB overlap instead of running back to back, and
+  # eager_load joins each list's association into its main query.
+  def load_dashboard_lists
+    @dashboard_recent_bookings = Booking.eager_load(:customer).order(created_at: :desc).limit(5).load_async
+    @dashboard_top_customers = Customer.order(created_at: :desc).limit(5).load_async
+    @dashboard_low_stock_list = Product.eager_load(:category).where('products.stock <= 5 AND products.stock > 0').limit(5).load_async
+  end
+
   def load_ecommerce_dashboard_data
     snapshot = DASHBOARD_LOCAL_CACHE.fetch('dashboard:ecommerce_data', 2.minutes) do
       Rails.cache.fetch('dashboard:ecommerce_data', expires_in: 2.minutes) do
@@ -663,79 +674,149 @@ class DashboardController < ApplicationController
     snapshot.each { |ivar, value| instance_variable_set(ivar, value) }
   end
 
+  # On a cache miss this used to run ~40 queries back to back (one remote round trip
+  # each). Now the grouped queries are started with async_* so they run on the async
+  # executor while every scalar COUNT/SUM goes out together in one BatchAggregate query.
+  # Each value is computed from the exact same relation as before.
   def compute_ecommerce_dashboard_data
-    # E-commerce specific metrics — one grouped query replaces 3 separate counts
-    product_status_counts = Product.group(:status).count
+    product_status_counts_promise = Product.group(:status).async_count
+    booking_status_counts_promise = Booking.group(:status).async_count
+    vendor_status_counts_promise = Vendor.group(:status).async_count
+    vendor_purchase_status_counts_promise = VendorPurchase.group(:status).async_count
+    store_status_counts_promise = Store.group(:status).async_count
+    top_categories_promise = start_top_categories
+    sales_trend_promise = start_sales_trend
+    category_performance_promise = start_category_performance
+    top_selling_products_promise = start_top_selling_products
+
+    today = Date.current.beginning_of_day..Date.current.end_of_day
+    this_month = Date.current.beginning_of_month..Date.current.end_of_month
+    current_month_start = Date.current.beginning_of_month
+    last_month = 1.month.ago.beginning_of_month..1.month.ago.end_of_month
+    # NOTE: kept as one range per month with `month_date.end_of_month` (a Date), which
+    # against the datetime column compiles to `BETWEEN month_start AND midnight of the
+    # last day` - a pre-existing quirk that excludes most of the last day. Bucketing in
+    # Ruby would change the displayed totals, so the exact per-month ranges stay.
+    revenue_months = (0...6).map { |i| (Date.current - i.months).beginning_of_month }
+
+    # NOTE: Order#status and Booking#payment_method are integer-backed enums stored in
+    # string columns, so `.group(...).count` would return raw values - `.where(x: 'label')`
+    # applies the enum's label translation, hence one scalar per label.
+    scalars = {
+      total_categories: [Category.all, :count],
+      active_categories: [Category.where(status: true), :count],
+      total_orders: [Order.all, :count],
+      pending_orders: [Order.where(status: 'pending'), :count],
+      shipped_orders: [Order.where(status: 'shipped'), :count],
+      delivered_orders: [Order.where(status: 'delivered'), :count],
+      cancelled_orders: [Order.where(status: 'cancelled'), :count],
+      total_revenue: [Booking.all, :sum, :total_amount],
+      today_revenue: [Booking.where(created_at: today), :sum, :total_amount],
+      month_revenue: [Booking.where(created_at: this_month), :sum, :total_amount],
+      total_purchase_value: [VendorPurchase.all, :sum, :total_amount],
+      total_stock_value: [Product.all, :sum, 'price * stock'],
+      low_stock_products: [Product.where('stock <= 5 AND stock > 0'), :count],
+      out_of_stock_products: [Product.where(stock: 0), :count],
+      total_customers: [Customer.all, :count],
+      new_customers_this_month: [Customer.where(created_at: this_month), :count],
+      pay_cash: [Booking.where(payment_method: 'cash'), :count],
+      pay_card: [Booking.where(payment_method: 'card'), :count],
+      pay_upi: [Booking.where(payment_method: 'upi'), :count],
+      pay_online: [Booking.where(payment_method: 'online'), :count],
+      delivered_on_time: [Order.where('delivered_at <= created_at + INTERVAL \'3 days\''), :count],
+      total_delivered: [Order.where.not(delivered_at: nil), :count],
+      current_revenue: [Booking.where('created_at >= ?', current_month_start), :sum, :total_amount],
+      current_orders: [Booking.where('created_at >= ?', current_month_start), :count],
+      current_customers: [Customer.where('created_at >= ?', current_month_start), :count],
+      last_revenue: [Booking.where(created_at: last_month), :sum, :total_amount],
+      last_orders: [Booking.where(created_at: last_month), :count],
+      last_customers: [Customer.where(created_at: last_month), :count]
+    }
+    revenue_months.each_with_index do |month_date, i|
+      scalars[:"month_revenue_#{i}"] = [Booking.where(created_at: month_date..month_date.end_of_month), :sum, :total_amount]
+    end
+    agg = BatchAggregate.call(**scalars)
+
+    # E-commerce specific metrics
+    product_status_counts = product_status_counts_promise.value
     @total_products = product_status_counts.values.sum
     @active_products = product_status_counts['active'] || 0
     @draft_products = product_status_counts['draft'] || 0
-    @total_categories = Category.count
-    @active_categories = Category.where(status: true).count
+    @total_categories = agg[:total_categories]
+    @active_categories = agg[:active_categories]
 
-    # Booking metrics — one grouped query replaces 4 separate counts
-    booking_status_counts = Booking.group(:status).count
+    # Booking metrics
+    booking_status_counts = booking_status_counts_promise.value
     @total_bookings = booking_status_counts.values.sum
     @pending_bookings = booking_status_counts['pending'] || 0
     @completed_bookings = booking_status_counts['completed'] || 0
     @cancelled_bookings = booking_status_counts['cancelled'] || 0
 
     # Order metrics
-    # NOTE: Order#status is an integer-backed enum stored in a string column, so
-    # `.group(:status).count` returns raw un-translated values instead of labels
-    # (unlike Booking/Product#status, which map labels to identical strings) —
-    # `.where(status: 'x')` is what applies the enum's label translation, so these
-    # have to stay as separate queries rather than a single grouped one.
-    @total_orders = Order.count rescue 0
-    @pending_orders = Order.where(status: 'pending').count rescue 0
-    @shipped_orders = Order.where(status: 'shipped').count rescue 0
-    @delivered_orders = Order.where(status: 'delivered').count rescue 0
-    @cancelled_orders = Order.where(status: 'cancelled').count rescue 0
+    @total_orders = agg[:total_orders]
+    @pending_orders = agg[:pending_orders]
+    @shipped_orders = agg[:shipped_orders]
+    @delivered_orders = agg[:delivered_orders]
+    @cancelled_orders = agg[:cancelled_orders]
 
     # Revenue metrics
-    @total_revenue = Booking.sum(:total_amount) || 0
-    @today_revenue = Booking.where(created_at: Date.current.beginning_of_day..Date.current.end_of_day).sum(:total_amount) || 0
-    @month_revenue = Booking.where(created_at: Date.current.beginning_of_month..Date.current.end_of_month).sum(:total_amount) || 0
+    @total_revenue = agg[:total_revenue]
+    @today_revenue = agg[:today_revenue]
+    @month_revenue = agg[:month_revenue]
     @avg_order_value = @total_bookings > 0 ? (@total_revenue / @total_bookings).round(2) : 0
 
-    # Vendor metrics — one grouped query replaces 2 separate counts
-    vendor_status_counts = Vendor.group(:status).count rescue {}
+    # Vendor metrics
+    vendor_status_counts = vendor_status_counts_promise.value rescue {}
     @total_vendors = vendor_status_counts.values.sum
     @active_vendors = vendor_status_counts[true] || 0
 
-    vendor_purchase_status_counts = VendorPurchase.group(:status).count rescue {}
+    vendor_purchase_status_counts = vendor_purchase_status_counts_promise.value rescue {}
     @total_purchases = vendor_purchase_status_counts.values.sum
     @pending_purchases = vendor_purchase_status_counts['pending'] || 0
-    @total_purchase_value = VendorPurchase.sum(:total_amount) rescue 0
+    @total_purchase_value = agg[:total_purchase_value]
     # VendorPayment has neither a `status` nor an `amount` column, so this always raised
     # and fell through to 0 anyway — skip the guaranteed-failing round trip.
     @pending_payments = 0
 
-    # Store metrics — one grouped query replaces 2 separate counts
-    store_status_counts = Store.group(:status).count rescue {}
+    # Store metrics
+    store_status_counts = store_status_counts_promise.value rescue {}
     @total_stores = store_status_counts.values.sum
     @active_stores = store_status_counts[true] || 0
 
     # Inventory metrics
-    @total_stock_value = Product.sum('price * stock') || 0
-    @low_stock_products = Product.where('stock <= 5 AND stock > 0').count
-    @out_of_stock_products = Product.where(stock: 0).count
-    @top_categories = calculate_top_categories
+    @total_stock_value = agg[:total_stock_value]
+    @low_stock_products = agg[:low_stock_products]
+    @out_of_stock_products = agg[:out_of_stock_products]
+    @top_categories = finish_top_categories(top_categories_promise)
 
     # Customer metrics (using existing customers)
-    @total_customers = Customer.count
-    @new_customers_this_month = Customer.where(created_at: Date.current.beginning_of_month..Date.current.end_of_month).count
+    @total_customers = agg[:total_customers]
+    @new_customers_this_month = agg[:new_customers_this_month]
 
     # Chart data
-    @sales_trend = calculate_sales_trend
-    @category_performance = calculate_category_performance
+    @sales_trend = finish_sales_trend(sales_trend_promise)
+    @category_performance = finish_category_performance(category_performance_promise)
     @order_status_distribution = calculate_order_status_distribution
-    @top_selling_products = calculate_top_selling_products
-    @monthly_revenue_trend = calculate_monthly_revenue_trend
-    @payment_method_distribution = calculate_payment_method_distribution
-    @delivery_performance = calculate_delivery_performance
+    @top_selling_products = top_selling_products_promise.value
+    @monthly_revenue_trend = revenue_months.each_with_index.to_h { |month_date, i| [month_date.strftime('%b %Y'), agg[:"month_revenue_#{i}"]] }.to_a.reverse.to_h
+    @payment_method_distribution = {
+      'Cash' => agg[:pay_cash],
+      'Card' => agg[:pay_card],
+      'UPI' => agg[:pay_upi],
+      'Online' => agg[:pay_online]
+    }
+    total_delivered = agg[:total_delivered]
+    @delivery_performance = {
+      on_time_percentage: total_delivered > 0 ? ((agg[:delivered_on_time].to_f / total_delivered) * 100).round(1) : 0,
+      total_delivered: total_delivered,
+      avg_delivery_days: total_delivered > 0 ? 3.2 : 0  # Sample data
+    }
 
     # Growth metrics
-    calculate_ecommerce_growth_metrics
+    @revenue_growth = calculate_percentage_change(agg[:current_revenue], agg[:last_revenue])
+    @order_growth = calculate_percentage_change(agg[:current_orders], agg[:last_orders])
+    @customer_acquisition_growth = calculate_percentage_change(agg[:current_customers], agg[:last_customers])
+    @inventory_turnover = @total_stock_value > 0 ? (@total_revenue / @total_stock_value).round(2) : 0
 
     # Additional ecommerce metrics
     @conversion_rate = @total_customers > 0 ? ((@total_bookings.to_f / @total_customers) * 100).round(2) : 0
@@ -746,30 +827,35 @@ class DashboardController < ApplicationController
 
   private
 
-  def calculate_top_categories
-    # Get top 5 categories by product count
-    begin
-      Category.joins(:products)
-              .group('categories.name')
-              .order('COUNT(products.id) DESC')
-              .limit(5)
-              .count
-    rescue
-      # Return sample data if there's an error
-      Category.limit(5).pluck(:name).map { |name| [name, rand(5..20)] }.to_h
-    end
+  # Top 5 categories by product count
+  def start_top_categories
+    Category.joins(:products)
+            .group('categories.name')
+            .order('COUNT(products.id) DESC')
+            .limit(5)
+            .async_count
   end
 
-  def calculate_sales_trend
-    # Last 7 days sales trend — one query (created_at is indexed) instead of 7
-    start_date = 6.days.ago.to_date
+  def finish_top_categories(promise)
+    promise.value
+  rescue
+    # Return sample data if there's an error
+    Category.limit(5).pluck(:name).map { |name| [name, rand(5..20)] }.to_h
+  end
 
+  # Last 7 days sales trend — one query (created_at is indexed) instead of 7
+  def start_sales_trend
+    start_date = 6.days.ago.to_date
+    Booking.where(created_at: start_date.beginning_of_day..Date.current.end_of_day)
+           .async_pluck(:created_at, :total_amount)
+  end
+
+  def finish_sales_trend(promise)
+    start_date = 6.days.ago.to_date
     trend = {}
     7.times { |i| trend[(start_date + i.days).strftime('%a')] = 0 }
 
-    Booking.where(created_at: start_date.beginning_of_day..Date.current.end_of_day)
-           .pluck(:created_at, :total_amount)
-           .each do |created_at, amount|
+    promise.value.each do |created_at, amount|
       key = created_at.to_date.strftime('%a')
       trend[key] += (amount || 0) if trend.key?(key)
     end
@@ -777,14 +863,18 @@ class DashboardController < ApplicationController
     trend
   end
 
-  def calculate_category_performance
-    # Revenue by category in a single grouped query instead of per-product lookups
+  # Revenue by category in a single grouped query instead of per-product lookups
+  def start_category_performance
     BookingItem.joins(:booking, product: :category)
                .group('categories.name')
-               .sum('booking_items.quantity * booking_items.price')
-               .select { |_name, revenue| revenue > 0 }
-               .sort_by { |_name, revenue| -revenue }
-               .to_h
+               .async_sum('booking_items.quantity * booking_items.price')
+  end
+
+  def finish_category_performance(promise)
+    promise.value
+           .select { |_name, revenue| revenue > 0 }
+           .sort_by { |_name, revenue| -revenue }
+           .to_h
   end
 
   def calculate_order_status_distribution
@@ -796,87 +886,13 @@ class DashboardController < ApplicationController
     }
   end
 
-  def calculate_top_selling_products
-    # Top 5 products by quantity sold
+  # Top 5 products by quantity sold
+  def start_top_selling_products
     BookingItem.joins(:product, :booking)
                .group('products.name')
                .order('SUM(booking_items.quantity) DESC')
                .limit(5)
-               .sum(:quantity)
-  end
-
-  def calculate_monthly_revenue_trend
-    # NOTE: kept as one query per month (rather than a single pluck bucketed in Ruby)
-    # because `month_date.end_of_month` is a Date, and `where(created_at: month_date..month_date.end_of_month)`
-    # against a datetime column compiles to `BETWEEN month_date AND month_end_date`, i.e. midnight
-    # of the last day — excluding virtually the entire last day of the month. That's a pre-existing
-    # quirk of this query; bucketing in Ruby by calendar date would silently include that last day
-    # and change the displayed totals, so the per-month query (and its exact boundary behavior) stays.
-    trend = {}
-    6.times do |i|
-      month_date = (Date.current - i.months).beginning_of_month
-      month_name = month_date.strftime('%b %Y')
-      monthly_revenue = Booking.where(created_at: month_date..month_date.end_of_month).sum(:total_amount) || 0
-      trend[month_name] = monthly_revenue
-    end
-    trend.to_a.reverse.to_h
-  end
-
-  def calculate_payment_method_distribution
-    # NOTE: Booking#payment_method is an integer-backed enum stored in a string column,
-    # so `.group(:payment_method).count` returns raw un-translated values instead of
-    # labels — `.where(payment_method: 'x')` is what applies the enum's label
-    # translation, so these have to stay as separate queries rather than one grouped one.
-    {
-      'Cash' => Booking.where(payment_method: 'cash').count,
-      'Card' => Booking.where(payment_method: 'card').count,
-      'UPI' => Booking.where(payment_method: 'upi').count,
-      'Online' => Booking.where(payment_method: 'online').count
-    }
-  end
-
-  def calculate_delivery_performance
-    begin
-      delivered_on_time = Order.where('delivered_at <= created_at + INTERVAL \'3 days\'').count
-      total_delivered = Order.where.not(delivered_at: nil).count
-
-      {
-        on_time_percentage: total_delivered > 0 ? ((delivered_on_time.to_f / total_delivered) * 100).round(1) : 0,
-        total_delivered: total_delivered,
-        avg_delivery_days: total_delivered > 0 ? 3.2 : 0  # Sample data
-      }
-    rescue
-      {
-        on_time_percentage: 0,
-        total_delivered: 0,
-        avg_delivery_days: 0
-      }
-    end
-  end
-
-  def calculate_ecommerce_growth_metrics
-    current_month_start = Date.current.beginning_of_month
-    last_month_start = 1.month.ago.beginning_of_month
-    last_month_end = 1.month.ago.end_of_month
-
-    # Current month data
-    current_revenue = Booking.where('created_at >= ?', current_month_start).sum(:total_amount) || 0
-    current_orders = Booking.where('created_at >= ?', current_month_start).count
-    current_customers = Customer.where('created_at >= ?', current_month_start).count
-
-    # Last month data
-    last_revenue = Booking.where(created_at: last_month_start..last_month_end).sum(:total_amount) || 0
-    last_orders = Booking.where(created_at: last_month_start..last_month_end).count
-    last_customers = Customer.where(created_at: last_month_start..last_month_end).count
-
-    # Calculate growth
-    @revenue_growth = calculate_percentage_change(current_revenue, last_revenue)
-    @order_growth = calculate_percentage_change(current_orders, last_orders)
-    @customer_acquisition_growth = calculate_percentage_change(current_customers, last_customers)
-
-    # Additional metrics
-    @conversion_rate = @total_customers > 0 ? ((@total_bookings.to_f / @total_customers) * 100).round(1) : 0
-    @inventory_turnover = @total_stock_value > 0 ? (@total_revenue / @total_stock_value).round(2) : 0
+               .async_sum(:quantity)
   end
 
   def calculate_customer_locations

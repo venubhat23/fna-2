@@ -1,14 +1,35 @@
 class Customer::DashboardController < Customer::BaseController
   def index
-    # Customer's cart count for the action cards (using pending booking items as cart)
-    pending_booking = current_customer&.bookings&.where(status: 'pending')&.first
-    @cart_items_count = pending_booking&.booking_items&.sum(:quantity) || 0
+    customer = current_customer
+    if customer
+      # All of this page's queries are started async so their round trips to the
+      # remote DB overlap, then read back with .value.
 
-    # Customer's recent orders count
-    @recent_orders_count = current_customer&.bookings&.where('created_at > ?', 30.days.ago)&.count || 0
+      # Customer's cart count for the action cards (using pending booking items as cart)
+      # - the first pending booking (by id, as .first did) is picked in a subquery.
+      pending_booking_id = customer.bookings.where(status: 'pending').order(:id).limit(1).select(:id)
+      cart_items_count = BookingItem.where(booking_id: pending_booking_id).async_sum(:quantity)
 
-    # Customer's active subscriptions count
-    @active_subscriptions_count = current_customer&.milk_subscriptions&.where(is_active: true)&.count || 0
+      # Customer's recent orders count
+      recent_orders_count = customer.bookings.where('created_at > ?', 30.days.ago).async_count
+
+      # Customer's active subscriptions count
+      active_subscriptions_count = customer.milk_subscriptions.where(is_active: true).async_count
+
+      # Booking dates/amounts for both charts in one query (last 8 days + this year)
+      booking_rows = customer.bookings
+                             .where(booking_date: order_activity_window)
+                             .or(customer.bookings.where(booking_date: monthly_spending_window))
+                             .async_pluck(:booking_date, :total_amount)
+
+      @cart_items_count = cart_items_count.value || 0
+      @recent_orders_count = recent_orders_count.value
+      @active_subscriptions_count = active_subscriptions_count.value
+      @booking_chart_rows = booking_rows.value
+    else
+      @cart_items_count = @recent_orders_count = @active_subscriptions_count = 0
+      @booking_chart_rows = []
+    end
 
     # Chart data for Order Activity (Last 7 days)
     @order_activity_data = build_order_activity_data
@@ -19,14 +40,20 @@ class Customer::DashboardController < Customer::BaseController
 
   private
 
+  def order_activity_window
+    (Date.current - 7.days).beginning_of_day..Date.current.end_of_day
+  end
+
+  def monthly_spending_window
+    current_year = Date.current.year
+    Date.new(current_year, 1, 1).beginning_of_day..Date.new(current_year, 12, 31).end_of_day
+  end
+
   def build_order_activity_data
     # Get order counts for last 7 days - one query over the whole window instead of
     # one per day, bucketed in Ruby (same approach as Affiliate::DashboardController#index).
-    window_start = (Date.current - 7.days).beginning_of_day
-    window_end = Date.current.end_of_day
-    booking_dates = current_customer&.bookings
-                                 &.where(booking_date: window_start..window_end)
-                                 &.pluck(:booking_date) || []
+    window = order_activity_window
+    booking_dates = @booking_chart_rows.filter_map { |booking_date, _| booking_date if window.cover?(booking_date) }
 
     order_data = []
     labels = []
@@ -61,13 +88,8 @@ class Customer::DashboardController < Customer::BaseController
     # Get spending data for current year by month - one query over the whole year
     # instead of one per month, bucketed in Ruby (same approach as
     # Affiliate::DashboardController#index).
-    current_year = Date.current.year
-    year_start = Date.new(current_year, 1, 1).beginning_of_day
-    year_end = Date.new(current_year, 12, 31).end_of_day
-    booking_rows = current_customer&.bookings
-                                 &.where(booking_date: year_start..year_end)
-                                 &.where.not(total_amount: nil)
-                                 &.pluck(:booking_date, :total_amount) || []
+    window = monthly_spending_window
+    booking_rows = @booking_chart_rows.select { |booking_date, total_amount| total_amount && window.cover?(booking_date) }
 
     spending_data = []
     labels = []
