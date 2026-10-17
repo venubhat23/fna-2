@@ -160,6 +160,14 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     new_delivery_person_id = subscription_params[:delivery_person_id]
 
     if @subscription.update(subscription_params)
+      # A new pattern or date range must reshape the open tasks, otherwise e.g. switching
+      # Daily -> Alternate Days leaves the old every-day tasks in place.
+      schedule_note = ''
+      if (@subscription.saved_changes.keys & %w[delivery_pattern start_date end_date specific_dates]).any?
+        sync = @subscription.sync_delivery_tasks!
+        schedule_note = " Delivery schedule updated: #{sync[:removed]} tasks removed, #{sync[:added]} added."
+      end
+
       # If delivery person changed, update all related delivery tasks
       if delivery_person_changed
         update_result = update_delivery_tasks_for_subscription(@subscription, new_delivery_person_id)
@@ -176,9 +184,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
           update_message += " No delivery tasks found to update."
         end
 
-        redirect_to admin_subscriptions_path(@list_state), notice: update_message
+        redirect_to admin_subscriptions_path(@list_state), notice: update_message + schedule_note
       else
-        redirect_to admin_subscriptions_path(@list_state), notice: 'Subscription updated successfully!'
+        redirect_to admin_subscriptions_path(@list_state), notice: "Subscription updated successfully!#{schedule_note}"
       end
     else
       @customers = Customer.all.pluck(:first_name, :last_name, :mobile, :id).map { |f, l, m, id| ["#{f} #{l} - #{m}", id] }
@@ -269,12 +277,11 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   def generate_tasks
-    # Regenerate tasks (useful if subscription was modified). delete_all instead of
-    # destroy_all - no destroy callbacks/dependent associations on MilkDeliveryTask, so
-    # a single bulk DELETE is safe and avoids the per-row destroy loop.
-    @subscription.milk_delivery_tasks.delete_all
-    @subscription.generate_all_delivery_tasks
-    redirect_to admin_subscription_path(@subscription), notice: 'Delivery tasks regenerated successfully!'
+    # Regenerate tasks (useful if subscription was modified). Re-sync instead of
+    # delete-and-recreate so delivered/completed/invoiced history survives.
+    sync = @subscription.sync_delivery_tasks!
+    redirect_to admin_subscription_path(@subscription),
+                notice: "Delivery tasks regenerated: #{sync[:removed]} removed, #{sync[:added]} added."
   end
 
   def daily_tasks

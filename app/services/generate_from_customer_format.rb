@@ -93,7 +93,8 @@ class GenerateFromCustomerFormat
             end_date:           target_end,
             delivery_time:      '07:00',
             status:             'active',
-            is_active:          true
+            is_active:          true,
+            **MilkSubscription.pattern_attributes_for(cf.pattern, wanted_dates)
           )
 
           # Skip the pattern-based auto-generation callback; it only knows

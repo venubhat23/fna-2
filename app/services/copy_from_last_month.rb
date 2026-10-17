@@ -168,7 +168,8 @@ class CopyFromLastMonth
           end_date:           target_end,
           delivery_time:      '07:00',
           status:             'active',
-          is_active:          true
+          is_active:          true,
+          **MilkSubscription.pattern_attributes_for(cf.pattern, task_dates)
         )
 
         # Skip auto-generation; it only knows daily/alternate/specific_dates,

@@ -302,6 +302,11 @@
 
                     <!-- Search results dropdown -->
                     <div class="customer-search-dropdown" id="customerSearchDropdown">
+                      <div class="customer-search-walkin">
+                        <button type="button" class="btn btn-sm btn-outline-success w-100" onclick="selectWalkInCustomer()">
+                          <i class="bi bi-person-walking me-1"></i>Walk-in Customer
+                        </button>
+                      </div>
                       <div class="customer-search-results" id="customerSearchResults">
                         <!-- Results will be populated here -->
                       </div>
@@ -1329,6 +1334,7 @@ function selectCustomer(customerId, customerName, customerMobile, customerEmail,
 
   document.getElementById('booking_customer_name').value = customerName;
   document.getElementById('booking_customer_phone').value = customerMobile;
+  document.getElementById('booking_customer_phone').required = true;
   document.getElementById('booking_customer_email').value = customerEmail || '';
   if (customerAddress) {
     document.getElementById('booking_delivery_address').value = customerAddress;
@@ -1338,8 +1344,29 @@ function selectCustomer(customerId, customerName, customerMobile, customerEmail,
   showNotification('Selected customer: ' + customerName, 'success');
 }
 
+// Walk-in: no Customer record, so customer_id stays blank and mobile becomes optional
+function selectWalkInCustomer() {
+  document.getElementById('selected_customer_id').value = '';
+  document.getElementById('customerSearchInput').style.display = 'none';
+
+  const selectedDisplay = document.getElementById('selectedCustomerDisplay');
+  selectedDisplay.style.display = 'block';
+  selectedDisplay.querySelector('.customer-name').textContent = 'Walk-in Customer';
+  selectedDisplay.querySelector('.customer-details').innerHTML = '<span class="badge bg-success-subtle text-success"><i class="bi bi-person-walking me-1"></i>Walk-in</span>';
+
+  document.getElementById('booking_customer_name').value = 'Walk-in Customer';
+  document.getElementById('booking_customer_phone').value = '';
+  document.getElementById('booking_customer_phone').required = false;
+  document.getElementById('booking_customer_email').value = '';
+  document.getElementById('booking_delivery_address').value = '';
+
+  hideCustomerDropdown();
+  showNotification('Walk-in customer selected', 'success');
+}
+
 function clearSelectedCustomer() {
   document.getElementById('selected_customer_id').value = '';
+  document.getElementById('booking_customer_phone').required = true;
   document.getElementById('customerSearchInput').style.display = 'block';
   document.getElementById('customerSearchInput').value = '';
   document.getElementById('selectedCustomerDisplay').style.display = 'none';
@@ -2085,6 +2112,17 @@ function showBookingDateAlert(message, type, icon) {
   background: #0d6efd;
   border-color: #0d6efd;
   color: white;
+}
+
+.customer-search-walkin {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.customer-search-walkin .btn {
+  border-radius: 8px;
+  font-size: 0.85rem;
+  padding: 6px 12px;
 }
 
 .selected-customer-display {

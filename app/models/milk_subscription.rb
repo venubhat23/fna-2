@@ -18,6 +18,16 @@ class MilkSubscription < ApplicationRecord
 
   after_create :generate_all_delivery_tasks
 
+  # CustomerFormat uses its own pattern vocabulary; this maps it onto delivery_pattern so a
+  # generated subscription reports (and later re-syncs to) the schedule it was built from.
+  def self.pattern_attributes_for(customer_format_pattern, dates)
+    case customer_format_pattern
+    when 'every_day'       then { delivery_pattern: 'daily' }
+    when 'alternative_day' then { delivery_pattern: 'alternate' }
+    else { delivery_pattern: 'specific_dates', specific_dates: dates.map(&:iso8601).to_json }
+    end
+  end
+
   def total_days
     return 0 unless start_date && end_date
     (end_date - start_date).to_i + 1
@@ -56,6 +66,34 @@ class MilkSubscription < ApplicationRecord
         status: 'pending',
         delivery_person: delivery_person
       )
+    end
+  end
+
+  # Statuses that are still just a plan, so they can be dropped when the schedule changes.
+  # Anything else (delivered/completed/cancelled/missed/paused) is history and is kept.
+  RESCHEDULABLE_TASK_STATUSES = %w[pending assigned].freeze
+
+  # Brings this subscription's tasks in line with its current pattern and date range:
+  # open, uninvoiced tasks on dates the schedule no longer wants are deleted, and a
+  # pending task is added for every wanted date that has none. Returns the counts.
+  def sync_delivery_tasks!
+    wanted = delivery_dates_array.select { |d| d.between?(start_date, end_date) }.uniq
+
+    transaction do
+      removed = milk_delivery_tasks
+                  .where(status: RESCHEDULABLE_TASK_STATUSES, invoiced: false)
+                  .where.not(delivery_date: wanted)
+                  .delete_all
+
+      have = milk_delivery_tasks.where(delivery_date: wanted).distinct.pluck(:delivery_date)
+      added = (wanted - have).each do |date|
+        milk_delivery_tasks.create!(
+          customer: customer, product: product, quantity: quantity, unit: unit,
+          delivery_date: date, status: 'pending', delivery_person: delivery_person
+        )
+      end.size
+
+      { removed: removed, added: added }
     end
   end
 
