@@ -289,6 +289,7 @@
                   <div class="position-relative">
                     <!-- Hidden input for form submission -->
                     <%= f.hidden_field :customer_id, id: 'selected_customer_id' %>
+                    <%= hidden_field_tag :walk_in, params[:walk_in] == '1' ? '1' : '0', id: 'walk_in_flag' %>
 
                     <!-- Search input with icon wrapper -->
                     <div class="customer-search-wrapper">
@@ -398,12 +399,12 @@
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                  <label class="form-label">Customer Name <span class="text-danger required-mark">*</span></label>
                   <%= f.text_field :customer_name, class: 'form-control', placeholder: 'Enter customer name', required: true %>
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                  <label class="form-label">Mobile Number <span class="text-danger required-mark">*</span></label>
                   <%= f.text_field :customer_phone, class: 'form-control', placeholder: 'Enter mobile number', required: true %>
                 </div>
 
@@ -1337,7 +1338,7 @@ function selectCustomer(customerId, customerName, customerMobile, customerEmail,
 
   document.getElementById('booking_customer_name').value = customerName;
   document.getElementById('booking_customer_phone').value = customerMobile;
-  document.getElementById('booking_customer_phone').required = true;
+  setWalkInMode(false);
   document.getElementById('booking_customer_email').value = customerEmail || '';
   if (customerAddress) {
     document.getElementById('booking_delivery_address').value = customerAddress;
@@ -1360,17 +1361,35 @@ function selectWalkInCustomer() {
 
   document.getElementById('booking_customer_name').value = 'Walk-in Customer';
   document.getElementById('booking_customer_phone').value = '';
-  document.getElementById('booking_customer_phone').required = false;
   document.getElementById('booking_customer_email').value = '';
   document.getElementById('booking_delivery_address').value = '';
+
+  setWalkInMode(true);
+
+  // Walk-in is a quick sale: paid at the counter, invoiced immediately
+  const paymentToggle = document.getElementById('paymentStatusToggle');
+  if (paymentToggle && !paymentToggle.checked) {
+    paymentToggle.checked = true;
+    paymentToggle.dispatchEvent(new Event('change'));
+  }
 
   hideCustomerDropdown();
   showNotification('Walk-in customer selected', 'success');
 }
 
+// Walk-in bookings need no customer details, so name and mobile become optional
+function setWalkInMode(enabled) {
+  document.getElementById('walk_in_flag').value = enabled ? '1' : '0';
+  document.getElementById('booking_customer_name').required = !enabled;
+  document.getElementById('booking_customer_phone').required = !enabled;
+  document.querySelectorAll('.required-mark').forEach(function(mark) {
+    mark.style.display = enabled ? 'none' : '';
+  });
+}
+
 function clearSelectedCustomer() {
   document.getElementById('selected_customer_id').value = '';
-  document.getElementById('booking_customer_phone').required = true;
+  setWalkInMode(false);
   document.getElementById('customerSearchInput').style.display = 'block';
   document.getElementById('walkInCustomerOption').style.display = 'block';
   document.getElementById('customerSearchInput').value = '';
@@ -1730,6 +1749,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initialize booking date functionality
   initializeBookingDate();
+
+  // Keep walk-in mode if the form was re-rendered after a failed submit
+  if (document.getElementById('walk_in_flag').value === '1') {
+    selectWalkInCustomer();
+  }
 
   // Prevent form submission with empty cart
   const bookingForm = document.getElementById('bookingForm');

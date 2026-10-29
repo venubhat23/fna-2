@@ -142,6 +142,12 @@ class Admin::BookingsController < Admin::ApplicationController
 
     # Store payment status value for after save (to avoid enum conflicts during validation)
     @payment_status_from_form = params[:booking][:payment_status]
+
+    # Walk-in customers are quick sales: no customer details required, paid and invoiced immediately
+    if params[:walk_in] == '1' && @booking.customer_id.blank?
+      @booking.customer_name = 'Walk-in Customer' if @booking.customer_name.blank?
+      @payment_status_from_form = 'paid'
+    end
     Rails.logger.info "Payment status from form: #{@payment_status_from_form}"
 
     # Validate stock availability before saving
