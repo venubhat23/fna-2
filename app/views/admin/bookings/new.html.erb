@@ -955,6 +955,11 @@ function showCheckoutView() {
   // Hide search and filters section when in checkout view
   document.getElementById('searchSection').style.display = 'none';
 
+  // Minimize the floating cart so it doesn't cover the checkout form
+  if (document.getElementById('floatingCart').style.display !== 'none') {
+    minimizeCart();
+  }
+
   // Update buttons safely
   const productsBtn = document.getElementById('productsViewBtn');
   const checkoutBtn = document.getElementById('checkoutViewBtn');
