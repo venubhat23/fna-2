@@ -302,7 +302,7 @@
 
                     <!-- Walk-in option, always visible until a customer is selected -->
                     <div class="customer-search-walkin" id="walkInCustomerOption">
-                      <button type="button" class="btn btn-sm btn-outline-success w-100" onclick="selectWalkInCustomer()">
+                      <button type="button" class="btn btn-sm w-100" onclick="selectWalkInCustomer()">
                         <i class="bi bi-person-walking me-1"></i>Walk-in Customer
                       </button>
                     </div>
@@ -2127,6 +2127,16 @@ function showBookingDateAlert(message, type, icon) {
   border-radius: 8px;
   font-size: 0.85rem;
   padding: 6px 12px;
+  border: 1px solid #c7d2fe;
+  background: #f5f3ff;
+  color: #667eea;
+  transition: all 0.2s ease;
+}
+
+.customer-search-walkin .btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  color: white;
 }
 
 .selected-customer-display {
