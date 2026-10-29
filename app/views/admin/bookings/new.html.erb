@@ -300,13 +300,15 @@
                              autocomplete="off">
                     </div>
 
+                    <!-- Walk-in option, always visible until a customer is selected -->
+                    <div class="customer-search-walkin" id="walkInCustomerOption">
+                      <button type="button" class="btn btn-sm btn-outline-success w-100" onclick="selectWalkInCustomer()">
+                        <i class="bi bi-person-walking me-1"></i>Walk-in Customer
+                      </button>
+                    </div>
+
                     <!-- Search results dropdown -->
                     <div class="customer-search-dropdown" id="customerSearchDropdown">
-                      <div class="customer-search-walkin">
-                        <button type="button" class="btn btn-sm btn-outline-success w-100" onclick="selectWalkInCustomer()">
-                          <i class="bi bi-person-walking me-1"></i>Walk-in Customer
-                        </button>
-                      </div>
                       <div class="customer-search-results" id="customerSearchResults">
                         <!-- Results will be populated here -->
                       </div>
@@ -1326,6 +1328,7 @@ function updateHighlightedItem(items) {
 function selectCustomer(customerId, customerName, customerMobile, customerEmail, customerAddress) {
   document.getElementById('selected_customer_id').value = customerId;
   document.getElementById('customerSearchInput').style.display = 'none';
+  document.getElementById('walkInCustomerOption').style.display = 'none';
 
   const selectedDisplay = document.getElementById('selectedCustomerDisplay');
   selectedDisplay.style.display = 'block';
@@ -1348,6 +1351,7 @@ function selectCustomer(customerId, customerName, customerMobile, customerEmail,
 function selectWalkInCustomer() {
   document.getElementById('selected_customer_id').value = '';
   document.getElementById('customerSearchInput').style.display = 'none';
+  document.getElementById('walkInCustomerOption').style.display = 'none';
 
   const selectedDisplay = document.getElementById('selectedCustomerDisplay');
   selectedDisplay.style.display = 'block';
@@ -1368,6 +1372,7 @@ function clearSelectedCustomer() {
   document.getElementById('selected_customer_id').value = '';
   document.getElementById('booking_customer_phone').required = true;
   document.getElementById('customerSearchInput').style.display = 'block';
+  document.getElementById('walkInCustomerOption').style.display = 'block';
   document.getElementById('customerSearchInput').value = '';
   document.getElementById('selectedCustomerDisplay').style.display = 'none';
 
@@ -2115,8 +2120,7 @@ function showBookingDateAlert(message, type, icon) {
 }
 
 .customer-search-walkin {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f1f5f9;
+  margin-top: 8px;
 }
 
 .customer-search-walkin .btn {
