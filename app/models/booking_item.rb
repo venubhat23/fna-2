@@ -16,6 +16,15 @@ class BookingItem < ApplicationRecord
     self.total = quantity * price
   end
 
+  def gst_rate
+    product&.gst_enabled ? product.gst_percentage.to_f : 0
+  end
+
+  # price is inclusive of GST, so the pre-GST amount is extracted from the line total
+  def taxable_amount
+    ((quantity || 0) * (price || 0)) / (1 + gst_rate / 100.0)
+  end
+
   private
 
   def check_stock_availability

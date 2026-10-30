@@ -1044,19 +1044,8 @@ class Admin::BookingsController < Admin::ApplicationController
       product = item.product
       next unless product
 
-      # Calculate proper unit price (base price excluding GST for GST products)
-      unit_price = if product.gst_enabled? && product.gst_percentage.present?
-        product.calculate_base_price || item.price
-      else
-        item.price || product.selling_price
-      end
-
-      # Apply any booking-level discount proportionally
-      if booking.discount_amount.to_f > 0 && booking.total_amount.to_f > 0
-        discount_ratio = booking.discount_amount.to_f / booking.total_amount.to_f
-        unit_price = unit_price * (1 - discount_ratio)
-      end
-
+      # Base price excluding GST, with any booking-level discount applied proportionally
+      unit_price = booking.invoice_unit_price_for(item)
       item_total = item.quantity * unit_price
 
       invoice_item = invoice.invoice_items.build(

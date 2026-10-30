@@ -73,7 +73,7 @@ module ProductCatalogFormatting
           discount_amount: v.discount_amount&.to_f,
           effective_price: v.effective_price.to_f,
           gst_percentage: v.gst_percentage&.to_f,
-          gst_amount: v.gst_amount&.to_f,
+          gst_amount: v.computed_gst_amount.to_f,
           price_with_gst: v.price_with_gst.to_f,
           available_stock: v.available_stock.to_f,
           is_default: v.is_default,

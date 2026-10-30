@@ -971,7 +971,7 @@ class Admin::ReportsController < Admin::ApplicationController
       if booking&.booking_items
         booking.booking_items.each do |item|
           if item.product&.gst_enabled && item.product.gst_percentage > 0
-            base_amount = (item.quantity || 0) * (item.price || 0)
+            base_amount = item.taxable_amount
             gst_rate = item.product.gst_percentage
             item_gst = (base_amount * gst_rate / 100).round(2)
 

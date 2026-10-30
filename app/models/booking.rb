@@ -136,10 +136,9 @@ class Booking < ApplicationRecord
 
         # Check if product has GST enabled
         if item.product && item.product.gst_enabled && item.product.gst_percentage.to_f > 0
-          # Price is inclusive of GST: tax = price * rate/100, base = price - tax
-          gst_rate = item.product.gst_percentage.to_f
+          # Price is inclusive of GST: base = price / (1 + rate/100), tax = price - base
           total_price = price * quantity
-          item_gst = (total_price * gst_rate / 100).round(2)
+          item_gst = (total_price - item.taxable_amount).round(2)
           item_base = total_price - item_gst
 
           items_total += item_base
@@ -173,7 +172,7 @@ class Booking < ApplicationRecord
   def calculated_subtotal
     return subtotal if subtotal.present?
 
-    total = booking_items.sum { |item| (item.quantity || 0) * (item.price || 0) }
+    total = booking_items.sum(&:taxable_amount)
     total.round(2)
   end
 
@@ -184,10 +183,8 @@ class Booking < ApplicationRecord
     total_gst = 0
     booking_items.each do |item|
       if item.product && item.product.gst_enabled && item.product.gst_percentage.to_f > 0
-        gst_rate = item.product.gst_percentage.to_f
-        item_base = (item.price || 0) * (item.quantity || 0)
-        item_gst = (item_base * gst_rate / 100).round(2)
-        total_gst += item_gst
+        item_total = (item.price || 0) * (item.quantity || 0)
+        total_gst += (item_total - item.taxable_amount).round(2)
       end
     end
     total_gst.round(2)

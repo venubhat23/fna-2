@@ -160,7 +160,7 @@
                             <% product.sorted_variants.each do |v| %>
                               <option value="<%= v.id %>"
                                       data-price="<%= v.price_with_gst %>"
-                                      data-base-price="<%= v.effective_price %>"
+                                      data-base-price="<%= v.base_price %>"
                                       data-gst-rate="<%= v.effective_gst_percentage %>"
                                       data-stock="<%= v.available_stock %>"
                                       data-label="<%= v.label %>"

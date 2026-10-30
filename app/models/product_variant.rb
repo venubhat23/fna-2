@@ -36,13 +36,18 @@ class ProductVariant < ApplicationRecord
     gst_percentage.presence || product&.gst_percentage || 0
   end
 
+  # selling_price is inclusive of GST, same as Product#calculate_base_price
+  def base_price
+    return effective_price unless effective_gst_percentage > 0
+    effective_price / (1 + (effective_gst_percentage / 100.0))
+  end
+
   def computed_gst_amount
-    return 0 unless effective_gst_percentage > 0
-    (effective_price * effective_gst_percentage / 100.0).round(2)
+    (effective_price - base_price).round(2)
   end
 
   def price_with_gst
-    (effective_price + computed_gst_amount).round(2)
+    effective_price
   end
 
   def in_stock?
@@ -63,15 +68,8 @@ class ProductVariant < ApplicationRecord
   end
 
   def calculate_gst_fields
-    pct = gst_percentage.presence&.to_f || product&.gst_percentage.to_f
-    if pct && pct > 0 && selling_price.present?
-      base = effective_price
-      self.gst_amount = (base * pct / 100.0).round(2)
-      self.final_price_with_gst = (base + gst_amount).round(2)
-    else
-      self.gst_amount = 0
-      self.final_price_with_gst = effective_price
-    end
+    self.gst_amount = computed_gst_amount
+    self.final_price_with_gst = price_with_gst
   end
 
   def ensure_single_default

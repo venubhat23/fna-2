@@ -2371,13 +2371,14 @@ document.addEventListener('DOMContentLoaded', function() {
       effectivePrice = Math.max(effectivePrice, 0);
     }
 
-    const gstAmount = gstPercentage > 0 ? (effectivePrice * gstPercentage / 100) : 0;
-    const finalPrice = effectivePrice + gstAmount;
+    // Selling price is inclusive of GST
+    const basePrice = effectivePrice / (1 + gstPercentage / 100);
+    const gstAmount = effectivePrice - basePrice;
 
     const preview = row.querySelector('.variant-price-preview');
     if (preview) {
       preview.textContent = gstAmount > 0
-        ? `₹${effectivePrice.toFixed(2)} + GST = ₹${finalPrice.toFixed(2)}`
+        ? `₹${basePrice.toFixed(2)} + GST ₹${gstAmount.toFixed(2)} = ₹${effectivePrice.toFixed(2)}`
         : `₹${effectivePrice.toFixed(2)}`;
     }
   }
