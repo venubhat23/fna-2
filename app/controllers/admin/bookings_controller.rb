@@ -1044,7 +1044,7 @@ class Admin::BookingsController < Admin::ApplicationController
       product = item.product
       next unless product
 
-      # Base price excluding GST, with any booking-level discount applied proportionally
+      # Price including GST, with any booking-level discount applied proportionally
       unit_price = booking.invoice_unit_price_for(item)
       item_total = item.quantity * unit_price
 
@@ -1062,6 +1062,8 @@ class Admin::BookingsController < Admin::ApplicationController
     invoice.total_amount = total_amount
 
     if invoice.save
+      invoice.update_column(:paid_amount, invoice.total_amount)
+
       # Mark booking as invoiced and quick invoice
       booking.update!(
         invoice_generated: true,

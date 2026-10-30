@@ -11,6 +11,15 @@ class InvoiceItem < ApplicationRecord
   before_validation :calculate_total_amount
   before_validation :round_unit_price
 
+  def gst_rate
+    product&.gst_enabled ? product.gst_percentage.to_f : 0
+  end
+
+  # unit_price is inclusive of GST, so the pre-GST amount is extracted from the line total
+  def taxable_amount
+    ((quantity || 0) * (unit_price || 0)) / (1 + gst_rate / 100.0)
+  end
+
   private
 
   def calculate_total_amount

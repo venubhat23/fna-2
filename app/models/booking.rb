@@ -422,24 +422,19 @@ class Booking < ApplicationRecord
     end
   end
 
-  def base_unit_price_for(product, charged_price)
-    return charged_price.to_f unless product&.gst_enabled? && product.gst_percentage.present?
-
-    charged_price.to_f / (1 + product.gst_percentage.to_f / 100)
-  end
-
-  # Base (pre-GST), discount-adjusted unit price for a booking_item, used when
-  # generating this booking's quick invoice. GST is extracted from the price
-  # actually charged on the item (not the product's current master price), so
-  # later product price changes don't retroactively alter old invoices.
+  # GST-inclusive, discount-adjusted unit price for a booking_item, used when
+  # generating this booking's quick invoice. Uses the price actually charged on
+  # the item (not the product's current master price), so later product price
+  # changes don't retroactively alter old invoices.
   def invoice_unit_price_for(booking_item)
-    unit_price = base_unit_price_for(booking_item.product, booking_item.price)
+    unit_price = booking_item.price.to_f
+    items_total = subtotal.to_f + tax_amount.to_f
 
-    if discount_amount.to_f > 0 && total_amount.to_f > 0
-      unit_price = unit_price * (1 - discount_amount.to_f / total_amount.to_f)
+    if discount_amount.to_f > 0 && items_total > 0
+      unit_price = unit_price * (1 - discount_amount.to_f / items_total)
     end
 
-    unit_price.to_f
+    unit_price
   end
 
   # Generate a proper Invoice record (with InvoiceItems) for this booking, used by
@@ -476,6 +471,7 @@ class Booking < ApplicationRecord
     end
 
     if invoice.save
+      invoice.update_column(:paid_amount, invoice.total_amount) if payment_status_paid?
       update_columns(
         invoice_generated: true,
         invoice_number: invoice.invoice_number,
