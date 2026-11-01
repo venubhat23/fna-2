@@ -35,7 +35,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Active Products</h6>
-            <h4 class="mb-0"><%= @products.respond_to?(:select) ? @products.select { |p| p.status == 'active' }.count : 0 %></h4>
+            <h4 class="mb-0"><%= @product_stats[:active] %></h4>
           </div>
           <div class="text-success">
             <i class="bi bi-check-circle fs-2"></i>
@@ -50,7 +50,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">In Stock</h6>
-            <h4 class="mb-0"><%= @products.respond_to?(:select) ? @products.select { |p| p.stock.to_i > 0 }.count : 0 %></h4>
+            <h4 class="mb-0"><%= @product_stats[:in_stock] %></h4>
           </div>
           <div class="text-info">
             <i class="bi bi-box fs-2"></i>
@@ -65,7 +65,7 @@
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">Low Stock</h6>
-            <h4 class="mb-0"><%= @products.respond_to?(:select) ? @products.select { |p| p.stock.to_i > 0 && p.stock.to_i <= 10 }.count : 0 %></h4>
+            <h4 class="mb-0"><%= @product_stats[:low_stock] %></h4>
           </div>
           <div class="text-warning">
             <i class="bi bi-exclamation-triangle fs-2"></i>
@@ -76,44 +76,23 @@
   </div>
 </div>
 
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Search functionality
-  const searchInput = document.getElementById('searchInput');
-  const tableRows = document.querySelectorAll('tbody tr');
-
-  searchInput?.addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-
-    tableRows.forEach(row => {
-      const productName = row.cells[0]?.textContent.toLowerCase() || '';
-      const category = row.cells[1]?.textContent.toLowerCase() || '';
-      const sku = row.cells[0]?.textContent.toLowerCase() || '';
-
-      if (productName.includes(searchTerm) ||
-          category.includes(searchTerm) ||
-          sku.includes(searchTerm)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
-  });
-});
-</script>
-
-
 <!-- Products Table -->
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-transparent border-0">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
       <h5 class="mb-0">Product Catalog</h5>
-      <div class="d-flex gap-2">
-        <div class="position-relative">
-          <input type="text" class="form-control" placeholder="Search products..." id="searchInput">
-          <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
+      <div class="d-flex flex-wrap gap-2">
+        <div class="product-category-box">
+          <%= select_tag :category_id,
+                options_from_collection_for_select(@categories, :id, :name, params[:category_id]),
+                id: "categoryFilter", include_blank: true %>
+        </div>
+        <div class="product-search-box">
+          <select id="productSearch" data-search-url="<%= search_admin_products_path %>" data-index-url="<%= admin_products_path %>">
+            <% if @selected_product %>
+              <option value="<%= @selected_product.id %>" selected><%= @selected_product.name %></option>
+            <% end %>
+          </select>
         </div>
       </div>
     </div>
@@ -327,4 +306,124 @@ document.addEventListener('DOMContentLoaded', function() {
     <% end %>
   </div>
 </div>
+
+<style>
+  .product-search-box { width: 380px; max-width: 100%; }
+  .product-category-box { width: 240px; max-width: 100%; }
+  .product-search-result { display: flex; align-items: center; gap: 12px; }
+  .product-search-thumb {
+    width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; object-fit: cover;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(13, 110, 253, 0.1); color: #0d6efd;
+  }
+  .product-search-info { flex-grow: 1; min-width: 0; }
+  .product-search-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .product-search-meta { font-size: 0.8rem; opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .product-search-side { text-align: right; flex-shrink: 0; }
+  .product-search-price { font-weight: 600; }
+  .product-search-status { font-size: 0.7rem; text-transform: capitalize; opacity: 0.75; }
+</style>
+
+<script>
+(function() {
+  if (typeof $ === 'undefined' || !$.fn.select2) return;
+
+  const select = $('#productSearch');
+  const categorySelect = $('#categoryFilter');
+
+  // Built with .text()/.attr() rather than an HTML string so product names can't inject markup.
+  function renderProduct(product) {
+    if (product.loading || !product.id) return product.text;
+
+    const thumb = product.image_url
+      ? $('<img class="product-search-thumb" alt="">').attr('src', product.image_url)
+      : $('<div class="product-search-thumb"><i class="bi bi-box-seam"></i></div>');
+    const meta = ['SKU: ' + (product.sku || 'N/A'), product.category].filter(Boolean).join(' • ');
+
+    return $('<div class="product-search-result">').append(
+      thumb,
+      $('<div class="product-search-info">').append(
+        $('<div class="product-search-name">').text(product.text),
+        $('<div class="product-search-meta">').text(meta)
+      ),
+      $('<div class="product-search-side">').append(
+        $('<div class="product-search-price">').text(product.price),
+        $('<div class="product-search-status">').text(product.status || '')
+      )
+    );
+  }
+
+  function visit(filters) {
+    const query = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => { if (value) query.set(key, value); });
+
+    const queryString = query.toString();
+    const url = select.data('index-url') + (queryString ? '?' + queryString : '');
+
+    if (window.Turbo) {
+      Turbo.visit(url);
+    } else {
+      window.location.href = url;
+    }
+  }
+
+  categorySelect.select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'All categories',
+    allowClear: true,
+    language: { noResults: function() { return 'No categories found'; } }
+  });
+
+  select.select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'Search products by name or SKU...',
+    allowClear: true,
+    minimumInputLength: 1,
+    templateResult: renderProduct,
+    language: {
+      inputTooShort: function() { return 'Start typing a product name or SKU'; },
+      noResults: function() { return 'No products found'; },
+      searching: function() { return 'Searching...'; }
+    },
+    ajax: {
+      url: select.data('search-url'),
+      dataType: 'json',
+      delay: 250,
+      data: function(params) { return { q: params.term, category_id: categorySelect.val() }; },
+      processResults: function(data) { return { results: data }; }
+    }
+  });
+
+  $('#productSearch, #categoryFilter').on('select2:open', function() {
+    document.querySelector('.select2-container--open .select2-search__field')?.focus();
+  });
+
+  select.on('select2:select', function(event) {
+    visit({ category_id: categorySelect.val(), product_id: event.params.data.id });
+  });
+
+  select.on('select2:clear', function() {
+    visit({ category_id: categorySelect.val() });
+  });
+
+  // A selected product may not be in the new category, so changing category drops it.
+  categorySelect.on('select2:select', function(event) {
+    visit({ category_id: event.params.data.id });
+  });
+
+  categorySelect.on('select2:clear', function() {
+    visit({});
+  });
+
+  // Turbo snapshots the page when leaving it; put the plain <select> back so going
+  // back doesn't restore a dead Select2 box next to a freshly initialised one.
+  document.addEventListener('turbo:before-cache', function() {
+    [select, categorySelect].forEach(function(element) {
+      if (element.hasClass('select2-hidden-accessible')) element.select2('destroy');
+    });
+  }, { once: true });
+})();
+</script>
 

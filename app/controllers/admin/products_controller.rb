@@ -16,6 +16,10 @@ class Admin::ProductsController < Admin::ApplicationController
       @products = @products.search(params[:search])
     end
 
+    if params[:product_id].present?
+      @products = @products.where(id: params[:product_id])
+    end
+
     if params[:category_id].present?
       @products = @products.by_category(params[:category_id])
     end
@@ -33,8 +37,36 @@ class Admin::ProductsController < Admin::ApplicationController
       end
     end
 
+    @product_stats = product_stats(@products)
     @products = @products.recent.page(params[:page]).per(20)
+    @selected_product = @products.first if params[:product_id].present?
     load_categories
+  end
+
+  # JSON for the Select2 search box on the index page. Searches every status, because the
+  # catalog below it lists inactive and draft products too.
+  def search
+    term = params[:q].to_s.strip
+    return render(json: []) if term.blank?
+
+    pattern = "%#{Product.sanitize_sql_like(term)}%"
+    products = Product.includes(:category, image_attachment: :blob)
+                      .where('products.name ILIKE :pattern OR products.sku ILIKE :pattern', pattern: pattern)
+                      .order(:name)
+                      .limit(20)
+    products = products.by_category(params[:category_id]) if params[:category_id].present?
+
+    render json: products.map { |product|
+      {
+        id: product.id,
+        text: product.name,
+        sku: product.sku,
+        category: product.category&.name,
+        price: product.formatted_selling_price,
+        status: product.status,
+        image_url: product.main_image_url(width: 60, height: 60)
+      }
+    }
   end
 
   def show
@@ -244,6 +276,26 @@ class Admin::ProductsController < Admin::ApplicationController
   end
 
   private
+
+  # Index stat cards, counted across every page of the filtered list in one query. Stock
+  # matches the table's Stock column: variant totals for multi-quantity products, otherwise
+  # products.stock.
+  def product_stats(products)
+    stock = <<~SQL.squish
+      CASE WHEN products.has_multiple_quantities
+        THEN COALESCE((SELECT SUM(pv.available_stock) FROM product_variants pv WHERE pv.product_id = products.id), 0)
+        ELSE COALESCE(products.stock, 0)
+      END
+    SQL
+
+    active, in_stock, low_stock = Product.where(id: products.select(:id)).pick(
+      Arel.sql("COUNT(*) FILTER (WHERE products.status = 'active')"),
+      Arel.sql("COUNT(*) FILTER (WHERE #{stock} > 0)"),
+      Arel.sql("COUNT(*) FILTER (WHERE #{stock} BETWEEN 1 AND 10)")
+    )
+
+    { active: active, in_stock: in_stock, low_stock: low_stock }
+  end
 
   def handle_stock_vendor_purchase_linking(vendor_purchase_id)
     return unless vendor_purchase_id
