@@ -2261,6 +2261,28 @@ td .d-flex.gap-2 {
   }
 }
 
+/* Booking Details + Customer columns: keep them from collapsing into each other */
+.avatar-sm {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.table th:nth-child(1),
+.table td:nth-child(1) {
+  min-width: 220px;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  min-width: 180px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.table thead th {
+  white-space: nowrap;
+}
+
 /* Enhanced table column width for financial overview */
 .table th:nth-child(3),
 .table td:nth-child(3) {
