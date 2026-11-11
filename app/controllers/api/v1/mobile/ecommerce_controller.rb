@@ -209,8 +209,15 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       booking_items_attributes: [:product_id, :product_variant_id, :quantity, :price]
     )
 
+    # A customer token always books for that customer; customer_id from the body is
+    # only honoured for agent / sub-agent tokens booking on a customer's behalf.
+    # Trusting the body for customers let bookings land on the wrong customer record
+    # (and so not show up in GET /bookings for the logged-in customer).
+    token_customer = current_customer
+
     # Validate required fields
-    required_fields = [:customer_id, :delivery_address, :pincode]
+    required_fields = [:delivery_address, :pincode]
+    required_fields.unshift(:customer_id) unless token_customer
     missing_fields = required_fields.select { |field| booking_params[field].blank? }
 
     if missing_fields.any?
@@ -226,8 +233,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       }, status: :unprocessable_entity
     end
 
-    # Find customer from customer_id parameter
-    customer = Customer.find_by(id: booking_params[:customer_id])
+    customer = token_customer || Customer.find_by(id: booking_params[:customer_id])
 
     unless customer
       return render json: {
@@ -365,6 +371,12 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
         # Ensure customer association is properly set
         @booking.customer_id = customer.id
         @booking.customer = customer
+        if token_customer
+          # Snapshot contact details from the account, not free text from the request
+          @booking.customer_name = customer.display_name
+          @booking.customer_phone = customer.mobile
+          @booking.customer_email = customer.email if customer.email.present?
+        end
         @booking.user = nil # Mobile bookings don't have associated admin users
         @booking.booking_date = Time.current
         @booking.status = 'ordered_and_delivery_pending'

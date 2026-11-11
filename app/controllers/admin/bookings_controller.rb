@@ -28,8 +28,13 @@ class Admin::BookingsController < Admin::ApplicationController
       @bookings = @bookings.where(status: params[:status])
     end
 
-    if params[:date_from].present? && params[:date_to].present?
-      @bookings = @bookings.where(created_at: params[:date_from]..params[:date_to])
+    # Booking date filter: either end may be blank; each end covers the whole day in app time zone.
+    @date_from = (Date.parse(params[:date_from]) rescue nil) if params[:date_from].present?
+    @date_to   = (Date.parse(params[:date_to]) rescue nil) if params[:date_to].present?
+    if @date_from || @date_to
+      from = @date_from&.in_time_zone&.beginning_of_day
+      to   = @date_to&.in_time_zone&.end_of_day
+      @bookings = @bookings.where(created_at: from..to)
     end
 
     if params[:customer_id].present? && params[:customer_id].strip != ''
