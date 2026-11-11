@@ -10,22 +10,15 @@ class Admin::BookingsController < Admin::ApplicationController
   before_action :set_booking, only: [:show, :edit, :update, :destroy, :generate_invoice, :invoice, :convert_to_order, :update_status, :cancel_order, :mark_delivered, :mark_completed, :manage_stage, :update_stage]
 
   def index
-    # Start with base query for statistics (before filtering) — no includes here,
-    # stats are computed via a single GROUP BY, not by loading records.
-    @all_bookings = current_user.franchise? ? Booking.where(user_id: current_user.id) : Booking.all
+    scope = current_user.franchise? ? Booking.where(user_id: current_user.id) : Booking.all
 
-    # Apply filters
-    @bookings = @all_bookings.recent
-
+    # Filters other than status. The stat cards are counted from this, so they follow
+    # the active search/date/customer/source filters but still show every status.
     if params[:search].present?
-      @bookings = @bookings.where(
+      scope = scope.where(
         "booking_number LIKE ? OR customer_name LIKE ? OR customer_email LIKE ? OR customer_phone LIKE ?",
         "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%"
       )
-    end
-
-    if params[:status].present? && params[:status].strip != ''
-      @bookings = @bookings.where(status: params[:status])
     end
 
     # Booking date filter: either end may be blank; each end covers the whole day in app time zone.
@@ -34,19 +27,19 @@ class Admin::BookingsController < Admin::ApplicationController
     if @date_from || @date_to
       from = @date_from&.in_time_zone&.beginning_of_day
       to   = @date_to&.in_time_zone&.end_of_day
-      @bookings = @bookings.where(created_at: from..to)
+      scope = scope.where(created_at: from..to)
     end
 
     if params[:customer_id].present? && params[:customer_id].strip != ''
-      @bookings = @bookings.where(customer_id: params[:customer_id])
+      scope = scope.where(customer_id: params[:customer_id])
     end
 
     if params[:booked_by].present? && params[:booked_by].strip != ''
-      @bookings = @bookings.where(booked_by: params[:booked_by])
+      scope = scope.where(booked_by: params[:booked_by])
     end
 
     # Pre-compute stats with a single GROUP BY — replaces 6 separate COUNT queries
-    stats_counts = @all_bookings.group(:status).count
+    stats_counts = scope.group(:status).count
     @booking_stats = {
       draft: stats_counts['draft'].to_i,
       pending: stats_counts['ordered_and_delivery_pending'].to_i,
@@ -55,6 +48,11 @@ class Admin::BookingsController < Admin::ApplicationController
       completed: stats_counts['completed'].to_i,
       issues: stats_counts.values_at('cancelled', 'returned').compact.sum
     }
+
+    @bookings = scope.recent
+    if params[:status].present? && params[:status].strip != ''
+      @bookings = @bookings.where(status: params[:status])
+    end
 
     # Get pagination settings from system settings
     @per_page = SystemSetting.default_pagination_per_page

@@ -368,50 +368,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Booking Date Filter -->
-        <%
-          today = Time.zone.today
-          date_presets = [
-            ['Today',        today,                     today],
-            ['Yesterday',    today - 1,                 today - 1],
-            ['Last 7 days',  today - 6,                 today],
-            ['Last 30 days', today - 29,                today],
-            ['This month',   today.beginning_of_month,  today],
-            ['Last month',   (today - 1.month).beginning_of_month, (today - 1.month).end_of_month]
-          ]
-          base_filter_params = request.query_parameters.except('date_from', 'date_to', 'page')
-        %>
-        <%= hidden_field_tag :date_from, @date_from.iso8601 if @date_from %>
-        <%= hidden_field_tag :date_to, @date_to.iso8601 if @date_to %>
-        <div class="date-filter-bar mt-3 pt-3">
-          <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="date-filter-label small fw-semibold text-muted me-1">
-              <i class="bi bi-calendar3 me-1"></i>Booked on
-            </span>
-
-            <%= link_to "All time", admin_bookings_path(base_filter_params),
-                  class: "date-chip #{'active' unless @date_from || @date_to}" %>
-            <% date_presets.each do |label, from, to| %>
-              <%= link_to label,
-                    admin_bookings_path(base_filter_params.merge(date_from: from.iso8601, date_to: to.iso8601)),
-                    class: "date-chip #{'active' if @date_from == from && @date_to == to}" %>
-            <% end %>
-
-          </div>
-          <% if @date_from || @date_to %>
-            <div class="small text-primary mt-2">
-              <i class="bi bi-funnel-fill me-1"></i>
-              Showing bookings
-              <% if @date_from && @date_to && @date_from == @date_to %>
-                on <strong><%= @date_from.strftime('%d %b %Y') %></strong>
-              <% else %>
-                <% if @date_from %>from <strong><%= @date_from.strftime('%d %b %Y') %></strong><% end %>
-                <% if @date_to %>to <strong><%= @date_to.strftime('%d %b %Y') %></strong><% end %>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
       <% end %>
     </div>
   </div>
@@ -2318,36 +2274,6 @@ td .d-flex.gap-2 {
   border-top: 1px dashed #e2e8f0;
 }
 
-/* Booking date filter */
-.date-filter-bar {
-  border-top: 1px solid #e2e8f0;
-}
-
-.date-chip {
-  display: inline-block;
-  padding: 0.3rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #475569;
-  background: #fff;
-  border: 1px solid #dbe2ea;
-  text-decoration: none;
-  transition: all 0.15s ease;
-}
-
-.date-chip:hover {
-  color: #0d6efd;
-  border-color: #0d6efd;
-  background: #f0f6ff;
-}
-
-.date-chip.active {
-  color: #fff;
-  background: linear-gradient(135deg, #0d6efd, #6f42c1);
-  border-color: transparent;
-  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
-}
 
 
 .table thead th {
