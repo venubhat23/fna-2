@@ -18,8 +18,8 @@
 }
 
 .subs-table tbody td {
-  padding-top: 0.9rem;
-  padding-bottom: 0.9rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -40,8 +40,8 @@
 }
 
 .sub-avatar {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -54,17 +54,12 @@
   box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
 }
 
-.sub-details .sub-section + .sub-section {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px dashed #e2e8f0;
-}
 
 .sub-progress {
-  height: 8px;
+  height: 6px;
   border-radius: 999px;
   background: #eef2f7;
-  min-width: 140px;
+  min-width: 90px;
 }
 .sub-progress .progress-bar {
   border-radius: 999px;
@@ -74,9 +69,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.25rem 0.7rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   background: #f1f5f9;
   color: #475569;
@@ -406,9 +401,9 @@
                 </div>
               </th>
               <th class="border-0 fw-semibold">Customer</th>
-              <th class="border-0 fw-semibold" style="width:110px">Row Number</th>
-              <th class="border-0 fw-semibold" style="min-width:280px">Subscription Details</th>
-              <th class="border-0 fw-semibold">Progress & Status</th>
+              <th class="border-0 fw-semibold">Row &amp; Schedule</th>
+              <th class="border-0 fw-semibold">Product &amp; Quantity</th>
+              <th class="border-0 fw-semibold" style="min-width:260px">Progress, Status &amp; Delivery</th>
               <th class="border-0 fw-semibold">Actions</th>
             </tr>
           </thead>
@@ -424,117 +419,95 @@
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
                     <% customer_full_name = "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %>
-                    <div class="sub-avatar me-3">
+                    <div class="sub-avatar me-2">
                       <%= customer_full_name.split.first(2).map { |w| w[0] }.join.upcase.presence || '?' %>
                     </div>
-                    <div>
-                      <h6 class="mb-0"><%= customer_full_name %></h6>
+                    <div class="lh-sm">
+                      <div class="fw-semibold text-dark"><%= customer_full_name %></div>
                       <small class="text-muted">
-                        <i class="bi bi-telephone me-1"></i>
-                        <%= subscription.customer.mobile %>
+                        <i class="bi bi-telephone me-1"></i><%= subscription.customer.mobile %>
+                        <span class="ms-1">· #<%= subscription.id %><%= " · #{subscription.created_at.strftime('%d %b %Y')}" if subscription.created_at %></span>
                       </small>
-                      <div class="mt-1">
-                        <small class="text-muted">#<%= subscription.id %> - <%= subscription.created_at.strftime("%d %b %Y") if subscription.created_at %></small>
-                      </div>
                     </div>
                   </div>
                 </td>
                 <td class="align-middle">
-                  <% if subscription.customer.row_number.present? %>
-                    <span class="badge bg-primary-subtle text-primary"><%= subscription.customer.row_number %></span>
-                  <% else %>
-                    <span class="text-muted small">—</span>
-                  <% end %>
+                  <div class="lh-sm">
+                    <div class="d-flex flex-wrap align-items-center gap-1 small text-nowrap">
+                      <% if subscription.customer.row_number.present? %>
+                        <span class="badge bg-primary-subtle text-primary me-1"><%= subscription.customer.row_number %></span>
+                      <% end %>
+                      <strong><%= subscription.start_date.strftime('%d %b') %></strong>
+                      <span class="text-muted">to</span>
+                      <strong><%= subscription.end_date.strftime('%d %b') %></strong>
+                      <span class="text-muted">(<%= subscription.total_days %> days)</span>
+                    </div>
+                    <% pattern_class = case subscription.delivery_pattern
+                                       when 'daily' then 'bg-success'
+                                       when 'alternate' then 'bg-warning'
+                                       when 'specific_dates' then 'bg-info'
+                                       else 'bg-secondary'
+                                       end %>
+                    <div class="d-flex align-items-center gap-1 mt-1">
+                      <span class="badge <%= pattern_class %>">
+                        <i class="bi bi-calendar me-1"></i><%= subscription.delivery_pattern.humanize %>
+                      </span>
+                      <% task_status = summary[:daily_tasks_status] %>
+                      <% task_status_class = task_status == 'Ct' ? 'bg-success text-white' : 'bg-warning text-dark' %>
+                      <span class="badge <%= task_status_class %>" title="<%= task_status == 'Ct' ? 'All daily tasks completed' : 'Some daily tasks pending' %>">
+                        <%= task_status %>
+                      </span>
+                    </div>
+                  </div>
                 </td>
                 <td class="align-middle">
-                  <div class="sub-details">
-                    <!-- Product & Quantity -->
-                    <div class="sub-section">
-                      <div class="fw-semibold text-dark">
-                        <i class="bi bi-box-seam text-primary me-1"></i><%= subscription.product.name %>
-                      </div>
-                      <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
-                        <% if summary[:has_quantity_changes] %>
-                          <span class="badge bg-warning-subtle text-warning">
-                            Original: <%= subscription.quantity %> <%= subscription.unit %>
-                          </span>
-                          <span class="badge bg-success-subtle text-success">
-                            Current Avg: <%= summary[:current_average_quantity] %> <%= subscription.unit %>
-                          </span>
-                        <% else %>
-                          <span class="badge bg-info-subtle text-info">
-                            <%= subscription.quantity %> <%= subscription.unit %>
-                          </span>
-                        <% end %>
-                        <small class="text-muted">₹<%= subscription.product.price %>/unit</small>
-                      </div>
+                  <div class="lh-sm">
+                    <div class="fw-semibold text-dark">
+                      <i class="bi bi-box-seam text-primary me-1"></i><%= subscription.product.name %>
                     </div>
-
-                    <!-- Duration & Pattern -->
-                    <div class="sub-section">
-                      <div class="d-flex flex-wrap align-items-center gap-1 small">
-                        <i class="bi bi-calendar-range text-primary me-1"></i>
-                        <strong><%= subscription.start_date.strftime('%d %b') %></strong>
-                        <span class="text-muted">to</span>
-                        <strong><%= subscription.end_date.strftime('%d %b') %></strong>
-                        <span class="text-muted">(<%= subscription.total_days %> days)</span>
-                      </div>
-                      <% pattern_class = case subscription.delivery_pattern
-                                         when 'daily' then 'bg-success'
-                                         when 'alternate' then 'bg-warning'
-                                         when 'specific_dates' then 'bg-info'
-                                         else 'bg-secondary'
-                                         end %>
-                      <div class="d-flex align-items-center gap-2 mt-1">
-                        <span class="badge <%= pattern_class %> px-2 py-1">
-                          <i class="bi bi-calendar me-1"></i>
-                          <%= subscription.delivery_pattern.humanize %>
+                    <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                      <% if summary[:has_quantity_changes] %>
+                        <span class="badge bg-warning-subtle text-warning">
+                          Original: <%= subscription.quantity %> <%= subscription.unit %>
                         </span>
-                        <% task_status = summary[:daily_tasks_status] %>
-                        <% task_status_class = task_status == 'Ct' ? 'bg-success text-white' : 'bg-warning text-dark' %>
-                        <span class="badge <%= task_status_class %> px-2 py-1" title="<%= task_status == 'Ct' ? 'All daily tasks completed' : 'Some daily tasks pending' %>">
-                          <%= task_status %>
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- Delivery Person -->
-                    <div class="sub-section small">
-                      <% if subscription.delivery_person %>
-                        <i class="bi bi-person-badge text-success me-1"></i>
-                        <span class="fw-semibold text-dark"><%= "#{subscription.delivery_person.first_name} #{subscription.delivery_person.last_name}".strip %></span>
-                        <span class="text-muted ms-1">
-                          <i class="bi bi-telephone me-1"></i><%= subscription.delivery_person.mobile.present? ? subscription.delivery_person.mobile : 'No mobile' %>
+                        <span class="badge bg-success-subtle text-success">
+                          Current Avg: <%= summary[:current_average_quantity] %> <%= subscription.unit %>
                         </span>
                       <% else %>
-                        <span class="text-muted">
-                          <i class="bi bi-person-x me-1"></i>Delivery person not assigned
+                        <span class="badge bg-info-subtle text-info">
+                          <%= subscription.quantity %> <%= subscription.unit %>
                         </span>
                       <% end %>
+                      <small class="text-muted">₹<%= subscription.product.price %>/unit</small>
                     </div>
                   </div>
                 </td>
                 <td class="align-middle">
                   <% rate = summary[:completion_rate].to_f %>
-                  <div class="progress sub-progress mb-1">
-                    <div class="progress-bar <%= rate >= 75 ? 'bg-success' : rate >= 40 ? 'bg-info' : 'bg-warning' %>" style="width: <%= rate %>%"></div>
-                  </div>
-                  <div class="d-flex justify-content-between mb-2">
-                    <small class="text-muted">
-                      <%= summary[:completed] %>/<%= summary[:total_deliveries] %> tasks
-                    </small>
-                    <small class="text-muted">
-                      <%= summary[:completion_rate].round(1) %>%
-                    </small>
-                  </div>
-                  <span class="sub-status-pill status-<%= subscription.status %>">
-                    <span class="dot"></span><%= subscription.status.humanize %>
-                  </span>
-                  <% unless subscription.is_active? %>
-                    <div class="mt-1">
-                      <span class="badge bg-secondary">Inactive</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress sub-progress flex-grow-1">
+                      <div class="progress-bar <%= rate >= 75 ? 'bg-success' : rate >= 40 ? 'bg-info' : 'bg-warning' %>" style="width: <%= rate %>%"></div>
                     </div>
-                  <% end %>
+                    <small class="text-muted text-nowrap">
+                      <%= summary[:completed] %>/<%= summary[:total_deliveries] %> · <%= summary[:completion_rate].round(1) %>%
+                    </small>
+                  </div>
+                  <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small">
+                    <span class="sub-status-pill status-<%= subscription.status %>">
+                      <span class="dot"></span><%= subscription.status.humanize %>
+                    </span>
+                    <% unless subscription.is_active? %>
+                      <span class="badge bg-secondary">Inactive</span>
+                    <% end %>
+                    <% if subscription.delivery_person %>
+                      <span class="text-nowrap">
+                        <i class="bi bi-person-badge text-success me-1"></i><span class="fw-semibold text-dark"><%= "#{subscription.delivery_person.first_name} #{subscription.delivery_person.last_name}".strip %></span>
+                        <span class="text-muted ms-1"><%= subscription.delivery_person.mobile.presence || 'No mobile' %></span>
+                      </span>
+                    <% else %>
+                      <span class="text-muted text-nowrap"><i class="bi bi-person-x me-1"></i>Not assigned</span>
+                    <% end %>
+                  </div>
                 </td>
                 <td class="align-middle">
                   <div class="d-flex gap-1 align-items-center sub-actions">
