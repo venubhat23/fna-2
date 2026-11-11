@@ -1,9 +1,117 @@
 <style>
+/* ===== Subscriptions table ===== */
+.subs-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.subs-table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b !important;
+  background: #f8fafc !important;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 2px solid #e2e8f0 !important;
+  white-space: nowrap;
+}
+
+.subs-table tbody td {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.subs-table tbody tr.sub-row td:first-child {
+  border-left: 4px solid transparent;
+}
+.subs-table tbody tr.status-active td:first-child    { border-left-color: #22c55e; }
+.subs-table tbody tr.status-paused td:first-child    { border-left-color: #f59e0b; }
+.subs-table tbody tr.status-expired td:first-child   { border-left-color: #ef4444; }
+.subs-table tbody tr.status-cancelled td:first-child { border-left-color: #94a3b8; }
+
+.subs-table.table-hover tbody tr:hover {
+  transform: none;
+  box-shadow: none;
+}
+.subs-table.table-hover tbody tr:hover > td {
+  background-color: #f5f9ff;
+}
+
+.sub-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #fff;
+  background: linear-gradient(135deg, #0d6efd, #6f42c1);
+  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
+}
+
 .sub-details .sub-section + .sub-section {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px dashed #e2e8f0;
 }
+
+.sub-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  min-width: 140px;
+}
+.sub-progress .progress-bar {
+  border-radius: 999px;
+}
+
+.sub-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
+.sub-status-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.sub-status-pill.status-active    { background: #dcfce7; color: #15803d; }
+.sub-status-pill.status-paused    { background: #fef3c7; color: #b45309; }
+.sub-status-pill.status-expired   { background: #fee2e2; color: #b91c1c; }
+.sub-status-pill.status-cancelled { background: #e2e8f0; color: #475569; }
+
+.sub-actions .btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sub-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.sub-actions .btn-outline-primary { background: #e7f0ff; color: #0d6efd; }
+.sub-actions .btn-outline-info    { background: #e0f7fb; color: #0aa2c0; }
+.sub-actions .btn-outline-warning { background: #fff4db; color: #b7791f; }
+.sub-actions .btn-outline-success { background: #e3f6e9; color: #198754; }
+.sub-actions .btn-outline-danger  { background: #fde8ea; color: #dc3545; }
 </style>
 <% content_for :title, "Subscriptions Management" %>
 <% list_state = params.permit(:page, :status, :start_date, :end_date, :month, :customer_id, :delivery_person_id).to_h %>
@@ -286,7 +394,7 @@
   <div class="card-body p-0">
     <% if @subscriptions.any? %>
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 subs-table">
           <thead class="table-light">
             <tr>
               <th class="border-0" width="40">
@@ -307,7 +415,7 @@
           <tbody>
             <% @subscriptions.each do |subscription| %>
               <% summary = @subscription_summaries[subscription.id] %>
-              <tr>
+              <tr class="sub-row status-<%= subscription.status %>">
                 <td class="align-middle">
                   <div class="form-check">
                     <input class="form-check-input subscription-checkbox" type="checkbox" value="<%= subscription.id %>" onchange="updateSelectedSubscriptionCount()">
@@ -315,11 +423,12 @@
                 </td>
                 <td class="align-middle">
                   <div class="d-flex align-items-center">
-                    <div class="avatar-sm bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center me-3">
-                      <i class="bi bi-arrow-repeat text-primary"></i>
+                    <% customer_full_name = "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %>
+                    <div class="sub-avatar me-3">
+                      <%= customer_full_name.split.first(2).map { |w| w[0] }.join.upcase.presence || '?' %>
                     </div>
                     <div>
-                      <h6 class="mb-0"><%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %></h6>
+                      <h6 class="mb-0"><%= customer_full_name %></h6>
                       <small class="text-muted">
                         <i class="bi bi-telephone me-1"></i>
                         <%= subscription.customer.mobile %>
@@ -406,8 +515,9 @@
                   </div>
                 </td>
                 <td class="align-middle">
-                  <div class="progress mb-1" style="height: 8px;">
-                    <div class="progress-bar bg-success" style="width: <%= summary[:completion_rate] %>%"></div>
+                  <% rate = summary[:completion_rate].to_f %>
+                  <div class="progress sub-progress mb-1">
+                    <div class="progress-bar <%= rate >= 75 ? 'bg-success' : rate >= 40 ? 'bg-info' : 'bg-warning' %>" style="width: <%= rate %>%"></div>
                   </div>
                   <div class="d-flex justify-content-between mb-2">
                     <small class="text-muted">
@@ -417,15 +527,8 @@
                       <%= summary[:completion_rate].round(1) %>%
                     </small>
                   </div>
-                  <% status_class = case subscription.status
-                                    when 'active' then 'bg-success'
-                                    when 'paused' then 'bg-warning'
-                                    when 'expired' then 'bg-danger'
-                                    when 'cancelled' then 'bg-secondary'
-                                    else 'bg-light'
-                                    end %>
-                  <span class="badge <%= status_class %> px-3 py-2">
-                    <%= subscription.status.humanize %>
+                  <span class="sub-status-pill status-<%= subscription.status %>">
+                    <span class="dot"></span><%= subscription.status.humanize %>
                   </span>
                   <% unless subscription.is_active? %>
                     <div class="mt-1">
@@ -434,7 +537,7 @@
                   <% end %>
                 </td>
                 <td class="align-middle">
-                  <div class="d-flex gap-2 align-items-center">
+                  <div class="d-flex gap-1 align-items-center sub-actions">
                     <!-- Primary Action - View Details -->
                     <%= link_to admin_subscription_path(subscription, list_state),
                         class: "btn btn-sm btn-outline-primary",

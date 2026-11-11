@@ -382,6 +382,8 @@
           ]
           base_filter_params = request.query_parameters.except('date_from', 'date_to', 'page')
         %>
+        <%= hidden_field_tag :date_from, @date_from.iso8601 if @date_from %>
+        <%= hidden_field_tag :date_to, @date_to.iso8601 if @date_to %>
         <div class="date-filter-bar mt-3 pt-3">
           <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="date-filter-label small fw-semibold text-muted me-1">
@@ -396,21 +398,6 @@
                     class: "date-chip #{'active' if @date_from == from && @date_to == to}" %>
             <% end %>
 
-            <div class="date-range-group ms-lg-auto d-flex align-items-center shadow-sm">
-              <i class="bi bi-calendar-event text-primary px-2"></i>
-              <%= form.date_field :date_from, value: @date_from&.iso8601, max: today.iso8601,
-                    class: "form-control form-control-sm border-0", title: "From date",
-                    onchange: "if (!this.form.date_to.value || this.form.date_to.value >= this.value) this.form.submit();" %>
-              <span class="text-muted small px-1">to</span>
-              <%= form.date_field :date_to, value: @date_to&.iso8601, max: today.iso8601,
-                    class: "form-control form-control-sm border-0", title: "To date",
-                    onchange: "if (!this.form.date_from.value || this.form.date_from.value <= this.value) this.form.submit();" %>
-              <% if @date_from || @date_to %>
-                <%= link_to admin_bookings_path(base_filter_params), class: "btn btn-link btn-sm text-muted px-2", title: "Clear dates" do %>
-                  <i class="bi bi-x-lg"></i>
-                <% end %>
-              <% end %>
-            </div>
           </div>
           <% if @date_from || @date_to %>
             <div class="small text-primary mt-2">
@@ -2316,9 +2303,14 @@ td .d-flex.gap-2 {
   flex-shrink: 0;
 }
 
+/* width: 1% shrinks the column to its content so the table's spare width goes to
+   the other columns instead of opening a gap before Financial Overview */
 .table th:nth-child(1),
 .table td:nth-child(1) {
-  min-width: 260px;
+  width: 1%;
+  min-width: 240px;
+  max-width: 300px;
+  padding-right: 0.75rem;
 }
 
 .booking-customer {
@@ -2357,23 +2349,6 @@ td .d-flex.gap-2 {
   box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
 }
 
-.date-range-group {
-  background: #fff;
-  border: 1px solid #dbe2ea;
-  border-radius: 999px;
-  padding: 0.15rem 0.35rem;
-}
-
-.date-range-group:focus-within {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15) !important;
-}
-
-.date-range-group .form-control {
-  width: 140px;
-  background: transparent;
-  box-shadow: none;
-}
 
 .table thead th {
   white-space: nowrap;
