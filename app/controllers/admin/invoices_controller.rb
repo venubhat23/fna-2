@@ -130,30 +130,7 @@ class Admin::InvoicesController < Admin::ApplicationController
   def customers_by_delivery_person
     delivery_person_id = params[:delivery_person_id]
     if delivery_person_id.present?
-      # Find customers who have bookings with this delivery person
-      booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id)
-                                   .distinct
-                                   .pluck(:customer_id)
-                                   .compact
-
-      # Find customers who have subscriptions with this delivery person
-      subscription_customer_ids = []
-      if defined?(MilkSubscription)
-        subscription_customer_ids += MilkSubscription.where(delivery_person_id: delivery_person_id)
-                                                    .distinct
-                                                    .pluck(:customer_id)
-                                                    .compact
-      end
-
-      if defined?(SubscriptionTemplate)
-        subscription_customer_ids += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
-                                                         .distinct
-                                                         .pluck(:customer_id)
-                                                         .compact
-      end
-
-      # Combine all customer IDs from bookings and subscriptions
-      all_customer_ids = (booking_customer_ids + subscription_customer_ids).uniq
+      all_customer_ids = delivery_person_customer_ids(delivery_person_id, params[:month], params[:year])
 
       @customers = Customer.where(id: all_customer_ids)
                           .order(:first_name, :last_name)
@@ -182,16 +159,7 @@ class Admin::InvoicesController < Admin::ApplicationController
       Customer.active.order(:first_name, :last_name)
     when 'delivery_person'
       if delivery_person_id.present?
-        # Get customers from bookings and subscriptions for delivery person
-        booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id)
-                                     .distinct.pluck(:customer_id).compact.uniq
-        subscription_customer_ids = []
-        subscription_customer_ids += MilkSubscription.where(delivery_person_id: delivery_person_id)
-                                                    .distinct.pluck(:customer_id).compact if defined?(MilkSubscription)
-        subscription_customer_ids += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
-                                                         .distinct.pluck(:customer_id).compact if defined?(SubscriptionTemplate)
-
-        all_customer_ids = (booking_customer_ids + subscription_customer_ids).uniq
+        all_customer_ids = delivery_person_customer_ids(delivery_person_id, month, year)
         Customer.where(id: all_customer_ids).order(:first_name, :last_name)
       else
         Customer.none
@@ -253,7 +221,7 @@ class Admin::InvoicesController < Admin::ApplicationController
     delivery_person_id = params[:delivery_person_id]
 
     # Get all potential customers based on selection
-    potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id)
+    potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id, month, year)
 
     # Find customers who already have invoices for this month/year
     existing_invoices = Invoice.where(month: month, year: year)
@@ -321,10 +289,10 @@ class Admin::InvoicesController < Admin::ApplicationController
     delivery_person_id = params[:delivery_person_id]
 
     # Get pending items summary before generation
-    pending_summary = get_pending_items_summary(customer_selection, customer_ids, delivery_person_id)
+    pending_summary = get_pending_items_summary(customer_selection, customer_ids, delivery_person_id, month, year)
 
     # Get potential customers using the helper method
-    potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id)
+    potential_customers = get_potential_customers(customer_selection, customer_ids, delivery_person_id, month, year)
 
     # Filter customers based on invoice status and uninvoiced MilkDeliveryTasks
     existing_customer_ids = Invoice.where(month: month, year: year)
@@ -780,37 +748,44 @@ class Admin::InvoicesController < Admin::ApplicationController
 
   private
 
-  def get_potential_customers(customer_selection, customer_ids, delivery_person_id)
+  # Customer ids served by a delivery person in the given month: customers with a
+  # milk delivery task assigned to them in that month (same source the subscriptions
+  # page filters on) plus customers with a booking in that month delivered by them.
+  # Without a valid month/year, falls back to every customer ever linked to them.
+  def delivery_person_customer_ids(delivery_person_id, month = nil, year = nil)
+    return [] if delivery_person_id.blank?
+
+    month = month.to_i
+    year = year.to_i
+
+    if month.between?(1, 12) && year > 0
+      start_date = Date.new(year, month, 1)
+      end_date = start_date.end_of_month
+
+      task_customer_ids = MilkDeliveryTask.where(delivery_person_id: delivery_person_id,
+                                                 delivery_date: start_date..end_date)
+                                          .distinct.pluck(:customer_id)
+      booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id,
+                                           booking_date: start_date.beginning_of_day..end_date.end_of_day)
+                                    .distinct.pluck(:customer_id)
+
+      (task_customer_ids + booking_customer_ids).compact.uniq
+    else
+      booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id).distinct.pluck(:customer_id)
+      subscription_customer_ids = MilkSubscription.where(delivery_person_id: delivery_person_id).distinct.pluck(:customer_id)
+      template_customer_ids = SubscriptionTemplate.where(delivery_person_id: delivery_person_id).distinct.pluck(:customer_id)
+
+      (booking_customer_ids + subscription_customer_ids + template_customer_ids).compact.uniq
+    end
+  end
+
+  def get_potential_customers(customer_selection, customer_ids, delivery_person_id, month = nil, year = nil)
     case customer_selection
     when 'all'
       Customer.active.distinct
     when 'delivery_person'
       if delivery_person_id.present?
-        # Get customers from bookings
-        booking_customer_ids = Booking.where(delivery_person_id: delivery_person_id)
-                                     .distinct
-                                     .pluck(:customer_id)
-                                     .compact
-                                     .uniq
-
-        # Get customers from subscriptions
-        subscription_customer_ids = []
-        if defined?(MilkSubscription)
-          subscription_customer_ids += MilkSubscription.where(delivery_person_id: delivery_person_id)
-                                                      .distinct
-                                                      .pluck(:customer_id)
-                                                      .compact
-        end
-
-        if defined?(SubscriptionTemplate)
-          subscription_customer_ids += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
-                                                           .distinct
-                                                           .pluck(:customer_id)
-                                                           .compact
-        end
-
-        # Combine and ensure unique customer IDs
-        all_customer_ids = (booking_customer_ids + subscription_customer_ids).uniq
+        all_customer_ids = delivery_person_customer_ids(delivery_person_id, month, year)
 
         # If specific customers selected, use intersection
         if customer_ids.present?
@@ -1166,34 +1141,13 @@ class Admin::InvoicesController < Admin::ApplicationController
     @invoice = Invoice.find(params[:id])
   end
 
-  def get_pending_items_summary(customer_selection, customer_ids, delivery_person_id)
+  def get_pending_items_summary(customer_selection, customer_ids, delivery_person_id, month = nil, year = nil)
     # Determine which customers to check based on selection criteria
     customers = []
     if customer_selection == 'all'
       customers = Customer.all
     elsif customer_selection == 'delivery_person' && delivery_person_id.present?
-      # Get customers who have bookings or subscriptions with the selected delivery person
-      customer_ids_from_bookings = Booking.where(delivery_person_id: delivery_person_id)
-                                         .distinct
-                                         .pluck(:customer_id)
-                                         .compact
-
-      customer_ids_from_subscriptions = []
-      if defined?(MilkSubscription)
-        customer_ids_from_subscriptions += MilkSubscription.where(delivery_person_id: delivery_person_id)
-                                                          .distinct
-                                                          .pluck(:customer_id)
-                                                          .compact
-      end
-
-      if defined?(SubscriptionTemplate)
-        customer_ids_from_subscriptions += SubscriptionTemplate.where(delivery_person_id: delivery_person_id)
-                                                               .distinct
-                                                               .pluck(:customer_id)
-                                                               .compact
-      end
-
-      all_customer_ids_from_delivery_person = (customer_ids_from_bookings + customer_ids_from_subscriptions).uniq
+      all_customer_ids_from_delivery_person = delivery_person_customer_ids(delivery_person_id, month, year)
 
       if customer_ids.present?
         final_customer_ids = all_customer_ids_from_delivery_person & customer_ids.map(&:to_i)

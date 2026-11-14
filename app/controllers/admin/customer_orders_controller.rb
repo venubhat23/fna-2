@@ -4,19 +4,48 @@ class Admin::CustomerOrdersController < Admin::ApplicationController
     @customers = Customer.all.order(:row_number, :first_name, :last_name)
                           .includes(milk_subscriptions: :delivery_person)
 
+    # Subscription count per [delivery_person_id, customer_id] for the view.
+    @subscription_counts = Hash.new(0)
+
     month_start = parse_month(@month)
     if month_start
-      # Only customers with a (non-cancelled) subscription overlapping the month, and the
-      # delivery person is taken from those subscriptions rather than from all history.
+      # Same rules as Admin::SubscriptionsController (filter_by_month +
+      # filter_by_delivery_person), so a delivery person's group here holds the same
+      # subscriptions that page lists for that delivery person and month:
+      #   - a subscription is in the month when it has a delivery task in the month
+      #   - it belongs to every delivery person that appears on its tasks
+      # A customer is listed once per delivery person, with their subscription count.
       @month_label = month_start.strftime('%B %Y')
-      month_subs = MilkSubscription.where.not(status: 'cancelled')
-                                   .for_date_range(month_start, month_start.end_of_month)
-                                   .includes(:delivery_person).to_a.group_by(&:customer_id)
-      @customers = @customers.where(id: month_subs.keys)
-      grouped = @customers.group_by { |c| delivery_person_for(month_subs[c.id]) }
+      month_sub_ids = MilkDeliveryTask.where(delivery_date: month_start..month_start.end_of_month)
+                                      .select(:subscription_id)
+      customer_by_sub = MilkSubscription.where(id: month_sub_ids).pluck(:id, :customer_id).to_h
+      dp_ids_by_sub = MilkDeliveryTask.where(subscription_id: customer_by_sub.keys)
+                                      .where.not(delivery_person_id: nil)
+                                      .distinct.pluck(:subscription_id, :delivery_person_id)
+                                      .group_by(&:first).transform_values { |pairs| pairs.map(&:last) }
+
+      customer_by_sub.each do |sub_id, customer_id|
+        dp_ids = dp_ids_by_sub[sub_id].presence || [nil]
+        dp_ids.each { |dp_id| @subscription_counts[[dp_id, customer_id]] += 1 }
+      end
+
+      people_by_id = DeliveryPerson.where(id: @subscription_counts.keys.map(&:first).compact.uniq).index_by(&:id)
+      dp_ids_by_customer = @subscription_counts.keys.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(dp_id, customer_id), h|
+        h[customer_id] << dp_id
+      end
+
+      # Iterating @customers keeps its row_number/name ordering within each group.
+      grouped = Hash.new { |h, k| h[k] = [] }
+      @customers.where(id: dp_ids_by_customer.keys).each do |customer|
+        dp_ids_by_customer[customer.id].each { |dp_id| grouped[dp_id && people_by_id[dp_id]] << customer }
+      end
     else
       @month = 'all'
       grouped = @customers.group_by(&:assigned_delivery_person)
+      sub_counts = MilkSubscription.group(:customer_id).count
+      grouped.each do |delivery_person, customers|
+        customers.each { |c| @subscription_counts[[delivery_person&.id, c.id]] = sub_counts[c.id] || 0 }
+      end
     end
 
     unassigned = grouped.delete(nil) || []
@@ -99,9 +128,4 @@ class Admin::CustomerOrdersController < Admin::ApplicationController
     Date.current.beginning_of_month
   end
 
-  # Same preference as Customer#assigned_delivery_person, limited to the given subscriptions.
-  def delivery_person_for(subs)
-    active = subs.find { |s| s.status == 'active' && s.delivery_person_id.present? }
-    (active || subs.find { |s| s.delivery_person_id.present? })&.delivery_person
-  end
 end

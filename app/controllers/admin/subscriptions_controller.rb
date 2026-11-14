@@ -642,9 +642,15 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
   def filter_by_delivery_person(subscriptions)
     if params[:delivery_person_id].present?
-      subscriptions.where(
-        id: MilkDeliveryTask.where(delivery_person_id: params[:delivery_person_id]).select(:subscription_id)
-      )
+      tasks = MilkDeliveryTask.where(delivery_person_id: params[:delivery_person_id])
+      # With a month filter too, the same task must match both, so a subscription only
+      # shows when this delivery person delivers it in that month (matches the invoice
+      # "Customers by Delivery Person" list).
+      if params[:month].present?
+        range_start = Date.new(Date.current.year, params[:month].to_i, 1)
+        tasks = tasks.where(delivery_date: range_start..range_start.end_of_month)
+      end
+      subscriptions.where(id: tasks.select(:subscription_id))
     else
       subscriptions
     end

@@ -79,16 +79,16 @@
         <% row_counter = 0 %>
         <% @delivery_groups.each do |delivery_person, customers| %>
           <% next if customers.empty? %>
+          <% group_sub_count = customers.sum { |c| @subscription_counts[[delivery_person&.id, c.id]] } %>
           <tbody>
             <tr class="table-light">
               <td colspan="8" class="fw-semibold py-2">
                 <% if delivery_person %>
                   <i class="bi bi-truck text-primary me-1"></i><%= delivery_person.full_name %>
-                  <span class="text-muted fw-normal">(<%= customers.size %> customer<%= 's' if customers.size != 1 %>)</span>
                 <% else %>
                   <i class="bi bi-exclamation-circle text-muted me-1"></i>Unassigned
-                  <span class="text-muted fw-normal">(<%= customers.size %> customer<%= 's' if customers.size != 1 %>)</span>
                 <% end %>
+                <span class="text-muted fw-normal">(<%= pluralize(customers.size, 'customer') %> &middot; <%= pluralize(group_sub_count, 'subscription') %>)</span>
               </td>
             </tr>
           </tbody>
@@ -111,6 +111,10 @@
                     </div>
                     <div>
                       <div class="fw-semibold"><%= customer.display_name %></div>
+                      <% sub_count = @subscription_counts[[delivery_person&.id, customer.id]] %>
+                      <small class="<%= sub_count > 1 ? 'text-primary fw-semibold' : 'text-muted' %>">
+                        <i class="bi bi-calendar-check me-1"></i><%= pluralize(sub_count, 'subscription') %>
+                      </small>
                     </div>
                   </div>
                 </td>

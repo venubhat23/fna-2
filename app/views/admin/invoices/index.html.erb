@@ -1462,7 +1462,12 @@ function loadCustomersForDeliveryPerson(deliveryPersonId) {
   `;
 
   // Fetch customers for this delivery person
-  fetch(`/admin/invoices/customers_by_delivery_person?delivery_person_id=${deliveryPersonId}`)
+  const dpParams = new URLSearchParams({ delivery_person_id: deliveryPersonId });
+  const dpMonth = document.getElementById('invoice_month');
+  const dpYear = document.getElementById('invoice_year');
+  if (dpMonth && dpMonth.value) dpParams.append('month', dpMonth.value);
+  if (dpYear && dpYear.value) dpParams.append('year', dpYear.value);
+  fetch(`/admin/invoices/customers_by_delivery_person?${dpParams}`)
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok');

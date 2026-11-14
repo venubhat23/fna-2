@@ -446,7 +446,7 @@
                           <%= pluralize(booking.booking_items.size, 'item') %>
                         </span>
                         <div class="fw-bold text-success">
-                          ₹<%= number_with_delimiter(booking.total_amount || 0) %>
+                          <%= number_to_currency(booking.total_amount || 0, unit: "₹", precision: 2, delimiter: ",") %>
                         </div>
                       </div>
                       <!-- Invoice Status (right side) -->
@@ -496,14 +496,10 @@
                     </div>
                   </div>
                 </td>
-                <td class="align-middle">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-<%= booking.status_color %> px-3 py-2" title="<%= booking.status&.humanize || 'Unknown' %>">
-                      <i class="bi <%= booking.status_icon %> me-1"></i>
-                      <% status_text = booking.status&.humanize || 'Unknown' %>
-                      <%= status_text.length > 15 ? status_text[0..14] + '...' : status_text %>
-                    </span>
-                  </div>
+                <td class="align-middle current-stage-cell">
+                  <span class="badge current-stage-badge bg-<%= booking.status_color %> px-3 py-2" title="<%= booking.status&.humanize || 'Unknown' %>">
+                    <i class="bi <%= booking.status_icon %> me-1"></i><%= booking.status&.humanize || 'Unknown' %>
+                  </span>
                 </td>
                 <td class="align-middle">
                   <div class="progress-container">
@@ -2287,11 +2283,33 @@ td .d-flex.gap-2 {
   min-width: 280px;
 }
 
+/* Current Stage column: show the full status, wrapping inside the badge
+   instead of truncating it (e.g. "Ordered and delivery pending") */
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  min-width: 170px;
+  max-width: 200px;
+}
+
+.current-stage-badge {
+  display: inline-flex;
+  align-items: flex-start;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+  max-width: 100%;
+}
+
 @media (max-width: 768px) {
   .table th:nth-child(2),
   .table td:nth-child(2) {
     min-width: auto;
     width: auto;
+  }
+
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    min-width: 140px;
   }
 }
 </style>
