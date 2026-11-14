@@ -205,6 +205,12 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     begin
       MilkSubscription.transaction do
+        # Invoice items keep their own description/qty/price, so detach them
+        # from the tasks (keeping already-generated invoices intact) before
+        # removing the tasks - otherwise the invoice_items FK blocks the delete.
+        InvoiceItem.where(milk_delivery_task_id: @subscription.milk_delivery_tasks.select(:id))
+                   .update_all(milk_delivery_task_id: nil)
+
         # delete_all issues one bulk DELETE instead of destroy_all's per-row
         # load-then-destroy loop - safe since MilkDeliveryTask has no destroy
         # callbacks or dependent associations to run.
@@ -235,6 +241,7 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     ActiveRecord::Base.transaction do
       tasks_count = MilkDeliveryTask.count
       subs_count  = MilkSubscription.count
+      InvoiceItem.where.not(milk_delivery_task_id: nil).update_all(milk_delivery_task_id: nil)
       MilkDeliveryTask.delete_all
       MilkSubscription.delete_all
       flash[:notice] = "Deleted #{subs_count} subscriptions and #{tasks_count} milk delivery tasks."

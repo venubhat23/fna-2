@@ -557,6 +557,8 @@ module Api
           # find_by per item (and reused below to avoid a second per-item lookup
           # when serializing booking.booking_items).
           products_by_id = Product.where(id: items.map { |item| item[:product_id] }).index_by { |p| p.id.to_s }
+          variant_ids    = items.map { |item| item[:product_variant_id].presence }.compact
+          variants_by_id = ProductVariant.where(id: variant_ids).index_by { |v| v.id.to_s }
 
           nested_items = []
           items.each do |item|
@@ -564,9 +566,22 @@ module Api
             unless product
               return render json: { success: false, message: "Product ##{item[:product_id]} not found" }, status: :unprocessable_entity
             end
-            qty   = [item[:quantity].to_i, 1].max
-            price = (product.discount_price.to_f > 0 ? product.discount_price : product.price).to_f
-            nested_items << { product_id: product.id, quantity: qty, price: price }
+            qty = [item[:quantity].to_i, 1].max
+
+            variant = nil
+            if item[:product_variant_id].present?
+              variant = variants_by_id[item[:product_variant_id].to_s]
+              unless variant && variant.product_id == product.id
+                return render json: { success: false, message: "Variant ##{item[:product_variant_id]} not found for product ##{product.id}" }, status: :unprocessable_entity
+              end
+            end
+
+            price = if variant
+                      variant.effective_price.to_f
+                    else
+                      (product.discount_price.to_f > 0 ? product.discount_price : product.price).to_f
+                    end
+            nested_items << { product_id: product.id, product_variant_id: variant&.id, quantity: qty, price: price }
           end
 
           booking = nil
@@ -608,6 +623,8 @@ module Api
               items:          booking.booking_items.map { |bi|
                 {
                   product_name: bi.product&.name,
+                  product_variant_id: bi.product_variant_id,
+                  variant_label: variants_by_id[bi.product_variant_id.to_s]&.label,
                   quantity:     bi.quantity,
                   price:        bi.price,
                   subtotal:     bi.quantity * bi.price
