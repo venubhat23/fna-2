@@ -848,6 +848,9 @@ Rails.application.routes.draw do
 
         # Delivery Person APIs
         get 'delivery/tasks/today', to: 'delivery#tasks_today'
+        # Before tasks/:id so 'previous_day' isn't read as a task id.
+        get  'delivery/tasks/previous_day', to: 'delivery#previous_day_tasks'
+        post 'delivery/tasks/previous_day/complete', to: 'delivery#complete_previous_day_tasks'
         get 'delivery/tasks/:id', to: 'delivery#task_details'
         post 'delivery/tasks/:id/start', to: 'delivery#start_task'
         post 'delivery/tasks/:id/complete', to: 'delivery#complete_task'

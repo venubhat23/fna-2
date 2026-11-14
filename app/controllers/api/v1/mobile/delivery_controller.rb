@@ -183,6 +183,98 @@ module Api
           end
         end
 
+        # GET /api/v1/mobile/delivery/tasks/previous_day?date=YYYY-MM-DD
+        # Same list as tasks/today, for a past day (default: yesterday), so missed deliveries
+        # can be seen and marked complete with tasks/previous_day/complete.
+        def previous_day_tasks
+          date = parse_previous_day(params[:date])
+          return render json: { success: false, message: "date must be a past date in YYYY-MM-DD format" }, status: :unprocessable_entity unless date
+
+          tasks = get_todays_tasks(date)
+          formatted_tasks = format_tasks(tasks)
+
+          render json: {
+            success: true,
+            data: {
+              date: date.iso8601,
+              summary: task_summary(tasks),
+              tasks: formatted_tasks
+            }
+          }
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
+        # POST /api/v1/mobile/delivery/tasks/previous_day/complete
+        # { "date": "2026-11-13" }                                        -> completes every pending task of that day
+        # { "date": "2026-11-13", "tasks": [{ "id": 94355, "type": "subscription" }] } or "task_ids": [..] -> only these
+        # Only the caller's own tasks for that date are touched; cancelled and paused tasks are skipped.
+        def complete_previous_day_tasks
+          date = parse_previous_day(params[:date])
+          return render json: { success: false, message: "date must be a past date in YYYY-MM-DD format" }, status: :unprocessable_entity unless date
+
+          tasks = get_todays_tasks(date)
+          records = Array(tasks[:subscriptions]).map { |t| ['subscription', t] } +
+                    Array(tasks[:bookings]).map { |b| ['order', b] }
+
+          requested =
+            if params[:tasks].is_a?(Array)
+              params[:tasks].filter_map do |t|
+                t = t.respond_to?(:permit) ? t.permit(:id, :type) : t
+                id = t[:id].to_i
+                [id, %w[subscription order].include?(t[:type].to_s) ? t[:type].to_s : nil] if id.positive?
+              end
+            elsif params[:task_ids].is_a?(Array)
+              params[:task_ids].map { |id| [id.to_i, nil] }.select { |id, _| id.positive? }
+            end
+
+          updated = []
+          failed = []
+          skipped = 0
+          now = Time.current
+
+          targets =
+            if requested.present?
+              requested.uniq.filter_map do |id, type|
+                match = records.find { |rtype, r| r.id == id && (type.nil? || rtype == type) }
+                failed << { id: id, type: type, error: "Task not found for #{date.iso8601}" }.compact unless match
+                match
+              end
+            else
+              records
+            end
+
+          targets.each do |type, record|
+            if (error = apply_task_operation(record, 'complete', now))
+              # "Complete all" re-run on a day that's partly done: already-completed isn't a failure.
+              if error == "Already completed" && requested.blank?
+                skipped += 1
+              else
+                failed << { id: record.id, type: type, error: error }
+              end
+            else
+              updated << { id: record.id, type: type, status: record.is_a?(Booking) ? map_booking_status(record.status) : record.status }
+            end
+          rescue => e
+            failed << { id: record.id, type: type, error: e.message }
+          end
+
+          render json: {
+            success: updated.any? || (failed.empty? && targets.any?),
+            message: "#{updated.size} tasks completed for #{date.iso8601}",
+            data: {
+              date: date.iso8601,
+              updated_count: updated.size,
+              already_completed_count: skipped,
+              failed_count: failed.size,
+              updated: updated,
+              failed: failed
+            }
+          }, status: updated.any? || failed.empty? ? :ok : :unprocessable_entity
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
         # POST /api/v1/mobile/delivery/tasks/bulk_action
         # { "operation": "complete" | "delete", "task_ids": [94355, 12] }
         # Checkbox actions on the tasks/today list. Each id is looked up as a subscription delivery
@@ -253,28 +345,18 @@ module Api
         end
 
         # GET /api/v1/mobile/delivery/my_customers?month=YYYY-MM|all
-        # Mirrors /admin/customer_orders: customers are grouped by the delivery person on their
-        # (non-cancelled) subscriptions running in the month, ordered by row_number.
+        # Matches /admin/subscriptions filtered by this delivery person and month (see below),
+        # ordered by row_number.
         def my_customers
           month_start = parse_customer_month(params[:month])
           me = current_delivery_person_id
 
-          if month_start
-            month_end = month_start.end_of_month
-            candidate_ids = MilkSubscription.where(delivery_person_id: me)
-                                            .where.not(status: 'cancelled')
-                                            .for_date_range(month_start, month_end)
-                                            .distinct.pluck(:customer_id)
-            month_subs = MilkSubscription.where(customer_id: candidate_ids)
-                                         .where.not(status: 'cancelled')
-                                         .for_date_range(month_start, month_end)
-                                         .to_a.group_by(&:customer_id)
-            customer_ids = month_subs.select { |_, subs| subscription_delivery_person_id(subs) == me }.keys
-          else
-            candidate_ids = MilkSubscription.where(delivery_person_id: me).distinct.pluck(:customer_id)
-            all_subs = MilkSubscription.where(customer_id: candidate_ids).to_a.group_by(&:customer_id)
-            customer_ids = all_subs.select { |_, subs| subscription_delivery_person_id(subs) == me }.keys
-          end
+          # Same rule as the /admin/subscriptions delivery person + month filter: a customer is
+          # listed when one of their subscriptions has a delivery task assigned to this delivery
+          # person in the month (any month when month=all).
+          tasks = MilkDeliveryTask.where(delivery_person_id: me)
+          tasks = tasks.where(delivery_date: month_start..month_start.end_of_month) if month_start
+          customer_ids = MilkSubscription.where(id: tasks.select(:subscription_id)).distinct.pluck(:customer_id)
 
           customers = Customer.where(id: customer_ids)
                               .with_attached_profile_image
@@ -707,16 +789,18 @@ module Api
           Date.current.beginning_of_month
         end
 
+        # Past dates only (default: yesterday); nil when the value is invalid or not in the past.
+        def parse_previous_day(value)
+          date = value.present? ? Date.iso8601(value.to_s) : Date.yesterday
+          date < Date.current ? date : nil
+        rescue ArgumentError
+          nil
+        end
+
         def parse_summary_date(value)
           value.present? ? Date.iso8601(value) : Date.current
         rescue ArgumentError
           Date.current
-        end
-
-        # Same preference as Customer#assigned_delivery_person: active subscription first.
-        def subscription_delivery_person_id(subs)
-          active = subs.find { |s| s.status == 'active' && s.delivery_person_id.present? }
-          (active || subs.find { |s| s.delivery_person_id.present? })&.delivery_person_id
         end
 
         def quantity_in_liters(quantity, unit)
@@ -758,12 +842,12 @@ module Api
           start...(start + 1.day)
         end
 
-        def get_todays_tasks
+        def get_todays_tasks(date = Date.current)
           # Both main queries are started with load_async up front so their round trips
           # to the remote DB overlap; each is then materialized inside its own rescue.
           bookings_relation = if defined?(Booking) && Booking.column_names.include?('delivery_person_id')
             Booking.where(delivery_person_id: current_delivery_person_id)
-                   .where(created_at: utc_day_range(Date.current))
+                   .where(created_at: utc_day_range(date))
                    .where.not(status: 'cancelled')
                    .includes(customer: CUSTOMER_IMAGE_PRELOADS, booking_items: :product)
                    .load_async
@@ -772,7 +856,7 @@ module Api
           tasks_relation = if defined?(MilkDeliveryTask) && MilkDeliveryTask.column_names.include?('delivery_person_id')
             MilkDeliveryTask.where(
               delivery_person_id: current_delivery_person_id,
-              delivery_date: Date.current
+              delivery_date: date
             ).where.not(status: %w[cancelled paused]).includes(:product, customer: CUSTOMER_IMAGE_PRELOADS).load_async
           end
 
