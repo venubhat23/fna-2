@@ -1,5 +1,5 @@
 class Admin::SubscriptionsController < Admin::ApplicationController
-  before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :unassign_delivery_person, :delivery_schedule, :generate_tasks, :daily_tasks]
+  before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :unassign_delivery_person, :assign_delivery_person, :delivery_schedule, :generate_tasks, :daily_tasks]
   before_action :check_sidebar_permission
 
   LIST_STATE_PARAMS = %i[page status start_date end_date month customer_id delivery_person_id].freeze
@@ -302,6 +302,43 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   rescue => e
     Rails.logger.error "Failed to unassign delivery person for subscription #{@subscription.id}: #{e.message}"
     redirect_to admin_subscription_path(@subscription, list_state_params), alert: "Failed to unassign delivery person: #{e.message}"
+  end
+
+  # Reverse of unassign_delivery_person: sets the delivery person on the subscription
+  # and its customer formats, reactivates the subscription and resumes the upcoming
+  # open tasks under that delivery person. Past tasks are left as they are.
+  def assign_delivery_person
+    delivery_person = DeliveryPerson.find_by(id: params[:delivery_person_id], status: true)
+    unless delivery_person
+      redirect_to edit_admin_subscription_path(@subscription, list_state_params),
+                  alert: 'Please select an active delivery person to assign.'
+      return
+    end
+
+    tasks_count = 0
+    formats_count = 0
+
+    MilkSubscription.transaction do
+      tasks_count = @subscription.milk_delivery_tasks
+                                 .where(status: %w[paused pending assigned], delivery_date: Date.current..)
+                                 .update_all(
+                                   [
+                                     "delivery_person_id = ?, updated_at = ?, status = CASE WHEN status = 'paused' THEN 'pending' ELSE status END",
+                                     delivery_person.id, Time.current
+                                   ]
+                                 )
+
+      formats_count = CustomerFormat.where(customer_id: @subscription.customer_id, product_id: @subscription.product_id)
+                                    .update_all(delivery_person_id: delivery_person.id, updated_at: Time.current)
+
+      @subscription.update!(delivery_person_id: delivery_person.id, status: 'active', is_active: true)
+    end
+
+    redirect_to admin_subscription_path(@subscription, list_state_params),
+                notice: "Delivery person #{delivery_person.display_name} assigned and subscription activated. #{tasks_count} upcoming delivery tasks updated, #{formats_count} customer formats updated."
+  rescue => e
+    Rails.logger.error "Failed to assign delivery person for subscription #{@subscription.id}: #{e.message}"
+    redirect_to edit_admin_subscription_path(@subscription, list_state_params), alert: "Failed to assign delivery person: #{e.message}"
   end
 
   def delivery_schedule
