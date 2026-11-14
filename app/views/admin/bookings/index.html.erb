@@ -378,8 +378,7 @@
           <thead class="table-light">
             <tr>
               <th class="border-0 fw-semibold">Booking &amp; Customer</th>
-              <th class="border-0 fw-semibold">Financial Overview</th>
-              <th class="border-0 fw-semibold text-dark">Current Stage</th>
+              <th class="border-0 fw-semibold">Financial Overview &amp; Stage</th>
               <th class="border-0 fw-semibold">Progress</th>
               <th class="border-0 fw-semibold">Actions</th>
             </tr>
@@ -438,6 +437,13 @@
                 </td>
                 <td class="align-middle">
                   <div class="financial-overview">
+                    <!-- Current Stage Row -->
+                    <div class="current-stage-row mb-2">
+                      <span class="badge current-stage-badge bg-<%= booking.status_color %> px-3 py-2" title="<%= booking.status&.humanize || 'Unknown' %>">
+                        <i class="bi <%= booking.status_icon %> me-1"></i><%= booking.status&.humanize || 'Unknown' %>
+                      </span>
+                    </div>
+
                     <!-- Items & Amount Row -->
                     <div class="d-flex align-items-center justify-content-between mb-2">
                       <div class="d-flex align-items-center gap-2">
@@ -495,11 +501,6 @@
                       </div>
                     </div>
                   </div>
-                </td>
-                <td class="align-middle current-stage-cell">
-                  <span class="badge current-stage-badge bg-<%= booking.status_color %> px-3 py-2" title="<%= booking.status&.humanize || 'Unknown' %>">
-                    <i class="bi <%= booking.status_icon %> me-1"></i><%= booking.status&.humanize || 'Unknown' %>
-                  </span>
                 </td>
                 <td class="align-middle">
                   <div class="progress-container">
@@ -2283,14 +2284,8 @@ td .d-flex.gap-2 {
   min-width: 280px;
 }
 
-/* Current Stage column: show the full status, wrapping inside the badge
-   instead of truncating it (e.g. "Ordered and delivery pending") */
-.table th:nth-child(3),
-.table td:nth-child(3) {
-  min-width: 170px;
-  max-width: 200px;
-}
-
+/* Current Stage (inside Financial Overview): show the full status, wrapping inside
+   the badge instead of truncating it (e.g. "Ordered and delivery pending") */
 .current-stage-badge {
   display: inline-flex;
   align-items: flex-start;
@@ -2305,11 +2300,6 @@ td .d-flex.gap-2 {
   .table td:nth-child(2) {
     min-width: auto;
     width: auto;
-  }
-
-  .table th:nth-child(3),
-  .table td:nth-child(3) {
-    min-width: 140px;
   }
 }
 </style>

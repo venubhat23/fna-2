@@ -158,6 +158,14 @@ class Admin::CustomersController < Admin::ApplicationController
     @subscribed_count = @stats[:subscribed_customers]
     @not_subscribed_count = @stats[:not_subscribed_customers]
 
+    # Same scope as the "New This Month" count, so the popup list matches the card.
+    @new_this_month_list = stats_scope
+      .where(created_at: Time.current.beginning_of_month..Time.current.end_of_month)
+      .select(:id, :first_name, :middle_name, :last_name, :mobile, :created_at)
+      .select("EXISTS (SELECT 1 FROM milk_subscriptions ms WHERE ms.customer_id = customers.id AND ms.status = 'active' AND ms.is_active = TRUE) AS subscribed")
+      .reorder(created_at: :desc)
+      .to_a
+
     @subscribed_customers_list, @not_subscribed_customers_list =
       @customer_filter_options.to_a.partition { |customer| customer.read_attribute(:subscribed) }
 

@@ -2,7 +2,10 @@
 <%
   liters = ->(value) { number_with_precision(value, precision: 1, strip_insignificant_zeros: true, delimiter: ',') }
   max_by = ->(period) { [@people.map { |p| p[period][:liters] }.max.to_f, 0.1].max }
-  maxes = { day: max_by.(:day), week: max_by.(:week), month: max_by.(:month) }
+  maxes = @periods.index_with { |period| max_by.(period) }
+  range_params = @range_from ? { from: @range_from.iso8601, to: @range_to.iso8601 } : {}
+  rank_key = @range_from ? :range : :month
+  range_label = ->(from, to) { from.year == to.year ? "#{from.strftime('%-d %b')} – #{to.strftime('%-d %b %Y')}" : "#{from.strftime('%-d %b %Y')} – #{to.strftime('%-d %b %Y')}" }
   medals = ['🥇', '🥈', '🥉']
   palette = %w[#6366f1 #10b981 #f59e0b #ec4899 #06b6d4 #8b5cf6 #94a3b8]
   today = Date.current
@@ -11,7 +14,24 @@
     { key: :week,  title: 'This Week',  sub: "#{@week_start.strftime('%-d %b')} – #{@week_end.strftime('%-d %b')}",   icon: 'bi-calendar-week-fill',  color: '#10b981' },
     { key: :month, title: 'This Month', sub: @date.strftime('%B %Y'),                                                  icon: 'bi-calendar-month-fill', color: '#6366f1' }
   ]
+  if @range_from
+    period_cards << { key: :range, title: 'Custom Range', sub: "#{range_label.(@range_from, @range_to)} · #{pluralize(@range_days, 'day')}", icon: 'bi-calendar-range-fill', color: '#ec4899' }
+  end
+  kpi_col = @range_from ? 'col-12 col-md-6 col-xl-3' : 'col-12 col-md-4'
+  presets = [
+    ['Last 7 days',  today - 6, today],
+    ['This week',    today.beginning_of_week(:monday), today],
+    ['Last week',    today.beginning_of_week(:monday) - 7, today.beginning_of_week(:monday) - 1],
+    ['This month',   today.beginning_of_month, today],
+    ['Last month',   today.prev_month.beginning_of_month, today.prev_month.end_of_month],
+    ['Last 30 days', today - 29, today]
+  ]
 %>
+
+<% content_for :head do %>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<% end %>
 
 <style>
   .ds-card { background: rgba(128,128,128,.08); border: 1px solid rgba(128,128,128,.18); border-radius: 16px; }
@@ -29,6 +49,26 @@
   .ds-period-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
   .ds-chart-wrap { position: relative; height: 340px; }
   .ds-empty { padding: 3rem 1rem; text-align: center; opacity: .7; }
+  .ds-period-btn[data-period="range"].active { background: #ec4899; border-color: #ec4899; }
+
+  /* Date range picker */
+  .ds-range { padding: 1rem 1.25rem; border-left: 4px solid #ec4899; }
+  .ds-range-field { position: relative; min-width: 290px; flex: 1 1 290px; max-width: 380px; }
+  .ds-range-field > i { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); color: #ec4899; pointer-events: none; font-size: 1.05rem; }
+  .ds-range-field input { padding-left: 2.6rem; border-radius: 12px; height: 44px; font-weight: 500; cursor: pointer; background-color: var(--bs-body-bg, #fff); }
+  .ds-range-field input:focus { border-color: #ec4899; box-shadow: 0 0 0 .2rem rgba(236,72,153,.18); }
+  .ds-chip { border-radius: 999px; border: 1px solid rgba(128,128,128,.3); background: transparent; color: inherit; padding: .3rem .85rem; font-size: .82rem; text-decoration: none; transition: all .15s ease; white-space: nowrap; }
+  .ds-chip:hover { border-color: #ec4899; color: #ec4899; }
+  .ds-chip.active { background: #ec4899; border-color: #ec4899; color: #fff; }
+  .ds-range-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .75rem; border-radius: 999px; background: rgba(236,72,153,.12); color: #db2777; font-size: .82rem; font-weight: 600; }
+
+  .flatpickr-calendar { border-radius: 14px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.35); border: 0; }
+  .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange,
+  .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover { background: #ec4899; border-color: #ec4899; }
+  .flatpickr-day.inRange { background: rgba(236,72,153,.14); border-color: transparent; box-shadow: -5px 0 0 rgba(236,72,153,.14), 5px 0 0 rgba(236,72,153,.14); }
+  .flatpickr-day.today { border-color: #6366f1; }
+  .flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months { font-weight: 600; }
+  @media (max-width: 575.98px) { .ds-range-field { min-width: 100%; max-width: 100%; } }
 </style>
 
 <!-- Header + date navigation -->
@@ -38,17 +78,46 @@
     <p class="text-muted mb-0">Litres of milk delivered by each delivery person – per day, week and month</p>
   </div>
   <%= form_with url: admin_delivery_sales_path, method: :get, class: "d-flex align-items-center gap-2" do %>
-    <%= link_to admin_delivery_sales_path(date: (@date - 1).iso8601), class: "btn btn-outline-secondary", title: "Previous day" do %><i class="bi bi-chevron-left"></i><% end %>
+    <% range_params.each do |key, value| %><%= hidden_field_tag key, value %><% end %>
+    <%= link_to admin_delivery_sales_path(range_params.merge(date: (@date - 1).iso8601)), class: "btn btn-outline-secondary", title: "Previous day" do %><i class="bi bi-chevron-left"></i><% end %>
     <%= date_field_tag :date, @date.iso8601, class: "form-control", max: today.iso8601, onchange: "this.form.submit()" %>
-    <%= link_to admin_delivery_sales_path(date: (@date + 1).iso8601), class: "btn btn-outline-secondary #{'disabled' if @date >= today}", title: "Next day" do %><i class="bi bi-chevron-right"></i><% end %>
-    <%= link_to "Today", admin_delivery_sales_path, class: "btn btn-outline-primary" %>
+    <%= link_to admin_delivery_sales_path(range_params.merge(date: (@date + 1).iso8601)), class: "btn btn-outline-secondary #{'disabled' if @date >= today}", title: "Next day" do %><i class="bi bi-chevron-right"></i><% end %>
+    <%= link_to "Today", admin_delivery_sales_path(range_params), class: "btn btn-outline-primary" %>
+  <% end %>
+</div>
+
+<!-- From / To date range -->
+<div class="ds-card ds-range mb-4">
+  <%= form_with url: admin_delivery_sales_path, method: :get, id: "dsRangeForm", class: "d-flex flex-wrap align-items-center gap-3" do %>
+    <%= hidden_field_tag :date, @date.iso8601 %>
+    <%= hidden_field_tag :from, @range_from&.iso8601, id: "dsRangeFrom" %>
+    <%= hidden_field_tag :to, @range_to&.iso8601, id: "dsRangeTo" %>
+    <div class="fw-semibold text-nowrap"><i class="bi bi-calendar-range me-1" style="color:#ec4899"></i>From – To</div>
+    <div class="ds-range-field">
+      <i class="bi bi-calendar3"></i>
+      <input type="text" id="dsRangeInput" class="form-control" readonly
+             placeholder="Pick a start and end date"
+             value="<%= range_label.(@range_from, @range_to) if @range_from %>">
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <% presets.each do |label, from, to| %>
+        <%= link_to label, admin_delivery_sales_path(date: @date.iso8601, from: from.iso8601, to: to.iso8601),
+              class: "ds-chip #{'active' if @range_from == from && @range_to == to}" %>
+      <% end %>
+    </div>
+    <% if @range_from %>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span class="ds-range-badge"><i class="bi bi-droplet-fill"></i><%= liters.(@totals[:range]) %> L in <%= pluralize(@range_days, 'day') %></span>
+        <%= link_to admin_delivery_sales_path(date: @date.iso8601), class: "btn btn-sm btn-outline-secondary", title: "Clear range" do %><i class="bi bi-x-lg"></i><% end %>
+      </div>
+    <% end %>
   <% end %>
 </div>
 
 <!-- KPI cards -->
 <div class="row g-3 mb-4">
   <% period_cards.each do |card| %>
-    <div class="col-12 col-md-4">
+    <div class="<%= kpi_col %>">
       <div class="ds-card ds-kpi" style="--kpi-color: <%= card[:color] %>">
         <div class="d-flex justify-content-between align-items-start">
           <div>
@@ -58,7 +127,7 @@
           <div class="ds-kpi-icon"><i class="bi <%= card[:icon] %>"></i></div>
         </div>
         <div class="ds-kpi-value mt-3"><%= liters.(@totals[card[:key]]) %> <small>litres</small></div>
-        <div class="text-muted small mt-1"><i class="bi bi-truck me-1"></i><%= number_with_delimiter(@delivery_counts[card[:key]]) %> deliveries</div>
+        <div class="text-muted small mt-1"><i class="bi bi-truck me-1"></i><%= number_with_delimiter(@delivery_counts[card[:key]]) %> deliveries<% if card[:key] == :range %> · avg <%= liters.((@totals[:range] / @range_days).round(1)) %> L/day<% end %></div>
       </div>
     </div>
   <% end %>
@@ -73,7 +142,10 @@
         <div class="btn-group btn-group-sm" role="group" aria-label="Period">
           <button type="button" class="btn btn-outline-secondary ds-period-btn" data-period="day">Day</button>
           <button type="button" class="btn btn-outline-secondary ds-period-btn" data-period="week">Week</button>
-          <button type="button" class="btn btn-outline-secondary ds-period-btn active" data-period="month">Month</button>
+          <button type="button" class="btn btn-outline-secondary ds-period-btn <%= 'active' unless @range_from %>" data-period="month">Month</button>
+          <% if @range_from %>
+            <button type="button" class="btn btn-outline-secondary ds-period-btn active" data-period="range">Range</button>
+          <% end %>
         </div>
       </div>
       <div class="ds-chart-wrap"><canvas id="dsRankingChart"></canvas></div>
@@ -81,7 +153,7 @@
   </div>
   <div class="col-12 col-xl-6">
     <div class="ds-card p-3 p-md-4 h-100">
-      <h5 class="mb-3">Last <%= Admin::DeliverySalesController::TREND_DAYS %> days</h5>
+      <h5 class="mb-3"><%= @trend_start == @range_from ? range_label.(@range_from, @range_to) : "Last #{Admin::DeliverySalesController::TREND_DAYS} days" %></h5>
       <div class="ds-chart-wrap"><canvas id="dsTrendChart"></canvas></div>
     </div>
   </div>
@@ -100,14 +172,14 @@
             <th class="ds-rank">#</th>
             <th>Delivery person</th>
             <% period_cards.each do |card| %>
-              <th style="min-width:150px"><%= card[:key] == :day ? (@date == today ? 'Today' : @date.strftime('%-d %b')) : card[:title] %></th>
+              <th style="min-width:150px"><%= case card[:key] when :day then (@date == today ? 'Today' : @date.strftime('%-d %b')) when :range then range_label.(@range_from, @range_to) else card[:title] end %></th>
             <% end %>
           </tr>
         </thead>
         <tbody>
           <% @people.each_with_index do |person, index| %>
             <tr>
-              <td class="ds-rank"><%= person[:month][:liters].positive? ? (medals[index] || index + 1) : '–' %></td>
+              <td class="ds-rank"><%= person[rank_key][:liters].positive? ? (medals[index] || index + 1) : '–' %></td>
               <td>
                 <div class="d-flex align-items-center gap-2">
                   <div class="ds-avatar" style="background: <%= palette[index % (palette.size - 1)] %>"><%= person[:name].first(1).upcase %></div>
@@ -137,14 +209,45 @@
 
 <script type="application/json" id="dsChartData"><%= raw json_escape(@chart_data.merge(palette: palette).to_json) %></script>
 <script>
+// From/To picker: two months side by side (one on phones); submits once both ends are picked.
+(function () {
+  var input = document.getElementById('dsRangeInput');
+  if (!input || typeof flatpickr === 'undefined') return;
+  if (input._flatpickr) input._flatpickr.destroy();
+
+  function iso(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  var from = document.getElementById('dsRangeFrom').value;
+  var to = document.getElementById('dsRangeTo').value;
+
+  flatpickr(input, {
+    mode: 'range',
+    showMonths: window.innerWidth >= 768 ? 2 : 1,
+    maxDate: 'today',
+    dateFormat: 'Y-m-d',
+    defaultDate: from && to ? [from, to] : null,
+    locale: { firstDayOfWeek: 1, rangeSeparator: '  →  ' },
+    altInput: false,
+    formatDate: function (d) { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); },
+    onClose: function (dates) {
+      if (dates.length !== 2) return;
+      document.getElementById('dsRangeFrom').value = iso(dates[0]);
+      document.getElementById('dsRangeTo').value = iso(dates[1]);
+      document.getElementById('dsRangeForm').submit();
+    }
+  });
+})();
+
 (function () {
   if (typeof Chart === 'undefined') return;
 
   var data = JSON.parse(document.getElementById('dsChartData').textContent);
   var textColor = getComputedStyle(document.body).color;
   var gridColor = 'rgba(128,128,128,.2)';
-  var periodColors = { day: '#f59e0b', week: '#10b981', month: '#6366f1' };
-  var period = 'month';
+  var periodColors = { day: '#f59e0b', week: '#10b981', month: '#6366f1', range: '#ec4899' };
+  var period = data.ranking.range ? '<%= @range_from ? 'range' : 'month' %>' : 'month';
 
   Chart.defaults.color = textColor;
   Chart.defaults.borderColor = gridColor;

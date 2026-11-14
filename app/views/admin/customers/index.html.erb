@@ -48,17 +48,20 @@
     </div>
   </div>
   <div class="col">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card-clickable"
+         data-bs-toggle="modal" data-bs-target="#newThisMonthModal"
+         role="button" style="cursor:pointer;">
       <div class="card-body">
         <div class="d-flex align-items-center">
           <div class="flex-grow-1">
             <h6 class="text-muted mb-1">New This Month</h6>
-            <h4 class="mb-0"><%= @new_this_month || 0 %></h4>
+            <h4 class="mb-0 text-info"><%= @new_this_month || 0 %></h4>
           </div>
           <div class="text-info">
             <i class="bi bi-person-plus fs-2"></i>
           </div>
         </div>
+        <small class="text-muted">Click to view list</small>
       </div>
     </div>
   </div>
@@ -95,6 +98,80 @@
           </div>
         </div>
         <small class="text-muted">Click to view list</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New This Month Customers Modal -->
+<div class="modal fade" id="newThisMonthModal" tabindex="-1" aria-labelledby="newThisMonthModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="newThisMonthModalLabel">
+          <i class="bi bi-person-plus me-2"></i>New Customers &middot; <%= Date.current.strftime('%B %Y') %>
+          <span class="badge bg-white text-info ms-2"><%= @new_this_month || 0 %></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="p-3 border-bottom">
+          <input type="text" class="form-control form-control-sm" id="newThisMonthSearch" placeholder="Search by name, ID or phone...">
+        </div>
+        <% if @new_this_month_list.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="newThisMonthTable">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th class="border-0">#</th>
+                  <th class="border-0">Customer ID</th>
+                  <th class="border-0">Name</th>
+                  <th class="border-0">Phone</th>
+                  <th class="border-0">Joined</th>
+                  <th class="border-0">Subscription</th>
+                  <th class="border-0">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @new_this_month_list.each_with_index do |customer, idx| %>
+                  <tr class="new-this-month-row">
+                    <td class="align-middle text-muted small"><%= idx + 1 %></td>
+                    <td class="align-middle"><span class="badge bg-info-subtle text-info">#<%= customer.id %></span></td>
+                    <td class="align-middle fw-semibold">
+                      <%= [customer.first_name, customer.middle_name.presence, customer.last_name].compact.join(' ') %>
+                    </td>
+                    <td class="align-middle">
+                      <i class="bi bi-telephone text-muted me-1"></i><%= customer.mobile %>
+                    </td>
+                    <td class="align-middle small text-nowrap">
+                      <i class="bi bi-calendar3 text-muted me-1"></i><%= customer.created_at.strftime('%d %b, %I:%M %p') %>
+                    </td>
+                    <td class="align-middle">
+                      <% if customer.read_attribute(:subscribed) %>
+                        <span class="badge bg-success-subtle text-success"><i class="bi bi-patch-check me-1"></i>Subscribed</span>
+                      <% else %>
+                        <span class="badge bg-warning-subtle text-warning"><i class="bi bi-person-x me-1"></i>Not subscribed</span>
+                      <% end %>
+                    </td>
+                    <td class="align-middle">
+                      <%= link_to admin_customer_path(customer.id), class: "btn btn-sm btn-outline-info", target: "_blank" do %>
+                        <i class="bi bi-eye"></i>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-person-plus fs-1 mb-3 d-block"></i>
+            No new customers this month.
+          </div>
+        <% end %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -867,11 +944,19 @@ tbody tr:nth-last-child(2) .dropdown-menu {
 // Move modals to body to escape .main-content stacking context
 // (.main-content is position:fixed + overflow:auto which traps Bootstrap modals)
 document.addEventListener('DOMContentLoaded', function() {
-  ['subscribedModal', 'notSubscribedModal'].forEach(function(id) {
+  ['newThisMonthModal', 'subscribedModal', 'notSubscribedModal'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el && el.parentElement !== document.body) {
       document.body.appendChild(el);
     }
+  });
+
+  // Modal search for new-this-month customers
+  document.getElementById('newThisMonthSearch')?.addEventListener('input', function() {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('#newThisMonthTable .new-this-month-row').forEach(function(row) {
+      row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
   });
 
   // Modal search for subscribed customers
