@@ -384,6 +384,11 @@ Rails.application.routes.draw do
         patch :toggle_status
         patch :pause_subscription
         patch :resume_subscription
+        patch :unassign_delivery_person
+        # A GET on these (link opened in a new tab, refresh after redirect, Turbo not
+        # loaded) used to 404 - send it back to the subscription without changing it.
+        get :pause_subscription, to: redirect(status: 302) { |p, _req| "/admin/subscriptions/#{p[:id]}" }
+        get :resume_subscription, to: redirect(status: 302) { |p, _req| "/admin/subscriptions/#{p[:id]}" }
         get :delivery_schedule
         post :generate_tasks
         get :daily_tasks

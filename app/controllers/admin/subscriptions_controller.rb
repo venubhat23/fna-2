@@ -1,5 +1,5 @@
 class Admin::SubscriptionsController < Admin::ApplicationController
-  before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :delivery_schedule, :generate_tasks, :daily_tasks]
+  before_action :set_subscription, only: [:show, :edit, :update, :destroy, :toggle_status, :pause_subscription, :resume_subscription, :unassign_delivery_person, :delivery_schedule, :generate_tasks, :daily_tasks]
   before_action :check_sidebar_permission
 
   LIST_STATE_PARAMS = %i[page status start_date end_date month customer_id delivery_person_id].freeze
@@ -276,6 +276,32 @@ class Admin::SubscriptionsController < Admin::ApplicationController
 
     redirect_to admin_subscriptions_path(list_state_params),
                 notice: "Subscription resumed successfully! #{resumed_tasks_count} delivery tasks have been resumed."
+  end
+
+  # Removes the delivery person from the subscription and its customer formats, and
+  # pauses (and unassigns) the upcoming open tasks. Past tasks keep their delivery
+  # person so delivery history and sales reports stay intact.
+  def unassign_delivery_person
+    old_name = @subscription.delivery_person&.display_name || 'Not Assigned'
+    paused_count = 0
+    formats_count = 0
+
+    MilkSubscription.transaction do
+      paused_count = @subscription.milk_delivery_tasks
+                                  .where(status: %w[pending assigned], delivery_date: Date.current..)
+                                  .update_all(status: 'paused', delivery_person_id: nil, updated_at: Time.current)
+
+      formats_count = CustomerFormat.where(customer_id: @subscription.customer_id, product_id: @subscription.product_id)
+                                    .update_all(delivery_person_id: nil, updated_at: Time.current)
+
+      @subscription.update!(delivery_person_id: nil, status: 'paused', is_active: false)
+    end
+
+    redirect_to admin_subscription_path(@subscription, list_state_params),
+                notice: "Delivery person #{old_name} unassigned. #{paused_count} upcoming delivery tasks paused, #{formats_count} customer formats updated."
+  rescue => e
+    Rails.logger.error "Failed to unassign delivery person for subscription #{@subscription.id}: #{e.message}"
+    redirect_to admin_subscription_path(@subscription, list_state_params), alert: "Failed to unassign delivery person: #{e.message}"
   end
 
   def delivery_schedule

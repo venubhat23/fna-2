@@ -537,15 +537,17 @@
 
                     <!-- Pause/Resume Subscription -->
                     <% if subscription.status == 'active' %>
-                      <%= link_to pause_subscription_admin_subscription_path(subscription, list_state),
-                          data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to pause this subscription?" },
+                      <%= button_to pause_subscription_admin_subscription_path(subscription, list_state),
+                          method: :patch,
+                          form: { class: "d-inline", data: { turbo_confirm: "Are you sure you want to pause this subscription?" } },
                           class: "btn btn-sm btn-outline-warning",
                           title: "Pause Subscription" do %>
                         <i class="bi bi-pause"></i>
                       <% end %>
                     <% elsif subscription.status == 'paused' %>
-                      <%= link_to resume_subscription_admin_subscription_path(subscription, list_state),
-                          data: { turbo_method: :patch, turbo_confirm: "Are you sure you want to resume this subscription?" },
+                      <%= button_to resume_subscription_admin_subscription_path(subscription, list_state),
+                          method: :patch,
+                          form: { class: "d-inline", data: { turbo_confirm: "Are you sure you want to resume this subscription?" } },
                           class: "btn btn-sm btn-outline-success",
                           title: "Resume Subscription" do %>
                         <i class="bi bi-play"></i>

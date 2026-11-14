@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_04_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_14_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -326,7 +326,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_04_090000) do
     t.string "pattern"
     t.decimal "quantity"
     t.bigint "product_id", null: false
-    t.bigint "delivery_person_id", null: false
+    t.bigint "delivery_person_id"
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
