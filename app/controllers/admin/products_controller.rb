@@ -6,7 +6,7 @@ class Admin::ProductsController < Admin::ApplicationController
   # in-process cache turns the category dropdown lookup below into a hash read.
   FILTER_LOCAL_CACHE = LocalTtlCache.new
 
-  before_action :set_product, only: [:show, :edit, :update, :destroy, :toggle_status, :detail]
+  before_action :set_product, only: [:show, :edit, :update, :destroy, :delete_preview, :toggle_status, :detail]
   before_action :authenticate_user!
 
   def index
@@ -136,9 +136,25 @@ class Admin::ProductsController < Admin::ApplicationController
     end
   end
 
+  # Deletes the product and its associated records (see ProductDeletion). The delete
+  # popup shows the counts from delete_preview first and the user confirms them.
   def destroy
-    @product.destroy
-    redirect_to admin_products_path, notice: 'Product was successfully deleted.'
+    name = @product.name
+    result = ProductDeletion.new(@product).delete!
+    removed = result.except(:invoice_items).select { |_, n| n.to_i.positive? }
+                    .map { |key, n| "#{n} #{key.to_s.humanize.downcase}" }
+    message = "Product #{name} deleted."
+    message += " Also removed: #{removed.join(', ')}." if removed.any?
+    message += " #{result[:invoice_items]} invoice items kept and unlinked." if result[:invoice_items].to_i.positive?
+    redirect_to admin_products_path, notice: message, status: :see_other
+  rescue => e
+    Rails.logger.error "Failed to delete product #{@product&.id}: #{e.message}"
+    redirect_to admin_products_path, alert: "Failed to delete product: #{e.message}", status: :see_other
+  end
+
+  # GET /admin/products/:id/delete_preview - associated record counts for the delete popup.
+  def delete_preview
+    render json: { id: @product.id, name: @product.name, records: ProductDeletion.new(@product).summary }
   end
 
   def toggle_status

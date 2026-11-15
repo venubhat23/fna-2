@@ -15,14 +15,12 @@
       <i class="bi bi-pencil me-1"></i>
       Edit
     <% end %>
-    <%= link_to toggle_status_admin_delivery_person_path(@delivery_person),
+    <%# A real form (not a link with turbo_method), so it sends PATCH even without Turbo. %>
+    <%= button_to toggle_status_admin_delivery_person_path(@delivery_person),
         method: :patch,
-        class: "btn btn-outline-#{@delivery_person.status? ? 'secondary' : 'success'}",
-        data: {
-          confirm: "Are you sure you want to #{@delivery_person.status? ? 'deactivate' : 'activate'} this delivery person?",
-          turbo_method: :patch
-        } do %>
-      <i class="bi bi-#{@delivery_person.status? ? 'pause-circle' : 'play-circle'} me-1"></i>
+        form: { class: "d-inline", data: { turbo_confirm: "Are you sure you want to #{@delivery_person.status? ? 'deactivate' : 'activate'} this delivery person?" } },
+        class: "btn btn-outline-#{@delivery_person.status? ? 'secondary' : 'success'}" do %>
+      <i class="bi bi-<%= @delivery_person.status? ? 'pause-circle' : 'play-circle' %> me-1"></i>
       <%= @delivery_person.status? ? 'Deactivate' : 'Activate' %>
     <% end %>
     <%= link_to admin_delivery_people_path, class: "btn btn-outline-secondary" do %>

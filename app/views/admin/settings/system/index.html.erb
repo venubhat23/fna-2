@@ -201,11 +201,16 @@
                 <div class="form-text">Enter your UPI ID to generate QR code automatically</div>
               </div>
 
-              <% if @business_setting.upi_id.present? && @business_setting.qr_code_path.present? %>
+              <% if @business_setting.upi_id.present? %>
+                <%# Drawn inline from the UPI ID - writing an SVG under public/ fails on the
+                    read-only, ephemeral production filesystem. %>
                 <div class="mb-3">
                   <label class="form-label">UPI QR Code</label>
-                  <div class="text-center">
-                    <%= image_tag @business_setting.qr_code_path, alt: "UPI QR Code", class: "img-fluid", style: "max-width: 150px;" %>
+                  <div class="text-center mx-auto" style="max-width: 150px;" role="img" aria-label="UPI QR Code">
+                    <%= raw RQRCode::QRCode.new(@business_setting.upi_id).as_svg(
+                          color: "000", shape_rendering: "crispEdges", module_size: 6,
+                          standalone: true, use_path: true, viewbox: true, svg_attributes: { width: "100%" }
+                        ) %>
                   </div>
                 </div>
               <% end %>

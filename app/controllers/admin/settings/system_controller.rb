@@ -112,9 +112,6 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
 
         @business_setting = SystemSetting.update_business_settings(business_params)
 
-        # Generate QR code if UPI ID is present
-        generate_qr_code if @business_setting.upi_id.present?
-
         success_messages << 'Business settings updated successfully!'
       rescue => e
         redirect_to admin_settings_system_path, alert: "Error updating business settings: #{e.message}"
@@ -156,27 +153,5 @@ class Admin::Settings::SystemController < Admin::Settings::BaseController
       :default_main_agent_commission, :default_affiliate_commission,
       :default_ambassador_commission, :default_company_expenses
     )
-  end
-
-  def generate_qr_code
-    require 'rqrcode'
-
-    qr = RQRCode::QRCode.new(@business_setting.upi_id)
-
-    # Generate SVG
-    svg = qr.as_svg(
-      color: "000",
-      shape_rendering: "crispEdges",
-      module_size: 6,
-      standalone: true
-    )
-
-    # Save to storage
-    qr_code_path = Rails.root.join('public', 'qr_codes')
-    FileUtils.mkdir_p(qr_code_path) unless Dir.exist?(qr_code_path)
-
-    File.write(Rails.root.join('public', 'qr_codes', "upi_qr_#{@business_setting.id}.svg"), svg)
-
-    @business_setting.update(qr_code_path: "/qr_codes/upi_qr_#{@business_setting.id}.svg")
   end
 end

@@ -268,12 +268,7 @@
                       </li>
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <%= link_to admin_product_path(product), method: :delete,
-                            class: "dropdown-item text-danger",
-                            confirm: "Are you sure you want to delete this product?",
-                            data: {
-                              confirm: "Are you sure you want to delete #{product.name}? This action cannot be undone."
-                            } do %>
+                        <%= render layout: "admin/products/delete_button", locals: { product: product, css: "dropdown-item text-danger" } do %>
                           <i class="bi bi-trash me-2"></i>
                           Delete Product
                         <% end %>
@@ -323,6 +318,8 @@
   .product-search-price { font-weight: 600; }
   .product-search-status { font-size: 0.7rem; text-transform: capitalize; opacity: 0.75; }
 </style>
+
+<%= render "admin/products/delete_modal" %>
 
 <script>
 (function() {

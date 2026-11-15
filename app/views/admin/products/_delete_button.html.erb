@@ -1,0 +1,8 @@
+<%# A plain button: the click opens the delete popup (_delete_modal) instead of following a link,
+    so it can never fall through to a GET of the product page. %>
+<button type="button" class="<%= css %> js-delete-product"
+        data-name="<%= product.name %>"
+        data-preview-url="<%= delete_preview_admin_product_path(product) %>"
+        data-delete-url="<%= admin_product_path(product) %>">
+  <%= yield %>
+</button>
