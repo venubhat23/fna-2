@@ -67,7 +67,16 @@ class User < ApplicationRecord
   has_one :franchise, dependent: :destroy
   has_many_attached :profile_images
   has_many_attached :documents
-  has_many :uploaded_documents, as: :documentable, class_name: 'Document', dependent: :destroy
+  has_many :uploaded_documents, as: :documentable, class_name: 'Document'
+  # Not `dependent: :destroy`: the documents table doesn't exist in every database
+  # (it's missing in production), and the dependent cleanup would raise
+  # PG::UndefinedTable on every user delete. Only clean up when the table is there.
+  before_destroy :destroy_uploaded_documents
+
+  def destroy_uploaded_documents
+    uploaded_documents.destroy_all if Document.table_exists?
+  end
+  private :destroy_uploaded_documents
 
   # Validations
   validates :first_name, presence: true

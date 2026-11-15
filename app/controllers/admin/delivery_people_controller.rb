@@ -1,6 +1,6 @@
 class Admin::DeliveryPeopleController < Admin::ApplicationController
   before_action :authenticate_user!
-  before_action :set_delivery_person, only: [:show, :edit, :update, :destroy, :toggle_status]
+  before_action :set_delivery_person, only: [:show, :edit, :update, :destroy, :delete_preview, :toggle_status]
 
   def index
     @delivery_people = DeliveryPerson.all
@@ -155,23 +155,30 @@ class Admin::DeliveryPeopleController < Admin::ApplicationController
     end
   end
 
+  # Deletes the delivery person, their login account and device tokens, and unassigns
+  # their bookings/tasks/subscriptions (see DeliveryPersonDeletion). The delete popup
+  # shows the counts from delete_preview first and the user confirms them.
   def destroy
-    begin
-      ActiveRecord::Base.transaction do
-        # Find and delete associated User record
-        user = User.find_by(email: @delivery_person.email, user_type: 'delivery_person')
-        user&.destroy
+    name = @delivery_person.full_name
+    result = DeliveryPersonDeletion.new(@delivery_person).delete!
+    unassigned = result.slice(:bookings, :milk_delivery_tasks, :milk_subscriptions, :customer_formats, :subscription_templates)
+                       .select { |_, n| n.to_i.positive? }
+                       .map { |key, n| "#{n} #{key.to_s.humanize.downcase}" }
+    message = "Delivery person #{name} deleted."
+    message += " Unassigned: #{unassigned.join(', ')}." if unassigned.any?
+    redirect_to admin_delivery_people_path, notice: message, status: :see_other
+  rescue => e
+    Rails.logger.error "Failed to delete delivery person #{@delivery_person&.id}: #{e.message}"
+    redirect_to admin_delivery_people_path, alert: "Failed to delete delivery person: #{e.message}", status: :see_other
+  end
 
-        # Delete delivery person
-        @delivery_person.destroy
-
-        redirect_to admin_delivery_people_path,
-                    notice: 'Delivery person and user account were successfully deleted.'
-      end
-    rescue => e
-      redirect_to admin_delivery_people_path,
-                  alert: "Failed to delete delivery person: #{e.message}"
-    end
+  # GET /admin/delivery_people/:id/delete_preview - associated record counts for the delete popup.
+  def delete_preview
+    render json: {
+      id: @delivery_person.id,
+      name: @delivery_person.full_name,
+      records: DeliveryPersonDeletion.new(@delivery_person).summary
+    }
   end
 
   def toggle_status

@@ -26,7 +26,10 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <%= form_with url: "#", method: :delete, local: true, class: "js-delete-form d-inline", data: { turbo: false } do %>
+        <%# The JS sets the real action per product, so use the session-wide CSRF token: a
+            per-form token would be bound to "#" and Rails would reject the DELETE (422). %>
+        <%= form_with url: "#", method: :delete, local: true, class: "js-delete-form d-inline", data: { turbo: false },
+                      authenticity_token: form_authenticity_token do %>
           <button type="submit" class="btn btn-danger js-confirm" disabled>
             <i class="bi bi-trash me-1"></i> OK, delete product and records
           </button>

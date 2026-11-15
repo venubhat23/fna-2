@@ -1,0 +1,134 @@
+<%# Delete popup for delivery people. Opened by any .js-delete-delivery-person button:
+    loads the associated record counts from delete_preview, and on OK submits a DELETE. %>
+<div class="modal fade" id="deliveryPersonDeleteModal" tabindex="-1" aria-labelledby="deliveryPersonDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger" id="deliveryPersonDeleteModalLabel">
+          <i class="bi bi-exclamation-triangle me-1"></i> Delete <span class="js-person-name"></span>?
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="js-loading text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Checking associated records…</div>
+        <div class="js-error alert alert-danger d-none mb-0"></div>
+        <div class="js-content d-none">
+          <p class="js-has-records mb-2">This delivery person has associated records:</p>
+          <p class="js-no-records mb-0">This delivery person has no associated records.</p>
+          <ul class="list-group js-records mb-3"></ul>
+          <p class="js-unlink-note small text-muted mb-2 d-none">
+            Bookings, delivery tasks, subscriptions and formats are <strong>kept</strong> and only unassigned
+            from this delivery person, so you can assign them to someone else.
+          </p>
+          <p class="js-delete-note small text-muted mb-2 d-none">
+            Their login account and device tokens are <strong>deleted permanently</strong>.
+          </p>
+          <p class="mb-0 fw-semibold">This cannot be undone. Is that fine?</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <%# The JS sets the real action per person, so use the session-wide CSRF token: a
+            per-form token would be bound to "#" and Rails would reject the DELETE (422). %>
+        <%= form_with url: "#", method: :delete, local: true, class: "js-delete-form d-inline", data: { turbo: false },
+                      authenticity_token: form_authenticity_token do %>
+          <button type="submit" class="btn btn-danger js-confirm" disabled>
+            <i class="bi bi-trash me-1"></i> OK, delete delivery person
+          </button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Bound once per page load; the modal itself is looked up on each click because
+  // Turbo replaces the page body on navigation.
+  if (window.__deliveryPersonDeleteBound) return;
+  window.__deliveryPersonDeleteBound = true;
+
+  document.addEventListener('click', function(event) {
+    var trigger = event.target.closest('.js-delete-delivery-person');
+    if (!trigger) return;
+    event.preventDefault();
+
+    var modalEl = document.getElementById('deliveryPersonDeleteModal');
+    if (!modalEl || typeof bootstrap === 'undefined') {
+      // No popup available - fall back to a plain confirm and submit.
+      if (!confirm('Delete ' + trigger.dataset.name + '? Their login account is deleted and their bookings/tasks are unassigned. This cannot be undone.')) return;
+      var f = document.createElement('form');
+      f.method = 'post';
+      f.action = trigger.dataset.deleteUrl;
+      var token = document.querySelector('meta[name="csrf-token"]');
+      f.innerHTML = '<input type="hidden" name="_method" value="delete">' +
+        (token ? '<input type="hidden" name="authenticity_token" value="' + token.content + '">' : '');
+      document.body.appendChild(f);
+      f.submit();
+      return;
+    }
+
+    // The partial renders inside the page content, whose stacking context sits below
+    // Bootstrap's backdrop (appended to <body>); move it to <body> so it stacks above.
+    if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+
+    var q = function(sel) { return modalEl.querySelector(sel); };
+    var confirmBtn = q('.js-confirm');
+    q('.js-person-name').textContent = trigger.dataset.name;
+    q('.js-delete-form').action = trigger.dataset.deleteUrl;
+    q('.js-loading').classList.remove('d-none');
+    q('.js-error').classList.add('d-none');
+    q('.js-content').classList.add('d-none');
+    q('.js-records').innerHTML = '';
+    confirmBtn.disabled = true;
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+
+    fetch(trigger.dataset.previewUrl, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function(response) {
+        if (!response.ok) throw new Error('Could not load associated records (HTTP ' + response.status + ').');
+        return response.json();
+      })
+      .then(function(data) {
+        var records = (data.records || []).filter(function(r) { return r.count > 0; });
+        var list = q('.js-records');
+        records.forEach(function(r) {
+          // Built with textContent so labels can't inject markup.
+          var li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-center';
+          var label = document.createElement('span');
+          label.textContent = r.label;
+          var badge = document.createElement('span');
+          badge.className = 'badge rounded-pill ' + (r.action === 'unlink' ? 'bg-secondary' : 'bg-danger');
+          badge.textContent = r.count;
+          li.appendChild(label);
+          li.appendChild(badge);
+          list.appendChild(li);
+        });
+        var hasRecords = records.length > 0;
+        q('.js-has-records').classList.toggle('d-none', !hasRecords);
+        q('.js-no-records').classList.toggle('d-none', hasRecords);
+        list.classList.toggle('d-none', !hasRecords);
+        q('.js-unlink-note').classList.toggle('d-none', !records.some(function(r) { return r.action === 'unlink'; }));
+        q('.js-delete-note').classList.toggle('d-none', !records.some(function(r) { return r.action === 'delete'; }));
+        q('.js-loading').classList.add('d-none');
+        q('.js-content').classList.remove('d-none');
+        confirmBtn.disabled = false;
+      })
+      .catch(function(error) {
+        q('.js-loading').classList.add('d-none');
+        var err = q('.js-error');
+        err.textContent = error.message;
+        err.classList.remove('d-none');
+      });
+  });
+
+  // Stop a double click from sending two deletes.
+  document.addEventListener('submit', function(event) {
+    if (!event.target.classList.contains('js-delete-form') ||
+        !event.target.closest('#deliveryPersonDeleteModal')) return;
+    var btn = event.target.querySelector('.js-confirm');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting…'; }
+  });
+})();
+</script>

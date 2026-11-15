@@ -751,6 +751,7 @@ Rails.application.routes.draw do
     resources :delivery_people do
       member do
         patch :toggle_status
+        get :delete_preview
         # A GET here (link opened in a new tab, refresh, Turbo not loaded) used to 404 -
         # send it back to the delivery person without changing anything.
         get :toggle_status, to: redirect(status: 302) { |p, _req| "/admin/delivery_people/#{p[:id]}" }
