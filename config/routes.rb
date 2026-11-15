@@ -858,6 +858,7 @@ Rails.application.routes.draw do
         get 'delivery/tasks/:id', to: 'delivery#task_details'
         post 'delivery/tasks/:id/start', to: 'delivery#start_task'
         post 'delivery/tasks/:id/complete', to: 'delivery#complete_task'
+        post 'delivery/tasks/:id/update_quantity', to: 'delivery#update_task_quantity'
         post 'delivery/tasks/:id/update_location', to: 'delivery#update_location'
         post 'delivery/tasks/bulk_action', to: 'delivery#bulk_task_action'
         post 'delivery/bulk_mark_done', to: 'delivery#bulk_mark_done'

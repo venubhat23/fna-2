@@ -77,7 +77,7 @@ class Admin::BannersController < Admin::ApplicationController
   # DELETE /admin/banners/1
   def destroy
     @banner.destroy
-    redirect_to admin_banners_path, notice: 'Banner was successfully deleted.'
+    redirect_to admin_banners_path, notice: 'Banner was successfully deleted.', status: :see_other
   end
 
   # PATCH /admin/banners/1/toggle_status

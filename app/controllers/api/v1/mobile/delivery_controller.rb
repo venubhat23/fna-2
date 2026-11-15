@@ -114,6 +114,63 @@ module Api
           end
         end
 
+        # POST /api/v1/mobile/delivery/tasks/:id/update_quantity
+        # Changes the quantity of one subscription delivery task (the `id` from tasks/today).
+        # Only that day's task changes; the subscription itself is untouched.
+        #   { "quantity": 2 }                         -> set to 2
+        #   { "operation": "increase" }               -> +1   (optional "step": 0.5)
+        #   { "operation": "decrease", "step": 0.5 }  -> -0.5 (must stay above 0)
+        def update_task_quantity
+          task = MilkDeliveryTask.includes(:product, customer: CUSTOMER_IMAGE_PRELOADS)
+                                 .find_by(id: params[:id], delivery_person_id: current_delivery_person_id)
+          return render json: { success: false, message: "Task not found" }, status: :not_found unless task
+
+          if %w[cancelled paused].include?(task.status)
+            return render json: { success: false, message: "Cannot change quantity of a #{task.status} task" }, status: :unprocessable_entity
+          end
+          if task.invoiced
+            return render json: { success: false, message: "Task is already invoiced; quantity cannot be changed" }, status: :unprocessable_entity
+          end
+
+          current = task.quantity.to_d
+          step = params[:step].present? ? BigDecimal(params[:step].to_s) : 1.to_d
+          return render json: { success: false, message: "step must be greater than 0" }, status: :unprocessable_entity unless step.positive?
+
+          new_quantity =
+            case params[:operation].to_s
+            when 'increase' then current + step
+            when 'decrease' then current - step
+            else
+              if params[:quantity].present?
+                BigDecimal(params[:quantity].to_s)
+              else
+                return render json: { success: false, message: "Send quantity, or action 'increase'/'decrease'" }, status: :bad_request
+              end
+            end
+
+          unless new_quantity.positive?
+            return render json: { success: false, message: "Quantity must be greater than 0 (use bulk_action delete to remove the task)" }, status: :unprocessable_entity
+          end
+
+          task.update!(quantity: new_quantity)
+
+          render json: {
+            success: true,
+            message: "Quantity updated",
+            data: {
+              task_id: task.id,
+              previous_quantity: current.to_f,
+              quantity: task.quantity.to_f,
+              unit: task.unit,
+              task: format_subscription_task(task)
+            }
+          }
+        rescue ArgumentError
+          render json: { success: false, message: "quantity and step must be numbers" }, status: :unprocessable_entity
+        rescue => e
+          render json: { success: false, message: e.message }, status: :internal_server_error
+        end
+
         # POST /api/v1/mobile/delivery/tasks/:id/update_location
         def update_location
           begin
