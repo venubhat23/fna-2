@@ -63,6 +63,12 @@
       return;
     }
 
+    // The partial renders inside the page content, whose stacking context sits below
+    // Bootstrap's backdrop (appended to <body>), leaving the dialog dimmed and unclickable.
+    // Move it to <body> so it stacks above the backdrop. Turbo swaps the body on navigation,
+    // so this doesn't leak between pages.
+    if (modalEl.parentElement !== document.body) document.body.appendChild(modalEl);
+
     var q = function(sel) { return modalEl.querySelector(sel); };
     var confirmBtn = q('.js-confirm');
     q('.js-product-name').textContent = trigger.dataset.name;

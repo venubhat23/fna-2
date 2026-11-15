@@ -230,21 +230,44 @@ class Admin::BookingsController < Admin::ApplicationController
     @customers = Customer.all.order(:first_name, :last_name)
   end
 
+  # PATCH /admin/bookings/:id
+  # Besides the edit form, this accepts a stage change with its stage details in one call, e.g.
+  #   { "booking": { "status": "shipped", "payment_status": "paid",
+  #                  "courier_service": "DTDC", "tracking_number": "TRK123",
+  #                  "transition_notes": "Shipped from admin app" } }
+  # Any stage can be set (admin override, no next-stage check). A stage change is added to
+  # stage_history like the manage-stage screen does. Send Accept: application/json for a JSON reply.
   def update
-    # Validate stock availability for updates
-    unless validate_stock_availability(@booking, is_update: true)
-      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
-      @customers = Customer.all.order(:first_name, :last_name)
-      render :edit, status: :unprocessable_entity
+    # Only re-check stock when items are being edited; a stage/payment-only update doesn't touch stock.
+    if params.dig(:booking, :booking_items_attributes).present? && !validate_stock_availability(@booking, is_update: true)
+      respond_to do |format|
+        format.html do
+          @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
+          @customers = Customer.all.order(:first_name, :last_name)
+          render :edit, status: :unprocessable_entity
+        end
+        format.json { render json: { success: false, errors: @booking.errors.full_messages }, status: :unprocessable_entity }
+      end
       return
     end
 
-    if @booking.update(booking_params)
-      redirect_to admin_booking_path(@booking), notice: 'Booking updated successfully!'
+    @booking.assign_attributes(booking_params)
+    record_stage_change(@booking) if @booking.status_changed?
+
+    if @booking.save
+      respond_to do |format|
+        format.html { redirect_to admin_booking_path(@booking), notice: 'Booking updated successfully!' }
+        format.json { render json: { success: true, message: 'Booking updated successfully', booking: booking_stage_json(@booking) } }
+      end
     else
-      @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
-      @customers = Customer.all.order(:first_name, :last_name)
-      render :edit
+      respond_to do |format|
+        format.html do
+          @products = Product.active.includes(:category, image_attachment: :blob, additional_images_attachments: :blob)
+          @customers = Customer.all.order(:first_name, :last_name)
+          render :edit
+        end
+        format.json { render json: { success: false, errors: @booking.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -830,8 +853,48 @@ class Admin::BookingsController < Admin::ApplicationController
       :customer_id, :customer_name, :customer_email, :customer_phone,
       :payment_method, :payment_status, :discount_amount, :notes,
       :delivery_address, :cash_received, :change_amount, :status, :store_id,
-      :booking_date, :is_outlet_booking, booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
+      :booking_date, :is_outlet_booking, *STAGE_DETAIL_FIELDS, :transition_notes, :delivery_person_id,
+      booking_items_attributes: [:id, :product_id, :quantity, :price, :_destroy]
     )
+  end
+
+  # Stage detail columns that can be sent with a status change in PATCH /admin/bookings/:id.
+  STAGE_DETAIL_FIELDS = %i[
+    processing_team expected_completion_time estimated_processing_time
+    package_weight package_dimensions quality_status
+    courier_service tracking_number shipping_charges expected_delivery_date
+    delivery_person delivery_contact delivered_to delivery_time customer_satisfaction
+    cancellation_reason refund_amount refund_method
+    return_reason return_condition
+  ].freeze
+
+  # Same history entry shape as the manage-stage screen (build_stage_transition_data).
+  def record_stage_change(booking)
+    history = begin
+      booking.stage_history.present? ? JSON.parse(booking.stage_history) : []
+    rescue JSON::ParserError
+      []
+    end
+    entry = {
+      from_stage: booking.status_was,
+      to_stage: booking.status,
+      timestamp: Time.current,
+      user_id: current_user.id,
+      user_name: current_user.try(:full_name) || current_user.email
+    }
+    STAGE_DETAIL_FIELDS.each { |f| entry[f] = booking[f] if booking.will_save_change_to_attribute?(f) }
+    entry[:transition_notes] = booking.transition_notes if booking.transition_notes.present?
+    history << entry
+
+    booking.stage_history = history.to_json
+    booking.stage_updated_at = Time.current
+    booking.stage_updated_by = current_user.id
+  end
+
+  def booking_stage_json(booking)
+    booking.slice(:id, :booking_number, :status, :payment_status, :payment_method, :total_amount,
+                  :transition_notes, :stage_updated_at, :delivery_person_id, *STAGE_DETAIL_FIELDS)
+           .merge('next_possible_statuses' => booking.next_possible_statuses)
   end
 
   def validate_stock_availability(booking, is_update: false)
