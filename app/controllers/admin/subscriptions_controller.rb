@@ -27,6 +27,9 @@ class Admin::SubscriptionsController < Admin::ApplicationController
     @subscriptions = Kaminari::PaginatableArray.new(
       page_data[:rows], limit: PER_PAGE, offset: page_data[:offset], total_count: @stats[:total]
     )
+    # Not part of the cached page data: invoices aren't among the tables that bust
+    # AdminSubscriptionsCache, and the row must flip to the invoice link right after "CI".
+    @subscription_invoices = subscription_invoices_for(@subscriptions.map(&:id))
 
     # For filter options - cached, since this page does a full reload on every filter
     # change (status/month/customer/delivery person), and these lists rarely change.
@@ -622,6 +625,46 @@ class Admin::SubscriptionsController < Admin::ApplicationController
   end
 
   private
+
+  # { subscription_id => [Invoice, ...] } for the given subscriptions, in one query.
+  # Invoice items reference the first task of each grouped product line, which covers
+  # the usual case. When a customer has two subscriptions for the same product, the
+  # second one's tasks are folded into that line without a direct link - so for a
+  # subscription with invoiced tasks but no linked item, fall back to that customer's
+  # invoices for the same month(s) that carry a delivery line for the same product.
+  def subscription_invoices_for(ids)
+    return {} if ids.empty?
+
+    sql = <<~SQL
+      SELECT invoices.*, mdt.subscription_id AS linked_subscription_id
+      FROM invoices
+      JOIN invoice_items ii ON ii.invoice_id = invoices.id
+      JOIN milk_delivery_tasks mdt ON mdt.id = ii.milk_delivery_task_id
+      WHERE mdt.subscription_id IN (:ids)
+      UNION
+      SELECT invoices.*, mdt.subscription_id AS linked_subscription_id
+      FROM milk_delivery_tasks mdt
+      JOIN invoices ON invoices.customer_id = mdt.customer_id
+                   AND invoices.year = EXTRACT(YEAR FROM mdt.delivery_date)
+                   AND invoices.month = EXTRACT(MONTH FROM mdt.delivery_date)
+      WHERE mdt.subscription_id IN (:ids)
+        AND mdt.invoiced = TRUE
+        AND NOT EXISTS (
+          SELECT 1 FROM invoice_items ii2
+          JOIN milk_delivery_tasks t2 ON t2.id = ii2.milk_delivery_task_id
+          WHERE t2.subscription_id = mdt.subscription_id
+        )
+        AND EXISTS (
+          SELECT 1 FROM invoice_items ii3
+          JOIN milk_delivery_tasks t3 ON t3.id = ii3.milk_delivery_task_id
+          WHERE ii3.invoice_id = invoices.id AND t3.product_id = mdt.product_id
+        )
+    SQL
+
+    Invoice.find_by_sql([sql, { ids: ids }])
+           .group_by(&:linked_subscription_id)
+           .transform_values { |invs| invs.sort_by { |inv| [inv.invoice_date || Date.new(1970), inv.id] } }
+  end
 
   def set_subscription
     @subscription = MilkSubscription.includes(:customer, :product).find_by(id: params[:id])

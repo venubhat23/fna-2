@@ -87,6 +87,58 @@
 .sub-status-pill.status-expired   { background: #fee2e2; color: #b91c1c; }
 .sub-status-pill.status-cancelled { background: #e2e8f0; color: #475569; }
 
+/* Invoice link / Create Invoice (CI) button in the Progress column */
+.sub-invoice-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  text-decoration: none;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sub-invoice-chip:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(55, 48, 163, 0.18); color: #312e81; }
+.sub-invoice-chip .sep { opacity: 0.5; }
+.sub-invoice-chip .pay-tag {
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.sub-invoice-chip.pay-partially_paid .pay-tag { background: #fef3c7; color: #b45309; }
+.sub-invoice-chip.pay-fully_paid .pay-tag     { background: #dcfce7; color: #15803d; }
+.sub-invoice-chip.just-created { animation: subInvoicePop 0.5s ease; }
+@keyframes subInvoicePop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.sub-ci-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.7rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.sub-ci-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.45); }
+.sub-ci-btn:disabled { opacity: 0.85; cursor: progress; }
+.sub-ci-btn .spinner-border { width: 0.8rem; height: 0.8rem; border-width: 0.14em; }
+
 .sub-actions .btn {
   width: 32px;
   height: 32px;
@@ -506,6 +558,33 @@
                       </span>
                     <% else %>
                       <span class="text-muted text-nowrap"><i class="bi bi-person-x me-1"></i>Not assigned</span>
+                    <% end %>
+                  </div>
+                  <% sub_invoices = @subscription_invoices[subscription.id] %>
+                  <div class="sub-invoice d-flex flex-wrap align-items-center gap-1 mt-2" id="sub-invoice-<%= subscription.id %>">
+                    <% if sub_invoices.present? %>
+                      <% sub_invoices.each do |inv| %>
+                        <%= link_to admin_invoice_path(inv),
+                            class: "sub-invoice-chip pay-#{inv.payment_status || 'unpaid'}",
+                            title: "Open invoice #{inv.invoice_number} (#{inv.invoice_date&.strftime('%b %Y')})" do %>
+                          <i class="bi bi-receipt"></i>
+                          <span class="fw-semibold"><%= inv.invoice_number %></span>
+                          <span class="sep">·</span>
+                          <span>₹<%= number_with_delimiter(inv.total_amount.to_f.round(2)) %></span>
+                          <span class="pay-tag"><%= (inv.payment_status || 'unpaid').humanize %></span>
+                        <% end %>
+                      <% end %>
+                    <% else %>
+                      <button type="button"
+                              class="sub-ci-btn"
+                              data-subscription-id="<%= subscription.id %>"
+                              data-customer-name="<%= "#{subscription.customer.first_name} #{subscription.customer.last_name}".strip %>"
+                              title="Create invoice for this subscription"
+                              onclick="createSubscriptionInvoice(this)">
+                        <span class="ci-idle"><i class="bi bi-receipt-cutoff"></i> CI</span>
+                        <span class="ci-busy d-none"><span class="spinner-border spinner-border-sm" role="status"></span> Creating…</span>
+                      </button>
+                      <small class="text-muted">No invoice yet</small>
                     <% end %>
                   </div>
                 </td>
@@ -2200,6 +2279,64 @@ function showSuccessAlert(title, message) {
       }, 300);
     }
   }, 5000);
+}
+
+// "CI" button in the Progress column: create the invoice for this subscription,
+// show it in place, then reload so the row (and totals) come back from the server.
+function createSubscriptionInvoice(btn) {
+  const subscriptionId = btn.dataset.subscriptionId;
+  const customerName = btn.dataset.customerName || 'this customer';
+  if (!confirm(`Create invoice for ${customerName}'s subscription?\n\nThis generates the monthly invoice for every month (up to this one) with uninvoiced deliveries.`)) return;
+
+  const idle = btn.querySelector('.ci-idle');
+  const busy = btn.querySelector('.ci-busy');
+  btn.disabled = true;
+  idle.classList.add('d-none');
+  busy.classList.remove('d-none');
+
+  const reset = () => {
+    btn.disabled = false;
+    idle.classList.remove('d-none');
+    busy.classList.add('d-none');
+  };
+
+  fetch('/admin/invoices/generate_for_subscription', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ subscription_id: subscriptionId })
+  })
+    .then(response => response.json().catch(() => ({ success: false, error: `Server error (${response.status})` })))
+    .then(data => {
+      if (!data.success) {
+        reset();
+        showErrorAlert('Invoice not created', data.error || 'Something went wrong.');
+        return;
+      }
+
+      const container = document.getElementById(`sub-invoice-${subscriptionId}`);
+      if (container) {
+        container.innerHTML = data.invoices.map(inv => `
+          <a href="${inv.url}" class="sub-invoice-chip pay-unpaid just-created">
+            <i class="bi bi-receipt"></i>
+            <span class="fw-semibold">${inv.invoice_number}</span>
+            <span class="sep">·</span>
+            <span>₹${Number(inv.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            <span class="pay-tag">Unpaid</span>
+          </a>`).join('') +
+          '<small class="text-muted ms-1"><span class="spinner-border spinner-border-sm" style="width:.7rem;height:.7rem;border-width:.12em"></span> Refreshing…</small>';
+      }
+      const numbers = data.invoices.map(inv => inv.invoice_number).join(', ');
+      showSuccessAlert('Invoice created', `Created ${numbers}.`);
+      setTimeout(() => window.location.reload(), 1200);
+    })
+    .catch(error => {
+      reset();
+      showErrorAlert('Invoice not created', error.message || 'Network error.');
+    });
 }
 
 function showErrorAlert(title, message) {

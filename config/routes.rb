@@ -255,6 +255,7 @@ Rails.application.routes.draw do
       collection do
         post :generate_invoice
         post :generate_bulk_invoices
+        post :generate_for_subscription
         post :bulk_mark_as_paid
         post :partial_payment
         get :customers

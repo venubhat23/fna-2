@@ -495,6 +495,51 @@ class Admin::InvoicesController < Admin::ApplicationController
     end
   end
 
+  # POST /admin/invoices/generate_for_subscription (JSON) - the "CI" button on the
+  # subscriptions list. Runs the same per-customer monthly generation as #generate for
+  # each month (up to the current one) in which this subscription still has
+  # uninvoiced deliveries, so the invoice also picks up that customer's other
+  # uninvoiced items for the month, exactly as a normal monthly run would.
+  def generate_for_subscription
+    subscription = MilkSubscription.includes(:customer).find(params[:subscription_id])
+
+    months = subscription.milk_delivery_tasks
+                         .where(invoiced: [false, nil], status: %w[pending scheduled completed])
+                         .where('delivery_date <= ?', Date.current.end_of_month)
+                         .distinct
+                         .pluck(Arel.sql('EXTRACT(YEAR FROM delivery_date)::int'), Arel.sql('EXTRACT(MONTH FROM delivery_date)::int'))
+                         .sort
+
+    if months.empty?
+      return render json: { success: false, error: 'This subscription has no uninvoiced deliveries up to this month.' },
+                    status: :unprocessable_entity
+    end
+
+    invoices = []
+    Invoice.transaction do
+      months.each do |year, month|
+        invoice = generate_customer_invoice(subscription.customer, month, year)
+        invoices << invoice if invoice
+      end
+    end
+
+    if invoices.empty?
+      render json: { success: false, error: 'Nothing to invoice for this subscription.' }, status: :unprocessable_entity
+    else
+      render json: {
+        success: true,
+        invoices: invoices.map do |inv|
+          { id: inv.id, invoice_number: inv.invoice_number, total_amount: inv.total_amount.to_f, url: admin_invoice_path(inv) }
+        end
+      }
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { success: false, error: 'Subscription not found.' }, status: :not_found
+  rescue => e
+    Rails.logger.error("Subscription invoice generation failed for subscription #{params[:subscription_id]}: #{e.message}")
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+
   def show
     @invoice_items = @invoice&.invoice_items&.includes(:product, :milk_delivery_task) || []
   end
