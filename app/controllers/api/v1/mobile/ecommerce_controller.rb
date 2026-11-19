@@ -14,9 +14,13 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
   # GET /api/v1/mobile/ecommerce/categories
   def categories
+    # Milk categories first, otherwise keep display order
     @categories = Category.active_ordered_by_display
+                          .each_with_index
+                          .sort_by { |category, index| [category.name.to_s.downcase.include?('milk') ? 0 : 1, index] }
+                          .map(&:first)
     ActiveRecord::Associations::Preloader.new(records: @categories, associations: { image_attachment: :blob }).call
-    product_counts = Product.where(category_id: @categories.map(&:id)).group(:category_id).count
+    product_counts = Product.active.where(category_id: @categories.map(&:id)).group(:category_id).count
 
     categories_data = @categories.map do |category|
       {
@@ -68,6 +72,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @products = @products.where('price >= ?', params[:min_price]) if params[:min_price].present?
     @products = @products.where('price <= ?', params[:max_price]) if params[:max_price].present?
     @products = @products.search(params[:search]) if params[:search].present?
+
+    # Milk products always first, then the chosen sort
+    @products = @products.milk_first
 
     # Apply sorting
     case params[:sort_by]
@@ -140,6 +147,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
     @products = @products.where('price >= ?', params[:min_price]) if params[:min_price].present?
     @products = @products.where('price <= ?', params[:max_price]) if params[:max_price].present?
     @products = @products.search(params[:search]) if params[:search].present?
+
+    # Milk products always first, then the chosen sort
+    @products = @products.milk_first
 
     case params[:sort_by]
     when 'price_low' then @products = @products.order(:price)

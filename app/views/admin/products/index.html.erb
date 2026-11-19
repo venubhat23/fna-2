@@ -266,6 +266,21 @@
                           Edit Product
                         <% end %>
                       </li>
+                      <li>
+                        <% if product.active? %>
+                          <%= button_to toggle_status_admin_product_path(product), method: :patch, class: "dropdown-item text-warning",
+                                form: { data: { turbo_confirm: "Pause \"#{product.name}\"? It will be hidden from the mobile app." } } do %>
+                            <i class="bi bi-pause-circle me-2"></i>
+                            Pause Product
+                          <% end %>
+                        <% else %>
+                          <%= button_to toggle_status_admin_product_path(product), method: :patch, class: "dropdown-item text-success",
+                                form: { data: { turbo_confirm: "Activate \"#{product.name}\"? It will show in the mobile app again." } } do %>
+                            <i class="bi bi-play-circle me-2"></i>
+                            Activate Product
+                          <% end %>
+                        <% end %>
+                      </li>
                       <li><hr class="dropdown-divider"></li>
                       <li>
                         <%= render layout: "admin/products/delete_button", locals: { product: product, css: "dropdown-item text-danger" } do %>

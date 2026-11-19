@@ -124,6 +124,14 @@ class Product < ApplicationRecord
     where(id: batch_stock_ids).or(where(id: variant_stock_ids))
   }
   scope :by_category, ->(category_id) { where(category_id: category_id) }
+  # Milk products (by product name or category name) come before everything else
+  scope :milk_first, -> {
+    order(Arel.sql(<<~SQL.squish))
+      CASE WHEN products.name ILIKE '%milk%'
+             OR products.category_id IN (SELECT categories.id FROM categories WHERE categories.name ILIKE '%milk%')
+           THEN 0 ELSE 1 END
+    SQL
+  }
   scope :search, ->(query) { where('name ILIKE ? OR description ILIKE ? OR sku ILIKE ?', "%#{query}%", "%#{query}%", "%#{query}%") }
   scope :recent, -> { order(created_at: :desc) }
   scope :occasional, -> { where(is_occasional_product: true) }
