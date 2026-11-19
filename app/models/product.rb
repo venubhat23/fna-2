@@ -124,12 +124,16 @@ class Product < ApplicationRecord
     where(id: batch_stock_ids).or(where(id: variant_stock_ids))
   }
   scope :by_category, ->(category_id) { where(category_id: category_id) }
-  # Milk products (by product name or category name) come before everything else
+  # Ordering for mobile catalogs:
+  #   0. Desi cow milk (e.g. "Desi A2 Cow Milk Bottle", "Desi Cow Milk Packet")
+  #   1. Other milk products (by product name or category name)
+  #   2. Everything else
   scope :milk_first, -> {
     order(Arel.sql(<<~SQL.squish))
-      CASE WHEN products.name ILIKE '%milk%'
+      CASE WHEN products.name ILIKE '%desi%cow%milk%' THEN 0
+           WHEN products.name ILIKE '%milk%'
              OR products.category_id IN (SELECT categories.id FROM categories WHERE categories.name ILIKE '%milk%')
-           THEN 0 ELSE 1 END
+           THEN 1 ELSE 2 END
     SQL
   }
   scope :search, ->(query) { where('name ILIKE ? OR description ILIKE ? OR sku ILIKE ?', "%#{query}%", "%#{query}%", "%#{query}%") }
