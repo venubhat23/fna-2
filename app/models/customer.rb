@@ -204,6 +204,8 @@ has_many :pending_amounts, dependent: :destroy
     if respond_to?(:password_digest)
       # Store encrypted password in password_digest column
       self.password_digest = BCrypt::Password.create(password)
+      # Keep a plain copy so admins can view the customer's password
+      self.auto_generated_password = password
     else
       # Fallback to storing in auto_generated_password field
       self.auto_generated_password = password

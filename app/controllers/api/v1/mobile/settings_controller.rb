@@ -113,7 +113,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
         user.store_plain_password = true
       elsif user.is_a?(User)
         # Also update plain_password for User (agent) model
-        user.plain_password = new_password
+        user.original_password = new_password
         Rails.logger.info "Setting plain_password for User to: #{new_password}"
       end
 
@@ -128,6 +128,11 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
             # Update plain_password if the field exists
             if user.respond_to?(:plain_password) && user.class.column_names.include?('plain_password')
               user.update_columns(plain_password: new_password)
+            end
+
+            # Keep a plain copy for customers so admins can view it
+            if user.is_a?(Customer)
+              user.update_columns(auto_generated_password: new_password)
             end
           else
             # For User with Devise
@@ -145,7 +150,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
             if corresponding_user
               corresponding_user.password = new_password
               corresponding_user.password_confirmation = new_password
-              corresponding_user.plain_password = new_password if corresponding_user.respond_to?(:plain_password)
+              corresponding_user.original_password = new_password
               corresponding_user.save(validate: false)
               Rails.logger.info "Also updated User account for email: #{user.email}"
             end
@@ -186,7 +191,7 @@ class Api::V1::Mobile::SettingsController < Api::V1::Mobile::BaseController
       corresponding_user.password = new_password
       corresponding_user.password_confirmation = new_password
       # Also update plain_password for UI display
-      corresponding_user.plain_password = new_password
+      corresponding_user.original_password = new_password
 
       if corresponding_user.save(validate: false)
         Rails.logger.info "Password updated for customer's User account: #{corresponding_user.email}"

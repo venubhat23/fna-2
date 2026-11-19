@@ -125,49 +125,6 @@
             </div>
             <div class="form-text">Used to calculate age and send birthday wishes</div>
           </div>
-
-          <div class="col-md-4">
-            <%= form.label :gender, "Gender", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-gender-ambiguous text-muted"></i>
-              </span>
-              <%= form.select :gender, options_for_select([['Select Gender', ''], ['Male', 'male'], ['Female', 'female'], ['Other', 'other']]), {}, class: "form-select border-start-0" %>
-            </div>
-          </div>
-
-          <div class="col-md-4">
-            <%= form.label :marital_status, "Marital Status", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-heart text-muted"></i>
-              </span>
-              <%= form.select :marital_status, options_for_select([['Select Status', ''], ['Single', 'single'], ['Married', 'married'], ['Divorced', 'divorced'], ['Widowed', 'widowed']]), {}, class: "form-select border-start-0" %>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :pan_no, "PAN Number", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-credit-card-2-front text-muted"></i>
-              </span>
-              <%= form.text_field :pan_no, class: "form-control border-start-0 text-uppercase", placeholder: "ABCDE1234F", maxlength: 10, pattern: "[A-Z]{5}[0-9]{4}[A-Z]{1}" %>
-            </div>
-            <div class="form-text">Format: ABCDE1234F</div>
-          </div>
-
-          <div class="col-md-6">
-            <%= form.label :gst_no, "GST Number", class: "form-label fw-medium" %>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-receipt text-muted"></i>
-              </span>
-              <%= form.text_field :gst_no, class: "form-control border-start-0 text-uppercase", placeholder: "22ABCDE1234F1Z5", maxlength: 15 %>
-            </div>
-            <div class="form-text">15-character GST number for business customers</div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -512,6 +469,45 @@
           <!-- Hidden field to store generated password for display -->
           <%= form.hidden_field :auto_generated_password %>
 
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tax Information Section -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-secondary bg-opacity-10 rounded p-2 me-3">
+            <i class="bi bi-receipt text-secondary"></i>
+          </div>
+          <h5 class="card-title mb-0">Tax Information</h5>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <%= form.label :pan_no, "PAN Number", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-credit-card-2-front text-muted"></i>
+              </span>
+              <%= form.text_field :pan_no, class: "form-control border-start-0 text-uppercase", placeholder: "ABCDE1234F", maxlength: 10, pattern: "[A-Z]{5}[0-9]{4}[A-Z]{1}" %>
+            </div>
+            <div class="form-text">Format: ABCDE1234F</div>
+          </div>
+
+          <div class="col-md-6">
+            <%= form.label :gst_no, "GST Number", class: "form-label fw-medium" %>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-receipt text-muted"></i>
+              </span>
+              <%= form.text_field :gst_no, class: "form-control border-start-0 text-uppercase", placeholder: "22ABCDE1234F1Z5", maxlength: 15 %>
+            </div>
+            <div class="form-text">15-character GST number for business customers</div>
+          </div>
         </div>
       </div>
     </div>

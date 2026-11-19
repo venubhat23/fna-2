@@ -38,6 +38,8 @@ class DeliveryPerson < ApplicationRecord
   before_validation :normalize_attributes
   before_validation :set_default_status, if: :new_record?
   before_validation :generate_password, if: :new_record?
+  # Keep a plain copy of every password so admins can view it
+  before_save -> { self.auto_generated_password = password }, if: -> { password.present? }
 
   def full_name
     "#{first_name} #{last_name}"

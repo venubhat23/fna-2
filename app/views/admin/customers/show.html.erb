@@ -151,7 +151,7 @@
                 <% if @customer.auto_generated_password.present? %>
                   <%= @customer.auto_generated_password %>
                 <% else %>
-                  <span class="text-muted">Set by customer</span>
+                  <span class="text-muted">Not available (set before passwords were saved, reset to view)</span>
                 <% end %>
               </span>
               <% if @customer.auto_generated_password.present? %>

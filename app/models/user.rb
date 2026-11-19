@@ -73,6 +73,29 @@ class User < ApplicationRecord
   # PG::UndefinedTable on every user delete. Only clean up when the table is there.
   before_destroy :destroy_uploaded_documents
 
+  # Keep a plain copy of every password so admins can view it
+  before_save :store_original_password, if: -> { password.present? }
+  after_save :sync_password_to_linked_accounts, if: -> { password.present? }
+
+  def store_original_password
+    self.original_password = password if has_attribute?(:original_password)
+  end
+  private :store_original_password
+
+  # Franchise / affiliate / delivery person pages show their own
+  # auto_generated_password column, so keep it in step with this login.
+  def sync_password_to_linked_accounts
+    linked = []
+    linked << authenticatable if authenticatable.respond_to?(:auto_generated_password)
+    linked << franchise if franchise
+    linked << DeliveryPerson.find_by(email: email) if user_type == 'delivery_person'
+    linked.compact.uniq.each do |record|
+      next unless record.has_attribute?(:auto_generated_password)
+      record.update_column(:auto_generated_password, password)
+    end
+  end
+  private :sync_password_to_linked_accounts
+
   def destroy_uploaded_documents
     uploaded_documents.destroy_all if Document.table_exists?
   end
