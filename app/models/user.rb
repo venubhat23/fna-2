@@ -89,6 +89,9 @@ class User < ApplicationRecord
     linked << authenticatable if authenticatable.respond_to?(:auto_generated_password)
     linked << franchise if franchise
     linked << DeliveryPerson.find_by(email: email) if user_type == 'delivery_person'
+    # Mobile sign-up / password change set the password only on the User,
+    # but the admin customer page reads customers.auto_generated_password
+    linked << Customer.find_by(email: email) if user_type == 'customer'
     linked.compact.uniq.each do |record|
       next unless record.has_attribute?(:auto_generated_password)
       record.update_column(:auto_generated_password, password)

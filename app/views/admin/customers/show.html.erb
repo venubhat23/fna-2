@@ -148,14 +148,15 @@
             <strong class="text-muted d-block">Password</strong>
             <div class="d-flex align-items-center">
               <span class="me-2 font-monospace">
-                <% if @customer.auto_generated_password.present? %>
-                  <%= @customer.auto_generated_password %>
+                <% shown_password = @customer.auto_generated_password.presence || (user.respond_to?(:original_password) ? user.original_password.presence : nil) %>
+                <% if shown_password %>
+                  <%= shown_password %>
                 <% else %>
                   <span class="text-muted">Not available (set before passwords were saved, reset to view)</span>
                 <% end %>
               </span>
-              <% if @customer.auto_generated_password.present? %>
-                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('<%= @customer.auto_generated_password %>')">
+              <% if shown_password %>
+                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('<%= j shown_password %>')">
                   <i class="bi bi-copy"></i>
                 </button>
               <% end %>
