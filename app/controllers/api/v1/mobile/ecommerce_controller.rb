@@ -766,6 +766,9 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       @products = @products.where('price >= ?', params[:min_price]) if params[:min_price].present?
       @products = @products.where('price <= ?', params[:max_price]) if params[:max_price].present?
 
+      # Milk products always first, then the chosen sort
+      @products = @products.milk_first
+
       # Apply sorting
       case params[:sort_by]
       when 'price_low' then @products = @products.order(:price)
@@ -854,7 +857,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
 
     begin
       @products = preload_product_listing(
-        Product.active.in_stock.order(created_at: :desc).limit(limit)
+        Product.active.in_stock.milk_first.order(created_at: :desc).limit(limit)
       )
 
       products_data = @products.map { |product| format_product_data(product) }
@@ -946,6 +949,7 @@ class Api::V1::Mobile::EcommerceController < Api::V1::Mobile::BaseController
       Product.active.in_stock
              .where(category_id: @product.category_id)
              .where.not(id: @product.id)
+             .milk_first
              .limit(5)
     )
 
