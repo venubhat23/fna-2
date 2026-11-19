@@ -395,7 +395,9 @@ class Api::V1::Mobile::AuthenticationController < Api::V1::BaseController
           latitude: customer_params[:latitude],
           longitude: customer_params[:longitude],
           is_registered_by_mobile: true, # Always set to true for mobile registrations
-          status: true
+          status: true,
+          # Plain copy so admins can view the password on the customer page
+          auto_generated_password: customer_params[:password]
         )
         customer.save!(validate: false)  # Skip validations to avoid password requirements
 
